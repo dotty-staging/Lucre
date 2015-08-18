@@ -120,8 +120,6 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- former `Obj` ----
 
-
-
   // ---- completion ----
 
   def beforeCommit(fun: S#Tx => Unit): Unit
@@ -129,8 +127,8 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- context ----
 
-  def newUnitContext(): Context[Unit]
-  def newLongContext(): Context[Long]
+//  def newUnitContext(): Context[Unit]
+//  def newLongContext(): Context[Long]
 
   // ---- former event ----
 

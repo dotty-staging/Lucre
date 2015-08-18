@@ -108,8 +108,6 @@ object Targets {
       }
     }
 
-    // private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]] = ??? // children.flatMap(_._2.toObserverKey)
-
     def isEmpty (implicit tx: S#Tx): Boolean = children.isEmpty   // XXX TODO this is expensive
     def nonEmpty(implicit tx: S#Tx): Boolean = children.nonEmpty  // XXX TODO this is expensive
 
@@ -145,8 +143,6 @@ sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Rea
     * @return  `true` if this was the last dependant unregistered with the given slot, `false` otherwise
     */
   private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean
-
-  // private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]]
 }
 
 object Node {
@@ -175,8 +171,6 @@ trait Node[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
 
   final private[event] def _targets: Targets[S] = targets
 
-  // final private[event] def children(implicit tx: S#Tx) = targets.children
-
   final def id: S#ID = targets.id
 
   private[event] def select(slot: Int): Event[S, Any]
@@ -191,19 +185,3 @@ trait Node[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
     targets.dispose()
   }
 }
-
-///** The `Reactor` trait encompasses the possible targets (dependents) of an event. It defines
-//  * the `propagate` method which is used in the push-phase (first phase) of propagation. A `Reactor` is
-//  * either a persisted event `Node` or a registered `ObserverKey` which is resolved through the transaction
-//  * as pointing to a live view.
-//  */
-//sealed trait Reactor[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
-//  private[event] def _targets: Targets[S]
-//
-//  override def equals(that: Any): Boolean = that match {
-//    case value: Reactor[_] => id == value.id
-//    case _ => super.equals(that)
-//  }
-//
-//  override def hashCode = id.hashCode()
-//}

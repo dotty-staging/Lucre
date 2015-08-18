@@ -30,7 +30,7 @@ object Mutable {
     protected def disposeData()(implicit tx: S#Tx): Unit
     protected def writeData(out: DataOutput): Unit
 
-    override def toString = super.toString + id.toString
+    override def toString = s"${super.toString}$id"
   }
 }
 trait Mutable[+ID, -Tx] extends Identifiable[ID] with Writable with Disposable[Tx]

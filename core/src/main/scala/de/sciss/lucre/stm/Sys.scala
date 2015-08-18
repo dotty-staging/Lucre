@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.lucre.event.ReactionMap
 import de.sciss.lucre.stm
 import de.sciss.serial.Serializer
 
@@ -68,6 +69,9 @@ trait Sys[S <: Sys[S]] {
     * An in-memory system should have a no-op implementation.
     */
   def close(): Unit
+
+  // ---- event ----
+  private[lucre] def reactionMap: ReactionMap[S]
 }
 
 trait NoSys extends Sys[NoSys]

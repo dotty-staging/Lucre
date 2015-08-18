@@ -13,8 +13,6 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.serial.Writable
-
 //object IdentifierMap {
 //  def newInMemoryIntMap[ID, Tx <: TxnLike, A](id: ID)(implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
 //    IdentifierMapImpl.newInMemoryIntMap[ID, Tx, A](id)
