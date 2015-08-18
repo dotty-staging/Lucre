@@ -25,14 +25,11 @@ object Observer {
   }
 
   private final class Impl[S <: Sys[S], A](node: Node[S], slot: Int, key: ObserverKey[S], tx0: S#Tx)
-    extends Disposable[S#Tx] /* with NodeSerializer[S, Repr with Node[S]] */ {
+    extends Disposable[S#Tx] {
 
     override def toString = s"Observer<${key.id}>"
 
-    private[this] val nodeH = tx0.newHandle(node) // (this)
-
-//    def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Node[S] =
-//      reader.read(in, access, targets)
+    private[this] val nodeH = tx0.newHandle(node)
 
     def dispose()(implicit tx: S#Tx): Unit = {
       val node  = nodeH()

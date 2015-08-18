@@ -13,30 +13,13 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.event
-import de.sciss.lucre.stm
+import de.sciss.lucre.{event, stm}
 import de.sciss.lucre.stm.{NoSys, Sys}
 import de.sciss.serial
-import de.sciss.serial.{Serializer, DataInput, DataOutput, Writable}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
-
-///** An abstract trait uniting invariant and mutating readers. */
-//trait Reader[S <: Sys[S], +Repr] {
-//  def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Repr with Node[S]
-//}
-//
-//trait NodeSerializer[S <: Sys[S], Repr <: Writable]
-//  extends Reader[S, Repr] with serial.Serializer[S#Tx, S#Acc, Repr] {
-//
-//  final def write(v: Repr, out: DataOutput): Unit = v.write(out)
-//
-//  final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
-//    val targets = Targets.read[S](in, access)
-//    read(in, access, targets)
-//  }
-//}
 
 object Targets {
   private implicit def childrenSerializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
@@ -72,7 +55,7 @@ object Targets {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     (in.readByte(): @switch) match {
       case 0      => readIdentified(in, access)
-      case cookie => sys.error("Unexpected cookie " + cookie)
+      case cookie => sys.error(s"Unexpected cookie $cookie")
     }
   }
 
@@ -101,7 +84,7 @@ object Targets {
 
     override def toString = s"Targets$id"
 
-    private[event] def add(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean = {
+    private[event] def add(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean = {
       log(s"$this.add($slot, $sel)")
       val tup = (slot.toByte, sel)
       val old = childrenVar.get // .getFresh
@@ -147,7 +130,7 @@ object Targets {
   * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
   * `propagate` a fired event.
   */
-sealed trait Targets[S <: Sys[S]] extends Reactor[S] /* extends Writable with Disposable[ S#Tx ] */ {
+sealed trait Targets[S <: Sys[S]] extends Reactor[S] {
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   /** Adds a dependant to this node target.
@@ -157,7 +140,7 @@ sealed trait Targets[S <: Sys[S]] extends Reactor[S] /* extends Writable with Di
     *
     * @return  `true` if this was the first dependant registered with the given slot, `false` otherwise
     */
-  private[event] def add(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean
+  private[event] def add(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean
 
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
@@ -169,7 +152,7 @@ sealed trait Targets[S <: Sys[S]] extends Reactor[S] /* extends Writable with Di
     *
     * @return  `true` if this was the last dependant unregistered with the given slot, `false` otherwise
     */
-  private[event] def remove(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean
+  private[event] def remove(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean
 
   private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]]
 }
@@ -191,7 +174,7 @@ object Node {
   * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
   * targets.
   */
-trait Node[S <: Sys[S]] extends Reactor[S] /* VirtualNode[S] */ /* with Dispatcher[ S, A ] */ {
+trait Node[S <: Sys[S]] extends Reactor[S] {
   override def toString = s"Node$id"
 
   protected def targets: Targets[S]
@@ -204,7 +187,7 @@ trait Node[S <: Sys[S]] extends Reactor[S] /* VirtualNode[S] */ /* with Dispatch
 
   final def id: S#ID = targets.id
 
-  private[event] def select(slot: Int /*, invariant: Boolean */): Event[S, Any] // NodeSelector[ S, Any ]
+  private[event] def select(slot: Int): Event[S, Any]
 
   final def write(out: DataOutput): Unit = {
     targets.write(out)
@@ -232,41 +215,3 @@ sealed trait Reactor[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
 
   override def hashCode = id.hashCode()
 }
-
-//object VirtualNode {
-//  private[event] def read[S <: Sys[S]](in: DataInput, fullSize: Int, access: S#Acc)(implicit tx: S#Tx): Raw[S] = {
-//    val off       = in.position
-//    val targets   = Targets.read(in, access)
-//    val dataSize  = fullSize - (in.position - off)
-//    val data      = new Array[Byte](dataSize)
-//    in.readFully(data)
-//    new Raw(targets, data, access)
-//  }
-//
-//  private[event] final class Raw[S <: Sys[S]](private[event] val _targets: Targets[S], data: Array[Byte], access: S#Acc)
-//    extends VirtualNode[S] {
-//
-//    def id: S#ID = _targets.id
-//
-//    def write(out: DataOutput): Unit = {
-//      _targets.write(out)
-//      out.write(data)
-//    }
-//
-//    private[event] def select(slot: Int /*, invariant: Boolean */) = Selector(slot, this /*, invariant */)
-//
-//    private[event] def devirtualize[Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Repr with Node[S] = {
-//      val in = DataInput(data)
-//      reader.read(in, access, _targets)
-//    }
-//
-//    def dispose()(implicit tx: S#Tx): Unit = _targets.dispose()
-//
-//    override def toString = s"VirtualNode.Raw${_targets.id}"
-//  }
-//}
-//
-///** A virtual node is either in "raw", serialized state, or expanded to a full `Node`. */
-//sealed trait VirtualNode[S <: Sys[S]] extends Reactor[S] {
-//  private[event] def select(slot: Int /*, invariant: Boolean */): VirtualNodeSelector[S]
-//}

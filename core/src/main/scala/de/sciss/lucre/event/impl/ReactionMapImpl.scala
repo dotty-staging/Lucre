@@ -25,13 +25,12 @@ object ReactionMapImpl {
   def apply[S <: Sys[S]]: ReactionMap[S] = new Impl[S]
 
   private final case class EventObservation[S <: Sys[S]](fun: S#Tx => Any => Unit) {
-    def reaction(parent: Event[S, Any], pull: Pull[S])(implicit tx: S#Tx): Reaction = () => {
+    def reaction(parent: Event[S, Any], pull: Pull[S])(implicit tx: S#Tx): Reaction = () =>
       pull(parent) match {
         case Some(result) =>
           () => fun(tx)(result)
         case None => noOpEval
       }
-    }
   }
 
   private final class Impl[S <: Sys[S]] extends Mixin[S] {

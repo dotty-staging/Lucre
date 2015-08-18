@@ -24,5 +24,5 @@ trait ReactionMap[S <: Sys[S]] {
 
   def removeEventReaction(key: ObserverKey[S])(implicit tx: S#Tx): Unit
 
-  def processEvent(leaf: ObserverKey[S], parent: /* Virtual */ Event[S, Any], push: Push[S])(implicit tx: S#Tx): Unit
+  def processEvent(leaf: ObserverKey[S], parent: Event[S, Any], push: Push[S])(implicit tx: S#Tx): Unit
 }

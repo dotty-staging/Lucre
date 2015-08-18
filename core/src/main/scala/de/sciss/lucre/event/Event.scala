@@ -22,11 +22,6 @@ object Selector {
 
   private val anySer = new Ser[NoSys]
 
-//  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S] /*, invariant: Boolean */): VirtualEvent[S, Any] = {
-//    /* if (invariant) */ InvariantTargetsSelector(slot, node)
-//    // else MutatingTargetsSelector(slot, node)
-//  }
-
   private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = {
     val cookie = in.readByte()
     // 0 = invariant, 1 = mutating, 2 = observer
@@ -49,19 +44,6 @@ object Selector {
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = Selector.read(in, access)
   }
-
-//  private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualEvent[S, Any] {
-//    override private[lucre] def node: VirtualNode.Raw[S]
-//
-//    final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] =
-//      node.devirtualize(reader).select(slot /*, cookie == 0 */)    .asInstanceOf[Event[S, A, Repr with Node[S]]]
-//  }
-//
-//  private final case class InvariantTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
-//    extends TargetsSelector[S] with InvariantSelector[S]
-//
-//  //  private final case class MutatingTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
-//  //    extends TargetsSelector[S] with MutatingSelector[S]
 }
 
 sealed trait Selector[S <: Sys[S]] {
@@ -74,59 +56,10 @@ sealed trait Selector[S <: Sys[S]] {
 
   protected def writeSelectorData(out: DataOutput): Unit
 
-  // private[event] def pushUpdate(parent: VirtualEvent[S, Any], push: Push[S]): Unit
   private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit
 
   private[event] def toObserverKey: Option[ObserverKey[S]]
 }
-
-///** The serializable form of events. */
-//sealed trait VirtualNodeSelector[S <: Sys[S]] extends Selector[S] {
-//
-//  private[lucre] def node: VirtualNode[S]
-//
-//  private[event] def slot: Int
-//
-//  final protected def writeSelectorData(out: DataOutput): Unit = {
-//    // out.writeInt(slot)
-//    out.writeByte(slot)
-//    val sizeOffset = out.position
-//    out.writeInt(0) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
-//    node.write(out)
-//    val stop = out.position
-//    val delta = stop - sizeOffset
-//    out.position = sizeOffset
-//    val fullSize = delta - 4
-//    out.writeInt(fullSize)
-//    out.position = stop
-//  }
-//
-//  def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]]
-//
-//  override def hashCode: Int = {
-//    import MurmurHash3._
-//    val h0 = productSeed
-//    val h1 = mix(h0, slot)
-//    val h2 = mixLast(h1, node.id.##)
-//    finalizeHash(h2, 2)
-//  }
-//
-//  override def equals(that: Any): Boolean = that match {
-//    case thatSel: VirtualNodeSelector[_] => slot == thatSel.slot && node.id == thatSel.node.id
-//    case _ => super.equals(that)
-//  }
-//
-//  final private[event] def toObserverKey: Option[ObserverKey[S]] = None
-//
-//  override def toString = s"$node.select($slot)"
-//}
-//
-//trait InvariantSelector[S <: Sys[S]] extends VirtualEvent[S, Any] {
-//  final protected def cookie: Int = 0
-//
-//  final private[event] def pushUpdate(parent: VirtualEvent[S, Any], push: Push[S]): Unit =
-//    push.visit(this, parent)
-//}
 
 /** Instances of `ObserverKey` are provided by methods in `Txn`, when a live `Observer` is registered. Since
   * the observing function is not persisted, the slot will be used for lookup (again through the transaction)
@@ -136,9 +69,6 @@ final case class ObserverKey[S <: Sys[S]] private[lucre](id: Int) extends /* MMM
   protected def cookie: Int = 2
 
   private[event] def toObserverKey: Option[ObserverKey[S]] = Some(this)
-
-//  private[event] def pushUpdate(parent: VirtualEvent[S, Any], push: Push[S]): Unit =
-//    push.addLeaf(this, parent)
 
   private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
     push.addLeaf(this, parent)
@@ -164,7 +94,7 @@ trait EventLike[S <: Sys[S], +A] extends Observable[S#Tx, A] {
     * method generates an opaque `Disposable` instance, which may be used to
     * remove the observer eventually (through the `dispose` method).
     */
-  def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] // Observer[S, A1, Repr]
+  def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx]
 
   /** Called when the first target is connected to the underlying dispatcher node. This allows
     * the event to be lazily added to its sources. A lazy event (most events should be lazy)
@@ -226,7 +156,7 @@ trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
   * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
   * split into `Event.Invariant` and `Event.Mutating`.
   */
-trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Selector[S] /* VirtualEvent[S, Any] */ {
+trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Selector[S] {
   final protected def cookie: Int = 0
   
   private[event] def slot: Int
@@ -234,10 +164,7 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Selector[S] /* Virtual
   final private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
   push.visit(this, parent)
     
-  def node: /* Repr with */ Node[S]
-
-//  final def devirtualize[A1, R1](reader: Reader[S, R1])(implicit tx: S#Tx): Event[S, A1, R1 with Node[S]] =
-//    this.asInstanceOf[Event[S, A1, R1 with Node[S]]]
+  def node: Node[S]
 
   final def ---> (r: Selector[S])(implicit tx: S#Tx): Unit =
     if (node._targets.add(slot, r)) {

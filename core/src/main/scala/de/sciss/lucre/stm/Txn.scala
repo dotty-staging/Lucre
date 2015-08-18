@@ -137,6 +137,6 @@ trait Txn[S <: Sys[S]] extends TxnLike {
   private[lucre] def newEventVar[A]    (id: S#ID)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
   private[lucre] def readEventVar[A]   (id: S#ID, in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
 
-  private[lucre] def newEventValidity (id: S#ID): event.Validity[S#Tx]
-  private[lucre] def readEventValidity(id: S#ID, in: DataInput): event.Validity[S#Tx]
+//  private[lucre] def newEventValidity (id: S#ID): event.Validity[S#Tx]
+//  private[lucre] def readEventValidity(id: S#ID, in: DataInput): event.Validity[S#Tx]
 }
