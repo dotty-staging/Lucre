@@ -13,18 +13,16 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.stm.{NoSys, Disposable, Sys}
+import de.sciss.lucre.stm.{Disposable, NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput}
-
-import scala.util.hashing.MurmurHash3
 
 object Selector {
   implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Selector[S]] = anySer.asInstanceOf[Ser[S]]
 
   private val anySer = new Ser[NoSys]
 
-//  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S] /*, invariant: Boolean */): VirtualNodeSelector[S] = {
+//  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S] /*, invariant: Boolean */): VirtualEvent[S, Any] = {
 //    /* if (invariant) */ InvariantTargetsSelector(slot, node)
 //    // else MutatingTargetsSelector(slot, node)
 //  }
@@ -34,9 +32,9 @@ object Selector {
     // 0 = invariant, 1 = mutating, 2 = observer
     if (cookie == 0 /* || cookie == 1 */) {
       val slot      = in.readByte() // .readInt()
-      val fullSize  = in.readInt()
+      // val fullSize  = in.readInt()
       // val reactor   = VirtualNode.read[S](in, fullSize, access)
-      val reactor   = Node.read[S](in, fullSize, access)
+      val reactor   = Node.read[S](in, access)
       reactor.select(slot /*, cookie == 0 */)
     } else if (cookie == 2) {
       val id = in.readInt()
@@ -52,7 +50,7 @@ object Selector {
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = Selector.read(in, access)
   }
 
-//  private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
+//  private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualEvent[S, Any] {
 //    override private[lucre] def node: VirtualNode.Raw[S]
 //
 //    final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] =
@@ -76,8 +74,8 @@ sealed trait Selector[S <: Sys[S]] {
 
   protected def writeSelectorData(out: DataOutput): Unit
 
-  // private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit
-  private[event] def pushUpdate(parent: NodeSelector[S], push: Push[S]): Unit
+  // private[event] def pushUpdate(parent: VirtualEvent[S, Any], push: Push[S]): Unit
+  private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit
 
   private[event] def toObserverKey: Option[ObserverKey[S]]
 }
@@ -123,24 +121,12 @@ sealed trait Selector[S <: Sys[S]] {
 //  override def toString = s"$node.select($slot)"
 //}
 //
-//trait InvariantSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
+//trait InvariantSelector[S <: Sys[S]] extends VirtualEvent[S, Any] {
 //  final protected def cookie: Int = 0
 //
-//  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
+//  final private[event] def pushUpdate(parent: VirtualEvent[S, Any], push: Push[S]): Unit =
 //    push.visit(this, parent)
 //}
-
-sealed trait NodeSelector[S <: Sys[S]] extends Selector[S] {
-  final protected def cookie: Int = 0
-
-  private[lucre] def node: Node[S]
-
-  private[event] def slot: Int
-
-
-  final private[event] def pushUpdate(parent: NodeSelector[S], push: Push[S]): Unit =
-    push.visit(this, parent)
-}
 
 /** Instances of `ObserverKey` are provided by methods in `Txn`, when a live `Observer` is registered. Since
   * the observing function is not persisted, the slot will be used for lookup (again through the transaction)
@@ -151,10 +137,10 @@ final case class ObserverKey[S <: Sys[S]] private[lucre](id: Int) extends /* MMM
 
   private[event] def toObserverKey: Option[ObserverKey[S]] = Some(this)
 
-//  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
+//  private[event] def pushUpdate(parent: VirtualEvent[S, Any], push: Push[S]): Unit =
 //    push.addLeaf(this, parent)
 
-  private[event] def pushUpdate(parent: NodeSelector[S], push: Push[S]): Unit =
+  private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
     push.addLeaf(this, parent)
 
   def dispose()(implicit tx: S#Tx) = () // XXX really?
@@ -166,12 +152,12 @@ trait EventLike[S <: Sys[S], +A] extends Observable[S#Tx, A] {
   /** Connects the given selector to this event. That is, this event will
     * adds the selector to its propagation targets.
     */
-  def --->(r: Selector[S])(implicit tx: S#Tx): Unit
+  def ---> (r: Selector[S])(implicit tx: S#Tx): Unit
 
   /** Disconnects the given selector from this event. That is, this event will
     * remove the selector from its propagation targets.
     */
-  def -/->(r: Selector[S])(implicit tx: S#Tx): Unit
+  def -/-> (r: Selector[S])(implicit tx: S#Tx): Unit
 
   /** Registers a live observer with this event. The method is called with the
     * observing function which receives the event's update messages, and the
@@ -225,8 +211,8 @@ object Dummy {
 trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
   import Dummy._
 
-  final def --->(r: Selector[S])(implicit tx: S#Tx) = ()
-  final def -/->(r: Selector[S])(implicit tx: S#Tx) = ()
+  final def ---> (r: Selector[S])(implicit tx: S#Tx) = ()
+  final def -/-> (r: Selector[S])(implicit tx: S#Tx) = ()
 
   final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
 
@@ -240,27 +226,28 @@ trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
   * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
   * split into `Event.Invariant` and `Event.Mutating`.
   */
-trait Event[S <: Sys[S], +A, +Repr] extends EventLike[S, A] with NodeSelector[S] /* VirtualNodeSelector[S] */ {
+trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Selector[S] /* VirtualEvent[S, Any] */ {
+  final protected def cookie: Int = 0
+  
+  private[event] def slot: Int
 
-  def node: Repr with Node[S]
+  final private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
+  push.visit(this, parent)
+    
+  def node: /* Repr with */ Node[S]
 
-  final def devirtualize[A1, R1](reader: Reader[S, R1])(implicit tx: S#Tx): Event[S, A1, R1 with Node[S]] =
-    this.asInstanceOf[Event[S, A1, R1 with Node[S]]]
+//  final def devirtualize[A1, R1](reader: Reader[S, R1])(implicit tx: S#Tx): Event[S, A1, R1 with Node[S]] =
+//    this.asInstanceOf[Event[S, A1, R1 with Node[S]]]
 
-  final def --->(r: Selector[S])(implicit tx: S#Tx): Unit = {
-    val t = node._targets
-//    if (t.isInvalid) { // (slot)
-//      log(s"$this re-connect")
-//      disconnect()
-//      t.resetAndValidate(slot, r)   // XXX TODO: doesn't this add r twice, becaues connect() will also add it?
-//      connect()
-//    } else
-    if (t.add(slot, r)) {
+  final def ---> (r: Selector[S])(implicit tx: S#Tx): Unit =
+    if (node._targets.add(slot, r)) {
       log(s"$this connect")
       connect()
     }
-  }
 
-  final def -/->(r: Selector[S])(implicit tx: S#Tx): Unit =
-    if (node._targets.remove(slot, r)) disconnect()
+  final def -/-> (r: Selector[S])(implicit tx: S#Tx): Unit =
+    if (node._targets.remove(slot, r)) {
+      log(s"$this disconnect")
+      disconnect()
+    }
 }

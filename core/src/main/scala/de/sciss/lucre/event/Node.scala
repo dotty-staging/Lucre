@@ -17,26 +17,26 @@ import de.sciss.lucre.event
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{NoSys, Sys}
 import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput, Writable}
+import de.sciss.serial.{Serializer, DataInput, DataOutput, Writable}
 
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
 
-/** An abstract trait uniting invariant and mutating readers. */
-trait Reader[S <: Sys[S], +Repr] {
-  def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Repr with Node[S]
-}
-
-trait NodeSerializer[S <: Sys[S], Repr <: Writable]
-  extends Reader[S, Repr] with serial.Serializer[S#Tx, S#Acc, Repr] {
-
-  final def write(v: Repr, out: DataOutput): Unit = v.write(out)
-
-  final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
-    val targets = Targets.read[S](in, access)
-    read(in, access, targets)
-  }
-}
+///** An abstract trait uniting invariant and mutating readers. */
+//trait Reader[S <: Sys[S], +Repr] {
+//  def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Repr with Node[S]
+//}
+//
+//trait NodeSerializer[S <: Sys[S], Repr <: Writable]
+//  extends Reader[S, Repr] with serial.Serializer[S#Tx, S#Acc, Repr] {
+//
+//  final def write(v: Repr, out: DataOutput): Unit = v.write(out)
+//
+//  final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
+//    val targets = Targets.read[S](in, access)
+//    read(in, access, targets)
+//  }
+//}
 
 object Targets {
   private implicit def childrenSerializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
@@ -175,7 +175,9 @@ sealed trait Targets[S <: Sys[S]] extends Reactor[S] /* extends Writable with Di
 }
 
 object Node {
-  def read[S <: Sys[S]](in: DataInput, fullSize: Int, access: S#Acc)(implicit tx: S#Tx): Node[S] = ???
+  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Node[S] = ???
+
+  implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Node[S]] = ???
 }
 
 /** An `Event.Node` is most similar to EScala's `EventNode` class. It represents an observable
@@ -202,7 +204,7 @@ trait Node[S <: Sys[S]] extends Reactor[S] /* VirtualNode[S] */ /* with Dispatch
 
   final def id: S#ID = targets.id
 
-  private[event] def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] // NodeSelector[ S, Any ]
+  private[event] def select(slot: Int /*, invariant: Boolean */): Event[S, Any] // NodeSelector[ S, Any ]
 
   final def write(out: DataOutput): Unit = {
     targets.write(out)

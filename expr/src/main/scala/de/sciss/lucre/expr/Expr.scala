@@ -21,7 +21,7 @@ import de.sciss.serial.Writable
 
 object Expr {
   trait Node[S <: Sys[S], +A] extends Expr[S, A] with event.Node[S] {
-    def changed: Event[S, Change[A], Expr[S, A]]
+    def changed: Event[S, Change[A]]
   }
 
   object Var {
