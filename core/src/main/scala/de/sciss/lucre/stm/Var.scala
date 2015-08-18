@@ -11,7 +11,7 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss.lucre.stm
 
 import de.sciss.serial.Writable
 

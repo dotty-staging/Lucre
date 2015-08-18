@@ -11,9 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss.lucre.stm
 
-import de.sciss.lucre
+import de.sciss.lucre.stm
 import de.sciss.serial.Serializer
 
 import scala.language.higherKinds
@@ -37,7 +37,7 @@ trait Sys[S <: Sys[S]] {
     *
     * @tparam A   the type of the value stored in the variable
     */
-  type Var[A] <: lucre.Var[S#Tx, A]
+  type Var[A] <: stm.Var[S#Tx, A]
 
   /** The transaction type of the system. */
   type Tx <: Txn[S]
@@ -69,3 +69,5 @@ trait Sys[S <: Sys[S]] {
     */
   def close(): Unit
 }
+
+trait NoSys extends Sys[NoSys]

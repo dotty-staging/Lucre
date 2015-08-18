@@ -1,5 +1,5 @@
 /*
- *  Disposable.scala
+ *  Identifiable.scala
  *  (Lucre)
  *
  *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
@@ -11,8 +11,8 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss.lucre.stm
 
-trait Disposable[-Tx] {
-  def dispose()(implicit tx: Tx): Unit
+trait Identifiable[+ID] {
+  def id: ID
 }

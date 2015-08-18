@@ -11,8 +11,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss.lucre.stm
 
+import de.sciss.lucre.event
+import de.sciss.lucre.event.ReactionMap
+import de.sciss.serial
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
@@ -116,7 +119,7 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- former `Obj` ----
 
-  
+
 
   // ---- completion ----
 
@@ -125,8 +128,15 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- context ----
 
-  def newUnitContext(): Nothing
-  def newLongContext(): Nothing
+  def newUnitContext(): Context[Unit]
+  def newLongContext(): Context[Long]
 
+  // ---- former event ----
 
+  private[lucre] def reactionMap: ReactionMap[S]
+  private[lucre] def newEventVar[A]    (id: S#ID)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
+  private[lucre] def readEventVar[A]   (id: S#ID, in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
+
+  private[lucre] def newEventValidity (id: S#ID): event.Validity[S#Tx]
+  private[lucre] def readEventValidity(id: S#ID, in: DataInput): event.Validity[S#Tx]
 }

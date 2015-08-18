@@ -11,7 +11,7 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss.lucre.stm
 
 import de.sciss.serial.Writable
 
@@ -34,7 +34,7 @@ import de.sciss.serial.Writable
   * @tparam A   the values stored at the keys. `Unit` can be used if only set
   *             functionality is needed.
   */
-trait IdentifierMap[ID, -Tx, A] extends /* Mutable[ID, Tx] */ Identifiable[ID] with Writable with Disposable[Tx] {
+trait IdentifierMap[ID, -Tx, A] extends Mutable[ID, Tx] {
   def put      (id: ID, value: A)     (implicit tx: Tx): Unit
   def get      (id: ID)               (implicit tx: Tx): Option[A]
   def getOrElse(id: ID, default: => A)(implicit tx: Tx): A

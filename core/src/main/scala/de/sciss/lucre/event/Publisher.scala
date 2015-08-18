@@ -1,5 +1,5 @@
 /*
- *  Identifier.scala
+ *  Publisher.scala
  *  (Lucre)
  *
  *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
@@ -11,8 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss.lucre.event
 
-import de.sciss.serial
+import de.sciss.lucre.stm.Sys
 
-trait Identifier[-Tx] extends Disposable[Tx] with serial.Writable
+trait Publisher[S <: Sys[S], +A] {
+  def changed: EventLike[S, A]
+}
