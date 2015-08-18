@@ -24,10 +24,10 @@ object Selector {
 
   private val anySer = new Ser[NoSys]
 
-  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S] /*, invariant: Boolean */): VirtualNodeSelector[S] = {
-    /* if (invariant) */ InvariantTargetsSelector(slot, node)
-    // else MutatingTargetsSelector(slot, node)
-  }
+//  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S] /*, invariant: Boolean */): VirtualNodeSelector[S] = {
+//    /* if (invariant) */ InvariantTargetsSelector(slot, node)
+//    // else MutatingTargetsSelector(slot, node)
+//  }
 
   private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = {
     val cookie = in.readByte()
@@ -35,7 +35,8 @@ object Selector {
     if (cookie == 0 /* || cookie == 1 */) {
       val slot      = in.readByte() // .readInt()
       val fullSize  = in.readInt()
-      val reactor   = VirtualNode.read[S](in, fullSize, access)
+      // val reactor   = VirtualNode.read[S](in, fullSize, access)
+      val reactor   = Node.read[S](in, fullSize, access)
       reactor.select(slot /*, cookie == 0 */)
     } else if (cookie == 2) {
       val id = in.readInt()
@@ -51,18 +52,18 @@ object Selector {
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = Selector.read(in, access)
   }
 
-  private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
-    override private[lucre] def node: VirtualNode.Raw[S]
-
-    final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] =
-      node.devirtualize(reader).select(slot /*, cookie == 0 */)    .asInstanceOf[Event[S, A, Repr with Node[S]]]
-  }
-
-  private final case class InvariantTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
-    extends TargetsSelector[S] with InvariantSelector[S]
-
-  //  private final case class MutatingTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
-  //    extends TargetsSelector[S] with MutatingSelector[S]
+//  private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
+//    override private[lucre] def node: VirtualNode.Raw[S]
+//
+//    final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] =
+//      node.devirtualize(reader).select(slot /*, cookie == 0 */)    .asInstanceOf[Event[S, A, Repr with Node[S]]]
+//  }
+//
+//  private final case class InvariantTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
+//    extends TargetsSelector[S] with InvariantSelector[S]
+//
+//  //  private final case class MutatingTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
+//  //    extends TargetsSelector[S] with MutatingSelector[S]
 }
 
 sealed trait Selector[S <: Sys[S]] {
@@ -75,56 +76,69 @@ sealed trait Selector[S <: Sys[S]] {
 
   protected def writeSelectorData(out: DataOutput): Unit
 
-  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit
+  // private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit
+  private[event] def pushUpdate(parent: NodeSelector[S], push: Push[S]): Unit
 
   private[event] def toObserverKey: Option[ObserverKey[S]]
 }
 
-/** The serializable form of events. */
-sealed trait VirtualNodeSelector[S <: Sys[S]] extends Selector[S] {
+///** The serializable form of events. */
+//sealed trait VirtualNodeSelector[S <: Sys[S]] extends Selector[S] {
+//
+//  private[lucre] def node: VirtualNode[S]
+//
+//  private[event] def slot: Int
+//
+//  final protected def writeSelectorData(out: DataOutput): Unit = {
+//    // out.writeInt(slot)
+//    out.writeByte(slot)
+//    val sizeOffset = out.position
+//    out.writeInt(0) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
+//    node.write(out)
+//    val stop = out.position
+//    val delta = stop - sizeOffset
+//    out.position = sizeOffset
+//    val fullSize = delta - 4
+//    out.writeInt(fullSize)
+//    out.position = stop
+//  }
+//
+//  def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]]
+//
+//  override def hashCode: Int = {
+//    import MurmurHash3._
+//    val h0 = productSeed
+//    val h1 = mix(h0, slot)
+//    val h2 = mixLast(h1, node.id.##)
+//    finalizeHash(h2, 2)
+//  }
+//
+//  override def equals(that: Any): Boolean = that match {
+//    case thatSel: VirtualNodeSelector[_] => slot == thatSel.slot && node.id == thatSel.node.id
+//    case _ => super.equals(that)
+//  }
+//
+//  final private[event] def toObserverKey: Option[ObserverKey[S]] = None
+//
+//  override def toString = s"$node.select($slot)"
+//}
+//
+//trait InvariantSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
+//  final protected def cookie: Int = 0
+//
+//  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
+//    push.visit(this, parent)
+//}
 
-  private[lucre] def node: VirtualNode[S]
+sealed trait NodeSelector[S <: Sys[S]] extends Selector[S] {
+  final protected def cookie: Int = 0
+
+  private[lucre] def node: Node[S]
 
   private[event] def slot: Int
 
-  final protected def writeSelectorData(out: DataOutput): Unit = {
-    // out.writeInt(slot)
-    out.writeByte(slot)
-    val sizeOffset = out.position
-    out.writeInt(0) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
-    node.write(out)
-    val stop = out.position
-    val delta = stop - sizeOffset
-    out.position = sizeOffset
-    val fullSize = delta - 4
-    out.writeInt(fullSize)
-    out.position = stop
-  }
 
-  def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]]
-
-  override def hashCode: Int = {
-    import MurmurHash3._
-    val h0 = productSeed
-    val h1 = mix(h0, slot)
-    val h2 = mixLast(h1, node.id.##)
-    finalizeHash(h2, 2)
-  }
-
-  override def equals(that: Any): Boolean = that match {
-    case thatSel: VirtualNodeSelector[_] => slot == thatSel.slot && node.id == thatSel.node.id
-    case _ => super.equals(that)
-  }
-
-  final private[event] def toObserverKey: Option[ObserverKey[S]] = None
-
-  override def toString = s"$node.select($slot)"
-}
-
-trait InvariantSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
-  final protected def cookie: Int = 0
-
-  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
+  final private[event] def pushUpdate(parent: NodeSelector[S], push: Push[S]): Unit =
     push.visit(this, parent)
 }
 
@@ -137,7 +151,10 @@ final case class ObserverKey[S <: Sys[S]] private[lucre](id: Int) extends /* MMM
 
   private[event] def toObserverKey: Option[ObserverKey[S]] = Some(this)
 
-  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
+//  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
+//    push.addLeaf(this, parent)
+
+  private[event] def pushUpdate(parent: NodeSelector[S], push: Push[S]): Unit =
     push.addLeaf(this, parent)
 
   def dispose()(implicit tx: S#Tx) = () // XXX really?
@@ -223,23 +240,22 @@ trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
   * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
   * split into `Event.Invariant` and `Event.Mutating`.
   */
-trait Event[S <: Sys[S], +A, +Repr] extends EventLike[S, A] with VirtualNodeSelector[S] {
+trait Event[S <: Sys[S], +A, +Repr] extends EventLike[S, A] with NodeSelector[S] /* VirtualNodeSelector[S] */ {
 
   def node: Repr with Node[S]
 
   final def devirtualize[A1, R1](reader: Reader[S, R1])(implicit tx: S#Tx): Event[S, A1, R1 with Node[S]] =
     this.asInstanceOf[Event[S, A1, R1 with Node[S]]]
-}
 
-trait InvariantEvent[S <: Sys[S], +A, +Repr] extends InvariantSelector[S] with Event[S, A, Repr] {
   final def --->(r: Selector[S])(implicit tx: S#Tx): Unit = {
     val t = node._targets
-    if (t.isInvalid) { // (slot)
-      log(s"$this re-connect")
-      disconnect()
-      t.resetAndValidate(slot, r)   // XXX TODO: doesn't this add r twice, becaues connect() will also add it?
-      connect()
-    } else if (t.add(slot, r)) {
+//    if (t.isInvalid) { // (slot)
+//      log(s"$this re-connect")
+//      disconnect()
+//      t.resetAndValidate(slot, r)   // XXX TODO: doesn't this add r twice, becaues connect() will also add it?
+//      connect()
+//    } else
+    if (t.add(slot, r)) {
       log(s"$this connect")
       connect()
     }

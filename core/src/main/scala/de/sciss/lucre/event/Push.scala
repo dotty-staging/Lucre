@@ -41,12 +41,12 @@ object Push {
   private val NoReactions = Vec.empty[Reaction]
   //   private val emptySet = Set.empty[ Nothing ]
   //   private val emptyMap = Map.empty[ Nothing, Nothing ]
-  type Parents[S <: Sys[S]] = Set[VirtualNodeSelector[S]]
+  type Parents[S <: Sys[S]] = Set[/* Virtual */ NodeSelector[S]]
 
-  private def NoParents [S <: Sys[S]]: Parents[S] = Set.empty[VirtualNodeSelector[S]]
+  private def NoParents [S <: Sys[S]]: Parents[S] = Set.empty[/* Virtual */ NodeSelector[S]]
   // private def NoMutating[S <: Sys[S]]: Set[MutatingSelector[S]] = Set.empty[MutatingSelector[S]]
 
-  private type Visited[S <: Sys[S]] = Map[VirtualNodeSelector[S], Parents[S]]
+  private type Visited[S <: Sys[S]] = Map[/* Virtual */ NodeSelector[S], Parents[S]]
 
   private final class Impl[S <: Sys[S]](origin: Event[S, Any, Any], val update: Any)(implicit tx: S#Tx)
     extends Push[S] {
@@ -61,14 +61,14 @@ object Push {
     @elidable(CONFIG) private def incIndent(): Unit = indent += "  "
     @elidable(CONFIG) private def decIndent(): Unit = indent = indent.substring(2)
 
-    private def addVisited(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Boolean = {
+    private def addVisited(sel: /* Virtual */ NodeSelector[S], parent: /* Virtual */ NodeSelector[S]): Boolean = {
       val parents = pushMap.getOrElse(sel, NoParents)
       log(s"${indent}visit $sel  (new ? ${parents.isEmpty})")
       pushMap += ((sel, parents + parent))
       parents.isEmpty
     }
 
-    def visitChildren(sel: VirtualNodeSelector[S]): Unit = {
+    def visitChildren(sel: /* Virtual */ NodeSelector[S]): Unit = {
       val inlet = sel.slot
       incIndent()
       try {
@@ -85,7 +85,7 @@ object Push {
       }
     }
 
-    def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Unit =
+    def visit(sel: /* Virtual */ NodeSelector[S], parent: /* Virtual */ NodeSelector[S]): Unit =
       if (addVisited(sel, parent)) visitChildren(sel)
 
     //      def visit( sel: MutatingSelector[ S ], parent: VirtualNodeSelector[ S ]): Unit = {
@@ -99,9 +99,9 @@ object Push {
 
     def isOrigin(that: EventLike[S, Any]) = that == origin
 
-    def parents(sel: VirtualNodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
+    def parents(sel: /* Virtual */ NodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
-    def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]): Unit = {
+    def addLeaf(leaf: ObserverKey[S], parent: /* Virtual */ NodeSelector[S]): Unit = {
       log(s"${indent}addLeaf $leaf, parent = $parent")
       tx.reactionMap.processEvent(leaf, parent, this)
     }
@@ -165,7 +165,7 @@ sealed trait Pull[S <: Sys[S]] {
   // def update: Any
 
   /** Retrieves the immediate parents from the push phase. */
-  def parents(sel: VirtualNodeSelector[S]): Push.Parents[S]
+  def parents(sel: /* Virtual */ NodeSelector[S]): Push.Parents[S]
 
   /** Pulls the update from the given source. */
   def apply[A](source: EventLike[S, A]): Option[A]
@@ -178,13 +178,15 @@ sealed trait Pull[S <: Sys[S]] {
 }
 
 private[event] sealed trait Push[S <: Sys[S]] extends Pull[S] {
-  private[event] def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Unit
+//  private[event] def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Unit
+  private[event] def visit(sel: NodeSelector[S], parent: NodeSelector[S]): Unit
 
   //   def visit( sel: MutatingSelector[ S ],  parent: VirtualNodeSelector[ S ]) : Unit
   //   def mutatingVisit( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) : Unit
   //   def addMutation( sel: VirtualNodeSelector[ S ]) : Unit
 
-  private[event] def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]): Unit
+//  private[event] def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]): Unit
+  private[event] def addLeaf(leaf: ObserverKey[S], parent: NodeSelector[S]): Unit
 
   private[event] def addReaction(r: Reaction): Unit
 
