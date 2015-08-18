@@ -13,13 +13,12 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.{event, stm}
+import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
-import scala.collection.immutable.{IndexedSeq => Vec}
 
 object Targets {
   private implicit def childrenSerializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
@@ -32,7 +31,7 @@ object Targets {
       out./* PACKED */ writeInt(v.size)
       v.foreach { tup =>
         out.writeByte(tup._1)
-        tup._2.writeSelector(out) // same as Selector.serializer.write(tup._2)
+        tup._2.write(out) // same as Selector.serializer.write(tup._2)
       }
     }
 
@@ -40,7 +39,7 @@ object Targets {
       val sz = in./* PACKED */ readInt()
       if (sz == 0) Vector.empty else Vector.fill(sz) {
         val slot      = in.readByte()
-        val selector  = Selector.read(in, access)
+        val selector  = Event.read(in, access)
         (slot, selector)
       }
     }
@@ -48,8 +47,8 @@ object Targets {
 
   def apply[S <: Sys[S]](implicit tx: S#Tx): Targets[S] = {
     val id        = tx.newID()
-    val children  = tx.newEventVar[Children[S]](id)
-    new Impl(0, id, children)
+    val children  = tx.newVar /* newEventVar */[Children[S]](id, NoChildren)
+    new Impl[S](0, id, children)
   }
 
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
@@ -61,11 +60,11 @@ object Targets {
 
   private[event] def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     val id = tx.readID(in, access)
-    val children = tx.readEventVar[Children[S]](id, in)
+    val children = tx.readVar /* readEventVar */[Children[S]](id, in)
     new Impl[S](0, id, children)
   }
 
-  private final class Impl[S <: Sys[S]](cookie: Int, val id: S#ID, childrenVar: event.Var[S, Children[S]])
+  private final class Impl[S <: Sys[S]](cookie: Int, val id: S#ID, childrenVar: /* event. */ S#Var[Children[S]])
     extends Targets[S] {
 
     def write(out: DataOutput): Unit = {
@@ -80,29 +79,23 @@ object Targets {
       childrenVar.dispose()
     }
 
-    private[event] def children(implicit tx: S#Tx): Children[S] = childrenVar.getOrElse(NoChildren)
+    private[event] def children(implicit tx: S#Tx): Children[S] = childrenVar() // .getOrElse(NoChildren)
 
     override def toString = s"Targets$id"
 
-    private[event] def add(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean = {
+    private[event] def add(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
       log(s"$this.add($slot, $sel)")
       val tup = (slot.toByte, sel)
-      val old = childrenVar.get // .getFresh
-      log(s"$this - old children = $old")
-      old match {
-        case Some(seq) =>
-          childrenVar() = seq :+ tup
-          !seq.exists(_._1 == slot)
-        case _ =>
-          childrenVar() = Vector(tup)
-          true
-      }
+      val seq = childrenVar() // .get // .getFresh
+      log(s"$this - old children = $seq")
+      childrenVar() = seq :+ tup
+      !seq.exists(_._1 == slot)
     }
 
-    private[event] def remove(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean = {
+    private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
       log(s"$this.remove($slot, $sel)")
       val tup = (slot, sel)
-      val xs = childrenVar.getOrElse(NoChildren)
+      val xs = childrenVar() // .getOrElse(NoChildren)
       log(s"$this - old children = $xs")
       val i = xs.indexOf(tup)
       if (i >= 0) {
@@ -115,8 +108,7 @@ object Targets {
       }
     }
 
-    private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]] =
-      children.flatMap(_._2.toObserverKey)
+    // private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]] = ??? // children.flatMap(_._2.toObserverKey)
 
     def isEmpty (implicit tx: S#Tx): Boolean = children.isEmpty   // XXX TODO this is expensive
     def nonEmpty(implicit tx: S#Tx): Boolean = children.nonEmpty  // XXX TODO this is expensive
@@ -130,7 +122,7 @@ object Targets {
   * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
   * `propagate` a fired event.
   */
-sealed trait Targets[S <: Sys[S]] extends Reactor[S] {
+sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Reactor[S] */ {
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   /** Adds a dependant to this node target.
@@ -140,7 +132,7 @@ sealed trait Targets[S <: Sys[S]] extends Reactor[S] {
     *
     * @return  `true` if this was the first dependant registered with the given slot, `false` otherwise
     */
-  private[event] def add(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean
+  private[event] def add(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean
 
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
@@ -152,9 +144,9 @@ sealed trait Targets[S <: Sys[S]] extends Reactor[S] {
     *
     * @return  `true` if this was the last dependant unregistered with the given slot, `false` otherwise
     */
-  private[event] def remove(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean
+  private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean
 
-  private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]]
+  // private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]]
 }
 
 object Node {
@@ -174,7 +166,7 @@ object Node {
   * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
   * targets.
   */
-trait Node[S <: Sys[S]] extends Reactor[S] {
+trait Node[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
   override def toString = s"Node$id"
 
   protected def targets: Targets[S]
@@ -183,7 +175,7 @@ trait Node[S <: Sys[S]] extends Reactor[S] {
 
   final private[event] def _targets: Targets[S] = targets
 
-  final private[event] def children(implicit tx: S#Tx) = targets.children
+  // final private[event] def children(implicit tx: S#Tx) = targets.children
 
   final def id: S#ID = targets.id
 
@@ -200,18 +192,18 @@ trait Node[S <: Sys[S]] extends Reactor[S] {
   }
 }
 
-/** The `Reactor` trait encompasses the possible targets (dependents) of an event. It defines
-  * the `propagate` method which is used in the push-phase (first phase) of propagation. A `Reactor` is
-  * either a persisted event `Node` or a registered `ObserverKey` which is resolved through the transaction
-  * as pointing to a live view.
-  */
-sealed trait Reactor[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
-  private[event] def _targets: Targets[S]
-
-  override def equals(that: Any): Boolean = that match {
-    case value: Reactor[_] => id == value.id
-    case _ => super.equals(that)
-  }
-
-  override def hashCode = id.hashCode()
-}
+///** The `Reactor` trait encompasses the possible targets (dependents) of an event. It defines
+//  * the `propagate` method which is used in the push-phase (first phase) of propagation. A `Reactor` is
+//  * either a persisted event `Node` or a registered `ObserverKey` which is resolved through the transaction
+//  * as pointing to a live view.
+//  */
+//sealed trait Reactor[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
+//  private[event] def _targets: Targets[S]
+//
+//  override def equals(that: Any): Boolean = that match {
+//    case value: Reactor[_] => id == value.id
+//    case _ => super.equals(that)
+//  }
+//
+//  override def hashCode = id.hashCode()
+//}

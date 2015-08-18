@@ -30,15 +30,6 @@ object Mutable {
     protected def disposeData()(implicit tx: S#Tx): Unit
     protected def writeData(out: DataOutput): Unit
 
-    // note: micro benchmark shows that an initial this eq that.asInstanceOf[AnyRef] doesn't improve performance at all
-    override def equals(that: Any): Boolean = that match {
-      case m: Mutable[_, _] =>
-        id == m.id
-      case _ => super.equals(that)
-    }
-
-    override def hashCode = id.hashCode()
-
     override def toString = super.toString + id.toString
   }
 }

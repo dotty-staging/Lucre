@@ -15,4 +15,12 @@ package de.sciss.lucre.stm
 
 trait Identifiable[+ID] {
   def id: ID
+
+  override def equals(that: Any): Boolean = that match {
+    case m: Identifiable[_] =>
+      id == m.id
+    case _ => super.equals(that)
+  }
+
+  override def hashCode = id.hashCode()
 }

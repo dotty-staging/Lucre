@@ -16,8 +16,6 @@ package de.sciss.lucre
 import java.text.SimpleDateFormat
 import java.util.{Date, Locale}
 
-import de.sciss.serial
-
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -25,7 +23,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 package object event {
   type Reaction = () => () => Unit
 
-  private[event] type Children[S <: stm.Sys[S]] = Vec[(Byte, Selector[S])]
+  private[event] type Children[S <: stm.Sys[S]] = Vec[(Byte, Event[S, Any])]
 
   private val emptySeq = Vec.empty[Nothing]
 

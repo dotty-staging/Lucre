@@ -13,40 +13,51 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.stm.{Disposable, NoSys, Sys}
+import de.sciss.lucre.stm.{Disposable, Sys}
 
 object Observer {
   def apply[S <: Sys[S], A](event: Event[S, A], fun: S#Tx => A => Unit)
-                                 (implicit tx: S#Tx): Disposable[S#Tx] = {
-    val key = tx.reactionMap.addEventReaction[A](fun)
-    val res = new Impl[S, A](event.node, event.slot, key, tx)
-    event ---> key
-    res
+                           (implicit tx: S#Tx): Observer[S] = {
+//    val c = event.node._targets.isEmpty && !tx.reactionMap.hasEventReactions(event)
+//    if (c) {
+//      log(s"$event connect")
+//      event.connect()
+//    }
+    new Impl(event, tx)
   }
 
-  private final class Impl[S <: Sys[S], A](node: Node[S], slot: Int, key: ObserverKey[S], tx0: S#Tx)
-    extends Disposable[S#Tx] {
+  private final class Impl[S <: Sys[S], A](event0: Event[S, Any], tx0: S#Tx)
+    extends Observer[S] {
 
-    override def toString = s"Observer<${key.id}>"
+    override def toString = s"Observer<${event0.node.id}, ${event0.slot}>"
 
-    private[this] val nodeH = tx0.newHandle(node)
+    private[this] val eventH = tx0.newHandle(event0)
+
+    tx0.reactionMap.addEventReaction[A](event0, this)(tx0)
+
+    def event(implicit tx: S#Tx): Event[S, Any] = eventH()
 
     def dispose()(implicit tx: S#Tx): Unit = {
-      val node  = nodeH()
-      val event = node.select(slot)
-      event -/-> key
-      tx.reactionMap.removeEventReaction(key)
+      val event = this.event
+      // event -/-> key
+      tx.reactionMap.removeEventReaction(event, this)
+//      val c = event.node._targets.isEmpty && !tx.reactionMap.hasEventReactions(event)
+//      if (c) {
+//        log(s"$event disconnect")
+//        event.disconnect()
+//      }
     }
   }
 
   /** This method is cheap. */
-  def dummy[S <: Sys[S]]: Disposable[S#Tx] = dummyVal.asInstanceOf[Disposable[S#Tx]]
+  def dummy[S <: Sys[S]]: Disposable[S#Tx] = Dummy
 
-  private val dummyVal = new Dummy[NoSys]
-
-  private final class Dummy[S <: Sys[S]] extends Disposable[S#Tx] {
+  private object Dummy extends Disposable[Any] {
     override def toString = "Observer.Dummy"
 
-    def dispose()(implicit tx: S#Tx) = ()
+    def dispose()(implicit tx: Any) = ()
   }
+}
+trait Observer[S <: Sys[S]] extends Disposable[S#Tx] {
+  def event(implicit tx: S#Tx): Event[S, Any]
 }

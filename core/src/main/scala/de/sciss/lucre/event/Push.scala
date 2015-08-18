@@ -81,10 +81,10 @@ object Push {
 
     def parents(sel: Event[S, Any]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
-    def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit = {
-      log(s"${indent}addLeaf $leaf, parent = $parent")
-      tx.reactionMap.processEvent(leaf, parent, this)
-    }
+//    def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit = {
+//      log(s"${indent}addLeaf $leaf, parent = $parent")
+//      tx.reactionMap.processEvent(leaf, parent, this)
+//    }
 
     def addReaction(r: Reaction): Unit = reactions :+= r
 
@@ -125,13 +125,14 @@ sealed trait Pull[S <: Sys[S]] {
   def resolve[A]: A
 
   /** Retrieves the immediate parents from the push phase. */
-  def parents(sel: /* Virtual */ Event[S, Any]): Push.Parents[S]
+  def parents(source: Event[S, Any]): Push.Parents[S]
 
   /** Pulls the update from the given source. */
   def apply[A](source: EventLike[S, A]): Option[A]
 
   /** Whether the selector has been visited during the push phase. */
-  /* private[event] */ def contains(source: EventLike[S, Any]): Boolean
+  def contains(source: EventLike[S, Any]): Boolean
+
   def isOrigin(source: EventLike[S, Any]): Boolean
 }
 
@@ -139,7 +140,7 @@ private[event] sealed trait Push[S <: Sys[S]] extends Pull[S] {
 
   private[event] def visit(sel: Event[S, Any], parent: Event[S, Any]): Unit
 
-  private[event] def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit
+  // private[event] def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit
 
   private[event] def addReaction(r: Reaction): Unit
 }

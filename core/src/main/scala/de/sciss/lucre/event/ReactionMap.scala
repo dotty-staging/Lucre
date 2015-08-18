@@ -16,13 +16,14 @@ package de.sciss.lucre.event
 import de.sciss.lucre.stm.Sys
 
 object ReactionMap {
-  def apply[S <: Sys[S]](): ReactionMap[S] = impl.ReactionMapImpl[S]
+  def apply[S <: Sys[S]](implicit tx: S#Tx): ReactionMap[S] = impl.ReactionMapImpl[S]
 }
 
 trait ReactionMap[S <: Sys[S]] {
-  def addEventReaction[A](fun: S#Tx => A => Unit)(implicit tx: S#Tx): ObserverKey[S]
+  def addEventReaction[A](event: Event[S, Any], observer: Observer[S])(implicit tx: S#Tx): Boolean
+  def removeEventReaction(event: Event[S, Any], observer: Observer[S])(implicit tx: S#Tx): Boolean
 
-  def removeEventReaction(key: ObserverKey[S])(implicit tx: S#Tx): Unit
+  // def processEvent(leaf: ObserverKey[S], parent: Event[S, Any], push: Push[S])(implicit tx: S#Tx): Unit
 
-  def processEvent(leaf: ObserverKey[S], parent: Event[S, Any], push: Push[S])(implicit tx: S#Tx): Unit
+  def hasEventReactions(event: Event[S, Any])(implicit tx: S#Tx): Boolean
 }

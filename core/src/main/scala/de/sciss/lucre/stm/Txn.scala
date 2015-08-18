@@ -13,9 +13,7 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.event
 import de.sciss.lucre.event.ReactionMap
-import de.sciss.serial
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
@@ -30,7 +28,10 @@ object TxnLike {
   private final class Wrapped(val peer: InTxn) extends TxnLike {
     override def toString = peer.toString
 
-    def afterCommit(code: => Unit): Unit = ScalaTxn.afterCommit(_ => code)(peer)
+    def afterCommit (code: => Unit): Unit = ScalaTxn.afterCommit(_ => code)(peer)
+
+//    // XXX TODO --- could the InTxn change?
+//    def beforeCommit(fun: TxnLike => Unit): Unit = ScalaTxn.beforeCommit(_ => fun(this))(peer)
   }
 }
 /** This is a minimal trait for any type of transactions that wrap an underlying Scala-STM transaction. */
@@ -44,8 +45,8 @@ trait TxnLike {
   /** Registers a thunk to be executed after the transaction successfully committed. */
   def afterCommit(code: => Unit): Unit
 
-  // XXX TODO: Add this in the next major version
-  // def beforeCommit(fun: S#Tx => Unit): Unit
+  // will not be able to override this in Txn....
+  // def beforeCommit(fun: TxnLike => Unit): Unit
 }
 
 trait Txn[S <: Sys[S]] extends TxnLike {
@@ -134,8 +135,9 @@ trait Txn[S <: Sys[S]] extends TxnLike {
   // ---- former event ----
 
   private[lucre] def reactionMap: ReactionMap[S]
-  private[lucre] def newEventVar[A]    (id: S#ID)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
-  private[lucre] def readEventVar[A]   (id: S#ID, in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
+
+//  private[lucre] def newEventVar[A]    (id: S#ID)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
+//  private[lucre] def readEventVar[A]   (id: S#ID, in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
 
 //  private[lucre] def newEventValidity (id: S#ID): event.Validity[S#Tx]
 //  private[lucre] def readEventValidity(id: S#ID, in: DataInput): event.Validity[S#Tx]

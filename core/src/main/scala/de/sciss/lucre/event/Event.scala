@@ -15,79 +15,18 @@ package de.sciss.lucre.event
 
 import de.sciss.lucre.stm.{Disposable, NoSys, Sys}
 import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput}
-
-object Selector {
-  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Selector[S]] = anySer.asInstanceOf[Ser[S]]
-
-  private val anySer = new Ser[NoSys]
-
-  private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = {
-    val cookie = in.readByte()
-    // 0 = invariant, 1 = mutating, 2 = observer
-    if (cookie == 0 /* || cookie == 1 */) {
-      val slot      = in.readByte() // .readInt()
-      // val fullSize  = in.readInt()
-      // val reactor   = VirtualNode.read[S](in, fullSize, access)
-      val reactor   = Node.read[S](in, access)
-      reactor.select(slot /*, cookie == 0 */)
-    } else if (cookie == 2) {
-      val id = in.readInt()
-      new ObserverKey[S](id)
-    } else {
-      sys.error(s"Unexpected cookie $cookie")
-    }
-  }
-
-  private final class Ser[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Selector[S]] {
-    def write(v: Selector[S], out: DataOutput): Unit = v.writeSelector(out)
-
-    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = Selector.read(in, access)
-  }
-}
-
-sealed trait Selector[S <: Sys[S]] {
-  protected def cookie: Int
-
-  final def writeSelector(out: DataOutput): Unit = {
-    out.writeByte(cookie)
-    writeSelectorData(out)
-  }
-
-  protected def writeSelectorData(out: DataOutput): Unit
-
-  private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit
-
-  private[event] def toObserverKey: Option[ObserverKey[S]]
-}
-
-/** Instances of `ObserverKey` are provided by methods in `Txn`, when a live `Observer` is registered. Since
-  * the observing function is not persisted, the slot will be used for lookup (again through the transaction)
-  * of the reacting function during the first reaction gathering phase of event propagation.
-  */
-final case class ObserverKey[S <: Sys[S]] private[lucre](id: Int) extends /* MMM Expanded */ Selector[S] {
-  protected def cookie: Int = 2
-
-  private[event] def toObserverKey: Option[ObserverKey[S]] = Some(this)
-
-  private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
-    push.addLeaf(this, parent)
-
-  def dispose()(implicit tx: S#Tx) = () // XXX really?
-
-  protected def writeSelectorData(out: DataOutput): Unit = out.writeInt(id)
-}
+import de.sciss.serial.{DataInput, DataOutput, Writable}
 
 trait EventLike[S <: Sys[S], +A] extends Observable[S#Tx, A] {
   /** Connects the given selector to this event. That is, this event will
     * adds the selector to its propagation targets.
     */
-  def ---> (r: Selector[S])(implicit tx: S#Tx): Unit
+  def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit
 
   /** Disconnects the given selector from this event. That is, this event will
     * remove the selector from its propagation targets.
     */
-  def -/-> (r: Selector[S])(implicit tx: S#Tx): Unit
+  def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit
 
   /** Registers a live observer with this event. The method is called with the
     * observing function which receives the event's update messages, and the
@@ -95,22 +34,6 @@ trait EventLike[S <: Sys[S], +A] extends Observable[S#Tx, A] {
     * remove the observer eventually (through the `dispose` method).
     */
   def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx]
-
-  /** Called when the first target is connected to the underlying dispatcher node. This allows
-    * the event to be lazily added to its sources. A lazy event (most events should be lazy)
-    * should call invoke `source ---> this` for each event source. A strict event, an event
-    * without sources, or a collection event may simply ignore this method by providing a
-    * no-op implementation.
-    */
-  private[lucre] def connect()(implicit tx: S#Tx): Unit
-
-  /** The counterpart to `connect` -- called when the last target is disconnected from the
-    * underlying dispatcher node. Events participating in lazy source registration should use
-    * this call to detach themselves from their sources, e.g. call `source -/-> this` for
-    * each event source. All other events may ignore this method by providing a
-    * no-op implementation.
-    */
-  private[lucre] def disconnect()(implicit tx: S#Tx): Unit
 
   /** Involves this event in the pull-phase of event delivery. The event should check
     * the source of the originally fired event, and if it identifies itself with that
@@ -141,40 +64,68 @@ object Dummy {
 trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
   import Dummy._
 
-  final def ---> (r: Selector[S])(implicit tx: S#Tx) = ()
-  final def -/-> (r: Selector[S])(implicit tx: S#Tx) = ()
+  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx) = ()
+  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx) = ()
 
   final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = opNotSupported
+}
 
-  final private[lucre] def connect   ()(implicit tx: S#Tx) = ()
-  final private[lucre] def disconnect()(implicit tx: S#Tx) = ()
+object Event {
+  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Event[S, Any]] = anySer.asInstanceOf[Ser[S]]
+
+  private val anySer = new Ser[NoSys]
+
+  private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = {
+    val slot  = in.readByte()
+    val node  = Node.read[S](in, access)
+    node.select(slot)
+  }
+
+  private final class Ser[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Event[S, Any]] {
+    def write(e: Event[S, Any], out: DataOutput): Unit = e.write(out)
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = Event.read(in, access)
+  }
 }
 
 /** `Event` is not sealed in order to allow you define traits inheriting from it, while the concrete
   * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
   * split into `Event.Invariant` and `Event.Mutating`.
   */
-trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Selector[S] {
-  final protected def cookie: Int = 0
-  
-  private[event] def slot: Int
+trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
+  // ---- abstract ----
 
-  final private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
-  push.visit(this, parent)
-    
   def node: Node[S]
 
-  final def ---> (r: Selector[S])(implicit tx: S#Tx): Unit =
-    if (node._targets.add(slot, r)) {
-      log(s"$this connect")
-      connect()
-    }
+  private[event] def slot: Int
 
-  final def -/-> (r: Selector[S])(implicit tx: S#Tx): Unit =
-    if (node._targets.remove(slot, r)) {
-      log(s"$this disconnect")
-      disconnect()
-    }
+  // ---- implemented ----
+
+  final private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
+    push.visit(this, parent)
+    
+
+  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = {
+    node._targets.add(slot, sink)
+//    if (node._targets.add(slot, r) && !tx.reactionMap.hasEventReactions(this)) {
+//      log(s"$this connect")
+//      connect()
+//    }
+  }
+
+  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = {
+    node._targets.remove(slot, sink)
+//    if (node._targets.remove(slot, r) && !tx.reactionMap.hasEventReactions(this)) {
+//      log(s"$this disconnect")
+//      disconnect()
+//    }
+  }
+
+  final def write(out: DataOutput): Unit = {
+    out.writeByte(slot)
+    node.write(out)
+  }
+
+  final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer(this, fun)
 }
