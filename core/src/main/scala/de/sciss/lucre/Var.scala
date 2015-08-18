@@ -1,0 +1,59 @@
+/*
+ *  Var.scala
+ *  (Lucre)
+ *
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
+package de.sciss.lucre
+
+import de.sciss.serial.Writable
+
+object Sink {
+  def map[Tx, A, B](in: Sink[Tx, A])(fun: B => A): Sink[Tx, B] = new Map(in, fun)
+
+  private final class Map[Tx, A, B](in: Sink[Tx, A], fun: B => A)
+    extends Sink[Tx, B] {
+
+    override def toString = s"Sink.map($in)"
+
+    def update(v: B)(implicit tx: Tx): Unit = in() = fun(v)
+  }
+}
+
+/** A sink is a transactional write access to a value */
+trait Sink[-Tx, -A] {
+  def update(v: A)(implicit tx: Tx): Unit
+}
+
+object Source {
+  def map[Tx, A, B](in: Source[Tx, A])(fun: A => B): Source[Tx, B] = new Map(in, fun)
+
+  private final class Map[Tx, A, B](in: Source[Tx, A], fun: A => B)
+    extends Source[Tx, B] {
+
+    override def toString = s"Source.map($in)"
+
+    def apply()(implicit tx: Tx): B = fun(in())
+  }
+}
+
+/** A source is a transactional read access to a value */
+trait Source[-Tx, +A] {
+  def apply()(implicit tx: Tx): A
+}
+
+//trait LocalVar[-Tx, A] extends Sink[Tx, A] with Source[Tx, A] {
+//  def isInitialized(implicit tx: Tx): Boolean
+//}
+
+/** A transactional variable is an identifiable cell allowing the reading and writing of values */
+trait Var[-Tx, A] extends Sink[Tx, A] with Source[Tx, A] with Writable with Disposable[Tx] {
+  def transform(f: A => A)(implicit tx: Tx): Unit
+}
