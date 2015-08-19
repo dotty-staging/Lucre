@@ -30,8 +30,8 @@ lazy val gpl2 = "GPL v2+"    -> url("http://www.gnu.org/licenses/gpl-2.0.txt" )
 lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 lazy val root: Project = Project(id = baseNameL, base = file("."))
-  .aggregate(core, event, expr, durable, bdb, bdb6)
-  .dependsOn(core, event, expr, durable, bdb /* , bdb6 */)  // i.e. root = full sub project. if you depend on root, will draw all sub modules.
+  .aggregate(core, expr, durable, bdb, bdb6)
+  .dependsOn(core, expr, durable, bdb /* , bdb6 */)  // i.e. root = full sub project. if you depend on root, will draw all sub modules.
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -60,15 +60,8 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
     buildInfoPackage := "de.sciss.lucre"
   )
 
-lazy val event = Project(id = s"$baseNameL-event", base = file("event"))
-  .dependsOn(core)
-  .settings(commonSettings)
-  .settings(
-    licenses := Seq(lgpl)
-  )
-
 lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
-  .dependsOn(event)
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),

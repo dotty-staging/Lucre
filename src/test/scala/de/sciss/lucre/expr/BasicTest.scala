@@ -34,12 +34,15 @@ object BasicTest {
 
     assert(res1 == 5678 - 1234)
 
-    val (res2, res3) = system.step { implicit tx =>
+    var observations = Vector.empty[Int]
+
+    val (res2, aH) = system.step { implicit tx =>
+      observations = Vector.empty
+
       val a = Int.newVar[S](1234)
       val b = Int.newVar[S](5678)
       val c = b - a
 
-      var observations = Vector.empty[Int]
 
       c.changed.react { implicit tx => {
         case Change(_, now) => observations :+= now // println(s"c = $now")
@@ -48,10 +51,20 @@ object BasicTest {
       a() = 333
       b() = 666
 
-      (c.value, observations)
+      import Int.varSerializer
+
+      (c.value, tx.newHandle(a))
     }
 
     assert(res2 == 666 - 333)
-    assert(res3 == Vector(5678 - 333, 666 - 333))
+    assert(observations == Vector(5678 - 333, 666 - 333))
+
+    system.step { implicit tx =>
+      observations = Vector.empty
+      val a = aH()
+      a() = 444
+    }
+
+    assert(observations == Vector(666 - 444))
   }
 }
