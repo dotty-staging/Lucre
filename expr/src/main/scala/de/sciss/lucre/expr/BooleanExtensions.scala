@@ -25,8 +25,12 @@ import scala.annotation.switch
 object BooleanExtensions  {
   private[this] type Ex[S <: Sys[S]] = Expr[S, Boolean]
 
-  BooleanEx.registerExtension(BooleanTuple1s)
-  BooleanEx.registerExtension(BooleanTuple2s)
+  private[this] lazy val _init: Unit = {
+    BooleanEx.registerExtension(BooleanTuple1s)
+    BooleanEx.registerExtension(BooleanTuple2s)
+  }
+
+  def init(): Unit = _init
 
   private[this] object BooleanTuple1s extends Type.Extension1[Repr[Boolean]#L] {
     // final val arity = 1

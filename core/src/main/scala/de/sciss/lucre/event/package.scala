@@ -25,9 +25,7 @@ package object event {
 
   private[event] type Children[S <: stm.Sys[S]] = Vec[(Byte, Event[S, Any])]
 
-  private val emptySeq = Vec.empty[Nothing]
-
-  private[lucre] def NoChildren[S <: stm.Sys[S]]: Children[S] = emptySeq
+  private[lucre] def NoChildren[S <: stm.Sys[S]]: Children[S] = Vector.empty
 
   private lazy val logHeader = new SimpleDateFormat("[d MMM yyyy, HH:mm''ss.SSS] 'Lucre' - 'evt' ", Locale.US)
 

@@ -8,7 +8,7 @@ import de.sciss.serial.{Serializer, DataOutput, DataInput}
 
 import scala.annotation.switch
 
-trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
+trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] {
   final protected type Ex [S <: Sys[S]] = Expr     [S, A]
   final protected type ExN[S <: Sys[S]] = Expr.Node[S, A]
   final protected type ExV[S <: Sys[S]] = Expr.Var [S, A]

@@ -23,8 +23,12 @@ import scala.annotation.switch
 object IntExtensions {
   private[this] type Ex[S <: Sys[S]] = Expr[S, Int]
 
-  IntEx.registerExtension(IntTuple1s)
-  IntEx.registerExtension(IntTuple2s)
+  private[this] lazy val _init: Unit = {
+    IntEx.registerExtension(IntTuple1s)
+    IntEx.registerExtension(IntTuple2s)
+  }
+
+  def init(): Unit = _init
 
   private[this] object IntTuple1s extends Type.Extension1[Repr[Int]#L] {
     // final val arity = 1
@@ -306,8 +310,7 @@ object IntExtensions {
   //         def value( a: Int, b: Int ) : Int = ri_wrap2( a, b )
   //      }
 
-  final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
-    import me.{`this` => a}
+  implicit final class IntExprOps[S <: Sys[S]](private val a: Ex[S]) extends AnyVal { me =>
     private type E = Ex[S]
 
     // ---- Int => Int ----
