@@ -8,18 +8,29 @@ import de.sciss.serial.{Serializer, DataOutput, DataInput}
 
 import scala.annotation.switch
 
-trait ExprTypeImpl[A] extends ExprType[A] /* with TypeImpl1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] */ {
+trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
   final protected type Ex [S <: Sys[S]] = Expr     [S, A]
   final protected type ExN[S <: Sys[S]] = Expr.Node[S, A]
   final protected type ExV[S <: Sys[S]] = Expr.Var [S, A]
   final protected type Change = model.Change[A]
 
-  // ---- abstract ----
-
-  protected def readNode[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                     (implicit tx: S#Tx): Ex[S] with Node[S]
+//  // ---- abstract ----
+//
+//  protected def readNode[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+//                                     (implicit tx: S#Tx): Ex[S] with Node[S]
 
   // ---- public ----
+
+  /** The default implementation reads a type `Int` requiring to match `typeID`, followed by an operator id `Int`
+    * which will be resolved using `readOpExtension`.
+    */
+  protected def readNode[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
+                                     (implicit tx: S#Tx): Ex[S] with Node[S] = {
+    val tpe  = in.readInt()
+    if (tpe != typeID) sys.error(s"Invalid type id (found $tpe, required $typeID)")
+    val opID = in.readInt()
+    readExtension(/* cookie, */ op = opID, in = in, access = access, targets = targets)
+  }
 
   implicit final def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Repr[S]] */ =
     anySer.asInstanceOf[Ser[S]]
@@ -55,21 +66,17 @@ trait ExprTypeImpl[A] extends ExprType[A] /* with TypeImpl1[({type Repr[~ <: Sys
   final protected def readVar[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                           (implicit tx: S#Tx): ExV[S] = {
     val ref = tx.readVar[Ex[S]](targets.id, in)
-    new Var[S](ref, targets)
+    new Var[S](ref, targets).connect()
   }
 
   // ---- private ----
 
   private[this] final case class Const[S <: Sys[S]](constValue: A) extends ConstImpl[S, A] {
-    // def react(fun: S#Tx => Change[S] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
-
     protected def writeData(out: DataOutput): Unit = writeValue(constValue, out)
   }
 
   private[this] final class Var[S <: Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: Targets[S])
-    extends VarImpl[S, A] {
-    // def reader: Reader[S, Ex[S]] = serializer[S]
-  }
+    extends VarImpl[S, A]
 
   private[this] val anySer    = new Ser   [NoSys]
   private[this] val anyVarSer = new VarSer[NoSys]
@@ -99,8 +106,8 @@ trait ExprTypeImpl[A] extends ExprType[A] /* with TypeImpl1[({type Repr[~ <: Sys
     def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Ex[S] with Node[S] = {
       // 0 = var, 1 = op
       in.readByte() match {
-        case 0      => readVar (in, access, targets)
-        case cookie => readNode(cookie, in, access, targets)
+        case 0 => readVar (in, access, targets)
+        case 1 => readNode(in, access, targets)
       }
     }
 

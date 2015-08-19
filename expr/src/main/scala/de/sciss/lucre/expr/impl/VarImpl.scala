@@ -52,8 +52,12 @@ trait VarImpl[S <: Sys[S], A]
     ref.dispose()
   }
 
-  final protected def connect   ()(implicit tx: S#Tx): Unit = ref().changed ---> changed
-  private[this]   def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> changed
+  final def connect()(implicit tx: S#Tx): this.type = {
+    ref().changed ---> changed
+    this
+  }
+
+  private[this]def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> changed
 
   final def apply()(implicit tx: S#Tx): Ex = ref()
 
