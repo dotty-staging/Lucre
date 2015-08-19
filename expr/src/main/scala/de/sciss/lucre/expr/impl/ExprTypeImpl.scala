@@ -2,9 +2,9 @@ package de.sciss.lucre.expr
 package impl
 
 import de.sciss.lucre.event.{Node, Targets}
-import de.sciss.lucre.stm.{NoSys, Sys}
+import de.sciss.lucre.stm.{NoSys, Obj, Sys}
 import de.sciss.model
-import de.sciss.serial.{Serializer, DataOutput, DataInput}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
 
@@ -21,13 +21,28 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
 
   // ---- public ----
 
-  /** The default implementation reads a type `Int` requiring to match `typeID`, followed by an operator id `Int`
+  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+    val cookie = in.readByte()
+    if (cookie != 0) sys.error(s"Unexpected cookie, expected 0, found $cookie")
+    readNodeOrVar(in, access)
+  }
+
+  private def readNodeOrVar[S <: Sys[S]](in: DataInput, access: S#Acc)
+                                        (implicit tx: S#Tx): Ex[S] with Node[S] = {
+    val targets = Targets.readIdentified[S](in, access)
+    in.readByte() match {
+      case 0 => readVar (in, access, targets)
+      case 1 => readNode(in, access, targets)
+    }
+  }
+
+  /** The default implementation reads a type `Int` as operator id `Int`
     * which will be resolved using `readOpExtension`.
     */
   protected def readNode[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                      (implicit tx: S#Tx): Ex[S] with Node[S] = {
-    val tpe  = in.readInt()
-    if (tpe != typeID) sys.error(s"Invalid type id (found $tpe, required $typeID)")
+    // val tpe  = in.readInt()
+    // if (tpe != typeID) sys.error(s"Invalid type id (found $tpe, required $typeID)")
     val opID = in.readInt()
     readExtension(/* cookie, */ op = opID, in = in, access = access, targets = targets)
   }
@@ -96,24 +111,13 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   private[this] final class Ser[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Ex[S]] */ {
     def write(ex: Ex[S], out: DataOutput): Unit = ex.write(out)
 
-    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] = {
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
       (in.readByte(): @switch) match {
-        case 3 => readConstant(in)
-        case 0 =>
-          val targets = Targets.readIdentified[S](in, access)
-          read(in, access, targets)
+        case 3 => newConst(readValue(in))
+        case 0 => readNodeOrVar(in, access)
         case cookie => sys.error(s"Unexpected cookie $cookie")
       }
-    }
 
-    def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Ex[S] with Node[S] = {
-      // 0 = var, 1 = op
-      in.readByte() match {
-        case 0 => readVar (in, access, targets)
-        case 1 => readNode(in, access, targets)
-      }
-    }
-
-    def readConstant(in: DataInput)(implicit tx: S#Tx): Ex[S] = newConst(readValue(in))
+    // def readConstant(in: DataInput)(implicit tx: S#Tx): Ex[S] = newConst(readValue(in))
   }
 }

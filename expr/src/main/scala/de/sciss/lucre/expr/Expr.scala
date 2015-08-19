@@ -14,13 +14,13 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.{Event, Publisher}
-import de.sciss.lucre.{event, stm}
 import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.{event => evt, stm}
 import de.sciss.model.Change
 import de.sciss.serial.Writable
 
 object Expr {
-  trait Node[S <: Sys[S], +A] extends Expr[S, A] with event.Node[S] {
+  trait Node[S <: Sys[S], +A] extends Expr[S, A] with evt.Node[S] {
     def changed: Event[S, Change[A]]
   }
 
@@ -46,7 +46,7 @@ object Expr {
     * are defined in terms of the constant peer value.
     */
   trait Const[S <: Sys[S], +A] extends Expr[S, A] {
-    final def changed = event.Dummy[S, Change[A]]
+    final def changed = evt.Dummy[S, Change[A]]
 
     protected def constValue: A
     final def value(implicit tx: S#Tx): A = constValue
@@ -80,6 +80,6 @@ object Expr {
   * as a binary operator (e.g., an integer expression that sums two input
   * integer expressions).
   */
-trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] with Publisher[S, Change[A]] {
+trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] /* Obj[S] */ with Publisher[S, Change[A]] {
   def value(implicit tx: S#Tx): A
 }

@@ -2,12 +2,12 @@ package de.sciss.lucre.expr
 package impl
 
 import de.sciss.lucre.event.{Node, Targets}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.DataInput
 
 import scala.language.higherKinds
 
-trait TypeImplLike[Ext >: Null <: Type.Extension] extends Type {
+trait TypeImplLike[Ext >: Null <: Type.Extension] extends Obj.Type {
   // implicit protected def extTag: reflect.ClassTag[Ext]
 
   protected def mkExtArray(size: Int): Array[Ext]

@@ -2,7 +2,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.{Targets, Node}
 import de.sciss.lucre.expr
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.{Serializer, DataOutput, DataInput}
 
 import scala.language.higherKinds
@@ -34,7 +34,7 @@ object Type {
                                           (implicit tx: S#Tx): Repr[S, T1, T2] with Node[S]
   }
 
-  trait _1[Repr[~ <: Sys[~]]] extends Type {
+  trait _1[Repr[~ <: Sys[~]]] extends Obj.Type {
 //    implicit def serializer[S <: Sys[S]]: evt.Serializer[S, Repr[S]]
 //
 //    def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr[S]
@@ -43,7 +43,7 @@ object Type {
     def registerExtension(ext: Type.Extension1[Repr]): Unit
   }
 
-  trait Expr[A] extends Type {
+  trait Expr[A] extends Obj.Type {
 
     // ---- abstract ----
 
@@ -64,4 +64,3 @@ object Type {
     def readVar  [S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr.Var[S, A]
   }
 }
-trait Type { def typeID: Int }

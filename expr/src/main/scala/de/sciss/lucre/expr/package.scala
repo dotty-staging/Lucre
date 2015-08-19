@@ -27,6 +27,12 @@ package object expr {
   val String : TypeExpr1[Predef.String] = StringImpl
 
   def init(): Unit = {
+    Int    .init()
+    Long   .init()
+    Double .init()
+    Boolean.init()
+    String .init()
+
     IntExtensions    .init()
     BooleanExtensions.init()
   }
