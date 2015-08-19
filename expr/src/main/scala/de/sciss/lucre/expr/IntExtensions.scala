@@ -137,12 +137,12 @@ object IntExtensions {
   }
 
   private[this] case object Abs extends IntUnaryOp {
-    final val id = 5
+    final val id = 1
     def value(a: Int): Int = math.abs(a)
   }
 
   private[this] case object BitNot extends IntUnaryOp {
-    final val id = 4
+    final val id = 2
     def value(a: Int): Int = ~a
     override def toString[S <: Sys[S]](_1: Ex[S]): String = "~" + _1
   }
@@ -150,17 +150,17 @@ object IntExtensions {
   // case object ToLong     extends Op(  6 )
   // case object ToInt       extends Op(  7 )
   private[this] case object Signum extends IntUnaryOp {
-    final val id = 11
+    final val id = 3
     def value(a: Int): Int = math.signum(a)
   }
 
   private[this] case object Squared extends IntUnaryOp {
-    final val id = 12
+    final val id = 4
     def value(a: Int): Int = a * a
   }
 
   private[this] case object Cubed extends IntUnaryOp {
-    final val id = 13
+    final val id = 5
     def value(a: Int): Int = a * a * a
   }
 
@@ -175,7 +175,7 @@ object IntExtensions {
   }
 
   case object BooleanToInt extends BooleanUnaryOp {
-    final val id = 100
+    final val id = 6
     def value(a: Boolean): Int = if (a) 1 else 0
   }
 
@@ -216,86 +216,86 @@ object IntExtensions {
   //      }
 
   private[this] case object Plus extends BinaryOp {
-    final val id = 0
+    final val id = 7
     override val name = "+"
     def value(a: Int, b: Int): Int = a + b
     final val isInfix = true
   }
 
   private[this] case object Minus extends BinaryOp {
-    final val id = 1
+    final val id = 8
     override val name = "-"
     def value(a: Int, b: Int): Int = a - b
     final val isInfix = true
   }
 
   private[this] case object Times extends BinaryOp {
-    final val id = 2
+    final val id = 9
     override val name = "*"
     def value(a: Int, b: Int): Int = a * b
     final val isInfix = true
   }
 
   private[this] case object IDiv extends BinaryOp {
-    final val id = 3
+    final val id = 10
     override val name = "div"
     def value(a: Int, b: Int): Int = a / b
     val isInfix = false
   }
 
   private[this] case object Min extends BinaryOp {
-    final val id = 12
+    final val id = 11
     def value(a: Int, b: Int): Int = math.min(a, b)
     val isInfix = false
   }
 
   private[this] case object Max extends BinaryOp {
-    final val id = 13
+    final val id = 12
     def value(a: Int, b: Int): Int = math.max(a, b)
     val isInfix = false
   }
 
   private[this] case object BitAnd extends BinaryOp {
-    final val id = 14
+    final val id = 13
     def value(a: Int, b: Int): Int = a & b
     val isInfix = false
   }
 
   private[this] case object BitOr extends BinaryOp {
-    final val id = 15
+    final val id = 14
     def value(a: Int, b: Int): Int = a | b
     val isInfix = false
   }
 
   private[this] case object BitXor extends BinaryOp {
-    final val id = 16
+    final val id = 15
     def value(a: Int, b: Int): Int = a ^ b
     val isInfix = false
   }
 
   private[this] case object ShiftLeft extends BinaryOp {
-    final val id = 26
+    final val id = 16
     override val name = "<<"
     def value(a: Int, b: Int): Int = a << b
     val isInfix = false
   }
 
   private[this] case object ShiftRight extends BinaryOp {
-    final val id = 27
+    final val id = 17
     override val name = ">>"
     def value(a: Int, b: Int): Int = a >> b
     val isInfix = false
   }
 
   private[this] case object UnsignedShiftRight extends BinaryOp {
-    final val id = 28
+    final val id = 18
     override val name = ">>>"
     def value(a: Int, b: Int): Int = a >>> b
     val isInfix = false
   }
 
   private[this] case object Absdif extends BinaryOp {
-    final val id = 38
+    final val id = 19
     def value(a: Int, b: Int): Int = math.abs(a - b)
     val isInfix = false
   }

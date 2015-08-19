@@ -225,7 +225,7 @@ object BooleanExtensions  {
   // ---- (Boolean, Boolean) => Boolean ----
 
   private[this] case object And extends BooleanBinaryOp {
-    final val id = 0
+    final val id = 1
     def value(a: Boolean, b: Boolean): Boolean = a && b
     def name = "&&"
 
@@ -238,7 +238,7 @@ object BooleanExtensions  {
   }
 
   private[this] case object Or extends BooleanBinaryOp {
-    final val id = 1
+    final val id = 2
     def value(a: Boolean, b: Boolean): Boolean = a || b
     def name = "||"
 
@@ -251,7 +251,7 @@ object BooleanExtensions  {
   }
 
   private[this] case object Xor extends BooleanBinaryOp {
-    final val id = 2
+    final val id = 3
     def value(a: Boolean, b: Boolean): Boolean = a ^ b
     def name = "^"
 
@@ -266,37 +266,37 @@ object BooleanExtensions  {
   // ---- (Int, Int) => Boolean ----
 
   case object IntEq extends IntBinaryOp {
-    final val id = 10
+    final val id = 4
     def value(a: Int, b: Int): Boolean = a == b
     def name = "sig_=="
   }
 
   case object IntNeq extends IntBinaryOp {
-    final val id = 11
+    final val id = 5
     def value(a: Int, b: Int): Boolean = a != b
     def name = "sig_!="
   }
 
   case object IntLt extends IntBinaryOp {
-    final val id = 12
+    final val id = 6
     def value(a: Int, b: Int): Boolean = a < b
     def name = "<"
   }
 
   case object IntGt extends IntBinaryOp {
-    final val id = 13
+    final val id = 7
     def value(a: Int, b: Int): Boolean = a > b
     def name = ">"
   }
 
   case object IntLeq extends IntBinaryOp {
-    final val id = 14
+    final val id = 8
     def value(a: Int, b: Int): Boolean = a <= b
     def name = "<="
   }
 
   case object IntGeq extends IntBinaryOp {
-    final val id = 15
+    final val id = 9
     def value(a: Int, b: Int): Boolean = a >= b
     def name = ">="
   }
