@@ -1,14 +1,26 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr
-import de.sciss.lucre.stm.InMemory
+import de.sciss.lucre.stm.Durable
+import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.model.Change
 
 object BasicTest {
-  def main(args: Array[String]): Unit = {
-    val system  = InMemory()
-    type S      = InMemory
+  type S      = Durable
 
+  def main(args: Array[String]): Unit = {
+//    val system  = InMemory()
+//    type S      = InMemory
+    val db      = BerkeleyDB.tmp()
+    val system  = Durable(db)
+    try {
+      run(system)
+    } finally {
+      system.close()
+    }
+  }
+
+  def run(system: S): Unit = {
     expr.init()
 
     import Ops._
