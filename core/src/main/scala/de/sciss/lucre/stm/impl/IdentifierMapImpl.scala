@@ -11,9 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
 
+import de.sciss.lucre.stm.{IdentifierMap, TxnLike}
 import de.sciss.serial.DataOutput
 
 import scala.concurrent.stm.TMap

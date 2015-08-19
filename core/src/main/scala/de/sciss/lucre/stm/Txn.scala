@@ -53,7 +53,7 @@ trait Txn[S <: Sys[S]] extends TxnLike {
   /** Back link to the underlying system. */
   val system: S
 
-  // implicit def inMemory: S#I#Tx
+  def inMemory: S#I#Tx
 
   def newID(): S#ID
 

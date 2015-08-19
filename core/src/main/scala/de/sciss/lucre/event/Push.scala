@@ -85,7 +85,7 @@ object Push {
     def parents (child : Event    [S, Any]): Parents[S] = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {
-      val reactions: List[Reaction[S, _]] = pushMap.flatMap { case (event, _) =>
+      val reactions: List[Reaction[S, Any]] = pushMap.flatMap { case (event, _) =>
         val observers = tx.reactionMap.getEventReactions(event)
         if (observers.isEmpty) None else apply[Any](event).map(new Reaction(_, observers))
       } (breakOut)

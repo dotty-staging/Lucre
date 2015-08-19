@@ -11,12 +11,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
 
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm
+import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Source, TxnLike}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TxnExecutor}
@@ -191,6 +191,6 @@ object InMemoryImpl {
     def wrap(itx: InTxn): S#Tx = new TxnImpl(this, itx)
 
     protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](new IDImpl(0))(_.id)
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](new IDImpl(0))(_.id)
   }
 }

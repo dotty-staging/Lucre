@@ -11,10 +11,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
 
-import concurrent.stm.Txn
+import de.sciss.lucre.stm.{Sys, Txn}
+
+import scala.concurrent.stm.Txn
 
 trait BasicTxnImpl[S <: Sys[S]] extends Txn[S] {
   _: S#Tx =>

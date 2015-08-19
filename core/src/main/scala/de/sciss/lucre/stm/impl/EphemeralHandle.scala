@@ -11,8 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
+
+import de.sciss.lucre.stm.Source
 
 final class EphemeralHandle[Tx, A](value: A) extends Source[Tx, A] {
   override def toString = s"handle: $value"

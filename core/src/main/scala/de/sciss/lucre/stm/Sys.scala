@@ -27,8 +27,8 @@ import scala.language.higherKinds
   * @tparam S   the representation type of the system
   */
 trait Sys[S <: Sys[S]] {
-  //  type I <: InMemoryLike[I]
-  //
+  type I <: InMemoryLike[I]
+
   //  def inMemory: I
   //  def inMemoryTx(tx: S#Tx): I#Tx
 
