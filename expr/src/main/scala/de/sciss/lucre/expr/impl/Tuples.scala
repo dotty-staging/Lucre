@@ -23,12 +23,18 @@ trait Tuple1Op[A, T1] /* extends TupleOp */ {
 final class Tuple1[S <: Sys[S], A, T1](a: Type.Expr[A], typeID: Int, val op: Tuple1Op[A, T1],
                                        protected val targets: evt.Targets[S],
                                        val _1: Expr[S, T1])
-  extends lucre.expr.impl.NodeImpl[S, A] { self =>
+  extends impl.NodeImpl[S, A] {
 
   protected def reader = a.serializer[S]
 
-  private[lucre] def connect   ()(implicit tx: S#Tx): Unit = _1.changed ---> changed
-  private[lucre] def disconnect()(implicit tx: S#Tx): Unit = _1.changed -/-> changed
+  def connect()(implicit tx: S#Tx): this.type = {
+    _1.changed ---> changed
+    this
+  }
+
+  private[this] def disconnect()(implicit tx: S#Tx): Unit = _1.changed -/-> changed
+
+  protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
   def value(implicit tx: S#Tx) = op.value(_1.value)
 
@@ -39,9 +45,7 @@ final class Tuple1[S <: Sys[S], A, T1](a: Type.Expr[A], typeID: Int, val op: Tup
     _1.write(out)
   }
 
-  object changed extends evt.impl.SingleEvent[S, Change[A]] {
-    def node = self
-
+  object changed extends Changed {
     private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Change[A]] =
       pull(_1.changed).flatMap { ach =>
         val before  = op.value(ach.before)
@@ -73,19 +77,22 @@ trait Tuple2Op[A, T1, T2] /* extends TupleOp */ {
 final class Tuple2[S <: Sys[S], A, T1, T2](a: Type.Expr[A], typeID: Int, val op: Tuple2Op[A, T1, T2],
                                            protected val targets: evt.Targets[S],
                                            val _1: Expr[S, T1], val _2: Expr[S, T2])
-  extends lucre.expr.impl.NodeImpl[S, A] { self =>
+  extends impl.NodeImpl[S, A] {
 
   protected def reader = a.serializer[S]
 
-  private[lucre] def connect()(implicit tx: S#Tx): Unit = {
+  def connect()(implicit tx: S#Tx): this.type = {
     _1.changed ---> changed
     _2.changed ---> changed
+    this
   }
 
-  private[lucre] def disconnect()(implicit tx: S#Tx): Unit = {
+  private[this] def disconnect()(implicit tx: S#Tx): Unit = {
     _1.changed -/-> changed
     _2.changed -/-> changed
   }
+
+  protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
   def value(implicit tx: S#Tx) = op.value(_1.value, _2.value)
 
@@ -97,9 +104,7 @@ final class Tuple2[S <: Sys[S], A, T1, T2](a: Type.Expr[A], typeID: Int, val op:
     _2.write(out)
   }
 
-  object changed extends evt.impl.SingleEvent[S, Change[A]] {
-    def node = self
-
+  object changed extends Changed {
     private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Change[A]] = {
       val _1c = _1.changed
       val _2c = _2.changed

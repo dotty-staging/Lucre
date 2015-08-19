@@ -1,6 +1,18 @@
+/*
+ *  BooleanExtensions.scala
+ *  (Lucre)
+ *
+ *  Copyright (c) 2010-2015 Hanns Holger Rutz. All rights reserved.
+ *
+ *	This software is published under the GNU General Public License v2+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.expr
 
-import de.sciss.lucre
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.{Boolean => BooleanEx, Int => IntEx}
 import de.sciss.lucre.stm.Sys
@@ -16,8 +28,8 @@ object BooleanExtensions  {
   BooleanEx.registerExtension(BooleanTuple1s)
   BooleanEx.registerExtension(BooleanTuple2s)
 
-  private[this] object BooleanTuple1s extends Type.Extension1[Repr[scala.Boolean]#L] {
-    final val arity = 1
+  private[this] object BooleanTuple1s extends Type.Extension1[Repr[Boolean]#L] {
+    // final val arity = 1
     final val opLo  = Not.id
     final val opHi  = Not.id
 
@@ -33,8 +45,8 @@ object BooleanExtensions  {
     }
   }
 
-  private[this] object BooleanTuple2s extends Type.Extension1[({type Repr[~ <: Sys[~]] = Expr[~, Boolean]})#Repr] {
-    final val arity = 2
+  private[this] object BooleanTuple2s extends Type.Extension1[Repr[Boolean]#L] {
+    // final val arity = 2
     final val opLo  = And   .id
     final val opHi  = IntGeq.id
 
@@ -85,7 +97,7 @@ object BooleanExtensions  {
     def id: Int
     final def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
       case Expr.Const(ca) => BooleanEx.newConst(value(ca))
-      case _ => new impl.Tuple1(BooleanEx, BooleanEx.typeID, this, Targets[S], a)
+      case _ => new impl.Tuple1(BooleanEx, BooleanEx.typeID, this, Targets[S], a).connect()
     }
 
     def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"$name${_1}"
@@ -124,7 +136,7 @@ object BooleanExtensions  {
 
     final def apply[S <: Sys[S]](a: Expr[S, Boolean], b: Expr[S, Boolean])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanEx.newConst(value(ca, cb))
-      case _ => new LazyTuple2(this, Targets[S], a, b)
+      case _ => new LazyTuple2(this, Targets[S], a, b).connect()
     }
   }
 
@@ -139,25 +151,28 @@ object BooleanExtensions  {
 
     final def apply[S <: Sys[S]](a: Expr[S, Int], b: Expr[S, Int])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanEx.newConst(value(ca, cb))
-      case _ => new impl.Tuple2(BooleanEx, BooleanEx.typeID, this, Targets[S], a, b)
+      case _ => new impl.Tuple2(BooleanEx, BooleanEx.typeID, this, Targets[S], a, b).connect()
     }
   }
 
   private final class LazyTuple2[S <: Sys[S]](op: BooleanBinaryOp, protected val targets: evt.Targets[S],
                                               _1: Expr[S, Boolean], _2: Expr[S, Boolean])
-    extends lucre.expr.impl.NodeImpl[S, Boolean] { self =>
+    extends impl.NodeImpl[S, Boolean] {
 
     protected def reader = BooleanEx.serializer[S]
 
-    private[lucre] def connect()(implicit tx: S#Tx): Unit = {
+    def connect()(implicit tx: S#Tx): this.type = {
       _1.changed ---> changed
       _2.changed ---> changed
+      this
     }
 
-    private[lucre] def disconnect()(implicit tx: S#Tx): Unit = {
+    private[this] def disconnect()(implicit tx: S#Tx): Unit = {
       _1.changed -/-> changed
       _2.changed -/-> changed
     }
+
+    protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
     def value(implicit tx: S#Tx): Boolean = op.lazyValue(_1, _2)
 
@@ -169,9 +184,7 @@ object BooleanExtensions  {
       _2.write(out)
     }
 
-    object changed extends evt.impl.SingleEvent[S, Change[Boolean]] {
-      def node = self
-
+    object changed extends Changed {
       def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Change[Boolean]] = {
         val _1c = _1.changed
         val _2c = _2.changed

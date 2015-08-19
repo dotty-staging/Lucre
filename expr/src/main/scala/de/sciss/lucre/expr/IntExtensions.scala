@@ -1,6 +1,6 @@
 /*
  *  IntExtensions.scala
- *  (SoundProcesses)
+ *  (Lucre)
  *
  *  Copyright (c) 2010-2015 Hanns Holger Rutz. All rights reserved.
  *
@@ -26,8 +26,8 @@ object IntExtensions {
   IntEx.registerExtension(IntTuple1s)
   IntEx.registerExtension(IntTuple2s)
 
-  private[this] object IntTuple1s extends Type.Extension1[Repr[scala.Int]#L] {
-    final val arity = 1
+  private[this] object IntTuple1s extends Type.Extension1[Repr[Int]#L] {
+    // final val arity = 1
     final val opLo  = Neg         .id
     final val opHi  = BooleanToInt.id
 
@@ -50,8 +50,8 @@ object IntExtensions {
     }
   }
 
-  private[this] object IntTuple2s extends Type.Extension1[({type Repr[~ <: Sys[~]] = Expr[~, Int]})#Repr] {
-    final val arity = 2
+  private[this] object IntTuple2s extends Type.Extension1[Repr[Int]#L] {
+    // final val arity = 2
     final val opLo  = Plus  .id
     final val opHi  = Absdif.id
 
@@ -105,7 +105,7 @@ object IntExtensions {
 
     def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
       case Expr.Const(c)  => IntEx.newConst(value(c))
-      case _              => new impl.Tuple1(IntEx, IntEx.typeID, this, Targets[S], a)
+      case _              => new impl.Tuple1(IntEx, IntEx.typeID, this, Targets[S], a).connect()
     }
 
     def name: String = {
@@ -180,7 +180,7 @@ object IntExtensions {
   private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int] {
     final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => IntEx.newConst(value(ca, cb))
-      case _                                => new impl.Tuple2(IntEx, IntEx.typeID, this, Targets[S], a, b)
+      case _                                => new impl.Tuple2(IntEx, IntEx.typeID, this, Targets[S], a, b).connect()
     }
 
     def value(a: Int, b: Int): Int
