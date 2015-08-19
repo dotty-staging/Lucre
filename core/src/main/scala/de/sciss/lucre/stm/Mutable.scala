@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.serial.{DataOutput, Writable}
+import de.sciss.serial.Writable
 
 //object Mutable {
 //  trait Impl[S <: Sys[S]] extends Mutable[S#ID, S#Tx] {

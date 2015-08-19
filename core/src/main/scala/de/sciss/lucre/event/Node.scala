@@ -170,6 +170,7 @@ trait Node[S <: Sys[S]] extends Obj[S] {
   final def id: S#ID = targets.id
 
   final def write(out: DataOutput): Unit = {
+    out.writeInt(typeID)
     targets.write(out)
     writeData(out)
   }

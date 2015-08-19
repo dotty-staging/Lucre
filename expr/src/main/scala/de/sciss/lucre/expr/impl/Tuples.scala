@@ -38,8 +38,8 @@ final class Tuple1[S <: Sys[S], A, T1](a: Type.Expr[A], val op: Tuple1Op[A, T1],
   def value(implicit tx: S#Tx) = op.value(_1.value)
 
   protected def writeData(out: DataOutput): Unit = {
-    out.writeByte(1)
-    out.writeInt(typeID)
+    out.writeByte(1)  // 'node not var'
+    // out.writeInt(typeID)
     out.writeInt(op.id)
     _1.write(out)
   }
@@ -96,8 +96,9 @@ final class Tuple2[S <: Sys[S], A, T1, T2](a: Type.Expr[A], val op: Tuple2Op[A, 
   def value(implicit tx: S#Tx) = op.value(_1.value, _2.value)
 
   protected def writeData(out: DataOutput): Unit = {
-    out.writeByte(2)
-    out.writeInt(typeID)
+    out.writeByte(1)  // 'node not var'
+//    out.writeByte(2)
+//    out.writeInt(typeID)
     out.writeInt(op.id)
     _1.write(out)
     _2.write(out)

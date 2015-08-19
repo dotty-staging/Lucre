@@ -87,6 +87,8 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   // ---- private ----
 
   private[this] final case class Const[S <: Sys[S]](constValue: A) extends ConstImpl[S, A] {
+    def typeID: Int = tpe.typeID
+
     protected def writeData(out: DataOutput): Unit = writeValue(constValue, out)
   }
 
@@ -111,12 +113,15 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   private[this] final class Ser[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Ex[S]] */ {
     def write(ex: Ex[S], out: DataOutput): Unit = ex.write(out)
 
-    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] = {
+      val tpe = in.readInt()
+      if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
       (in.readByte(): @switch) match {
         case 3 => newConst(readValue(in))
         case 0 => readNodeOrVar(in, access)
         case cookie => sys.error(s"Unexpected cookie $cookie")
       }
+    }
 
     // def readConstant(in: DataInput)(implicit tx: S#Tx): Ex[S] = newConst(readValue(in))
   }

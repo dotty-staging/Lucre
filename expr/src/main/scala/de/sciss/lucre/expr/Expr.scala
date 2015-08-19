@@ -81,5 +81,7 @@ object Expr {
   * integer expressions).
   */
 trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] /* Obj[S] */ with Publisher[S, Change[A]] {
+  def typeID: Int
+
   def value(implicit tx: S#Tx): A
 }

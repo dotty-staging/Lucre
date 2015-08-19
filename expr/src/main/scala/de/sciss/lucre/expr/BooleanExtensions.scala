@@ -183,8 +183,8 @@ object BooleanExtensions  {
     def value(implicit tx: S#Tx): Boolean = op.lazyValue(_1, _2)
 
     protected def writeData(out: DataOutput): Unit = {
-      out.writeByte(2)
-      out.writeInt(BooleanEx.typeID)
+      out.writeByte(1)  // 'node not var'
+      // out.writeInt(BooleanEx.typeID)
       out.writeInt(op.id)
       _1.write(out)
       _2.write(out)

@@ -8,7 +8,7 @@ import scala.annotation.meta.field
 object ObjImpl {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val typeID  = in.readInt()
-    val tpe     = extensions.getOrElse(typeID, sys.error(s"Unknown object type $typeID"))
+    val tpe     = map.getOrElse(typeID, sys.error(s"Unknown object type $typeID"))
     tpe.readIdentifiedObj(in, access)
   }
 
@@ -17,14 +17,14 @@ object ObjImpl {
   @field private[this] final val sync   = new AnyRef
   @field private[this] final val anySer = new Ser[NoSys]
 
-  @volatile private var extensions = Map.empty[Int, Obj.Type]
+  @volatile private var map = Map.empty[Int, Obj.Type]
 
   def register(tpe: Obj.Type): Unit = sync.synchronized {
     val typeID = tpe.typeID
-    if (extensions.contains(typeID))
+    if (map.contains(typeID))
       throw new IllegalArgumentException(s"Object type $typeID was already registered")
 
-    extensions += typeID -> tpe
+    map += typeID -> tpe
   }
 
   private final class Ser[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, Obj[S]] {
