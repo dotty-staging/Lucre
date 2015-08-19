@@ -1,6 +1,6 @@
 /*
  *  Sys.scala
- *  (LucreConfluent)
+ *  (Lucre)
  *
  *  Copyright (c) 2009-2015 Hanns Holger Rutz. All rights reserved.
  *
@@ -19,12 +19,6 @@ import de.sciss.serial
 import de.sciss.serial.DataInput
 
 import scala.collection.immutable.{IndexedSeq => Vec}
-
-//object Sys {
-//  trait Entry[S <: Sys[S], A] extends stm.Var[S#Tx, A] {
-//    def meld(from: S#Acc)(implicit tx: S#Tx): A
-//  }
-//}
 
 /** This is analogous to a `ConfluentLike` trait. Since there is only one system in
   * `LucreConfluent`, it was decided to just name it `confluent.Sys`.

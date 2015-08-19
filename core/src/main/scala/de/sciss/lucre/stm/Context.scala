@@ -1,5 +1,5 @@
-package de.sciss.lucre.stm
-
-trait Context[A] {
-
-}
+//package de.sciss.lucre.stm
+//
+//trait Context[A] {
+//
+//}

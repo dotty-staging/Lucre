@@ -1,6 +1,6 @@
 /*
  *  IndexMapHandler.scala
- *  (LucreConfluent)
+ *  (Lucre)
  *
  *  Copyright (c) 2009-2015 Hanns Holger Rutz. All rights reserved.
  *
