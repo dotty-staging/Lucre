@@ -17,6 +17,8 @@ import de.sciss.lucre.stm.{Disposable, NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Writable}
 
+import scala.util.hashing.MurmurHash3
+
 trait EventLike[S <: Sys[S], +A] extends Observable[S#Tx, A] {
   /** Connects the given selector to this event. That is, this event will
     * adds the selector to its propagation targets.
@@ -125,6 +127,19 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
   final def write(out: DataOutput): Unit = {
     out.writeByte(slot)
     node.write(out)
+  }
+
+  override def hashCode: Int = {
+    import MurmurHash3._
+    val h0 = productSeed
+    val h1 = mix(h0, slot)
+    val h2 = mixLast(h1, node.hashCode)
+    finalizeHash(h2, 2)
+  }
+
+  override def equals(that: Any): Boolean = that match {
+    case thatEvent: Event[_, _] => slot == thatEvent.slot && node == thatEvent.node
+    case _ => super.equals(that)
   }
 
   final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer(this, fun)

@@ -1,0 +1,78 @@
+/*
+ *  VarImpl.scala
+ *  (Lucre)
+ *
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
+package de.sciss.lucre.expr
+package impl
+
+import de.sciss.lucre.event.{Node, Pull, impl => evti}
+import de.sciss.lucre.stm.Sys
+import de.sciss.model.Change
+import de.sciss.serial.DataOutput
+
+trait VarImpl[S <: Sys[S], A]
+  extends Expr.Var[S, A]
+  with evti.SingleNode[S, Change[A]] { self =>
+
+  // ---- abstract ----
+
+  protected def ref: S#Var[Ex]
+
+  // ---- implemented ----
+
+  private type Ex = Expr[S, A]
+
+  object changed extends evti.SingleEvent[S, Change[A]] with evti.Generator[S, Change[A]] {
+    def node: Node[S] = self
+
+    private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] =
+      if (pull.parents(this).isEmpty) {
+        Some(pull.resolve[Change[A]])
+      } else {
+        pull(self().changed)
+      }
+  }
+
+  final protected def writeData(out: DataOutput): Unit = {
+    out.writeByte(0)
+    ref.write(out)
+  }
+
+  final protected def disposeData()(implicit tx: S#Tx): Unit = {
+    disconnect()
+    ref.dispose()
+  }
+
+  final protected def connect   ()(implicit tx: S#Tx): Unit = ref().changed ---> changed
+  private[this]   def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> changed
+
+  final def apply()(implicit tx: S#Tx): Ex = ref()
+
+  final def update(expr: Ex)(implicit tx: S#Tx): Unit = {
+    val before = ref()
+    if (before != expr) {
+      before.changed -/-> this.changed
+      ref() = expr
+      expr  .changed ---> this.changed
+
+      val beforeV = before.value
+      val exprV   = expr.value
+      changed.fire(Change(beforeV, exprV))
+    }
+  }
+
+  final def transform(f: Ex => Ex)(implicit tx: S#Tx): Unit = this() = f(this())
+
+  final def value(implicit tx: S#Tx): A = ref().value
+
+  override def toString = s"Expr.Var$id"
+}
