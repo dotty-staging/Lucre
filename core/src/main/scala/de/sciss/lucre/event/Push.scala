@@ -22,11 +22,11 @@ import scala.collection.breakOut
 object Push {
   private[event] def apply[S <: Sys[S], A](origin: Event[S, A], update: A)(implicit tx: S#Tx): Unit = {
     val push = new Impl(origin, update)
-    log("push begin")
+    logEvent("push begin")
     push.visitChildren(origin)
-    log("pull begin")
+    logEvent("pull begin")
     push.pull()
-    log("pull end")
+    logEvent("pull end")
   }
 
   type Parents[S <: Sys[S]] = Set[Event[S, Any]]
@@ -51,7 +51,7 @@ object Push {
 
     private def addVisited(child: Event[S, Any], parent: Event[S, Any]): Boolean = {
       val parents = pushMap.getOrElse(child, NoParents)
-      log(s"${indent}visit $child  (new ? ${parents.isEmpty})")
+      logEvent(s"${indent}visit $child  (new ? ${parents.isEmpty})")
       pushMap += ((child, parents + parent))
       parents.isEmpty
     }
@@ -89,12 +89,12 @@ object Push {
         val observers = tx.reactionMap.getEventReactions(event)
         if (observers.isEmpty) None else apply[Any](event).map(new Reaction(_, observers))
       } (breakOut)
-      log(s"numReactions = ${reactions.size}")
+      logEvent(s"numReactions = ${reactions.size}")
       reactions.foreach(_.apply())
     }
 
     def resolve[A]: A = {
-      log(s"${indent}resolve")
+      logEvent(s"${indent}resolve")
       update.asInstanceOf[A]
     }
 
@@ -104,10 +104,10 @@ object Push {
       try {
         pullMap.get(source) match {
           case Some(res: Option[_]) =>
-            log(s"${indent}pull $source  (new ? false)")
+            logEvent(s"${indent}pull $source  (new ? false)")
             res.asInstanceOf[Option[A]]
           case _ =>
-            log(s"${indent}pull $source  (new ? true)")
+            logEvent(s"${indent}pull $source  (new ? true)")
             val res = source.pullUpdate(this)
             pullMap += ((source, res))
             res

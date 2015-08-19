@@ -6,7 +6,7 @@ import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.model.Change
 
 object BasicTest {
-  type S      = Durable
+  type S = Durable
 
   def main(args: Array[String]): Unit = {
 //    val system  = InMemory()

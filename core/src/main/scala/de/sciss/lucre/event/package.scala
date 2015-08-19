@@ -31,6 +31,6 @@ package object event {
 
   var showLog = false
 
-  @elidable(CONFIG) private[event] def log(what: => String): Unit =
+  @elidable(CONFIG) private[event] def logEvent(what: => String): Unit =
     if (showLog) println(logHeader.format(new Date()) + what)
 }

@@ -84,26 +84,26 @@ object Targets {
     override def toString = s"Targets$id"
 
     private[event] def add(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
-      log(s"$this.add($slot, $sel)")
+      logEvent(s"$this.add($slot, $sel)")
       val tup = (slot.toByte, sel)
       val seq = childrenVar() // .get // .getFresh
-      log(s"$this - old children = $seq")
+      logEvent(s"$this - old children = $seq")
       childrenVar() = seq :+ tup
       !seq.exists(_._1 == slot)
     }
 
     private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
-      log(s"$this.remove($slot, $sel)")
+      logEvent(s"$this.remove($slot, $sel)")
       val tup = (slot, sel)
       val xs = childrenVar() // .getOrElse(NoChildren)
-      log(s"$this - old children = $xs")
+      logEvent(s"$this - old children = $xs")
       val i = xs.indexOf(tup)
       if (i >= 0) {
         val xs1 = xs.patch(i, Vector.empty, 1) // XXX crappy way of removing a single element
         childrenVar() = xs1
         !xs1.exists(_._1 == slot)
       } else {
-        log(s"$this - selector not found")
+        logEvent(s"$this - selector not found")
         false
       }
     }
