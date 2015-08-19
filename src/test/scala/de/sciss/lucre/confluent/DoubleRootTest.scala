@@ -1,10 +1,10 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import stm.store.BerkeleyDB
 import java.io.File
-import de.sciss.serial.{DataOutput, DataInput}
+
+import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.serial
+import de.sciss.serial.{DataInput, DataOutput}
 
 object DoubleRootTest extends App {
   type S  = Confluent

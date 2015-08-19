@@ -1,11 +1,10 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import org.scalatest.{Outcome, Matchers, fixture}
-import stm.MutableSerializer
-import stm.store.BerkeleyDB
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.MutableSerializer
+import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.serial.{DataInput, DataOutput}
+import org.scalatest.{Matchers, Outcome, fixture}
 
 /*
 

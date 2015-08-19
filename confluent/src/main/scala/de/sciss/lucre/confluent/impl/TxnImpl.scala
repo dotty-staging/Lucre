@@ -15,6 +15,7 @@ package de.sciss.lucre.confluent
 package impl
 
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
+import de.sciss.lucre.event.ReactionMap
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Durable, InMemory, IdentifierMap}
 import de.sciss.serial
@@ -32,6 +33,8 @@ trait TxnMixin[S <: Sys[S]]
   protected def flushCaches(meld: MeldInfo[S], newVersion: Boolean, caches: Vec[Cache[S#Tx]]): Unit
 
   // ---- info ----
+
+  final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
   final def info: VersionInfo.Modifiable = this
 
@@ -119,13 +122,13 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-  final def newPartialID(): S#ID = {
-    if (Confluent.DEBUG_DISABLE_PARTIAL) return newID()
-
-    val res = new PartialID[S](system.newIDValue()(this), Path.empty[S])
-    log(s"txn newPartialID $res")
-    res
-  }
+//  final def newPartialID(): S#ID = {
+//    if (Confluent.DEBUG_DISABLE_PARTIAL) return newID()
+//
+//    val res = new PartialID[S](system.newIDValue()(this), Path.empty[S])
+//    log(s"txn newPartialID $res")
+//    res
+//  }
 
   final def readTreeVertexLevel(term: Long): Int = {
     system.store.get(out => {
@@ -206,16 +209,16 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-  final def newLocalVar[A](init: S#Tx => A): stm.LocalVar[S#Tx, A] = new stm.impl.LocalVarImpl[S, A](init)
-
-  final def newPartialVar[A](pid: S#ID, init: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
-    if (Confluent.DEBUG_DISABLE_PARTIAL) return newVar(pid, init)
-
-    val res = new PartialVarTxImpl[S, A](allocPartial(pid))
-    log(s"txn newPartialVar $res")
-    res.setInit(init)(this)
-    res
-  }
+//  final def newLocalVar[A](init: S#Tx => A): stm.LocalVar[S#Tx, A] = new stm.impl.LocalVarImpl[S, A](init)
+//
+//  final def newPartialVar[A](pid: S#ID, init: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+//    if (Confluent.DEBUG_DISABLE_PARTIAL) return newVar(pid, init)
+//
+//    val res = new PartialVarTxImpl[S, A](allocPartial(pid))
+//    log(s"txn newPartialVar $res")
+//    res.setInit(init)(this)
+//    res
+//  }
 
   final def newBooleanVar(pid: S#ID, init: Boolean): S#Var[Boolean] = {
     val id  = alloc(pid)
@@ -288,13 +291,13 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-  final def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
-    if (Confluent.DEBUG_DISABLE_PARTIAL) return readVar(pid, in)
-
-    val res = new PartialVarTxImpl[S, A](readPartialSource(in, pid))
-    log(s"txn read $res")
-    res
-  }
+//  final def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+//    if (Confluent.DEBUG_DISABLE_PARTIAL) return readVar(pid, in)
+//
+//    val res = new PartialVarTxImpl[S, A](readPartialSource(in, pid))
+//    log(s"txn read $res")
+//    res
+//  }
 
   final def readBooleanVar(pid: S#ID, in: DataInput): S#Var[Boolean] = {
     val res = new BooleanVar(readSource(in, pid))
@@ -321,14 +324,14 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-  final def readPartialID(in: DataInput, acc: S#Acc): S#ID = {
-    if (Confluent.DEBUG_DISABLE_PARTIAL) return readID(in, acc)
-
-    val base  = in./* PACKED */ readInt()
-    val res   = new PartialID(base, Path.readAndAppend(in, acc)(this))
-    log(s"txn readPartialID $res")
-    res
-  }
+//  final def readPartialID(in: DataInput, acc: S#Acc): S#ID = {
+//    if (Confluent.DEBUG_DISABLE_PARTIAL) return readID(in, acc)
+//
+//    val base  = in./* PACKED */ readInt()
+//    val res   = new PartialID(base, Path.readAndAppend(in, acc)(this))
+//    log(s"txn readPartialID $res")
+//    res
+//  }
 
   final def readDurableIDMap[A](in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
     val id = in./* PACKED */ readInt()

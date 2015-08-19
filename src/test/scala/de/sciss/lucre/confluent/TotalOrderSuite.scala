@@ -1,5 +1,4 @@
-package de.sciss.lucre
-package confluent
+package de.sciss.lucre.confluent
 
 import java.io.File
 

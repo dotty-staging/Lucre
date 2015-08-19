@@ -16,8 +16,9 @@ package impl
 
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.data.Ancestor
+import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{TxnLike, DataStore, DataStoreFactory}
+import de.sciss.lucre.stm.{TxnLike, DataStore}
 import de.sciss.serial
 import de.sciss.serial.{DataOutput, DataInput, ImmutableSerializer}
 
@@ -26,13 +27,14 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.{Txn => ScalaTxn, TxnExecutor, InTxn}
 
 trait Mixin[S <: Sys[S]]
-  extends Sys[S] with IndexMapHandler[S] with PartialMapHandler[S] {
+  extends Sys[S] with IndexMapHandler[S] with PartialMapHandler[S] with evt.impl.ReactionMapImpl.Mixin[S] {
 
   system: S =>
 
   // ---- abstract methods ----
 
-  protected def storeFactory: DataStoreFactory[DataStore]
+  protected def storeFactory: DataStore.Factory
+  protected def eventStore  : DataStore
 
   protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx]): S#Tx
   protected def wrapRoot(peer: InTxn): S#Tx
@@ -46,10 +48,15 @@ trait Mixin[S <: Sys[S]]
   final val fullCache     = DurableCacheMapImpl.newIntCache(varMap)
   final val partialCache  = PartialCacheMapImpl.newIntCache(DurablePersistentMap.newPartialMap[S](store, this))
 
+  private val eventVarMap = DurablePersistentMap.newConfluentIntMap[S](eventStore, this, isOblivious = true)
+
+  final val eventCache: CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]] =
+    DurableCacheMapImpl.newIntCache(eventVarMap)
+
   private val global: GlobalState[S, D] = 
     durable.step { implicit tx =>
       val root = durable.rootJoin { implicit tx =>
-        val durRootID     = stm.DurableSurgery.newIDValue(durable)
+        val durRootID     = durable.newIDValue() // stm.DurableSurgery.newIDValue(durable)
         val idCnt         = tx.newCachedIntVar(0)
         val versionLinear = tx.newCachedIntVar(0)
         val versionRandom = tx.newCachedLongVar(TxnRandom.initialScramble(0L)) // scramble !!!
@@ -63,6 +70,8 @@ trait Mixin[S <: Sys[S]]
   private val versionRandom = TxnRandom.wrap(global.versionRandom)
 
   override def toString = "Confluent"
+
+  // ---- event ----
 
   final def indexMap: IndexMapHandler[S] = this
 
@@ -142,12 +151,14 @@ trait Mixin[S <: Sys[S]]
       val (_, confV, durV) = initRoot(confInt, { tx =>
         // read durable
         val did = global.durRootID
-        stm.DurableSurgery.read (durable)(did)(bSer.read(_, ()))
+        // stm.DurableSurgery.read (durable)(did)(bSer.read(_, ()))
+        durable.read(did)(bSer.read(_, ()))
       }, { tx =>
         // create durable
         val _durV = durInit(dtx)
         val did = global.durRootID
-        stm.DurableSurgery.write(durable)(did)(bSer.write(_durV, _))
+        // stm.DurableSurgery.write(durable)(did)(bSer.write(_durV, _))
+        durable.write(did)(bSer.write(_durV, _))
         _durV
       })
       tx.newHandle(confV) -> durV
@@ -342,8 +353,9 @@ trait Mixin[S <: Sys[S]]
 
   // do not make this final
   def close(): Unit = {
-    store  .close()
-    durable.close()
+    store     .close()
+    durable   .close()
+    eventStore.close()
   }
 
   def numRecords    (implicit tx: S#Tx): Int = store.numEntries

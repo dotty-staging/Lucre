@@ -1,9 +1,7 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import stm.{Mutable, MutableSerializer}
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm.{MutableSerializer, Mutable}
+import de.sciss.serial.{DataInput, DataOutput}
 
 trait TestHasLinkedList {
   class Types[S <: Sys[S]](val s: S) {

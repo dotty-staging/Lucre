@@ -1,8 +1,8 @@
-package de.sciss.lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import org.scalatest.{Outcome, Matchers, fixture}
-import stm.store.BerkeleyDB
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.store.BerkeleyDB
+import org.scalatest.{Matchers, Outcome, fixture}
 
 // helper trait providing a fixture
 trait ConfluentSpec extends fixture.FlatSpec with Matchers {

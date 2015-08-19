@@ -1,10 +1,10 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import stm.MutableSerializer
-import collection.immutable.{IndexedSeq => Vec}
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm
+import de.sciss.serial
+import de.sciss.serial.{Serializer, DataInput, DataOutput}
+
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 /*
 
@@ -25,8 +25,11 @@ class CursorsSpec extends ConfluentSpec {
       }
     }
 
-    implicit object Ser extends MutableSerializer[S, Entity] {
-      protected def readData(in: DataInput, id: S#ID)(implicit tx: S#Tx) = {
+    implicit object Ser extends Serializer[S#Tx, S#Acc, Entity] {
+      def write(e: Entity, out: DataOutput): Unit = e.write(out)
+
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx) = {
+        val id    = tx.readID(in, access)
         val field = tx.readIntVar(id, in)
         //            val dtx: D#Tx  = tx.durable
         //            val did        = dtx.readID( in, () )

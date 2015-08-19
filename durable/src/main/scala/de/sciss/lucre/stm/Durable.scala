@@ -60,11 +60,11 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   def debugListUserRecords()(implicit tx: S#Tx): Seq[S#ID]
 
-  private[stm] def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): A
+  private[lucre] def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): A
 
   private[stm] def tryRead[A](id: Long)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A]
 
-  private[stm] def write(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
+  private[lucre] def write(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
 
   private[stm] def write(id: Long)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
 
@@ -76,7 +76,7 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   private[stm] def exists(id: Long)(implicit tx: S#Tx): Boolean
 
-  private[stm] def newIDValue()(implicit tx: S#Tx): Int
+  private[lucre] def newIDValue()(implicit tx: S#Tx): Int
 
   def wrap(peer: InTxn): S#Tx  // XXX TODO this might go in Cursor?
 

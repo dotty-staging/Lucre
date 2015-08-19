@@ -15,14 +15,14 @@ package de.sciss.lucre.confluent
 
 import de.sciss.lucre.confluent.impl.{ConfluentImpl => Impl}
 import de.sciss.lucre.{confluent, stm}
-import de.sciss.lucre.stm.{DataStore, DataStoreFactory}
+import de.sciss.lucre.stm.DataStore
 
 import scala.language.implicitConversions
 
 object Confluent {
-  var DEBUG_DISABLE_PARTIAL = true
+  // var DEBUG_DISABLE_PARTIAL = true
 
-  def apply(storeFactory: DataStoreFactory[DataStore]): Confluent = Impl(storeFactory)
+  def apply(storeFactory: DataStore.Factory): Confluent = Impl(storeFactory)
 
   //  trait Txn extends confluent.Txn[Confluent] {
   //    // implicit def durable:  stm.Durable#Tx

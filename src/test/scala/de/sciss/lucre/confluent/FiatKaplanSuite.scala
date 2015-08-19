@@ -1,9 +1,9 @@
-package de.sciss.lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import stm.store.BerkeleyDB
-import annotation.tailrec
+import de.sciss.lucre.stm.store.BerkeleyDB
 import org.scalatest.{FunSpec, GivenWhenThen}
+
+import scala.annotation.tailrec
 
 /*
 

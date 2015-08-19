@@ -29,8 +29,8 @@ import scala.language.higherKinds
 trait Sys[S <: Sys[S]] {
   type I <: InMemoryLike[I]
 
-  //  def inMemory: I
-  //  def inMemoryTx(tx: S#Tx): I#Tx
+  def inMemory: I
+  def inMemoryTx(tx: S#Tx): I#Tx
 
   /** The variable type of the system. Variables allow transactional storage and
     * retrieval both of immutable and mutable values. Specific systems may extend

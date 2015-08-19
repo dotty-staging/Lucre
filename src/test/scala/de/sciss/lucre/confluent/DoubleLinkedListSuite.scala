@@ -1,11 +1,9 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
 import java.io.File
 
+import de.sciss.lucre.stm.{MutableSerializer, Mutable}
 import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.lucre.stm.{Mutable, MutableSerializer}
 import de.sciss.serial.{DataInput, DataOutput}
 import org.scalatest.{FunSpec, GivenWhenThen}
 
@@ -15,7 +13,7 @@ import scala.annotation.tailrec
 
 To run only this test:
 
-test-only de.sciss.confluent.DoubleLinkedListSuite
+test-only de.sciss.lucre.confluent.DoubleLinkedListSuite
 
  */
 class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {

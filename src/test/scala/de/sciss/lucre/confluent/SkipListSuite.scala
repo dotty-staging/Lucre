@@ -1,19 +1,21 @@
-package de.sciss.lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import collection.immutable.IntMap
-import collection.mutable.{Set => MSet}
-import org.scalatest.{GivenWhenThen, FeatureSpec}
-import concurrent.stm.{InTxn, TxnExecutor, Ref}
 import java.io.File
-import data.{SkipList, HASkipList}
-import stm.store.BerkeleyDB
+
+import de.sciss.lucre.data.{HASkipList, SkipList}
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.store.BerkeleyDB
+import org.scalatest.{FeatureSpec, GivenWhenThen}
+
+import scala.collection.immutable.IntMap
+import scala.collection.mutable.{Set => MSet}
+import scala.concurrent.stm.{InTxn, Ref, TxnExecutor}
 
 /*
 
 To run this test copy + paste the following into sbt:
 
-test-only de.sciss.confluent.SkipListSuite
+test-only de.sciss.lucre.confluent.SkipListSuite
 
  */
 class SkipListSuite extends FeatureSpec with GivenWhenThen {

@@ -8,6 +8,7 @@ lazy val serialVersion    = "1.0.2"
 lazy val scalaSTMVersion  = "0.7"
 lazy val scalaTestVersion = "2.2.5"
 lazy val modelVersion     = "0.3.2"
+lazy val fingerVersion    = "1.5.2"
 
 lazy val commonSettings = Seq(
   version             := projectVersion,
@@ -29,9 +30,10 @@ lazy val lgpl = "LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")
 lazy val gpl2 = "GPL v2+"    -> url("http://www.gnu.org/licenses/gpl-2.0.txt" )
 lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
+// i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root: Project = Project(id = baseNameL, base = file("."))
-  .aggregate(core, expr, data, durable, bdb, bdb6)
-  .dependsOn(core, expr, data, durable, bdb /* , bdb6 */)  // i.e. root = full sub project. if you depend on root, will draw all sub modules.
+  .aggregate(core, expr, data, durable, confluent, bdb, bdb6)
+  .dependsOn(core, expr, data, durable, confluent, bdb /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -84,12 +86,15 @@ lazy val data = Project(id = s"$baseNameL-data", base = file("data"))
     licenses := Seq(lgpl)
   )
 
-//lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
-//  .dependsOn(durable)
-//  .settings(commonSettings)
-//  .settings(
-//    licenses := Seq(lgpl)
-//  )
+lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
+  .dependsOn(durable, data)
+  .settings(commonSettings)
+  .settings(
+    licenses := Seq(lgpl),
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "fingertree" % fingerVersion
+    )
+  )
 
 lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
   .dependsOn(durable)

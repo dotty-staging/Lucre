@@ -1,20 +1,22 @@
-package de.sciss.lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import org.scalatest.{FeatureSpec, GivenWhenThen}
-import collection.breakOut
-import collection.mutable.{Set => MSet}
 import java.io.File
-import stm.store.BerkeleyDB
-import concurrent.stm.InTxn
-import data.{SkipOctree, DeterministicSkipOctree}
-import geom.{DistanceMeasure, IntDistanceMeasure3D, QueryShape, IntCube, Space, IntPoint3D, IntSpace}
-import IntSpace.ThreeDim
+
+import de.sciss.lucre.data.{DeterministicSkipOctree, SkipOctree}
+import de.sciss.lucre.geom.IntSpace.ThreeDim
+import de.sciss.lucre.geom.{QueryShape, DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, Space}
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.store.BerkeleyDB
+import org.scalatest.{FeatureSpec, GivenWhenThen}
+
+import scala.collection.breakOut
+import scala.collection.mutable.{Set => MSet}
+import scala.concurrent.stm.InTxn
 
 /*
  To run this test copy + paste the following into sbt:
 
-test-only de.sciss.confluent.OctreeSuite
+test-only de.sciss.lucre.confluent.OctreeSuite
 
  */
 class OctreeSuite extends FeatureSpec with GivenWhenThen {
@@ -147,7 +149,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
             i += 1 }
          }
          cursor.step { implicit tx => checkChildren( h, 0 )}
-         val pointsOnlyInNext    = nextPoints.filterNot( currPoints.contains( _ ))
+         val pointsOnlyInNext    = nextPoints.diff(currPoints)
          assert( pointsOnlyInNext.isEmpty, "Points in next which aren't in current (" + pointsOnlyInNext.take( 10 ) + "); in level n-" + prevs )
          h = h.prevOption.orNull
          prevs += 1
@@ -280,10 +282,10 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
                                               euclideanDist: DistanceMeasure[M, D])
                                              (implicit ord: math.Ordering[M], cursor: stm.Cursor[S]): Unit = {
 
-    When( "the quadtree is searched for nearest neighbours" )
+    When("the quadtree is searched for nearest neighbours")
       val ps0 = cursor.step { tx =>
-         val f = pointFun( tx.peer )
-         Seq.fill( n2 )( f( 0xFFFFFFFF ))
+        val f = pointFun(tx.peer)
+        Seq.fill(n2)(f(0xFFFFFFFF))
       }
       // tricky: this guarantees that there are no 63 bit overflows,
       // while still allowing points outside the root hyperCube to enter the test

@@ -1,9 +1,8 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import stm.store.BerkeleyDB
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.serial.{DataInput, DataOutput}
 
 object RetroactiveTest extends App {
   val system    = Confluent(BerkeleyDB.tmp())

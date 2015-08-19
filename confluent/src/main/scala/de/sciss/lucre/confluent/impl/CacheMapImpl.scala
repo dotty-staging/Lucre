@@ -14,8 +14,6 @@
 package de.sciss.lucre.confluent
 package impl
 
-import java.lang.ref.WeakReference
-
 import de.sciss.serial
 import de.sciss.serial.ImmutableSerializer
 

@@ -16,7 +16,7 @@ package de.sciss.lucre.confluent
 import java.util.concurrent.atomic.AtomicLong
 
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{MutableSerializer, InMemory}
+import de.sciss.lucre.stm.InMemory
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Ref}
@@ -143,8 +143,11 @@ object TxnRandom {
 
     private val anySer = new Ser[InMemory]
 
-    private final class Ser[S <: stm.Sys[S]] extends MutableSerializer[S, Persistent[S]] {
-      protected def readData(in: DataInput, id: S#ID)(implicit tx: S#Tx): Persistent[S] = {
+    private final class Ser[S <: stm.Sys[S]] extends Serializer[S#Tx, S#Acc, Persistent[S]] {
+      def write(p: Persistent[S], out: DataOutput): Unit = p.write(out)
+
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Persistent[S] = {
+        val id      = tx.readID(in, access)
         val seedRef = tx.readVar[Long](id, in)
         new PersistentImpl(id, seedRef)
       }

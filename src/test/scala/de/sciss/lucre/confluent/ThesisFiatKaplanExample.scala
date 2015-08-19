@@ -1,9 +1,9 @@
-package de.sciss
-package lucre
-package confluent
+package de.sciss.lucre.confluent
 
-import stm.store.BerkeleyDB
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.serial
+import de.sciss.serial.{DataInput, DataOutput}
 
 // \ref{lst:lucre_durable_linkedlist}, \ref{lst:lucre_durable_traverse}, \ref{lst:linkedlist_init}
 object ThesisFiatKaplanExample extends App {
