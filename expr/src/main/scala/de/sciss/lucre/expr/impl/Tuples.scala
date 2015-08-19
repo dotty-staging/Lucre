@@ -1,13 +1,12 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.DataOutput
 
-trait Tuple1Op[A, T1] /* extends TupleOp */ {
+trait Tuple1Op[A, T1] {
   def id: Int
 
   def value(a: T1): A
@@ -20,12 +19,12 @@ trait Tuple1Op[A, T1] /* extends TupleOp */ {
   def toString[S <: Sys[S]](_1: Expr[S, T1]): String
 }
 
-final class Tuple1[S <: Sys[S], A, T1](a: Type.Expr[A], typeID: Int, val op: Tuple1Op[A, T1],
+final class Tuple1[S <: Sys[S], A, T1](a: Type.Expr[A], val op: Tuple1Op[A, T1],
                                        protected val targets: evt.Targets[S],
                                        val _1: Expr[S, T1])
   extends impl.NodeImpl[S, A] {
 
-  protected def reader = a.serializer[S]
+  def typeID: Int = a.typeID
 
   def connect()(implicit tx: S#Tx): this.type = {
     _1.changed ---> changed
@@ -57,7 +56,7 @@ final class Tuple1[S <: Sys[S], A, T1](a: Type.Expr[A], typeID: Int, val op: Tup
   override def toString = op.toString(_1)
 }
 
-trait Tuple2Op[A, T1, T2] /* extends TupleOp */ {
+trait Tuple2Op[A, T1, T2] {
   def id: Int
 
   def value(a: T1, b: T2): A
@@ -74,12 +73,12 @@ trait Tuple2Op[A, T1, T2] /* extends TupleOp */ {
   def toString[S <: Sys[S]](_1: Expr[S, T1], _2: Expr[S, T2]): String
 }
 
-final class Tuple2[S <: Sys[S], A, T1, T2](a: Type.Expr[A], typeID: Int, val op: Tuple2Op[A, T1, T2],
+final class Tuple2[S <: Sys[S], A, T1, T2](a: Type.Expr[A], val op: Tuple2Op[A, T1, T2],
                                            protected val targets: evt.Targets[S],
                                            val _1: Expr[S, T1], val _2: Expr[S, T2])
   extends impl.NodeImpl[S, A] {
 
-  protected def reader = a.serializer[S]
+  def typeID: Int = a.typeID
 
   def connect()(implicit tx: S#Tx): this.type = {
     _1.changed ---> changed

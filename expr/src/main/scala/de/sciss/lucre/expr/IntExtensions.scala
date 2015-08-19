@@ -95,7 +95,7 @@ object IntExtensions {
       }
       val _1 = IntEx.read(in, access)
       val _2 = IntEx.read(in, access)
-      new impl.Tuple2(IntEx, IntEx.typeID, op, targets, _1, _2)
+      new impl.Tuple2(IntEx, op, targets, _1, _2)
     }
   }
 
@@ -105,18 +105,18 @@ object IntExtensions {
     def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                          (implicit tx: S#Tx): impl.Tuple1[S, Int, T1]
 
-    def toString[S <: Sys[S]](_1: Expr[S, T1]): String = _1.toString + "." + name
+    def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"${_1}.$name"
 
     def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
       case Expr.Const(c)  => IntEx.newConst(value(c))
-      case _              => new impl.Tuple1(IntEx, IntEx.typeID, this, Targets[S], a).connect()
+      case _              => new impl.Tuple1(IntEx, this, Targets[S], a).connect()
     }
 
     def name: String = {
       val cn  = getClass.getName
       val sz  = cn.length
       val i   = cn.lastIndexOf('$', sz - 2) + 1
-      "" + cn.charAt(i).toLower + cn.substring(i + 1, if (cn.charAt(sz - 1) == '$') sz - 1 else sz)
+      s"${cn.charAt(i).toLower}${cn.substring(i + 1, if (cn.charAt(sz - 1) == '$') sz - 1 else sz)}"
     }
   }
 
@@ -126,14 +126,14 @@ object IntExtensions {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                (implicit tx: S#Tx): impl.Tuple1[S, Int, Int] = {
       val _1 = IntEx.read(in, access)
-      new impl.Tuple1(IntEx, IntEx.typeID, this, targets, _1)
+      new impl.Tuple1(IntEx, this, targets, _1)
     }
   }
 
   private[this] case object Neg extends IntUnaryOp {
     final val id = 0
     def value(a: Int): Int = -a
-    override def toString[S <: Sys[S]](_1: Ex[S]): String = "-" + _1
+    override def toString[S <: Sys[S]](_1: Ex[S]): String = s"-${_1}"
   }
 
   private[this] case object Abs extends IntUnaryOp {
@@ -144,7 +144,7 @@ object IntExtensions {
   private[this] case object BitNot extends IntUnaryOp {
     final val id = 2
     def value(a: Int): Int = ~a
-    override def toString[S <: Sys[S]](_1: Ex[S]): String = "~" + _1
+    override def toString[S <: Sys[S]](_1: Ex[S]): String = s"~${_1}"
   }
 
   // case object ToLong     extends Op(  6 )
@@ -170,7 +170,7 @@ object IntExtensions {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                (implicit tx: S#Tx): impl.Tuple1[S, Int, Boolean] = {
       val _1 = BooleanEx.read(in, access)
-      new impl.Tuple1(IntEx, IntEx.typeID, this, targets, _1)
+      new impl.Tuple1(IntEx, this, targets, _1)
     }
   }
 
@@ -184,7 +184,7 @@ object IntExtensions {
   private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int] {
     final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => IntEx.newConst(value(ca, cb))
-      case _                                => new impl.Tuple2(IntEx, IntEx.typeID, this, Targets[S], a, b).connect()
+      case _                                => new impl.Tuple2(IntEx, this, Targets[S], a, b).connect()
     }
 
     def value(a: Int, b: Int): Int
@@ -198,22 +198,9 @@ object IntExtensions {
       val cn = getClass.getName
       val sz = cn.length
       val i  = cn.indexOf('$') + 1
-      "" + cn.charAt(i).toLower + cn.substring(i + 1, if (cn.charAt(sz - 1) == '$') sz - 1 else sz)
+      s"${cn.charAt(i).toLower}${cn.substring(i + 1, if (cn.charAt(sz - 1) == '$') sz - 1 else sz)}"
     }
   }
-
-  //  trait Infix {
-  //    _: BinaryOp =>
-  //
-  //    override def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String =
-  //      "(" + _1 + " " + name + " " + _2 + ")"
-  //  }
-
-  //      sealed trait MathStyle {
-  //         def name: String
-  //         override def toString[ S <: Sys[ S ]]( _1: Ex[ S ], _2: Ex[ S ]) : String =
-  //            "(" + _1 + " " + name + " " + _2 + ")"
-  //      }
 
   private[this] case object Plus extends BinaryOp {
     final val id = 7

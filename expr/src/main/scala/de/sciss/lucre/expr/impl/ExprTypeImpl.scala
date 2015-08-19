@@ -8,7 +8,7 @@ import de.sciss.serial.{Serializer, DataOutput, DataInput}
 
 import scala.annotation.switch
 
-trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] {
+trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   final protected type Ex [S <: Sys[S]] = Expr     [S, A]
   final protected type ExN[S <: Sys[S]] = Expr.Node[S, A]
   final protected type ExV[S <: Sys[S]] = Expr.Var [S, A]
@@ -76,7 +76,10 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] {
   }
 
   private[this] final class Var[S <: Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: Targets[S])
-    extends VarImpl[S, A]
+    extends VarImpl[S, A] {
+
+    def typeID: Int = tpe.typeID
+  }
 
   private[this] val anySer    = new Ser   [NoSys]
   private[this] val anyVarSer = new VarSer[NoSys]

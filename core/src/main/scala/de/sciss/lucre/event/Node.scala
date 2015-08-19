@@ -14,9 +14,9 @@
 package de.sciss.lucre.event
 
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{NoSys, Sys}
+import de.sciss.lucre.stm.{NoSys, Obj, Sys}
 import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput, Serializer}
+import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.switch
 
@@ -145,13 +145,9 @@ sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Rea
   private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean
 }
 
-object Node {
-  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Node[S] = ???
-
-  implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Node[S]] = ???
-}
-
-/** An `Event.Node` is most similar to EScala's `EventNode` class. It represents an observable
+/** XXX TODO -- this documentation is outdated.
+  *
+  * An `Event.Node` is most similar to EScala's `EventNode` class. It represents an observable
   * object and can also act as an observer itself. It adds the `Reactor` functionality in the
   * form of a proxy, forwarding to internally stored `Targets`. It also provides a final
   * implementation of the `Writable` and `Disposable` traits, asking sub classes to provide
@@ -162,7 +158,7 @@ object Node {
   * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
   * targets.
   */
-trait Node[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
+trait Node[S <: Sys[S]] extends Obj[S] {
   override def toString = s"Node$id"
 
   protected def targets: Targets[S]
@@ -172,8 +168,6 @@ trait Node[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
   final private[event] def _targets: Targets[S] = targets
 
   final def id: S#ID = targets.id
-
-  private[event] def select(slot: Int): Event[S, Any]
 
   final def write(out: DataOutput): Unit = {
     targets.write(out)

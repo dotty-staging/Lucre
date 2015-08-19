@@ -45,7 +45,7 @@ object BooleanExtensions  {
         case Not.id => Not
       }
       val _1 = BooleanEx.read(in, access)
-      new impl.Tuple1(BooleanEx, BooleanEx.typeID, op, targets, _1)
+      new impl.Tuple1(BooleanEx, op, targets, _1)
     }
   }
 
@@ -101,7 +101,7 @@ object BooleanExtensions  {
     def id: Int
     final def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
       case Expr.Const(ca) => BooleanEx.newConst(value(ca))
-      case _ => new impl.Tuple1(BooleanEx, BooleanEx.typeID, this, Targets[S], a).connect()
+      case _ => new impl.Tuple1(BooleanEx, this, Targets[S], a).connect()
     }
 
     def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"$name${_1}"
@@ -148,20 +148,22 @@ object BooleanExtensions  {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr.Node[S, Boolean] = {
       val _1 = IntEx.read(in, access)
       val _2 = IntEx.read(in, access)
-      new impl.Tuple2(BooleanEx, BooleanEx.typeID, op, targets, _1, _2)
+      new impl.Tuple2(BooleanEx, op, targets, _1, _2)
     }
 
     // ---- impl ----
 
     final def apply[S <: Sys[S]](a: Expr[S, Int], b: Expr[S, Int])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanEx.newConst(value(ca, cb))
-      case _ => new impl.Tuple2(BooleanEx, BooleanEx.typeID, this, Targets[S], a, b).connect()
+      case _ => new impl.Tuple2(BooleanEx, this, Targets[S], a, b).connect()
     }
   }
 
   private final class LazyTuple2[S <: Sys[S]](op: BooleanBinaryOp, protected val targets: evt.Targets[S],
                                               _1: Expr[S, Boolean], _2: Expr[S, Boolean])
     extends impl.NodeImpl[S, Boolean] {
+
+    def typeID: Int = Boolean.typeID
 
     protected def reader = BooleanEx.serializer[S]
 

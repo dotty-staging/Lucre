@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.stm.{Disposable, NoSys, Sys}
+import de.sciss.lucre.stm.{Obj, Disposable, NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Writable}
 
@@ -81,7 +81,7 @@ object Event {
 
   private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = {
     val slot  = in.readByte()
-    val node  = Node.read[S](in, access)
+    val node  = Obj.read[S](in, access)
     node.select(slot)
   }
 
