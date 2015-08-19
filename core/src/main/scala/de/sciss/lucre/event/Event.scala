@@ -104,10 +104,6 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
 
   // ---- implemented ----
 
-  final private[event] def pushUpdate(parent: Event[S, Any], push: Push[S]): Unit =
-    push.visit(this, parent)
-    
-
   final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = {
     node._targets.add(slot, sink)
 //    if (node._targets.add(slot, r) && !tx.reactionMap.hasEventReactions(this)) {

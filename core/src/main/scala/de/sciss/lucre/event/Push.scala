@@ -17,7 +17,7 @@ import de.sciss.lucre.stm.Sys
 
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
-import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.collection.breakOut
 
 object Push {
   private[event] def apply[S <: Sys[S], A](origin: Event[S, A], update: A)(implicit tx: S#Tx): Unit = {
@@ -29,9 +29,6 @@ object Push {
     log("pull end")
   }
 
-  private val NoReactions = Vec.empty[Reaction]
-  private val NoOpEval = () => ()
-
   type Parents[S <: Sys[S]] = Set[Event[S, Any]]
 
   private def NoParents [S <: Sys[S]]: Parents[S] = Set.empty[Event[S, Any]]
@@ -39,10 +36,9 @@ object Push {
   private type Visited[S <: Sys[S]] = Map[Event[S, Any], Parents[S]]
 
   private final class Impl[S <: Sys[S]](origin: Event[S, Any], val update: Any)(implicit tx: S#Tx)
-    extends Push[S] {
-    private var pushMap   = Map((origin: Any, NoParents[S]))
+    extends Pull[S] {
+    private var pushMap   = Map(origin -> NoParents[S])
     private var pullMap   = Map.empty[EventLike[S, Any], Option[Any]]
-    private var reactions = NoReactions
 
     private var indent    = ""
 
@@ -63,18 +59,8 @@ object Push {
         val childEvents = parent.node._targets.children
         childEvents.foreach { case (inlet2, child) =>
           if (inlet2 == inlet) {
-            child.pushUpdate(parent, this)
+            visit(child, parent)
           }
-        }
-        val observers = tx.reactionMap.getEventReactions(parent)
-        observers.foreach { observer =>
-          val reaction: Reaction = () =>
-            this(parent) match {
-              case Some(result) =>
-                () => observer(result)(tx)
-              case None => NoOpEval
-            }
-          addReaction(reaction)
         }
 
       } finally {
@@ -85,21 +71,24 @@ object Push {
     def visit(child: Event[S, Any], parent: Event[S, Any]): Unit =
       if (addVisited(child, parent)) visitChildren(child)
 
-    def contains(source: EventLike[S, Any]): Boolean    = pushMap.contains(source)
+    // cf. https://stackoverflow.com/questions/32098481
+    def contains(source: EventLike[S, Any]): Boolean = source match {
+      case e: Event[S, Any] => pushMap.contains(e)
+      case _ => false
+    }
+
     def isOrigin(that  : EventLike[S, Any]): Boolean    = that == origin
     def parents (child : Event    [S, Any]): Parents[S] = pushMap.getOrElse(child, NoParents)
 
-//    def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit = {
-//      log(s"${indent}addLeaf $leaf, parent = $parent")
-//      tx.reactionMap.processEvent(leaf, parent, this)
-//    }
-
-    def addReaction(r: Reaction): Unit = reactions :+= r
-
     def pull(): Unit = {
+      val reactions: List[(Any, List[Observer[S]])] = pushMap.flatMap { case (event, _) =>
+        val observers = tx.reactionMap.getEventReactions(event)
+        if (observers.isEmpty) None else apply[Any](event).map(_ -> observers)
+      } (breakOut)
       log(s"numReactions = ${reactions.size}")
-      val firstPass = reactions.map(_.apply())
-      /* val secondPass = */ firstPass.foreach(_.apply())
+      reactions.foreach { case (u1, observers) =>
+        observers.foreach(_.apply(u1))
+      }
     }
 
     def resolve[A]: A = {
@@ -142,13 +131,4 @@ sealed trait Pull[S <: Sys[S]] {
   def contains(source: EventLike[S, Any]): Boolean
 
   def isOrigin(source: EventLike[S, Any]): Boolean
-}
-
-private[event] sealed trait Push[S <: Sys[S]] extends Pull[S] {
-
-  private[event] def visit(sel: Event[S, Any], parent: Event[S, Any]): Unit
-
-  // private[event] def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit
-
-  private[event] def addReaction(r: Reaction): Unit
 }
