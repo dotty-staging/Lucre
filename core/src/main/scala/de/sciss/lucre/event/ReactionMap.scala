@@ -25,5 +25,6 @@ trait ReactionMap[S <: Sys[S]] {
 
   // def processEvent(leaf: ObserverKey[S], parent: Event[S, Any], push: Push[S])(implicit tx: S#Tx): Unit
 
+  def getEventReactions(event: Event[S, Any])(implicit tx: S#Tx): List[Observer[S]]
   def hasEventReactions(event: Event[S, Any])(implicit tx: S#Tx): Boolean
 }

@@ -17,19 +17,19 @@ package impl
 import de.sciss.lucre.stm.{IdentifierMap, Sys}
 
 object ReactionMapImpl {
-  private val noOpEval = () => ()
-  private type AnyObsFun[S <: Sys[S]] = S#Tx => AnyRef => Unit
+//  private val noOpEval = () => ()
+//  private type AnyObsFun[S <: Sys[S]] = S#Tx => AnyRef => Unit
 
   def apply[S <: Sys[S]](implicit tx: S#Tx): ReactionMap[S] = new Impl[S](tx.newInMemoryIDMap)
 
-  private final case class EventObservation[S <: Sys[S]](fun: S#Tx => Any => Unit) {
-    def reaction(parent: Event[S, Any], pull: Pull[S])(implicit tx: S#Tx): Reaction = () =>
-      pull(parent) match {
-        case Some(result) =>
-          () => fun(tx)(result)
-        case None => noOpEval
-      }
-  }
+//  private final case class EventObservation[S <: Sys[S]](fun: S#Tx => Any => Unit) {
+//    def reaction(parent: Event[S, Any], pull: Pull[S])(implicit tx: S#Tx): Reaction = () =>
+//      pull(parent) match {
+//        case Some(result) =>
+//          () => fun(tx)(result)
+//        case None => noOpEval
+//      }
+//  }
 
   private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S]]]])
     extends Mixin[S] {
@@ -77,6 +77,9 @@ object ReactionMapImpl {
       }
       list1.isEmpty
     }
+
+    def getEventReactions(event: Event[S, Any])(implicit tx: S#Tx): List[Observer[S]] =
+      eventMap.getOrElse(event.node.id, Map.empty).getOrElse(event.slot, Nil)
 
     def hasEventReactions(event: Event[S, Any])(implicit tx: S#Tx): Boolean =
       eventMap.get(event.node.id).exists(_.get(event.slot).isDefined)

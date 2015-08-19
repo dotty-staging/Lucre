@@ -30,6 +30,7 @@ object Push {
   }
 
   private val NoReactions = Vec.empty[Reaction]
+  private val NoOpEval = () => ()
 
   type Parents[S <: Sys[S]] = Set[Event[S, Any]]
 
@@ -48,38 +49,45 @@ object Push {
     @elidable(CONFIG) private def incIndent(): Unit = indent += "  "
     @elidable(CONFIG) private def decIndent(): Unit = indent = indent.substring(2)
 
-    private def addVisited(sel: Event[S, Any], parent: Event[S, Any]): Boolean = {
-      val parents = pushMap.getOrElse(sel, NoParents)
-      log(s"${indent}visit $sel  (new ? ${parents.isEmpty})")
-      pushMap += ((sel, parents + parent))
+    private def addVisited(child: Event[S, Any], parent: Event[S, Any]): Boolean = {
+      val parents = pushMap.getOrElse(child, NoParents)
+      log(s"${indent}visit $child  (new ? ${parents.isEmpty})")
+      pushMap += ((child, parents + parent))
       parents.isEmpty
     }
 
-    def visitChildren(sel: Event[S, Any]): Unit = {
-      val inlet = sel.slot
+    def visitChildren(parent: Event[S, Any]): Unit = {
+      val inlet = parent.slot
       incIndent()
       try {
-        val ch = sel.node._targets.children
-        ch.foreach { tup =>
-          val inlet2 = tup._1
+        val childEvents = parent.node._targets.children
+        childEvents.foreach { case (inlet2, child) =>
           if (inlet2 == inlet) {
-            val selChild = tup._2
-            selChild.pushUpdate(sel, this)
+            child.pushUpdate(parent, this)
           }
         }
+        val observers = tx.reactionMap.getEventReactions(parent)
+        observers.foreach { observer =>
+          val reaction: Reaction = () =>
+            this(parent) match {
+              case Some(result) =>
+                () => observer(result)(tx)
+              case None => NoOpEval
+            }
+          addReaction(reaction)
+        }
+
       } finally {
         decIndent()
       }
     }
 
-    def visit(sel: Event[S, Any], parent: Event[S, Any]): Unit =
-      if (addVisited(sel, parent)) visitChildren(sel)
+    def visit(child: Event[S, Any], parent: Event[S, Any]): Unit =
+      if (addVisited(child, parent)) visitChildren(child)
 
-    def contains(source: EventLike[S, Any]): Boolean = pushMap.contains(source)
-
-    def isOrigin(that: EventLike[S, Any]) = that == origin
-
-    def parents(sel: Event[S, Any]): Parents[S] = pushMap.getOrElse(sel, NoParents)
+    def contains(source: EventLike[S, Any]): Boolean    = pushMap.contains(source)
+    def isOrigin(that  : EventLike[S, Any]): Boolean    = that == origin
+    def parents (child : Event    [S, Any]): Parents[S] = pushMap.getOrElse(child, NoParents)
 
 //    def addLeaf(leaf: ObserverKey[S], parent: Event[S, Any]): Unit = {
 //      log(s"${indent}addLeaf $leaf, parent = $parent")

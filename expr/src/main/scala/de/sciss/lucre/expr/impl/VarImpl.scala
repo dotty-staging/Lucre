@@ -67,7 +67,7 @@ trait VarImpl[S <: Sys[S], A]
       expr  .changed ---> this.changed
 
       val beforeV = before.value
-      val exprV   = expr.value
+      val exprV   = expr  .value
       changed.fire(Change(beforeV, exprV))
     }
   }

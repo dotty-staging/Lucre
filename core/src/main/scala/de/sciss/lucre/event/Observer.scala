@@ -23,10 +23,10 @@ object Observer {
 //      log(s"$event connect")
 //      event.connect()
 //    }
-    new Impl(event, tx)
+    new Impl(event, tx, fun)
   }
 
-  private final class Impl[S <: Sys[S], A](event0: Event[S, Any], tx0: S#Tx)
+  private final class Impl[S <: Sys[S], A](event0: Event[S, Any], tx0: S#Tx, fun: S#Tx => A => Unit)
     extends Observer[S] {
 
     override def toString = s"Observer<${event0.node.id}, ${event0.slot}>"
@@ -36,6 +36,8 @@ object Observer {
     tx0.reactionMap.addEventReaction[A](event0, this)(tx0)
 
     def event(implicit tx: S#Tx): Event[S, Any] = eventH()
+
+    def apply(update: Any)(implicit tx: S#Tx): Unit = fun(tx)(update.asInstanceOf[A])
 
     def dispose()(implicit tx: S#Tx): Unit = {
       val event = this.event
@@ -60,4 +62,5 @@ object Observer {
 }
 trait Observer[S <: Sys[S]] extends Disposable[S#Tx] {
   def event(implicit tx: S#Tx): Event[S, Any]
+  def apply(update: Any)(implicit tx: S#Tx): Unit
 }
