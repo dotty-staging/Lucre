@@ -20,11 +20,11 @@ object ReactionMap {
 }
 
 trait ReactionMap[S <: Sys[S]] {
-  def addEventReaction[A](event: Event[S, Any], observer: Observer[S])(implicit tx: S#Tx): Boolean
-  def removeEventReaction(event: Event[S, Any], observer: Observer[S])(implicit tx: S#Tx): Boolean
+  def addEventReaction   [A](event: Event[S, A  ], observer: Observer[S, A])(implicit tx: S#Tx): Boolean
+  def removeEventReaction[A](event: Event[S, Any], observer: Observer[S, A])(implicit tx: S#Tx): Boolean
 
   // def processEvent(leaf: ObserverKey[S], parent: Event[S, Any], push: Push[S])(implicit tx: S#Tx): Unit
 
-  def getEventReactions(event: Event[S, Any])(implicit tx: S#Tx): List[Observer[S]]
-  def hasEventReactions(event: Event[S, Any])(implicit tx: S#Tx): Boolean
+  def getEventReactions[A](event: Event[S, A])(implicit tx: S#Tx): List[Observer[S, A]]
+  def hasEventReactions[A](event: Event[S, A])(implicit tx: S#Tx): Boolean
 }

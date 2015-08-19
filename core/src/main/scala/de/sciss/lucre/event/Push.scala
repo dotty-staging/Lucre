@@ -31,9 +31,13 @@ object Push {
 
   type Parents[S <: Sys[S]] = Set[Event[S, Any]]
 
-  private def NoParents [S <: Sys[S]]: Parents[S] = Set.empty[Event[S, Any]]
+  private def NoParents[S <: Sys[S]]: Parents[S] = Set.empty[Event[S, Any]]
 
-  private type Visited[S <: Sys[S]] = Map[Event[S, Any], Parents[S]]
+  // private type Visited[S <: Sys[S]] = Map[Event[S, Any], Parents[S]]
+  private final class Reaction[S <: Sys[S], +A](update: A, observers: List[Observer[S, A]]) {
+    def apply()(implicit tx: S#Tx): Unit =
+      observers.foreach(_.apply(update))
+  }
 
   private final class Impl[S <: Sys[S]](origin: Event[S, Any], val update: Any)(implicit tx: S#Tx)
     extends Pull[S] {
@@ -81,14 +85,12 @@ object Push {
     def parents (child : Event    [S, Any]): Parents[S] = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {
-      val reactions: List[(Any, List[Observer[S]])] = pushMap.flatMap { case (event, _) =>
+      val reactions: List[Reaction[S, _]] = pushMap.flatMap { case (event, _) =>
         val observers = tx.reactionMap.getEventReactions(event)
-        if (observers.isEmpty) None else apply[Any](event).map(_ -> observers)
+        if (observers.isEmpty) None else apply[Any](event).map(new Reaction(_, observers))
       } (breakOut)
       log(s"numReactions = ${reactions.size}")
-      reactions.foreach { case (u1, observers) =>
-        observers.foreach(_.apply(u1))
-      }
+      reactions.foreach(_.apply())
     }
 
     def resolve[A]: A = {

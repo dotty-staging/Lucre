@@ -190,7 +190,7 @@ object InMemoryImpl {
 
     def wrap(itx: InTxn): S#Tx = new TxnImpl(this, itx)
 
-    protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S]]]] =
-      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S]]]](new IDImpl(0))(_.id)
+    protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
+      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](new IDImpl(0))(_.id)
   }
 }

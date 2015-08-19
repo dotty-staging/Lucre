@@ -17,7 +17,7 @@ import de.sciss.lucre.stm.{Disposable, Sys}
 
 object Observer {
   def apply[S <: Sys[S], A](event: Event[S, A], fun: S#Tx => A => Unit)
-                           (implicit tx: S#Tx): Observer[S] = {
+                           (implicit tx: S#Tx): Observer[S, A] = {
 //    val c = event.node._targets.isEmpty && !tx.reactionMap.hasEventReactions(event)
 //    if (c) {
 //      log(s"$event connect")
@@ -26,18 +26,18 @@ object Observer {
     new Impl(event, tx, fun)
   }
 
-  private final class Impl[S <: Sys[S], A](event0: Event[S, Any], tx0: S#Tx, fun: S#Tx => A => Unit)
-    extends Observer[S] {
+  private final class Impl[S <: Sys[S], A](event0: Event[S, A], tx0: S#Tx, fun: S#Tx => A => Unit)
+    extends Observer[S, A] {
 
     override def toString = s"Observer<${event0.node.id}, ${event0.slot}>"
 
-    private[this] val eventH = tx0.newHandle(event0)
+    private[this] val eventH = tx0.newHandle(event0: Event[S, Any])
 
     tx0.reactionMap.addEventReaction[A](event0, this)(tx0)
 
     def event(implicit tx: S#Tx): Event[S, Any] = eventH()
 
-    def apply(update: Any)(implicit tx: S#Tx): Unit = fun(tx)(update.asInstanceOf[A])
+    def apply(update: A)(implicit tx: S#Tx): Unit = fun(tx)(update)
 
     def dispose()(implicit tx: S#Tx): Unit = {
       val event = this.event
@@ -60,7 +60,7 @@ object Observer {
     def dispose()(implicit tx: Any) = ()
   }
 }
-trait Observer[S <: Sys[S]] extends Disposable[S#Tx] {
+trait Observer[S <: Sys[S], -A] extends Disposable[S#Tx] {
   def event(implicit tx: S#Tx): Event[S, Any]
-  def apply(update: Any)(implicit tx: S#Tx): Unit
+  def apply(update: A)(implicit tx: S#Tx): Unit
 }

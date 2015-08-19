@@ -17,42 +17,21 @@ package impl
 import de.sciss.lucre.stm.{IdentifierMap, Sys}
 
 object ReactionMapImpl {
-//  private val noOpEval = () => ()
-//  private type AnyObsFun[S <: Sys[S]] = S#Tx => AnyRef => Unit
-
   def apply[S <: Sys[S]](implicit tx: S#Tx): ReactionMap[S] = new Impl[S](tx.newInMemoryIDMap)
 
-//  private final case class EventObservation[S <: Sys[S]](fun: S#Tx => Any => Unit) {
-//    def reaction(parent: Event[S, Any], pull: Pull[S])(implicit tx: S#Tx): Reaction = () =>
-//      pull(parent) match {
-//        case Some(result) =>
-//          () => fun(tx)(result)
-//        case None => noOpEval
-//      }
-//  }
-
-  private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S]]]])
+  private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]])
     extends Mixin[S] {
 
     override def toString = s"ReactionMap@${hashCode.toHexString}"
   }
 
   trait Mixin[S <: Sys[S]] extends ReactionMap[S] {
-    protected def eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S]]]]
+    protected def eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]]
 
     // self-reference useful when Mixin is added to an event.Sys
     def reactionMap: ReactionMap[S] = this
 
-//    final def processEvent(leaf: ObserverKey[S], parent: Event[S, Any], push: Push[S])
-//                          (implicit tx: S#Tx): Unit = {
-//      val itx = tx.peer
-//      eventMap.get(leaf.id)(itx).foreach { obs =>
-//        val react = obs.reaction(parent, push)
-//        push.addReaction(react)
-//      }
-//    }
-
-    final def addEventReaction[A](event: Event[S, Any], observer: Observer[S])(implicit tx: S#Tx): Boolean = {
+    final def addEventReaction[A](event: Event[S, A], observer: Observer[S, A])(implicit tx: S#Tx): Boolean = {
       val id    = event.node.id
       val slot  = event.slot
       val map0  = eventMap.getOrElse(id  , Map.empty)
@@ -63,7 +42,7 @@ object ReactionMapImpl {
       list0.isEmpty
     }
 
-    def removeEventReaction(event: Event[S, Any], observer: Observer[S])(implicit tx: S#Tx): Boolean = {
+    def removeEventReaction[A](event: Event[S, Any], observer: Observer[S, A])(implicit tx: S#Tx): Boolean = {
       val id    = event.node.id
       val slot  = event.slot
       val map0  = eventMap.getOrElse(id  , throw new NoSuchElementException(s"Node $id"))
@@ -78,10 +57,11 @@ object ReactionMapImpl {
       list1.isEmpty
     }
 
-    def getEventReactions(event: Event[S, Any])(implicit tx: S#Tx): List[Observer[S]] =
+    def getEventReactions[A](event: Event[S, A])(implicit tx: S#Tx): List[Observer[S, A]] =
       eventMap.getOrElse(event.node.id, Map.empty).getOrElse(event.slot, Nil)
+        .asInstanceOf[List[Observer[S, A]]]
 
-    def hasEventReactions(event: Event[S, Any])(implicit tx: S#Tx): Boolean =
+    def hasEventReactions[A](event: Event[S, A])(implicit tx: S#Tx): Boolean =
       eventMap.get(event.node.id).exists(_.get(event.slot).isDefined)
   }
 }
