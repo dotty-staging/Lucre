@@ -14,14 +14,14 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre.event.{Node, Pull, impl => evti}
+import de.sciss.lucre.event.{Pull, impl => evti}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 import de.sciss.serial.DataOutput
 
 trait VarImpl[S <: Sys[S], A]
   extends Expr.Var[S, A]
-  with evti.SingleNode[S, Change[A]] { self =>
+  with NodeImpl[S, A] { self =>
 
   // ---- abstract ----
 
@@ -31,9 +31,7 @@ trait VarImpl[S <: Sys[S], A]
 
   private type Ex = Expr[S, A]
 
-  object changed extends evti.SingleEvent[S, Change[A]] with evti.Generator[S, Change[A]] {
-    def node: Node[S] = self
-
+  object changed extends Changed with evti.Generator[S, Change[A]] {
     private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] =
       if (pull.parents(this).isEmpty) {
         Some(pull.resolve[Change[A]])
