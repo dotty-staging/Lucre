@@ -42,7 +42,7 @@ trait Sys[S <: Sys[S]] extends stm.Sys[S] {
   //  /* private[lucre] */ def inMemoryTx(tx: S#Tx): I#Tx
 
   private[confluent] def fullCache:    CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]]
-  private[confluent] def partialCache: CacheMap.Partial[S, Int, DurablePersistentMap[S, Int]]
+  // private[confluent] def partialCache: CacheMap.Partial[S, Int, DurablePersistentMap[S, Int]]
 
   private[confluent] def newIDValue()(implicit tx: S#Tx): Int
   private[confluent] def newVersionID(implicit tx: S#Tx): Long

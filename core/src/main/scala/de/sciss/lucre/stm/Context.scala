@@ -1,5 +1,7 @@
 //package de.sciss.lucre.stm
 //
-//trait Context[A] {
+//import de.sciss.serial.DataOutput
 //
+//trait Context {
+//  def writeKey(out: DataOutput): Unit
 //}

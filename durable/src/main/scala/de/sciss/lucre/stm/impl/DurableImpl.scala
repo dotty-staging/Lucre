@@ -228,16 +228,16 @@ object DurableImpl {
     final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
       IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, A](new IDImpl(0))(_.id)
 
-    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
-      new IDMapImpl[S, A](newID())
+//    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
+//      new IDMapImpl[S, A](newID())
 
     final def readVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val id = in./* PACKED */ readInt()
       new VarImpl[S, A](id, ser)
     }
 
-    final def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
-      readVar(pid, in)
+//    final def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
+//      readVar(pid, in)
 
     final def readCachedVar[A](in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val id = in./* PACKED */ readInt()
@@ -280,16 +280,18 @@ object DurableImpl {
       new IDImpl(base)
     }
 
-    final def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)
+//    final def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)
 
-    final def readDurableIDMap[A](in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-      val base  = in./* PACKED */ readInt()
-      val mapID = new IDImpl[S](base)
-      new IDMapImpl[S, A](mapID)
-    }
+//    final def readDurableIDMap[A](in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
+//      val base  = in./* PACKED */ readInt()
+//      val mapID = new IDImpl[S](base)
+//      new IDMapImpl[S, A](mapID)
+//    }
 
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
+
+    def newContext(): S#Context = ???
   }
 
   private final class IDImpl[S <: D[S]](@field val id: Int) extends DurableLike.ID[S] {

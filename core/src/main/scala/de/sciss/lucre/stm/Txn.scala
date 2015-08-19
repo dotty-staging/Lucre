@@ -127,8 +127,7 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- context ----
 
-//  def newUnitContext(): Context[Unit]
-//  def newLongContext(): Context[Long]
+  def newContext(): S#Context
 
   // ---- former event ----
 

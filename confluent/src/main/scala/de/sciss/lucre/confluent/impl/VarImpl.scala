@@ -123,29 +123,29 @@ private[impl] final class VarImpl[S <: Sys[S], A](protected val id: S#ID, protec
   override def toString = s"Var($id)"
 }
 
-private[impl] final class PartialVarTxImpl[S <: Sys[S], A](protected val id: S#ID)
-                                                    (implicit ser: serial.Serializer[S#Tx, S#Acc, A])
-  extends BasicVar[S, A] {
-
-  def meld(from: S#Acc)(implicit tx: S#Tx): A = ???
-
-  def update(v: A)(implicit tx: S#Tx): Unit = {
-    logPartial(s"$this set $v")
-    tx.putPartial(id, v)
-  }
-
-  def apply()(implicit tx: S#Tx): A = {
-    logPartial(s"$this get")
-    tx.getPartial(id)
-  }
-
-  def setInit(v: A)(implicit tx: S#Tx): Unit = {
-    logPartial(s"$this ini $v")
-    tx.putPartial(id, v)
-  }
-
-  override def toString = s"PartialVar($id)"
-}
+//private[impl] final class PartialVarTxImpl[S <: Sys[S], A](protected val id: S#ID)
+//                                                    (implicit ser: serial.Serializer[S#Tx, S#Acc, A])
+//  extends BasicVar[S, A] {
+//
+//  def meld(from: S#Acc)(implicit tx: S#Tx): A = ???
+//
+//  def update(v: A)(implicit tx: S#Tx): Unit = {
+//    logPartial(s"$this set $v")
+//    tx.putPartial(id, v)
+//  }
+//
+//  def apply()(implicit tx: S#Tx): A = {
+//    logPartial(s"$this get")
+//    tx.getPartial(id)
+//  }
+//
+//  def setInit(v: A)(implicit tx: S#Tx): Unit = {
+//    logPartial(s"$this ini $v")
+//    tx.putPartial(id, v)
+//  }
+//
+//  override def toString = s"PartialVar($id)"
+//}
 
 private[impl] final class VarTxImpl[S <: Sys[S], A](protected val id: S#ID)
                                              (implicit ser: serial.Serializer[S#Tx, S#Acc, A])

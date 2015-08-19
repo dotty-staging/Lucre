@@ -297,7 +297,9 @@ object IntExtensions {
   //         def value( a: Int, b: Int ) : Int = ri_wrap2( a, b )
   //      }
 
-  final class Ops[S <: Sys[S]](private val a: Ex[S]) extends AnyVal { me =>
+  final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
+    import me.{`this` => a}
+
     private type E = Ex[S]
 
     // ---- Int => Int ----

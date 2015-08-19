@@ -46,7 +46,7 @@ trait Mixin[S <: Sys[S]]
   final val store         = storeFactory.open("k-main")
   private val varMap      = DurablePersistentMap.newConfluentIntMap[S](store, this, isOblivious = false)
   final val fullCache     = DurableCacheMapImpl.newIntCache(varMap)
-  final val partialCache  = PartialCacheMapImpl.newIntCache(DurablePersistentMap.newPartialMap[S](store, this))
+  // final val partialCache  = PartialCacheMapImpl.newIntCache(DurablePersistentMap.newPartialMap[S](store, this))
 
   private val eventVarMap = DurablePersistentMap.newConfluentIntMap[S](eventStore, this, isOblivious = true)
 

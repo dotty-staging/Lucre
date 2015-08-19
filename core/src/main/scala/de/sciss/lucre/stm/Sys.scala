@@ -71,7 +71,12 @@ trait Sys[S <: Sys[S]] {
   def close(): Unit
 
   // ---- event ----
+
   private[lucre] def reactionMap: ReactionMap[S]
+
+  // ---- context ----
+
+  type Context
 }
 
 trait NoSys extends Sys[NoSys]

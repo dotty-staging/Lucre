@@ -38,13 +38,13 @@ trait Txn[S <: Sys[S]] extends stm.Txn[S] {
   private[confluent] def getTxn[A]   (id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
   private[confluent] def getNonTxn[A](id: S#ID)(implicit ser: ImmutableSerializer[A]): A
 
-  private[confluent] def putPartial[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit
-  private[confluent] def getPartial[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
+//  private[confluent] def putPartial[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit
+//  private[confluent] def getPartial[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
 
   private[confluent] def removeFromCache(id: S#ID): Unit
 
   private[confluent] def addDirtyCache     (cache: Cache[S#Tx]): Unit
   private[confluent] def addDirtyLocalCache(cache: Cache[S#Tx]): Unit
 
-  private[confluent] def removeDurableIDMap[A](map: stm.IdentifierMap[S#ID, S#Tx, A]): Unit
+  // private[confluent] def removeDurableIDMap[A](map: stm.IdentifierMap[S#ID, S#Tx, A]): Unit
 }

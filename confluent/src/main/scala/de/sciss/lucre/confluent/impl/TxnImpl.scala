@@ -53,7 +53,7 @@ trait TxnMixin[S <: Sys[S]]
    * To avoid that, durable maps are maintained by their id's in a transaction local map. That way,
    * only one instance per id is available in a single transaction.
    */
-  private var durableIDMaps     = IntMap.empty[DurableIDMapImpl[_, _]]
+  // private var durableIDMaps     = IntMap.empty[DurableIDMapImpl[_, _]]
   private var meld              = MeldInfo.empty[S]
   private var dirtyMaps         = Vector.empty[Cache[S#Tx]]
   private var beforeCommitFuns  = IQueue.empty[S#Tx => Unit]
@@ -72,7 +72,7 @@ trait TxnMixin[S <: Sys[S]]
     if (!markDirtyFlag) {
       markDirtyFlag = true
       addDirtyCache(fullCache)
-      addDirtyCache(partialCache)
+      // addDirtyCache(partialCache)
     }
 
   final def addDirtyCache(map: Cache[S#Tx]): Unit = {
@@ -114,7 +114,7 @@ trait TxnMixin[S <: Sys[S]]
   }
 
   final protected def fullCache     = system.fullCache
-  final protected def partialCache  = system.partialCache
+  // final protected def partialCache  = system.partialCache
 
   final def newID(): S#ID = {
     val res = new ConfluentID[S](system.newIDValue()(this), Path.empty[S])
@@ -122,7 +122,9 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-//  final def newPartialID(): S#ID = {
+  def newContext(): S#Context = ???
+
+  //  final def newPartialID(): S#ID = {
 //    if (Confluent.DEBUG_DISABLE_PARTIAL) return newID()
 //
 //    val res = new PartialID[S](system.newIDValue()(this), Path.empty[S])
@@ -188,13 +190,13 @@ trait TxnMixin[S <: Sys[S]]
     markDirty()
   }
 
-  final def putPartial[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {
-    partialCache.putPartial(id.base, id.path, value)(this, ser)
-    markDirty()
-  }
-
-  final def getPartial[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A =
-    partialCache.getPartial[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
+//  final def putPartial[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {
+//    partialCache.putPartial(id.base, id.path, value)(this, ser)
+//    markDirty()
+//  }
+//
+//  final def getPartial[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A =
+//    partialCache.getPartial[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
 
   final def removeFromCache(id: S#ID): Unit =
     fullCache.removeCacheOnly(id.base, id.path)(this)
@@ -251,20 +253,20 @@ trait TxnMixin[S <: Sys[S]]
     new InMemoryIDMapImpl[S, A](map)
   }
 
-  final def newDurableIDMap[A](implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-    mkDurableIDMap(system.newIDValue()(this))
-  }
-
-  final def removeDurableIDMap[A](map: IdentifierMap[S#ID, S#Tx, A]): Unit =
-    durableIDMaps -= map.id.base
-
-  private def mkDurableIDMap[A](id: Int)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-    val map = DurablePersistentMap.newConfluentLongMap[S](system.store, system.indexMap, isOblivious = false)
-    val idi = new ConfluentID(id, Path.empty[S])
-    val res = new DurableIDMapImpl[S, A](idi, map)
-    durableIDMaps += id -> res
-    res
-  }
+//  final def newDurableIDMap[A](implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
+//    mkDurableIDMap(system.newIDValue()(this))
+//  }
+//
+//  final def removeDurableIDMap[A](map: IdentifierMap[S#ID, S#Tx, A]): Unit =
+//    durableIDMaps -= map.id.base
+//
+//  private def mkDurableIDMap[A](id: Int)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
+//    val map = DurablePersistentMap.newConfluentLongMap[S](system.store, system.indexMap, isOblivious = false)
+//    val idi = new ConfluentID(id, Path.empty[S])
+//    val res = new DurableIDMapImpl[S, A](idi, map)
+//    durableIDMaps += id -> res
+//    res
+//  }
 
   final protected def readSource(in: DataInput, pid: S#ID): S#ID = {
     val base = in./* PACKED */ readInt()
@@ -333,13 +335,13 @@ trait TxnMixin[S <: Sys[S]]
 //    res
 //  }
 
-  final def readDurableIDMap[A](in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-    val id = in./* PACKED */ readInt()
-    durableIDMaps.get(id) match {
-      case Some(existing) => existing.asInstanceOf[DurableIDMapImpl[S, A]]
-      case _              => mkDurableIDMap(id)
-    }
-  }
+//  final def readDurableIDMap[A](in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
+//    val id = in./* PACKED */ readInt()
+//    durableIDMaps.get(id) match {
+//      case Some(existing) => existing.asInstanceOf[DurableIDMapImpl[S, A]]
+//      case _              => mkDurableIDMap(id)
+//    }
+//  }
 
   override def toString = s"confluent.Sys#Tx$inputAccess"
 }

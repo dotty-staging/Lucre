@@ -178,6 +178,8 @@ object InMemoryImpl {
 //      opNotSupported("readDurableIDMap")
 
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
+
+    def newContext(): S#Context = ???
   }
 
   private final class System extends Mixin[InMemory] with InMemory with ReactionMapImpl.Mixin[InMemory] {

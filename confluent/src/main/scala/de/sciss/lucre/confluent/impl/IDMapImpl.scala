@@ -57,45 +57,45 @@ private[impl] final class InMemoryIDMapImpl[S <: Sys[S], A](val store: InMemoryC
   override def toString = s"IdentifierMap<${hashCode().toHexString}>"
 }
 
-private[impl] final class DurableIDMapImpl[S <: Sys[S], A](val id: S#ID,
-                                                     val store: DurablePersistentMap[S, Long])
-                                                    (implicit serializer: serial.Serializer[S#Tx, S#Acc, A])
-  extends IdentifierMap[S#ID, S#Tx, A] with DurableCacheMapImpl[S, Long] {
-
-  private val nid           = id.base.toLong << 32
-  private val markDirtyFlag = TxnLocal(false)
-
-  private def markDirty()(implicit tx: S#Tx): Unit =
-    if (!markDirtyFlag.swap(true)(tx.peer)) tx.addDirtyCache(this)
-
-  def get(id: S#ID)(implicit tx: S#Tx): Option[A] = {
-    val key = nid | (id.base.toLong & 0xFFFFFFFFL)
-    getCacheTxn[A](key, id.path)
-  }
-
-  def getOrElse(id: S#ID, default: => A)(implicit tx: S#Tx): A = {
-    get(id).getOrElse(default)
-  }
-
-  def put(id: S#ID, value: A)(implicit tx: S#Tx): Unit = {
-    val key = nid | (id.base.toLong & 0xFFFFFFFFL)
-    putCacheTxn[A](key, id.path, value)
-    markDirty()
-  }
-
-  def contains(id: S#ID)(implicit tx: S#Tx): Boolean = {
-    get(id).isDefined // XXX TODO more efficient implementation
-  }
-
-  def remove(id: S#ID)(implicit tx: S#Tx): Unit =
-    if (removeCacheOnly(id.base, id.path)) markDirty()
-
-  def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id.base)
-
-  def dispose()(implicit tx: S#Tx): Unit = {
-    println("WARNING: Durable IDMap.dispose : not yet implemented")
-    tx.removeDurableIDMap(this)
-  }
-
-  override def toString = s"IdentifierMap<${id.base}>"
-}
+//private[impl] final class DurableIDMapImpl[S <: Sys[S], A](val id: S#ID,
+//                                                     val store: DurablePersistentMap[S, Long])
+//                                                    (implicit serializer: serial.Serializer[S#Tx, S#Acc, A])
+//  extends IdentifierMap[S#ID, S#Tx, A] with DurableCacheMapImpl[S, Long] {
+//
+//  private val nid           = id.base.toLong << 32
+//  private val markDirtyFlag = TxnLocal(false)
+//
+//  private def markDirty()(implicit tx: S#Tx): Unit =
+//    if (!markDirtyFlag.swap(true)(tx.peer)) tx.addDirtyCache(this)
+//
+//  def get(id: S#ID)(implicit tx: S#Tx): Option[A] = {
+//    val key = nid | (id.base.toLong & 0xFFFFFFFFL)
+//    getCacheTxn[A](key, id.path)
+//  }
+//
+//  def getOrElse(id: S#ID, default: => A)(implicit tx: S#Tx): A = {
+//    get(id).getOrElse(default)
+//  }
+//
+//  def put(id: S#ID, value: A)(implicit tx: S#Tx): Unit = {
+//    val key = nid | (id.base.toLong & 0xFFFFFFFFL)
+//    putCacheTxn[A](key, id.path, value)
+//    markDirty()
+//  }
+//
+//  def contains(id: S#ID)(implicit tx: S#Tx): Boolean = {
+//    get(id).isDefined // XXX TODO more efficient implementation
+//  }
+//
+//  def remove(id: S#ID)(implicit tx: S#Tx): Unit =
+//    if (removeCacheOnly(id.base, id.path)) markDirty()
+//
+//  def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id.base)
+//
+//  def dispose()(implicit tx: S#Tx): Unit = {
+//    println("WARNING: Durable IDMap.dispose : not yet implemented")
+//    tx.removeDurableIDMap(this)
+//  }
+//
+//  override def toString = s"IdentifierMap<${id.base}>"
+//}
