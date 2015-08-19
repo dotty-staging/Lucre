@@ -30,8 +30,8 @@ lazy val gpl2 = "GPL v2+"    -> url("http://www.gnu.org/licenses/gpl-2.0.txt" )
 lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 lazy val root: Project = Project(id = baseNameL, base = file("."))
-  .aggregate(core, expr, durable, bdb, bdb6)
-  .dependsOn(core, expr, durable, bdb /* , bdb6 */)  // i.e. root = full sub project. if you depend on root, will draw all sub modules.
+  .aggregate(core, expr, data, durable, bdb, bdb6)
+  .dependsOn(core, expr, data, durable, bdb /* , bdb6 */)  // i.e. root = full sub project. if you depend on root, will draw all sub modules.
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -76,6 +76,20 @@ lazy val durable = Project(id = s"$baseNameL-durable", base = file("durable"))
   .settings(
     licenses := Seq(lgpl)
   )
+
+lazy val data = Project(id = s"$baseNameL-data", base = file("data"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    licenses := Seq(lgpl)
+  )
+
+//lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
+//  .dependsOn(durable)
+//  .settings(commonSettings)
+//  .settings(
+//    licenses := Seq(lgpl)
+//  )
 
 lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
   .dependsOn(durable)
