@@ -26,6 +26,11 @@ package object expr {
   val Boolean: TypeExpr1[scala.Boolean] = BooleanImpl
   val String : TypeExpr1[Predef.String] = StringImpl
 
+  def init(): Unit = {
+    IntExtensions    .init()
+    BooleanExtensions.init()
+  }
+
   private[this] object IntImpl extends impl.ExprTypeImpl[scala.Int] {
     final val typeID = 2
 

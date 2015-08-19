@@ -37,7 +37,10 @@ lazy val root: Project = Project(id = baseNameL, base = file("."))
     licenses := Seq(gpl2),
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
-    publishArtifact in (Compile, packageSrc) := false  // there are no sources
+    publishArtifact in (Compile, packageSrc) := false, // there are no sources
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "model" % modelVersion % "test"   // XXX TODO - why is this not part of the `expr` dependency?
+    )
   )
 
 lazy val core = Project(id = s"$baseNameL-core", base = file("core"))

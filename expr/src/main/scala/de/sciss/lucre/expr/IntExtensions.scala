@@ -310,7 +310,7 @@ object IntExtensions {
   //         def value( a: Int, b: Int ) : Int = ri_wrap2( a, b )
   //      }
 
-  implicit final class IntExprOps[S <: Sys[S]](private val a: Ex[S]) extends AnyVal { me =>
+  final class Ops[S <: Sys[S]](private val a: Ex[S]) extends AnyVal { me =>
     private type E = Ex[S]
 
     // ---- Int => Int ----
