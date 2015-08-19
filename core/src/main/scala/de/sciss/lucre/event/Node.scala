@@ -38,9 +38,9 @@ object Targets {
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Children[S] = {
       val sz = in./* PACKED */ readInt()
       if (sz == 0) Vector.empty else Vector.fill(sz) {
-        val slot      = in.readByte()
-        val selector  = Event.read(in, access)
-        (slot, selector)
+        val slot  = in.readByte()
+        val event = Event.read(in, access)
+        (slot, event)
       }
     }
   }

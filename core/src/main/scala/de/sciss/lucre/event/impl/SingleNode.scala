@@ -17,7 +17,7 @@ trait SingleNode[S <: Sys[S], +A]
 
   def changed: Event[S, A]
 
-  final private[lucre] def select(slot: Int): Event[S, Any] = {
+  final private[lucre] def event(slot: Int): Event[S, Any] = {
     if (slot != 0) throw new IllegalArgumentException(s"Invalid slot $slot")
     changed
   }

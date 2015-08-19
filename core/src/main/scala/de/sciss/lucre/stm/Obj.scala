@@ -14,5 +14,5 @@ trait Obj[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
 
   def typeID: Int
 
-  private[lucre] def select(slot: Int): Event[S, Any]
+  private[lucre] def event(slot: Int): Event[S, Any]
 }

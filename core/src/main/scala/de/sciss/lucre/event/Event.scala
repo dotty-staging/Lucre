@@ -82,7 +82,7 @@ object Event {
   private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = {
     val slot  = in.readByte()
     val node  = Obj.read[S](in, access)
-    node.select(slot)
+    node.event(slot)
   }
 
   private final class Ser[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Event[S, Any]] {
