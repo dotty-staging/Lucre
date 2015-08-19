@@ -13,14 +13,18 @@
 
 package de.sciss.lucre
 
+import de.sciss.lucre.stm.Sys
 import de.sciss.serial.{DataInput, DataOutput}
 
 package object expr {
-  val Int    : Type.Expr[scala.Int    ] = IntImpl
-  val Long   : Type.Expr[scala.Long   ] = LongImpl
-  val Double : Type.Expr[scala.Double ] = DoubleImpl
-  val Boolean: Type.Expr[scala.Boolean] = BooleanImpl
-  val String : Type.Expr[Predef.String] = StringImpl
+  type Repr[A]      = {type L[~ <: Sys[~]] = Expr[~, A]}
+  type TypeExpr1[A] = Type.Expr[A] with Type._1[Repr[A]#L]
+
+  val Int    : TypeExpr1[scala.Int    ] = IntImpl
+  val Long   : TypeExpr1[scala.Long   ] = LongImpl
+  val Double : TypeExpr1[scala.Double ] = DoubleImpl
+  val Boolean: TypeExpr1[scala.Boolean] = BooleanImpl
+  val String : TypeExpr1[Predef.String] = StringImpl
 
   private[this] object IntImpl extends impl.ExprTypeImpl[scala.Int] {
     final val typeID = 2

@@ -50,6 +50,8 @@ object Type {
     def readValue (          in : DataInput ): A
     def writeValue(value: A, out: DataOutput): Unit
 
+    def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr[S, A]
+
     implicit def serializer   [S <: Sys[S]]: Serializer[S#Tx, S#Acc, expr.Expr    [S, A]]
     implicit def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, expr.Expr.Var[S, A]]
 
