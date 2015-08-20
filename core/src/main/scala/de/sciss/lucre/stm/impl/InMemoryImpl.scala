@@ -15,12 +15,11 @@ package de.sciss.lucre.stm.impl
 
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
-import de.sciss.lucre.stm
 import de.sciss.lucre.stm.InMemoryLike.Var
 import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Source, TxnLike}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TxnExecutor}
+import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TMap, TxnExecutor}
 
 object InMemoryImpl {
   private type S = InMemory
@@ -74,14 +73,8 @@ object InMemoryImpl {
 
     override def toString = s"Var<${hashCode().toHexString}>"
 
-    def apply()(implicit tx: S#Tx): A = {
-      peer.get(tx.peer)
-    }
-
-    def update(v: A)(implicit tx: S#Tx): Unit = {
-      peer.set(v)(tx.peer)
-      // tx.markDirty()
-    }
+    def apply()     (implicit tx: S#Tx): A    = tx.getVar(this)
+    def update(v: A)(implicit tx: S#Tx): Unit = tx.putVar(this, v)
 
 //    def transform(f: A => A)(implicit tx: S#Tx): Unit = {
 //      peer.transform(f)(tx.peer)
@@ -91,6 +84,7 @@ object InMemoryImpl {
     def write(out: DataOutput): Unit = ()
 
     def dispose()(implicit tx: S#Tx): Unit = {
+      // XXX TODO --- what to do with the contexts?
       peer.set(null.asInstanceOf[A])(tx.peer)
       // tx.markDirty()
     }
@@ -109,7 +103,16 @@ object InMemoryImpl {
     }
   }
 
-  private final class ContextImpl(val key: Int) extends InMemoryLike.Context
+  private final class ContextImpl[S <: InMemoryLike[S]] extends InMemoryLike.Context[S] {
+    private val map = TMap.empty[Any, Any]
+
+    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A = {
+      import TxnLike.peer
+      map.getOrElse(vr, vr.peer.get).asInstanceOf[A]
+    }
+
+    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit = map.put(vr, value)(tx.peer)
+  }
 
   private final class TxnImpl(val system: InMemory, val peer: InTxn)
     extends TxnMixin[InMemory] {
@@ -129,10 +132,14 @@ object InMemoryImpl {
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
 
-    private var context: S#Context = null
-
     private[stm] def getVar[A](vr: Var[S, A]): A = {
-      ???
+      if (_context == null) vr.peer.get(peer)
+      else _context.get(vr)(this)
+    }
+
+    private[stm] def putVar[A](vr: Var[S, A], value: A): Unit = {
+      if (_context == null) vr.peer.set(value)(peer)
+      else _context.put(vr, value)(this)
     }
 
     final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
@@ -188,7 +195,7 @@ object InMemoryImpl {
 
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
-    def newContext(): S#Context = ???
+    def newContext(): S#Context = new ContextImpl[S]
   }
 
   private final class System extends Mixin[InMemory] with InMemory with ReactionMapImpl.Mixin[InMemory] {

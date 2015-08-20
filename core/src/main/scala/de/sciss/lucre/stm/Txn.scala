@@ -129,6 +129,8 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   def newContext(): S#Context
 
+  def use[A](context: S#Context)(fun: => A): A
+
   // ---- former event ----
 
   private[lucre] def reactionMap: ReactionMap[S]

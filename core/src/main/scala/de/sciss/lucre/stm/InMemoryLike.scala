@@ -24,21 +24,23 @@ object InMemoryLike {
 
   trait Txn[S <: InMemoryLike[S]] extends stm.Txn[S] {
     private[stm] def getVar[A](vr: S#Var[A]): A
+    private[stm] def putVar[A](vr: S#Var[A], value: A): Unit
   }
 
   trait Var[S <: InMemoryLike[S], A] extends stm.Var[S#Tx, A] {
     private[stm] def peer: Ref[A]
   }
 
-  trait Context {
-    def key: Int
+  trait Context[S <: InMemoryLike[S]] {
+    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A
+    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit
   }
 }
 trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]   = InMemoryLike.Var[S, A]
   final type ID       = InMemoryLike.ID[S]
   final type Acc      = Unit
-  final type Context  = InMemoryLike.Context
+  final type Context  = InMemoryLike.Context[S]
 
   type Tx <: InMemoryLike.Txn[S]
 

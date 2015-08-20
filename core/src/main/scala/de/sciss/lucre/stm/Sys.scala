@@ -76,7 +76,7 @@ trait Sys[S <: Sys[S]] {
 
   // ---- context ----
 
-  type Context
+  type Context <: AnyRef
 }
 
 trait NoSys extends Sys[NoSys]
