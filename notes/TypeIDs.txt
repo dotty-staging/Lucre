@@ -1,0 +1,97 @@
+:: expr (immutable values) ::
+
+::: primitives :::
+
+0   Byte
+1   Short
+2   Int
+3   Long
+4   Float
+5   Double
+6   Boolean
+7   Char
+8   String
+9   SpanLike
+10  Span
+11  Grapheme.Value
+12  Grapheme.Value.Curve
+13  Grapheme.Value.Audio
+14  FadeSpec.Value
+15  Env.ConstShape
+16  SynthGraph
+17  IncompleteProduct (SoundDesigner)
+18  UGenSource (SoundDesigner)
+19  Action (Function0[Unit])
+20  Warp
+21  ParamSpec
+22 	Color
+
+:: coll ::
+
+23  expr.List
+24  expr.Map
+
+:: non-expr elements (mutables) ::
+
+0x10000     Folder
+0x10001     ProcGroup
+0x10002	    AudioGrapheme	XXX should be 13
+0x10003     ArtifactLocation
+
+0x10004     expr.List
+0x10005     Proc
+
+0x10006     Timeline
+0x10007     Ensemble
+0x10008     Artifact
+0x10009  	Scan
+0x1000A  	Nuages
+
+:: indeterminus ::
+
+0x20000     Recursion
+0x20001     Code
+
+:: sysson ::
+
+0x30000     Patch
+0x30001     Matrix
+0x30002     Reduce.Op
+0x30003     Dimension.Selection
+0x30004     Sonification
+0x30005     DataSource
+0x30006     Plot
+
+:: higher-order ::
+
+0x1000 | A.typeID   Option[A]
+0x2000 | A.typeID   Vec[A]
+
+::::::::::::::::
+:: Extensions ::
+::::::::::::::::
+
+Boolean 1
+       0 to    0 - standard Boolean
+
+Boolean 2
+       0 to   15 - standard Boolean
+
+Int 1
+       0 to   13 - standard Int
+     100 to  100 - standard Int
+
+Int 2
+
+Double 1
+	   0 to   36 - standard Double
+	1000 to 1002 - ParamSpec
+
+String 1
+	   0 to    0 - standard String
+	1000 to 1000 - ParamSpec
+
+Warp 1
+	1000 to 1000 - ParamSpec
+
+

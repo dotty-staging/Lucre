@@ -63,7 +63,7 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
   )
 
 lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
-  .dependsOn(core)
+  .dependsOn(data)
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),

@@ -80,7 +80,7 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   final def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A] = {
     val cookie = in.readByte()
     if (cookie != 3) sys.error(s"Unexpected cookie $cookie") // XXX TODO cookie should be available in lucre.event
-    newConst[S](readValue(in))
+    newConst[S](valueSerializer.read(in))
   }
 
   final def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): ExV[S] = {
@@ -102,7 +102,7 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   private[this] final case class Const[S <: Sys[S]](constValue: A) extends ConstImpl[S, A] {
     def typeID: Int = tpe.typeID
 
-    protected def writeData(out: DataOutput): Unit = writeValue(constValue, out)
+    protected def writeData(out: DataOutput): Unit = valueSerializer.write(constValue, out)
   }
 
   private[this] final class Var[S <: Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: Targets[S])
@@ -130,7 +130,7 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
       val tpe = in.readInt()
       if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
       (in.readByte(): @switch) match {
-        case 3 => newConst(readValue(in))
+        case 3 => newConst(valueSerializer.read(in))
         case 0 => readNodeOrVar(in, access)
         case cookie => sys.error(s"Unexpected cookie $cookie")
       }

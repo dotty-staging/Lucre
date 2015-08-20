@@ -25,13 +25,16 @@ import de.sciss.lucre.stm.Sys
   *
   * I don't know if `Reactor` still needs the `equals` implementation?
   */
-trait SingleNode[S <: Sys[S], +A]
-  extends Node[S] /* with Event[S, A] */ {
+trait SingleNode[S <: Sys[S], +A] extends Node[S] { self =>
 
   def changed: Event[S, A]
 
   final private[lucre] def event(slot: Int): Event[S, Any] = {
     if (slot != 0) throw new IllegalArgumentException(s"Invalid slot $slot")
     changed
+  }
+
+  trait Changed extends SingleEvent[S, A] {
+    def node: Node[S] = self
   }
 }

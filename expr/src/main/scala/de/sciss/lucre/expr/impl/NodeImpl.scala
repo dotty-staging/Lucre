@@ -26,9 +26,5 @@ trait NodeImpl[S <: Sys[S], A]
 
   // final def disposeData()(implicit tx: S#Tx) = ()
 
-  trait Changed extends evti.SingleEvent[S, Change[A]] {
-    def node: Expr.Node[S, A] = self
-  }
-
   override def toString = s"Expr$id"
 }

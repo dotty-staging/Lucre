@@ -13,20 +13,21 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.event.Event
+import de.sciss.lucre.event.{Event, Targets}
 import de.sciss.lucre.stm
-import de.sciss.serial.{Serializer, DataInput}
-import impl.{ObjImpl => Impl}
+import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
+import de.sciss.serial
+import de.sciss.serial.{DataInput, DataOutput}
 
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 
-  implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer
+  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer
 
   trait Type {
     def typeID: Int
 
-    private[this] lazy val _init: Unit = Obj.register(this)
+    private[this] lazy val _init: Unit = Obj.addType(this)
 
     final def init(): Unit = _init
 
@@ -39,7 +40,25 @@ object Obj {
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S]
   }
 
-  def register(tpe: Type): Unit = Impl.register(tpe)
+  def addType(tpe: Type): Unit      = Impl.addType(tpe)
+  def getType(id : Int ): Obj.Type  = Impl.getType(id )
+
+  trait Serializer[S <: Sys[S], Repr <: Obj[S]]
+    extends serial.Serializer[S#Tx, S#Acc, Repr] {
+
+    protected def typeID: Int
+
+    final def write(v: Repr, out: DataOutput): Unit = v.write(out)
+
+    final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
+      val tpe     = in.readInt()
+      if (tpe != typeID) sys.error("Type mismatch, expected $typeID, found $tpe")
+      val targets = Targets.read[S](in, access)
+      read(in, access, targets)
+    }
+
+    protected def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Repr
+  }
 }
 trait Obj[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
   override def toString = s"Obj$id"

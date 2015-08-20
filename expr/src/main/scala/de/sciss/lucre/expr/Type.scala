@@ -13,10 +13,10 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.{Targets, Node}
+import de.sciss.lucre.event.{Node, Targets}
 import de.sciss.lucre.expr
 import de.sciss.lucre.stm.{Obj, Sys}
-import de.sciss.serial.{Serializer, DataOutput, DataInput}
+import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.language.higherKinds
 
@@ -60,13 +60,12 @@ object Type {
 
     // ---- abstract ----
 
-    def readValue (          in : DataInput ): A
-    def writeValue(value: A, out: DataOutput): Unit
-
     def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr[S, A]
 
     implicit def serializer   [S <: Sys[S]]: Serializer[S#Tx, S#Acc, expr.Expr    [S, A]]
     implicit def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, expr.Expr.Var[S, A]]
+
+    implicit def valueSerializer: ImmutableSerializer[A]
 
     // ---- public ----
 
