@@ -17,19 +17,31 @@ import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.model
-import de.sciss.serial.{DataInput, Serializer}
+import de.sciss.serial.{Writable, DataInput, Serializer}
+import impl.{BiPinImpl => Impl}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 object BiPin extends Obj.Type {
   final val typeID = 25
 
+  override def init(): Unit = {
+    super.init()
+    Entry.init()
+  }
+
   final case class Update[S <: Sys[S], A](pin: BiPin[S, A], changes: List[Change[S, A]])
 
-  object Entry {
-    def apply[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A): Entry[S, A] = ???
+  object Entry extends Obj.Type {
+    final val typeID = 26
+
+    def apply[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
+      Impl.newEntry(key, value)
+
+    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+      Impl.readIdentifiedEntry(in, access)
   }
-  trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] {
+  trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] with Writable {
     def key  : Expr[S, Long]
     def value: A
   }
@@ -52,13 +64,13 @@ object BiPin extends Obj.Type {
     }
 
     def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
-      ??? // Impl.readModifiable[S, A](in, access)
+      Impl.readModifiable[S, A](in, access)
 
     def apply[S <: Sys[S], A <: Obj[S]](implicit tx: S#Tx): Modifiable[S, A] =
-      ??? // Impl.newModifiable[S, A]
+      Impl.newModifiable[S, A]
 
     implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin.Modifiable[S, A]] =
-      ??? // Impl.modifiableSerializer[S, A]
+      Impl.modifiableSerializer[S, A]
   }
 
   trait Modifiable[S <: Sys[S], A] extends BiPin[S, A] {
@@ -68,12 +80,13 @@ object BiPin extends Obj.Type {
   }
 
   def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
-    ??? // Impl.read[S, A](in, access)
+    Impl.read[S, A](in, access)
 
   implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
-    ??? // Impl.serializer[S, A]
+    Impl.serializer[S, A]
 
-  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = ???
+  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+    Impl.readIdentifiedObj(in, access)
 }
 
 sealed trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]] {
