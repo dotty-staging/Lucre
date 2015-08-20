@@ -29,7 +29,7 @@ object Obj {
 
     private[this] lazy val _init: Unit = Obj.addType(this)
 
-    final def init(): Unit = _init
+    def init(): Unit = _init
 
     final def readObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
       val tpe = in.readInt()

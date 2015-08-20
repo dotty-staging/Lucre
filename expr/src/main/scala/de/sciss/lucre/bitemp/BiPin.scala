@@ -21,18 +21,28 @@ import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
-object BiPin {
-  final case class Update[S <: Sys[S], A](pin: BiPin[S, A], changes: Vec[Change[S, A]])
+object BiPin extends Obj.Type {
+  final val typeID = 25
 
-  type Entry[S <: Sys[S], A] = (Expr[S, Long], A)
-  type Leaf [S <: Sys[S], A] = Vec[Entry[S, A]]
+  final case class Update[S <: Sys[S], A](pin: BiPin[S, A], changes: List[Change[S, A]])
+
+  object Entry {
+    def apply[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A): Entry[S, A] = ???
+  }
+  trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] {
+    def key  : Expr[S, Long]
+    def value: A
+  }
+
+  // type Entry[S <: Sys[S], A] = (Expr[S, Long], A)
+  type Leaf[S <: Sys[S], A] = Vec[Entry[S, A]]
 
   sealed trait Change[S <: Sys[S], A] {
     def entry: Entry[S, A]
   }
 
-  final case class Added  [S <: Sys[S], A](time: Long, entry: Entry[S, A]) extends Change[S, A]
-  final case class Removed[S <: Sys[S], A](time: Long, entry: Entry[S, A]) extends Change[S, A]
+  final case class Added  [S <: Sys[S], A](time: Long              , entry: Entry[S, A]) extends Change[S, A]
+  final case class Removed[S <: Sys[S], A](time: Long              , entry: Entry[S, A]) extends Change[S, A]
   final case class Moved  [S <: Sys[S], A](time: model.Change[Long], entry: Entry[S, A]) extends Change[S, A]
 
   object Modifiable {
@@ -62,6 +72,8 @@ object BiPin {
 
   implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
     ??? // Impl.serializer[S, A]
+
+  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = ???
 }
 
 sealed trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]] {

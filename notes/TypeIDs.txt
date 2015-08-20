@@ -30,6 +30,7 @@
 
 23  expr.List
 24  expr.Map
+25  BiPin
 
 :: non-expr elements (mutables) ::
 
