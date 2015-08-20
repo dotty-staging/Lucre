@@ -226,7 +226,7 @@ object DurableImpl {
     final def newVarArray[A](size: Int): Array[S#Var[A]] = new Array[Var[S#Tx, A]](size)
 
     final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
-      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, A](new IDImpl(0))(_.id)
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, A](_.id)
 
 //    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
 //      new IDMapImpl[S, A](newID())
@@ -309,33 +309,33 @@ object DurableImpl {
     override def toString = s"<$id>"
   }
 
-  private final class IDMapImpl[S <: D[S], A](@field val id: S#ID)(implicit serializer: Serializer[S#Tx, S#Acc, A])
-    extends IdentifierMap[S#ID, S#Tx, A] {
-    map =>
-
-    @field private[this] val idn = id.id.toLong << 32
-
-    def get(id: S#ID)(implicit tx: S#Tx): Option[A] = {
-      tx.system.tryRead(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.read(_, ()))
-    }
-
-    def getOrElse(id: S#ID, default: => A)(implicit tx: S#Tx): A = get(id).getOrElse(default)
-
-    def put(id: S#ID, value: A)(implicit tx: S#Tx): Unit =
-      tx.system.write(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.write(value, _))
-
-    def contains(id: S#ID)(implicit tx: S#Tx): Boolean =
-      tx.system.exists(idn | (id.id.toLong & 0xFFFFFFFFL))
-
-    def remove(id: S#ID)(implicit tx: S#Tx): Unit =
-      tx.system.remove(idn | (id.id.toLong & 0xFFFFFFFFL))
-
-    def write(out: DataOutput): Unit = id.write(out)
-
-    def dispose()(implicit tx: S#Tx): Unit = id.dispose()
-
-    override def toString = s"IdentifierMap$id"
-  }
+//  private final class IDMapImpl[S <: D[S], A](@field val id: S#ID)(implicit serializer: Serializer[S#Tx, S#Acc, A])
+//    extends IdentifierMap[S#ID, S#Tx, A] {
+//    map =>
+//
+//    @field private[this] val idn = id.id.toLong << 32
+//
+//    def get(id: S#ID)(implicit tx: S#Tx): Option[A] = {
+//      tx.system.tryRead(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.read(_, ()))
+//    }
+//
+//    def getOrElse(id: S#ID, default: => A)(implicit tx: S#Tx): A = get(id).getOrElse(default)
+//
+//    def put(id: S#ID, value: A)(implicit tx: S#Tx): Unit =
+//      tx.system.write(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.write(value, _))
+//
+//    def contains(id: S#ID)(implicit tx: S#Tx): Boolean =
+//      tx.system.exists(idn | (id.id.toLong & 0xFFFFFFFFL))
+//
+//    def remove(id: S#ID)(implicit tx: S#Tx): Unit =
+//      tx.system.remove(idn | (id.id.toLong & 0xFFFFFFFFL))
+//
+//    def write(out: DataOutput): Unit = id.write(out)
+//
+//    def dispose()(implicit tx: S#Tx): Unit = id.dispose()
+//
+//    override def toString = s"IdentifierMap$id"
+//  }
 
   private sealed trait BasicSource[S <: D[S], A] extends Var[S#Tx, A] {
     protected def id: Int
@@ -348,18 +348,14 @@ object DurableImpl {
       require(tx.system.exists(id), s"trying to write disposed ref $id")
   }
 
-  private sealed trait BasicVar[S <: D[S], A] extends BasicSource[S, A] {
-    protected def ser: Serializer[S#Tx, S#Acc, A]
-
-    final def apply()(implicit tx: S#Tx): A = tx.system.read[A](id)(ser.read(_, ()))
-
-    final def setInit(v: A)(implicit tx: S#Tx): Unit =
-      tx.system.write(id)(ser.write(v, _))
-  }
-
   private final class VarImpl[S <: D[S], A](@field protected val id: Int,
                                             @field protected val ser: Serializer[S#Tx, S#Acc, A])
-    extends BasicVar[S, A] {
+    extends BasicSource[S, A] {
+
+    def apply()(implicit tx: S#Tx): A = tx.system.read[A](id)(ser.read(_, ()))
+
+    def setInit(v: A)(implicit tx: S#Tx): Unit =
+      tx.system.write(id)(ser.write(v, _))
 
     def update(v: A)(implicit tx: S#Tx): Unit = {
       assertExists()
@@ -521,6 +517,6 @@ object DurableImpl {
     def wrap(peer: InTxn): S#Tx = new TxnImpl(this, peer)
 
     protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](new IDImpl(0))(_.id)
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
   }
 }

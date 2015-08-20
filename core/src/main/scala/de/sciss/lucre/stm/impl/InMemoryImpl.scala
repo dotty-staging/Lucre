@@ -170,7 +170,7 @@ object InMemoryImpl {
     final def newVarArray[A](size: Int) = new Array[S#Var[A]](size)
 
     final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
-      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, A](new IDImpl(0))(_.id)
+      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, A](_.id)
 
 //    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
 //      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, A](new IDImpl(0))(_.id)
@@ -209,6 +209,6 @@ object InMemoryImpl {
     def wrap(itx: InTxn): S#Tx = new TxnImpl(this, itx)
 
     protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](new IDImpl(0))(_.id)
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
   }
 }

@@ -196,7 +196,7 @@ object DeterministicSkipOctree {
               if (cb.parent != n) {
                 errors :+= s"Child branch $cb has invalid parent ${cb.parent}, expected: $n $assertInfo"
                 if (repair) {
-                  (n, cb) match {
+                  ((n, cb): @unchecked) match {
                     case (pl: tree.LeftBranch , cbl: tree.LeftChildBranch ) => cbl.parent = pl
                     case (pr: tree.RightBranch, cbr: tree.RightChildBranch) => cbr.parent = pr
                   }
@@ -212,7 +212,7 @@ object DeterministicSkipOctree {
               }
               cb.nextOption match {
                 case Some(next) =>
-                  if (next.prevOption != Some(cb)) {
+                  if (!next.prevOption.contains(cb)) {
                     errors :+= s"Asymmetric next link $cq $assertInfo"
                   }
                   if (next.hyperCube != cq) {
@@ -225,7 +225,7 @@ object DeterministicSkipOctree {
               }
               cb.prevOption match {
                 case Some(prev) =>
-                  if (prev.nextOption != Some(cb)) {
+                  if (!prev.nextOption.contains(cb)) {
                     errors :+= s"Asymmetric prev link $cq $assertInfo"
                   }
                   if (prev.hyperCube != cq) {
@@ -2029,6 +2029,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
       @tailrec def findParent(b: BranchLike, idx: Int): BranchLike = b.child(idx) match {
         case sl: LeafImpl   => assert(sl == leaf); b
         case cb: BranchLike => findParent(cb, cb.hyperCube.indexOf(point))
+        case EmptyValue     => throw new IllegalStateException  // should not happen by definition
       }
 
       val newParent = findParent(prev, qIdx)

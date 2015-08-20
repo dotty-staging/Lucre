@@ -16,8 +16,8 @@ package de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.IdentifierMapImpl
 
 object IdentifierMap {
-  def newInMemoryIntMap[ID, Tx <: TxnLike, A](id: ID)(implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
-    IdentifierMapImpl.newInMemoryIntMap[ID, Tx, A](id)
+  def newInMemoryIntMap[ID, Tx <: TxnLike, A](implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
+    IdentifierMapImpl.newInMemoryIntMap[ID, Tx, A]
 }
 
 /** An identifier map is basically a transactional map whose keys are system identifiers.
@@ -34,7 +34,7 @@ object IdentifierMap {
   * @tparam A   the values stored at the keys. `Unit` can be used if only set
   *             functionality is needed.
   */
-trait IdentifierMap[ID, -Tx, A] extends Mutable[ID, Tx] {
+trait IdentifierMap[ID, -Tx, A] extends Disposable[Tx] /* Mutable[ID, Tx] */ {
   def put      (id: ID, value: A)     (implicit tx: Tx): Unit
   def get      (id: ID)               (implicit tx: Tx): Option[A]
   def getOrElse(id: ID, default: => A)(implicit tx: Tx): A

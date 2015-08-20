@@ -19,10 +19,10 @@ import de.sciss.serial.DataOutput
 import scala.concurrent.stm.TMap
 
 object IdentifierMapImpl {
-  def newInMemoryIntMap[ID, Tx <: TxnLike, A](id: ID)(implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
-    new InMemoryInt[ID, Tx, A](id, intView)
+  def newInMemoryIntMap[ID, Tx <: TxnLike, A](implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
+    new InMemoryInt[ID, Tx, A](intView)
 
-  private final class InMemoryInt[ID, Tx <: TxnLike, A](val id: ID, intView: ID => Int)
+  private final class InMemoryInt[ID, Tx <: TxnLike, A](intView: ID => Int)
     extends IdentifierMap[ID, Tx, A] {
 
     private val peer = TMap.empty[Int, A]
@@ -39,9 +39,10 @@ object IdentifierMapImpl {
     def remove(id: ID)(implicit tx: Tx): Unit =
       peer.remove(intView(id))(tx.peer)
 
-    override def toString = "IdentifierMap"
+    override def toString = s"IdentifierMap@${hashCode.toHexString}"
 
-    def write(out: DataOutput): Unit = ()
+    // def write(out: DataOutput): Unit = ()
+
     def dispose()(implicit tx: Tx): Unit = ()
   }
 }

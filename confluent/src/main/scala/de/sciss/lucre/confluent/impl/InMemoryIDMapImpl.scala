@@ -1,5 +1,5 @@
 /*
- *  IDMapImpl.scala
+ *  InMemoryIDMapImpl.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2015 Hanns Holger Rutz. All rights reserved.
@@ -26,7 +26,7 @@ private[impl] final class InMemoryIDMapImpl[S <: Sys[S], A](val store: InMemoryC
 
   private val markDirtyFlag = TxnLocal(false)
 
-  def id: S#ID = new ConfluentID(0, Path.empty[S])
+  // def id: S#ID = new ConfluentID(0, Path.empty[S])
 
   private def markDirty()(implicit tx: S#Tx): Unit =
     if (!markDirtyFlag.swap(true)(tx.peer)) {
@@ -50,11 +50,11 @@ private[impl] final class InMemoryIDMapImpl[S <: Sys[S], A](val store: InMemoryC
   def remove(id: S#ID)(implicit tx: S#Tx): Unit =
     if (removeCache(id.base, id.path)) markDirty()
 
-  def write(out: DataOutput) = ()
+  // def write(out: DataOutput) = ()
 
   def dispose()(implicit tx: S#Tx) = ()
 
-  override def toString = s"IdentifierMap<${hashCode().toHexString}>"
+  override def toString = s"IdentifierMap@${hashCode().toHexString}"
 }
 
 //private[impl] final class DurableIDMapImpl[S <: Sys[S], A](val id: S#ID,
