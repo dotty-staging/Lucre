@@ -2,6 +2,7 @@ package de.sciss
 package lucre
 package confluent
 
+import de.sciss.lucre.stm.TxnLike
 import serial.DataOutput
 
 trait ProjectionTest {
@@ -46,8 +47,11 @@ trait ProjectionTest {
   ////      x.set( 33 )
   //   }
 
-  def test3[S <: stm.Sys[S], Time](dynVar: stm.Var[Time, Int])(implicit tx: S#Tx, dynView: S#Tx => Time): Unit =
-    dynVar.transform(_ + 33)(tx)
+  def test3[S <: stm.Sys[S], Time](dynVar: stm.Var[Time, Int])(implicit tx: S#Tx, dynView: S#Tx => Time): Unit = {
+    implicit val dtx = dynView(tx)
+    // dynVar.transform(_ + 33)(tx)
+    dynVar() = dynVar() + 33
+  }
 
   trait PCursor[+Tx] {
     def time: Double

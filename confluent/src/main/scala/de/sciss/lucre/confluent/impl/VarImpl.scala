@@ -92,7 +92,7 @@ private[impl] sealed trait BasicVar[S <: Sys[S], A] extends Var[S, A] {
 
   def setInit(v: A)(implicit tx: S#Tx): Unit
 
-  final def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+//  final def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
 }
 
 private[impl] final class VarImpl[S <: Sys[S], A](protected val id: S#ID, protected val ser: ImmutableSerializer[A])
@@ -203,7 +203,7 @@ private final class RootVar[S <: Sys[S], A](id1: Int, name: String)
     tx.getTxn(id)
   }
 
-  def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+//  def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
 
   def write(out: DataOutput): Unit =
     sys.error("Unsupported Operation -- access.write")

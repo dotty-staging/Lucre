@@ -53,23 +53,22 @@ class FiatKaplanSuite extends FunSpec with GivenWhenThen with TestHasLinkedList 
 
       Given("v1 : Invert order of input linked list")
       cursor.step { implicit tx =>
-        access.transform { no =>
-          // urrgh, this got pretty ugly. but well, it does its job...
-          def reverse(node: Node): Node = node.next() match {
-            case Some(pred) =>
-              val res = reverse(pred)
-              pred.next() = Some(node)
-              res
-
-            case _ => node
-          }
-          val newHead = no.map { n =>
-            val res = reverse(n)
-            n.next() = None
+        val no = access()
+        // urrgh, this got pretty ugly. but well, it does its job...
+        def reverse(node: Node): Node = node.next() match {
+          case Some(pred) =>
+            val res = reverse(pred)
+            pred.next() = Some(node)
             res
-          }
-          newHead
+
+          case _ => node
         }
+        val newHead = no.map { n =>
+          val res = reverse(n)
+          n.next() = None
+          res
+        }
+        access() = newHead
       }
 
       When("the result is converted to a plain list in a new transaction")
@@ -87,7 +86,7 @@ class FiatKaplanSuite extends FunSpec with GivenWhenThen with TestHasLinkedList 
       // --> use a variant to better verify the results: set x=3 instead
       Given("v2 : Delete first node of list, allocate new node x=3 (!), concatenate to input list")
       cursor.stepFrom(path0) { implicit tx =>
-        access.transform {
+        access() = access() match {
           case Some(n) =>
             val res = n.next()
             @tailrec def step(last: Node): Unit =
@@ -129,7 +128,7 @@ class FiatKaplanSuite extends FunSpec with GivenWhenThen with TestHasLinkedList 
           pred match {
             case None =>
             case Some(n) =>
-              n.value.transform(_ + amount)
+              n.value() = n.value() + amount // .transform(_ + amount)
               inc(n.next(), amount)
           }
 

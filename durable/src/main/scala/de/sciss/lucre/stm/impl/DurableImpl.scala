@@ -366,7 +366,7 @@ object DurableImpl {
       tx.system.write(id)(ser.write(v, _))
     }
 
-    def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+//    def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var($id)"
   }
@@ -390,7 +390,7 @@ object DurableImpl {
     def readInit()(implicit tx: S#Tx): Unit =
       peer.set(tx.system.read(id)(ser.read(_, ())))(tx.peer)
 
-    def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+//    def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var($id)"
   }
@@ -409,8 +409,7 @@ object DurableImpl {
       tx.system.write(id)(_.writeBoolean(v))
     }
 
-    def transform(f: Boolean => Boolean)(implicit tx: S#Tx): Unit =
-      this() = f(this())
+//    def transform(f: Boolean => Boolean)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var[Boolean]($id)"
   }
@@ -429,8 +428,7 @@ object DurableImpl {
       tx.system.write(id)(_.writeInt(v))
     }
 
-    def transform(f: Int => Int)(implicit tx: S#Tx): Unit =
-      this() = f(this())
+//    def transform(f: Int => Int)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var[Int]($id)"
   }
@@ -453,7 +451,7 @@ object DurableImpl {
     def readInit()(implicit tx: S#Tx): Unit =
       peer.set(tx.system.read(id)(_.readInt()))(tx.peer)
 
-    def transform(f: Int => Int)(implicit tx: S#Tx): Unit = this() = f(this())
+//    def transform(f: Int => Int)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var[Int]($id)"
   }
@@ -472,8 +470,7 @@ object DurableImpl {
       tx.system.write(id)(_.writeLong(v))
     }
 
-    def transform(f: Long => Long)(implicit tx: S#Tx): Unit =
-      this() = f(this())
+//    def transform(f: Long => Long)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var[Long]($id)"
   }
@@ -496,8 +493,7 @@ object DurableImpl {
     def readInit()(implicit tx: S#Tx): Unit =
       peer.set(tx.system.read(id)(_.readLong()))(tx.peer)
 
-    def transform(f: Long => Long)(implicit tx: S#Tx): Unit =
-      this() = f(this())
+//    def transform(f: Long => Long)(implicit tx: S#Tx): Unit = this() = f(this())
 
     override def toString = s"Var[Long]($id)"
   }

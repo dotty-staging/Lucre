@@ -59,12 +59,12 @@ object InMemoryImpl {
     final def position(implicit tx: S#Tx): S#Acc = ()
   }
 
-  private def opNotSupported(name: String): Nothing = sys.error("Operation not supported: " + name)
+  private def opNotSupported(name: String): Nothing = sys.error(s"Operation not supported: $name")
 
   private final class VarImpl[S <: InMemoryLike[S], A](peer: ScalaRef[A])
     extends stm.Var[S#Tx, A] {
 
-    override def toString = "Var<" + hashCode().toHexString + ">"
+    override def toString = s"Var<${hashCode().toHexString}>"
 
     def apply()(implicit tx: S#Tx): A = peer.get(tx.peer)
 
@@ -73,10 +73,10 @@ object InMemoryImpl {
       // tx.markDirty()
     }
 
-    def transform(f: A => A)(implicit tx: S#Tx): Unit = {
-      peer.transform(f)(tx.peer)
-      // tx.markDirty()
-    }
+//    def transform(f: A => A)(implicit tx: S#Tx): Unit = {
+//      peer.transform(f)(tx.peer)
+//      // tx.markDirty()
+//    }
 
     def write(out: DataOutput): Unit = ()
 
@@ -150,24 +150,15 @@ object InMemoryImpl {
 //    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
 //      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, A](new IDImpl(0))(_.id)
 
-    def readVar[A](id: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+    def readVar[A](id: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
       opNotSupported("readVar")
-    }
 
 //    def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
 //      readVar(pid, in)
 
-    def readBooleanVar(id: S#ID, in: DataInput): S#Var[Boolean] = {
-      opNotSupported("readBooleanVar")
-    }
-
-    def readIntVar(id: S#ID, in: DataInput): S#Var[Int] = {
-      opNotSupported("readIntVar")
-    }
-
-    def readLongVar(id: S#ID, in: DataInput): S#Var[Long] = {
-      opNotSupported("readLongVar")
-    }
+    def readBooleanVar(id: S#ID, in: DataInput): S#Var[Boolean] = opNotSupported("readBooleanVar")
+    def readIntVar    (id: S#ID, in: DataInput): S#Var[Int    ] = opNotSupported("readIntVar"    )
+    def readLongVar   (id: S#ID, in: DataInput): S#Var[Long   ] = opNotSupported("readLongVar"   )
 
     def readID(in: DataInput, acc: S#Acc): S#ID = opNotSupported("readID")
 

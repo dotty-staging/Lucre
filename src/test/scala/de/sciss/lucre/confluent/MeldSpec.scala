@@ -28,7 +28,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
     val h1 = cursor.step { implicit tx =>
       val no = access()
       def reverseAndInc(node: Node): Node = {
-        node.value.transform(_ + 3)
+        node.value() = node.value() + 3 // .transform(_ + 3)
         node.next() match {
           case Some(pred) =>
             val res = reverseAndInc(pred)

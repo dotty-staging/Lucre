@@ -84,7 +84,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
           last match {
             case None =>
             case Some(n) =>
-              n.value.transform(_ + 2)
+              n.value() = n.value() + 2 // n.value.transform(_ + 2)
               step(n.next())
           }
 
@@ -136,7 +136,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
           case Some(n1) => findLast(n1)
         }
         @tailrec def step(n: Node): Unit = {
-          n.value.transform(_ + 2)
+          n.value() = n.value() + 2 // n.value.transform(_ + 2)
           n.prev() match {
             case None     =>
             case Some(n1) => step(n1)

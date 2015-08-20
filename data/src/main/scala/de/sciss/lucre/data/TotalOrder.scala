@@ -286,7 +286,8 @@ object TotalOrder {
       val rec         = new E(recID, this, recTagVal, prevRef = recPrevRef, nextRef = recNextRef)
       prev.updateNext(rec)
       next.updatePrev(rec)
-      sizeVal.transform(_ + 1)
+      // sizeVal.transform(_ + 1)
+      sizeVal() = sizeVal() + 1
       if (recTag == nextTag) relabel(rec)
       rec
     }
@@ -296,7 +297,8 @@ object TotalOrder {
       val n = entry.next
       p.updateNext(n)
       n.updatePrev(p)
-      sizeVal.transform(_ - 1)
+      // sizeVal.transform(_ - 1)
+      sizeVal() = sizeVal() - 1
     }
 
     final def size(implicit tx: S#Tx): Int = sizeVal()
@@ -777,7 +779,8 @@ object TotalOrder {
       val defK = new DefinedKey[S, A](this, key)
       if (prevE ne null) prevE.updateNext(defK)
       if (nextE ne null) nextE.updatePrev(defK)
-      sizeVal.transform(_ + 1)
+      // sizeVal.transform(_ + 1)
+      sizeVal() = sizeVal() + 1
       if (recTag == nextTag) relabel(key, recE)
     }
 
@@ -786,7 +789,8 @@ object TotalOrder {
       val n = e.next
       if (p.isDefined) p.orNull.updateNext(n)
       if (n.isDefined) n.orNull.updatePrev(p)
-      sizeVal.transform(_ - 1)
+      // sizeVal.transform(_ - 1)
+      sizeVal() = sizeVal() - 1
     }
 
     final def size(implicit tx: S#Tx): Int = sizeVal()
