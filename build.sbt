@@ -9,6 +9,7 @@ lazy val scalaSTMVersion  = "0.7"
 lazy val scalaTestVersion = "2.2.5"
 lazy val modelVersion     = "0.3.2"
 lazy val fingerVersion    = "1.5.2"
+lazy val spanVersion      = "1.3.1"
 
 lazy val commonSettings = Seq(
   version             := projectVersion,
@@ -68,7 +69,8 @@ lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "de.sciss" %% "model" % modelVersion
+      "de.sciss" %% "model" % modelVersion,
+      "de.sciss" %% "span"  % spanVersion
     )
   )
 

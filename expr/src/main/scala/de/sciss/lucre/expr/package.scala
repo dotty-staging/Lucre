@@ -16,16 +16,19 @@ package de.sciss.lucre
 import de.sciss.lucre.artifact.{Artifact, ArtifactLocation}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.ImmutableSerializer
+import de.sciss.span
 
 package object expr {
   type Repr[A]      = {type L[~ <: Sys[~]] = Expr[~, A]}
   type TypeExpr1[A] = Type.Expr[A] with Type._1[Repr[A]#L]
 
-  val Int    : TypeExpr1[scala.Int    ] = IntImpl
-  val Long   : TypeExpr1[scala.Long   ] = LongImpl
-  val Double : TypeExpr1[scala.Double ] = DoubleImpl
-  val Boolean: TypeExpr1[scala.Boolean] = BooleanImpl
-  val String : TypeExpr1[Predef.String] = StringImpl
+  val Int     : TypeExpr1[scala.Int     ] = IntImpl
+  val Long    : TypeExpr1[scala.Long    ] = LongImpl
+  val Double  : TypeExpr1[scala.Double  ] = DoubleImpl
+  val Boolean : TypeExpr1[scala.Boolean ] = BooleanImpl
+  val String  : TypeExpr1[Predef.String ] = StringImpl
+  val SpanLike: TypeExpr1[span.SpanLike ] = SpanLikeImpl
+  val Span    : TypeExpr1[span.Span     ] = SpanImpl
 
   def init(): Unit = {
     Int               .init()
@@ -33,6 +36,9 @@ package object expr {
     Double            .init()
     Boolean           .init()
     String            .init()
+    SpanLike          .init()
+    Span              .init()
+
     List              .init()
     Map               .init()
     Artifact          .init()
@@ -65,5 +71,15 @@ package object expr {
   private[this] object StringImpl extends impl.ExprTypeImpl[Predef.String] {
     final val typeID = 8
     final val valueSerializer = ImmutableSerializer.String
+  }
+
+  private[this] object SpanLikeImpl extends impl.ExprTypeImpl[span.SpanLike] {
+    final val typeID = 9
+    final val valueSerializer = span.SpanLike.serializer
+  }
+
+  private[this] object SpanImpl extends impl.ExprTypeImpl[span.Span] {
+    final val typeID = 10
+    final val valueSerializer = span.Span.serializer
   }
 }
