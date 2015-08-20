@@ -15,18 +15,36 @@ package de.sciss.lucre.stm
 
 import de.sciss.lucre.stm
 
-import scala.concurrent.stm.InTxn
+import scala.concurrent.stm.{Ref, InTxn}
 
 object InMemoryLike {
   trait ID[S <: InMemoryLike[S]] extends Identifier[S#Tx] {
     private[stm] def id: Int
   }
+
+  trait Txn[S <: InMemoryLike[S]] extends stm.Txn[S] {
+    private[stm] def getVar[A](vr: S#Var[A]): A
+  }
+
+  trait Var[S <: InMemoryLike[S], A] extends stm.Var[S#Tx, A] {
+    private[stm] def peer: Ref[A]
+  }
+
+  trait Context {
+    def key: Int
+  }
 }
 trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
-  final type Var[A]   = stm.Var[S#Tx, A]
+  final type Var[A]   = InMemoryLike.Var[S, A]
   final type ID       = InMemoryLike.ID[S]
   final type Acc      = Unit
+  final type Context  = InMemoryLike.Context
 
-  private[stm] def newID(peer: InTxn): S#ID
+  type Tx <: InMemoryLike.Txn[S]
+
+  // private[stm] def newID(peer: InTxn): S#ID
+
+  private[lucre] def newIDValue()(implicit tx: S#Tx): Int
+
   def wrap(peer: InTxn) : S#Tx
 }

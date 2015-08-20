@@ -16,6 +16,7 @@ package de.sciss.lucre.stm.impl
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm
+import de.sciss.lucre.stm.InMemoryLike.Var
 import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Source, TxnLike}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -29,12 +30,19 @@ object InMemoryImpl {
   trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] {
     private final val idCnt = ScalaRef(0)
 
-    final def newID(peer: InTxn): S#ID = {
-      // // since idCnt is a ScalaRef and not InMemory#Var, make sure we don't forget to mark the txn dirty!
-      // dirty = true
-      val res = idCnt.get(peer) + 1
+//    final def newID(peer: InTxn): S#ID = {
+//      // // since idCnt is a ScalaRef and not InMemory#Var, make sure we don't forget to mark the txn dirty!
+//      // dirty = true
+//      val res = idCnt.get(peer) + 1
+//      idCnt.set(res)(peer)
+//      new IDImpl[S](res)
+//    }
+
+    final private[lucre] def newIDValue()(implicit tx: S#Tx): Int = {
+      val peer  = tx.peer
+      val res   = idCnt.get(peer) + 1
       idCnt.set(res)(peer)
-      new IDImpl[S](res)
+      res
     }
 
     final def root[A](init: S#Tx => A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
@@ -61,12 +69,14 @@ object InMemoryImpl {
 
   private def opNotSupported(name: String): Nothing = sys.error(s"Operation not supported: $name")
 
-  private final class VarImpl[S <: InMemoryLike[S], A](peer: ScalaRef[A])
-    extends stm.Var[S#Tx, A] {
+  private final class VarImpl[S <: InMemoryLike[S], A](val peer: ScalaRef[A])
+    extends InMemoryLike.Var[S, A] {
 
     override def toString = s"Var<${hashCode().toHexString}>"
 
-    def apply()(implicit tx: S#Tx): A = peer.get(tx.peer)
+    def apply()(implicit tx: S#Tx): A = {
+      peer.get(tx.peer)
+    }
 
     def update(v: A)(implicit tx: S#Tx): Unit = {
       peer.set(v)(tx.peer)
@@ -99,6 +109,8 @@ object InMemoryImpl {
     }
   }
 
+  private final class ContextImpl(val key: Int) extends InMemoryLike.Context
+
   private final class TxnImpl(val system: InMemory, val peer: InTxn)
     extends TxnMixin[InMemory] {
 
@@ -107,15 +119,21 @@ object InMemoryImpl {
     override def toString = s"InMemory.Txn@${hashCode.toHexString}"
   }
 
-  trait TxnMixin[S <: InMemoryLike[S]] extends BasicTxnImpl[S] {
+  trait TxnMixin[S <: InMemoryLike[S]] extends BasicTxnImpl[S] with InMemoryLike.Txn[S] {
     _: S#Tx =>
 
-    final def newID(): S#ID = system.newID(peer)
+    final def newID(): S#ID = new IDImpl(system.newIDValue()(this))
 
 //    final def newPartialID(): S#ID = newID()
 
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
+
+    private var context: S#Context = null
+
+    private[stm] def getVar[A](vr: Var[S, A]): A = {
+      ???
+    }
 
     final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val peer = ScalaRef(init)
