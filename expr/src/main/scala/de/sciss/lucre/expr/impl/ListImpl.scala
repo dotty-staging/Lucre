@@ -197,13 +197,9 @@ object ListImpl {
       predSucc()    = rec
       succPred()    = rec
       sizeRef()     = sizeRef() + 1
-      if (isConnected) {
-        // registerElement(elem)
-        fireAdded(idx, elem)
-      }
-    }
 
-    final protected def isConnected(implicit tx: S#Tx) = targets.nonEmpty
+      fireAdded(idx, elem)
+    }
 
     final protected def foreach(fun: Elem => Unit)(implicit tx: S#Tx): Unit = {
       @tailrec def loop(cell: C): Unit =
@@ -227,9 +223,7 @@ object ListImpl {
       while (rec != null) {
         if (rec.elem == elem) {
           removeCell(rec)
-          if (isConnected) {
-            fireRemoved(idx, elem)
-          }
+          fireRemoved(idx, elem)
           return true
         }
         rec = rec.succ()
@@ -251,9 +245,7 @@ object ListImpl {
 
       val e = rec.elem
       removeCell(rec)
-      if (isConnected) {
-        fireRemoved(idx, e)
-      }
+      fireRemoved(idx, e)
       e
     }
 
@@ -290,9 +282,7 @@ object ListImpl {
       } else {
         pred.succ() = null
       }
-      if (isConnected) {
-        fireRemoved(idx, e)
-      }
+      fireRemoved(idx, e)
       e
     }
 
@@ -310,9 +300,7 @@ object ListImpl {
       } else {
         succ.pred() = null
       }
-      if (isConnected) {
-        fireRemoved(0, e)
-      }
+      fireRemoved(0, e)
       e
     }
 
