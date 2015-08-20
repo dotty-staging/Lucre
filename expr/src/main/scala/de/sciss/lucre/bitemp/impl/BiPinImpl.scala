@@ -15,7 +15,7 @@ package de.sciss.lucre.bitemp
 package impl
 
 import de.sciss.lucre.data.SkipList
-import de.sciss.lucre.event.{Event, EventLike, Targets}
+import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.{NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt, expr}
@@ -86,7 +86,8 @@ object BiPinImpl {
                                                           val key: Expr[S, Long], val value: A)
     extends EntryImpl[S, A] with evt.impl.SingleNode[S, Change[Long]] {
 
-    def changed: Event[S, Change[Long]] = ???
+    // bueno, it's not really the "root", but the type is the same
+    object changed extends Changed with evt.impl.Root[S, Change[Long]]
 
     protected def disposeData()(implicit tx: S#Tx): Unit = ()
   }
@@ -195,21 +196,6 @@ object BiPinImpl {
         }
       }
     }
-    
-    
-
-//    def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Update[S, A]] = {
-//      val collOpt = if (pull.contains(CollChanged)) pull(CollChanged) else None
-//      val elemOpt = if (pull.contains(ElemChanged)) pull(ElemChanged) else None
-//
-//      (collOpt, elemOpt) match {
-//        case (Some(_), None) => collOpt
-//        case (None, Some(_)) => elemOpt
-//        case (Some(Update(_, coll)), Some(Update(_, elem))) =>
-//          Some(Update(pin, coll ++ elem))
-//        case _ => None
-//      }
-//    }
 
     protected def disposeData()(implicit tx: S#Tx): Unit = tree.dispose()
     protected def writeData(out: DataOutput)      : Unit = tree.write(out)
