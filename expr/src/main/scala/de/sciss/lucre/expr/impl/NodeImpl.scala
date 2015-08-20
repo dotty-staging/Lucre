@@ -19,7 +19,7 @@ import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 trait NodeImpl[S <: Sys[S], A]
-  extends Expr.Node[S, A]
+  extends Expr[S, A]
   with evti.SingleNode[S, Change[A]] { self =>
 
   // final def changed: Event[S, Change[A]] = this

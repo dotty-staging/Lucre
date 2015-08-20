@@ -18,6 +18,6 @@ import de.sciss.lucre.stm.Sys
 import scala.language.implicitConversions
 
 object Ops {
-  implicit def newIntConst[S <: Sys[S]](value: scala.Int): Expr.Const[S, Int] = Int.newConst(value)
+  implicit def newIntConst[S <: Sys[S]](value: scala.Int)(implicit tx: S#Tx): Expr.Const[S, Int] = Int.newConst(value)
   implicit def intExprOps [S <: Sys[S]](ex: Expr[S, Int]): IntExtensions.Ops[S] = new IntExtensions.Ops(ex)
 }

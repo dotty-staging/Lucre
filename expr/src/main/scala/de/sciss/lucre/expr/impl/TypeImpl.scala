@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre.event.{Node, Targets}
+import de.sciss.lucre.event.Targets
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.DataInput
 
@@ -75,7 +75,7 @@ trait TypeImpl1[Repr[~ <: Sys[~]]] extends TypeImpl[Type.Extension1[Repr]] with 
   protected def mkExtArray(size: Int): Array[Type.Extension1[Repr]] = new Array(size)
 
   final protected def readExtension[S <: Sys[S]](op: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                                (implicit tx: S#Tx): Repr[S] with Node[S] = {
+                                                (implicit tx: S#Tx): Repr[S] = {
     val ext = findExt(op)
     if (ext == null) sys.error(s"Unknown extension operator $op")
     ext.readExtension[S](op, in, access, targets)

@@ -51,7 +51,7 @@ object Obj {
     final def write(v: Repr, out: DataOutput): Unit = v.write(out)
 
     final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
-      val tpe     = in.readInt()
+      val tpe = in.readInt()
       if (tpe != typeID) sys.error("Type mismatch, expected $typeID, found $tpe")
       val targets = Targets.read[S](in, access)
       read(in, access, targets)

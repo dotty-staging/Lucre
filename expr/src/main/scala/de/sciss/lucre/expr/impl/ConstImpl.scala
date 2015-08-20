@@ -14,13 +14,17 @@
 package de.sciss.lucre.expr
 package impl
 
+import de.sciss.lucre.event.Event
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataOutput
 
 trait ConstImpl[S <: Sys[S], A] extends Expr.Const[S, A] {
+  private[lucre] def event(slot: Int): Event[S, Any] = throw new UnsupportedOperationException
+
   final def write(out: DataOutput): Unit = {
     out.writeInt(typeID)
     out.writeByte(3)
+    id.write(out)
     writeData(out)
   }
 

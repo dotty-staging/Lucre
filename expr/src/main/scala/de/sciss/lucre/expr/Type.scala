@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.{Node, Targets}
+import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
@@ -34,17 +34,17 @@ object Type {
 
   trait Extension1[+Repr[~ <: Sys[~]]] extends Extension {
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Repr[S] with Node[S]
+                                  (implicit tx: S#Tx): Repr[S]
   }
 
   trait Extension2[+Repr[~ <: Sys[~], _]] extends Extension {
     def readExtension[S <: Sys[S], T1](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                      (implicit tx: S#Tx): Repr[S, T1] with Node[S]
+                                      (implicit tx: S#Tx): Repr[S, T1]
   }
 
   trait Extension3[+Repr[~ <: Sys[~], _, _]] extends Extension {
     def readExtension[S <: Sys[S], T1, T2](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                          (implicit tx: S#Tx): Repr[S, T1, T2] with Node[S]
+                                          (implicit tx: S#Tx): Repr[S, T1, T2]
   }
 
   trait _1[Repr[~ <: Sys[~]]] extends Obj.Type {
@@ -69,10 +69,10 @@ object Type {
 
     // ---- public ----
 
-    def newConst [S <: Sys[S]](value: A): expr.Expr.Const[S, A]
+    def newConst [S <: Sys[S]](value: A)(implicit tx: S#Tx): expr.Expr.Const[S, A]
     def newVar   [S <: Sys[S]](init: expr.Expr[S, A])(implicit tx: S#Tx): expr.Expr.Var[S, A]
 
-    def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A]
+    def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr.Const[S, A]
     def readVar  [S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr.Var[S, A]
   }
 }

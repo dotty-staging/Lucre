@@ -40,7 +40,7 @@ object BooleanExtensions  {
     val name = "Boolean-1 Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr.Node[S, Boolean] = {
+                                  (implicit tx: S#Tx): Expr[S, Boolean] = {
       val op: UnaryOp[Boolean] = opID /* : @switch */ match {
         case Not.id => Not
       }
@@ -57,7 +57,7 @@ object BooleanExtensions  {
     val name = "Boolean-2 Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr.Node[S, Boolean] = {
+                                  (implicit tx: S#Tx): Expr[S, Boolean] = {
       val op: BinaryOp[_] = (opID: @switch) match {
         case And   .id => And
         case Or    .id => Or
@@ -120,13 +120,13 @@ object BooleanExtensions  {
 
     def name: String
 
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr.Node[S, Boolean]
+    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr[S, Boolean]
 
     final def toString[S <: Sys[S]](_1: Expr[S, T1], _2: Expr[S, T1]): String = s"(${_1} $name ${_2})"
   }
 
   private[this] trait BooleanBinaryOp extends BinaryOp[Boolean] { op =>
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr.Node[S, Boolean] = {
+    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr[S, Boolean] = {
       val _1 = BooleanEx.read(in, access)
       val _2 = BooleanEx.read(in, access)
       new LazyTuple2(op, targets, _1, _2)
@@ -145,7 +145,7 @@ object BooleanExtensions  {
   }
 
   sealed trait IntBinaryOp extends BinaryOp[Int] { op =>
-    final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr.Node[S, Boolean] = {
+    final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Expr[S, Boolean] = {
       val _1 = IntEx.read(in, access)
       val _2 = IntEx.read(in, access)
       new impl.Tuple2(BooleanEx, op, targets, _1, _2)

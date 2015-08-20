@@ -13,16 +13,15 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.{Event, Publisher}
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.event.Publisher
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{event => evt, stm}
 import de.sciss.model.Change
-import de.sciss.serial.Writable
 
 object Expr {
-  trait Node[S <: Sys[S], +A] extends Expr[S, A] with evt.Node[S] {
-    def changed: Event[S, Change[A]]
-  }
+  //  trait Node[S <: Sys[S], +A] extends Expr[S, A] with evt.Node[S] {
+  //    def changed: Event[S, Change[A]]
+  //  }
 
   object Var {
     def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[Var[S, A]] = {
@@ -30,7 +29,7 @@ object Expr {
     }
   }
 
-  trait Var[S <: Sys[S], A] extends Node[S, A] with stm.Var[S#Tx, Expr[S, A]]
+  trait Var[S <: Sys[S], A] extends Expr[S, A] with stm.Var[S#Tx, Expr[S, A]]
 
   object Const {
     def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[A] = {
@@ -53,14 +52,15 @@ object Expr {
 
     override def toString = constValue.toString
 
-    final def dispose()(implicit tx: S#Tx) = ()
+    // final def dispose()(implicit tx: S#Tx) = ()
+    final def dispose()(implicit tx: S#Tx) = id.dispose()
 
-    override def equals(that: Any): Boolean = that match {
-      case thatConst: Const[_, _] => constValue == thatConst.constValue
-      case _ => super.equals(that)
-    }
-
-    override def hashCode = constValue.hashCode()
+//    override def equals(that: Any): Boolean = that match {
+//      case thatConst: Const[_, _] => constValue == thatConst.constValue
+//      case _ => super.equals(that)
+//    }
+//
+//    override def hashCode = constValue.hashCode()
   }
 
   def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
@@ -80,7 +80,7 @@ object Expr {
   * as a binary operator (e.g., an integer expression that sums two input
   * integer expressions).
   */
-trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] /* Obj[S] */ with Publisher[S, Change[A]] {
+trait Expr[S <: Sys[S], +A] extends Obj[S] with Publisher[S, Change[A]] {
   def typeID: Int
 
   def value(implicit tx: S#Tx): A
