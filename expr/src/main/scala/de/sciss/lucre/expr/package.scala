@@ -13,8 +13,9 @@
 
 package de.sciss.lucre
 
+import de.sciss.lucre.artifact.{Artifact, ArtifactLocation}
 import de.sciss.lucre.stm.Sys
-import de.sciss.serial.{ImmutableSerializer, DataInput, DataOutput}
+import de.sciss.serial.ImmutableSerializer
 
 package object expr {
   type Repr[A]      = {type L[~ <: Sys[~]] = Expr[~, A]}
@@ -27,16 +28,18 @@ package object expr {
   val String : TypeExpr1[Predef.String] = StringImpl
 
   def init(): Unit = {
-    Int    .init()
-    Long   .init()
-    Double .init()
-    Boolean.init()
-    String .init()
-    List   .init()
-    Map    .init()
+    Int               .init()
+    Long              .init()
+    Double            .init()
+    Boolean           .init()
+    String            .init()
+    List              .init()
+    Map               .init()
+    Artifact          .init()
+    ArtifactLocation  .init()
 
-    IntExtensions    .init()
-    BooleanExtensions.init()
+    IntExtensions     .init()
+    BooleanExtensions .init()
   }
 
   private[this] object IntImpl extends impl.ExprTypeImpl[scala.Int] {
