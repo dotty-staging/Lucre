@@ -26,10 +26,13 @@ object InMemoryImpl {
 
   def apply(): InMemory = new System
 
-  trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] {
+  trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] with ReactionMapImpl.Mixin[S] {
     private final val idCnt = ScalaRef(0)
 
-//    final def newID(peer: InTxn): S#ID = {
+    final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
+
+    //    final def newID(peer: InTxn): S#ID = {
 //      // // since idCnt is a ScalaRef and not InMemory#Var, make sure we don't forget to mark the txn dirty!
 //      // dirty = true
 //      val res = idCnt.get(peer) + 1
@@ -201,7 +204,7 @@ object InMemoryImpl {
     def newContext(): S#Context = new ContextImpl[S]
   }
 
-  private final class System extends Mixin[InMemory] with InMemory with ReactionMapImpl.Mixin[InMemory] {
+  private final class System extends Mixin[InMemory] with InMemory {
     private type S = InMemory
 
     def inMemory: I = this
@@ -210,8 +213,5 @@ object InMemoryImpl {
     override def toString = s"InMemory@${hashCode.toHexString}"
 
     def wrap(itx: InTxn): S#Tx = new TxnImpl(this, itx)
-
-    protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
   }
 }
