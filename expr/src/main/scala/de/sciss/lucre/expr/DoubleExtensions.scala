@@ -1,10 +1,10 @@
 /*
  *  DoubleExtensions.scala
- *  (SoundProcesses)
+ *  (Lucre)
  *
- *  Copyright (c) 2010-2015 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2015 Hanns Holger Rutz. All rights reserved.
  *
- *	This software is published under the GNU General Public License v2+
+ *  This software is published under the GNU Lesser General Public License v2.1+
  *
  *
  *  For further information, please contact Hanns Holger Rutz at
@@ -23,7 +23,7 @@ import de.sciss.lucre.expr.{Double => DoubleEx}
 import scala.annotation.switch
 
 object DoubleExtensions {
-  import de.sciss.lucre.expr.Double.{newConst, read, typeID}
+  import de.sciss.lucre.expr.Double.{newConst, read}
 
   private[this] type Ex[S <: Sys[S]] = Expr[S, Double]
 
