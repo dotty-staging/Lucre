@@ -181,7 +181,7 @@ object SpanLikeExtensions {
     }
 
     case object Apply extends LongLongOp {
-      final val id = 0
+      final val id = 2
       override def toString[S <: Sys[S]](_1: Expr[S, Long], _2: Expr[S, Long]): String =
         s"Span(${_1}, ${_2})"
 
@@ -189,7 +189,7 @@ object SpanLikeExtensions {
     }
 
     case object Shift extends LongSpanOp {
-      final val id = 1
+      final val id = 3
       def value(a: span.SpanLike, b: Long): span.SpanLike = a.shift(b)
     }
   }

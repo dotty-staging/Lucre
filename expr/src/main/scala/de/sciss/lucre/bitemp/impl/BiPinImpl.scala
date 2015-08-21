@@ -49,6 +49,17 @@ object BiPinImpl {
     }
   }
 
+  def entrySerializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
+    anyEntrySer.asInstanceOf[EntrySer[S, A]]
+
+  private val anyEntrySer = new EntrySer[NoSys, Obj[NoSys]]
+
+  private final class EntrySer[S <: Sys[S], A <: Obj[S]] extends Serializer[S#Tx, S#Acc, Entry[S, A]] {
+    def write(e: Entry[S, A], out: DataOutput): Unit = e.write(out)
+
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = readEntry(in, access)
+  }
+
   def readIdentifiedEntry[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val targets = Targets.read[S](in, access)
     readEntry(in, access, targets)
@@ -70,7 +81,7 @@ object BiPinImpl {
     }
   }
 
-  private final class ConstEntry[S <: Sys[S], A <: Obj[S]](val key: Expr[S, Long], val value: A)
+  private case class ConstEntry[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A)
     extends EntryImpl[S, A] {
 
     def write(out: DataOutput): Unit = {

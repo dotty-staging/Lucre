@@ -21,6 +21,7 @@ import de.sciss.serial.{Writable, DataInput, Serializer}
 import impl.{BiPinImpl => Impl}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.implicitConversions
 
 object BiPin extends Obj.Type {
   final val typeID = 25
@@ -40,6 +41,17 @@ object BiPin extends Obj.Type {
 
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
       Impl.readIdentifiedEntry(in, access)
+
+//    implicit def fromTuple[S <: Sys[S], K, V, A <: Obj[S]](tup: (K, V))
+//                                                          (implicit tx: S#Tx,
+//                                                           key  : K => Expr[S, Long],
+//                                                           value: V => A): Entry[S, A] = apply[S, A](tup._1, tup._2)
+
+    implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
+      Impl.entrySerializer[S, A]
+
+    implicit def fromTuple[S <: Sys[S], A <: Obj[S]](tup: (Expr[S, Long], A))(implicit tx: S#Tx): Entry[S, A] =
+      apply[S, A](tup._1, tup._2)
   }
   trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] with Writable with Disposable[S#Tx] {
     def key  : Expr[S, Long]
