@@ -49,6 +49,7 @@ package object expr {
     DoubleExtensions  .init()
     BooleanExtensions .init()
     StringExtensions  .init()
+    SpanExtensions    .init()
   }
 
   private[this] object IntImpl extends impl.ExprTypeImpl[scala.Int] {
