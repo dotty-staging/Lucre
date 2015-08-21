@@ -14,19 +14,12 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre.event.Event
 import de.sciss.lucre.stm.Sys
-import de.sciss.serial.DataOutput
+import de.sciss.lucre.{event => evt}
+import de.sciss.model.Change
 
-trait ConstImpl[S <: Sys[S], A] extends Expr.Const[S, A] {
-  private[lucre] def event(slot: Int): Event[S, Any] = throw new UnsupportedOperationException
+trait ConstImpl[S <: Sys[S], A] extends Expr.Const[S, A] with evt.impl.ConstImpl[S, Change[A]] {
+  final def value(implicit tx: S#Tx): A = constValue
 
-  final def write(out: DataOutput): Unit = {
-    out.writeInt(typeID)
-    out.writeByte(3)
-    id.write(out)
-    writeData(out)
-  }
-
-  protected def writeData(out: DataOutput): Unit
+  override def toString = constValue.toString
 }

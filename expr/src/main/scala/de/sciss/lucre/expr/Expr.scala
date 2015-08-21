@@ -15,14 +15,10 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.stm.{Obj, Sys}
-import de.sciss.lucre.{event => evt, stm}
+import de.sciss.lucre.stm
 import de.sciss.model.Change
 
 object Expr {
-  //  trait Node[S <: Sys[S], +A] extends Expr[S, A] with evt.Node[S] {
-  //    def changed: Event[S, Change[A]]
-  //  }
-
   object Var {
     def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[Var[S, A]] = {
       if (expr.isInstanceOf[Var[_, _]]) Some(expr.asInstanceOf[Var[S, A]]) else None
@@ -45,22 +41,7 @@ object Expr {
     * are defined in terms of the constant peer value.
     */
   trait Const[S <: Sys[S], +A] extends Expr[S, A] {
-    final def changed = evt.Dummy[S, Change[A]]
-
     protected def constValue: A
-    final def value(implicit tx: S#Tx): A = constValue
-
-    override def toString = constValue.toString
-
-    // final def dispose()(implicit tx: S#Tx) = ()
-    final def dispose()(implicit tx: S#Tx) = id.dispose()
-
-//    override def equals(that: Any): Boolean = that match {
-//      case thatConst: Const[_, _] => constValue == thatConst.constValue
-//      case _ => super.equals(that)
-//    }
-//
-//    override def hashCode = constValue.hashCode()
   }
 
   def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
@@ -81,7 +62,5 @@ object Expr {
   * integer expressions).
   */
 trait Expr[S <: Sys[S], +A] extends Obj[S] with Publisher[S, Change[A]] {
-  def typeID: Int
-
   def value(implicit tx: S#Tx): A
 }
