@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package bitemp
 
-// import de.sciss.lucre.bitemp.impl.{BiGroupImpl => Impl}
+import de.sciss.lucre.bitemp.impl.{BiGroupImpl => Impl}
 import de.sciss.lucre.data.Iterator
 import de.sciss.lucre.event.{EventLike, Publisher}
 import de.sciss.lucre.expr.Expr
@@ -42,33 +42,33 @@ object BiGroup extends Obj.Type {
 
   // ---- updates ----
 
-  final case class Update[S <: Sys[S], Elem](group: BiGroup[S, Elem], changes: List[Change[S, Elem]])
+  final case class Update[S <: Sys[S], A](group: BiGroup[S, A], changes: List[Change[S, A]])
 
-  sealed trait Change[S <: Sys[S], +Elem] {
-    def elem: TimedElem[S, Elem]
+  sealed trait Change[S <: Sys[S], +A] {
+    def elem: TimedElem[S, A]
   }
 
-  final case class Added[S <: Sys[S], Elem](span: SpanLikeV /* Span.HasStart */ , elem: TimedElem[S, Elem])
-    extends Change[S, Elem]
+  final case class Added[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: TimedElem[S, A])
+    extends Change[S, A]
 
-  final case class Removed[S <: Sys[S], Elem](span: SpanLikeV /* Span.HasStart */ , elem: TimedElem[S, Elem])
-    extends Change[S, Elem]
+  final case class Removed[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: TimedElem[S, A])
+    extends Change[S, A]
 
-  final case class Moved[S <: Sys[S], Elem](change: m.Change[SpanLikeV], elem: TimedElem[S, Elem])
-    extends Change[S, Elem]
+  final case class Moved[S <: Sys[S], A](change: m.Change[SpanLikeV], elem: TimedElem[S, A])
+    extends Change[S, A]
 
   // ---- structural data ----
 
-  type Leaf[S <: Sys[S], +Elem] = (SpanLikeV /* Span.HasStart */ , Vec[TimedElem[S, Elem]])
+  type Leaf[S <: Sys[S], +A] = (SpanLikeV /* Span.HasStart */ , Vec[TimedElem[S, A]])
 
   object TimedElem extends Obj.Type {
     final val typeID = 28
 
-    def apply[S <: Sys[S], Elem](id: S#ID, span: Expr[S, SpanLikeV], value: Elem): TimedElem[S, Elem] =
+    def apply[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A): TimedElem[S, A] =
       Wrapper(id, span, value)
 
-    private final case class Wrapper[S <: Sys[S], Elem](id: S#ID, span: Expr[S, SpanLikeV], value: Elem)
-      extends TimedElem[S, Elem] {
+    private final case class Wrapper[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A)
+      extends TimedElem[S, A] {
 
       override def toString = s"TimedElem$id"
 
@@ -80,50 +80,52 @@ object BiGroup extends Obj.Type {
       override def hashCode = id.hashCode()
     }
 
-    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = ???
+    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+      Impl.readIdentifiedTimed(in, access)
   }
 
-  trait TimedElem[S <: Sys[S], +Elem] extends Identifiable[S#ID] {
+  trait TimedElem[S <: Sys[S], +A] extends Identifiable[S#ID] {
     def span : Expr[S, SpanLikeV]
-    def value: Elem
+    def value: A
 
     override def toString = s"TimedElem($id, $span, $value)"
   }
 
   object Modifiable {
-    implicit def serializer[S <: Sys[S], Elem]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, Elem]] =
-      ??? // Impl.modifiableSerializer[S, Elem, U](eventView)
+    implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, A]] =
+      Impl.modifiableSerializer[S, A]
 
-    def apply[S <: Sys[S], Elem](implicit tx: S#Tx): Modifiable[S, Elem] =
-      ??? // Impl.newModifiable(eventView)
+    def apply[S <: Sys[S], A <: Obj[S]](implicit tx: S#Tx): Modifiable[S, A] =
+      Impl.newModifiable[S, A]
 
-    def read[S <: Sys[S], Elem](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, Elem] =
-      ??? // Impl.readModifiable(in, access, eventView)
+    def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
+      Impl.readModifiable(in, access)
   }
 
-  trait Modifiable[S <: Sys[S], Elem] extends BiGroup[S, Elem] {
-    def add(span: Expr[S, SpanLikeV], elem: Elem)(implicit tx: S#Tx): TimedElem[S, Elem]
+  trait Modifiable[S <: Sys[S], A] extends BiGroup[S, A] {
+    def add(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): TimedElem[S, A]
 
-    def remove(span: Expr[S, SpanLikeV], elem: Elem)(implicit tx: S#Tx): Boolean
+    def remove(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): Boolean
 
     def clear()(implicit tx: S#Tx): Unit
 
-    override def changed: EventLike[S, BiGroup.Update[S, Elem]]
+    override def changed: EventLike[S, BiGroup.Update[S, A]]
   }
 
-  implicit def serializer[S <: Sys[S], Elem]: Serializer[S#Tx, S#Acc, BiGroup[S, Elem]] =
-    ??? // Impl.serializer[S, Elem, U](eventView)
+  implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] =
+    Impl.serializer[S, A]
 
-  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = ???
+  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+    Impl.readIdentifiedObj(in, access)
 }
 
-trait BiGroup[S <: Sys[S], Elem] extends evt.Node[S] with Publisher[S, BiGroup.Update[S, Elem]] {
+trait BiGroup[S <: Sys[S], A] extends evt.Node[S] with Publisher[S, BiGroup.Update[S, A]] {
 
   import BiGroup.Leaf
 
-  def modifiableOption: Option[BiGroup.Modifiable[S, Elem]]
+  def modifiableOption: Option[BiGroup.Modifiable[S, A]]
 
-  def iterator(implicit tx: S#Tx): data.Iterator[S#Tx, Leaf[S, Elem]]
+  def iterator(implicit tx: S#Tx): data.Iterator[S#Tx, Leaf[S, A]]
 
   /** Queries all elements intersecting a given point in time.
     * That is, returns an iterator of all elements whose span contains the time point
@@ -134,7 +136,7 @@ trait BiGroup[S <: Sys[S], Elem] extends evt.Node[S] with Publisher[S, BiGroup.U
     * @param time the point in time to search at
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def intersect(time: Long)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, Elem]]
+  def intersect(time: Long)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
 
   /** Queries all elements intersecting a given time span.
     * That is, returns an iterator of all elements whose span contains or partly overlaps the query span.
@@ -145,7 +147,7 @@ trait BiGroup[S <: Sys[S], Elem] extends evt.Node[S] with Publisher[S, BiGroup.U
     * @param span the the span to search within (this may be a half-bounded interval or even `Span.All`)
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def intersect(span: SpanLikeV)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, Elem]]
+  def intersect(span: SpanLikeV)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
 
   /** Performs a range query according to separate intervals for the allowed start and stop positions
     * of the element spans. That is, returns an iterator of all elements whose span satisfies the
@@ -164,7 +166,7 @@ trait BiGroup[S <: Sys[S], Elem] extends evt.Node[S] with Publisher[S, BiGroup.U
     * @param stop    the constraint for the stop position of the spans of the elements filtered.
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def rangeSearch(start: SpanLikeV, stop: SpanLikeV)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, Elem]]
+  def rangeSearch(start: SpanLikeV, stop: SpanLikeV)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
 
   /** Queries the closest event (an element's span starting or stopping) at the given time or later
     *
@@ -195,9 +197,9 @@ trait BiGroup[S <: Sys[S], Elem] extends evt.Node[S] with Publisher[S, BiGroup.U
     *          start at the query time, the second iterator (`_2`) contains the event which
     *          stop at the query time
     */
-  def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[S#Tx, Leaf[S, Elem]], Iterator[S#Tx, Leaf[S, Elem]])
+  def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[S#Tx, Leaf[S, A]], Iterator[S#Tx, Leaf[S, A]])
 
-  def debugList(implicit tx: S#Tx): List[(SpanLikeV, Elem)]
+  def debugList(implicit tx: S#Tx): List[(SpanLikeV, A)]
 
   def debugPrint(implicit tx: S#Tx): String
 }

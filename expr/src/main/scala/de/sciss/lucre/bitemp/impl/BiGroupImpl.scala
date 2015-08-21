@@ -16,7 +16,7 @@ package bitemp.impl
 
 import de.sciss.lucre.bitemp.BiGroup
 import de.sciss.lucre.data.{DeterministicSkipOctree, Iterator, SkipOctree}
-import de.sciss.lucre.event.{impl => evti}
+import de.sciss.lucre.event.{impl => evti, Targets}
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.geom.LongSpace.TwoDim
 import de.sciss.lucre.geom.{DistanceMeasure, LongDistanceMeasure2D, LongPoint2D, LongPoint2DLike, LongRectangle, LongSpace}
@@ -176,6 +176,16 @@ object BiGroupImpl {
     read(in, access, targets)
   }
 
+  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+    val targets = Targets.read(in, access)
+    read(in, access, targets)
+  }
+
+  def readIdentifiedTimed[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+    val targets = Targets.read(in, access)
+    readTimed(in, access, targets)
+  }
+
   private class Ser[S <: Sys[S], A <: Obj[S]] extends Obj.Serializer[S, BiGroup[S, A]] {
     protected def typeID: Int = BiGroup.typeID
 
@@ -192,10 +202,9 @@ object BiGroupImpl {
     }
   }
 
-  private[lucre] final class TimedElemImpl[S <: Sys[S], A <: Obj[S]](group          : Impl[S, A],
-                                                             protected val targets : evt.Targets[S],
-                                                             val span              : Expr[S, SpanLike],
-                                                             val value             : A)
+  private[lucre] final class TimedElemImpl[S <: Sys[S], A <: Obj[S]](val targets : evt.Targets[S],
+                                                                     val span    : Expr[S, SpanLike],
+                                                                     val value   : A)
     extends evti.SingleNode[S, Change[SpanLike]] with TimedElem[S, A] {
 
     def typeID: Int = TimedElem.typeID
@@ -229,6 +238,25 @@ object BiGroupImpl {
     }
   }
 
+  implicit def timedSer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, TimedElemImpl[S, A]] =
+    anyTimedSer.asInstanceOf[TimedSer[S, A]]
+
+  private val anyTimedSer = new TimedSer[NoSys, Obj[NoSys]]
+
+  private def readTimed[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                                 (implicit tx: S#Tx): TimedElemImpl[S, A] = {
+    val span  = expr.SpanLike .read(in, access)
+    val value = Obj           .read(in, access).asInstanceOf[A]
+    new TimedElemImpl(targets, span, value)
+  }
+
+  private final class TimedSer[S <: Sys[S], A <: Obj[S]] extends Obj.Serializer[S, TimedElemImpl[S, A]] {
+    def typeID: Int = TimedElem.typeID
+
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): TimedElemImpl[S, A] =
+      readTimed(in, access, targets)
+  }
+
   abstract class Impl[S <: Sys[S], A <: Obj[S]]
     extends Modifiable[S, A]
     with evt.impl.SingleNode[S, BiGroup.Update[S, A]] {
@@ -250,16 +278,6 @@ object BiGroupImpl {
     override def toString: String = s"BiGroup${tree.id}"
 
     def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
-
-    implicit object TimedSer extends Obj.Serializer[S, TimedElemImpl[S, A]] {
-      def typeID: Int = TimedElem.typeID
-
-      def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): TimedElemImpl[S, A] = {
-        val span  = expr.SpanLike .read(in, access)
-        val value = Obj           .read(in, access).asInstanceOf[A]
-        new TimedElemImpl(group, targets, span, value)
-      }
-    }
 
     // Note: must be after `TimedSer`
     protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, A] =
@@ -321,7 +339,7 @@ object BiGroupImpl {
       log(s"$this.add($span, $elem)")
       val spanVal = span.value
       val tgt     = evt.Targets[S]
-      val timed   = new TimedElemImpl[S, A](group, tgt, span, elem).connect()
+      val timed   = new TimedElemImpl[S, A](tgt, span, elem).connect()
       addNoFire(spanVal, timed)
 
       changed += timed
