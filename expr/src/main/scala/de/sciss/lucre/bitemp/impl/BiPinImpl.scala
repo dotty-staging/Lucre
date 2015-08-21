@@ -195,7 +195,7 @@ object BiPinImpl {
       def -= (elem: Entry[S, A])(implicit tx: S#Tx): Unit = elem.changed -/-> this
 
       def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Update[S, A]] = {
-        if (pull.isOrigin(this)) return pull.resolve
+        if (pull.isOrigin(this)) return Some(pull.resolve)
 
         val changes: List[Moved[S, A]] = pull.parents(this).flatMap { evt =>
           val entry = evt.node

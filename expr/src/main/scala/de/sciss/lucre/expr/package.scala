@@ -14,6 +14,7 @@
 package de.sciss.lucre
 
 import de.sciss.lucre.artifact.{Artifact, ArtifactLocation}
+import de.sciss.lucre.bitemp.{BiPin, BiGroup}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.ImmutableSerializer
 import de.sciss.span
@@ -43,6 +44,9 @@ package object expr {
     Map               .init()
     Artifact          .init()
     ArtifactLocation  .init()
+
+    BiPin             .init()
+    BiGroup           .init()
 
     IntExtensions     .init()
     LongExtensions    .init()
