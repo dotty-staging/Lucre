@@ -15,7 +15,7 @@ package de.sciss.lucre.bitemp
 
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.Expr
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Disposable, Obj, Sys}
 import de.sciss.model
 import de.sciss.serial.{Writable, DataInput, Serializer}
 import impl.{BiPinImpl => Impl}
@@ -41,7 +41,7 @@ object BiPin extends Obj.Type {
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
       Impl.readIdentifiedEntry(in, access)
   }
-  trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] with Writable {
+  trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] with Writable with Disposable[S#Tx] {
     def key  : Expr[S, Long]
     def value: A
   }

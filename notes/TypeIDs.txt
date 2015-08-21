@@ -32,6 +32,8 @@
 24  expr.Map
 25  BiPin
 26  BiPin.Entry
+27  BiGroup
+28  BiGroup.TimedElem
 
 :: non-expr elements (mutables) ::
 

@@ -32,7 +32,7 @@ object BiPinImpl {
 
   def newEntry[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
     if (Expr.isConst(key)) new ConstEntry(            key, value)
-    else                   new NodeEntry (Targets[S], key, value)
+    else                   new NodeEntry (Targets[S], key, value).connect()
 
   def readEntry[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = {
     val tpe = in.readInt()
@@ -80,6 +80,8 @@ object BiPinImpl {
     }
 
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
+
+    def dispose()(implicit tx: S#Tx): Unit = ()
   }
 
   private final class NodeEntry[S <: Sys[S], A <: Obj[S]](protected val targets: Targets[S],
@@ -89,7 +91,16 @@ object BiPinImpl {
     // bueno, it's not really the "root", but the type is the same
     object changed extends Changed with evt.impl.Root[S, Change[Long]]
 
-    protected def disposeData()(implicit tx: S#Tx): Unit = ()
+    protected def disposeData()(implicit tx: S#Tx) = disconnect()
+
+    def connect()(implicit tx: S#Tx): this.type = {
+      key.changed ---> changed
+      this
+    }
+
+    private[this] def disconnect()(implicit tx: S#Tx): Unit = {
+      key.changed -/-> changed
+    }
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
@@ -197,8 +208,14 @@ object BiPinImpl {
       }
     }
 
-    protected def disposeData()(implicit tx: S#Tx): Unit = tree.dispose()
-    protected def writeData(out: DataOutput)      : Unit = tree.write(out)
+    protected def disposeData()(implicit tx: S#Tx): Unit = {
+      tree.iterator.foreach { case (_, xs) =>
+          xs.foreach(_.dispose())
+      }
+      tree.dispose()
+    }
+
+    protected def writeData(out: DataOutput): Unit = tree.write(out)
 
     // ---- collection behaviour ----
 
@@ -257,6 +274,7 @@ object BiPinImpl {
       if (visible) {
         changed -= elem
         changed.fire(Update(pin, Removed(timeVal, elem) :: Nil))
+        elem.dispose()
       }
       found
     }
