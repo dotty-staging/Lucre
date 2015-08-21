@@ -45,6 +45,7 @@ package object expr {
     ArtifactLocation  .init()
 
     IntExtensions     .init()
+    DoubleExtensions  .init()
     BooleanExtensions .init()
   }
 
