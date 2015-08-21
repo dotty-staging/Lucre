@@ -13,6 +13,14 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.lucre.stm.impl.IdentifierSerializer
 import de.sciss.serial
+import de.sciss.serial.Serializer
 
+object Identifier {
+  implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, S#ID] =
+    anySer.asInstanceOf[IdentifierSerializer[S]]
+
+  private val anySer = new IdentifierSerializer[NoSys]
+}
 trait Identifier[-Tx] extends Disposable[Tx] with serial.Writable

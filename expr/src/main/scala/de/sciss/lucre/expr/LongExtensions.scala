@@ -271,44 +271,37 @@ object LongExtensions {
   }
 
   final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
-    import me.{`this` => ex}
+    import me.{`this` => a}
     private type E = Ex[S]
 
     import UnaryOp._
 
-    def unary_- (implicit tx: S#Tx): E = Neg   (ex)
-    def unary_~ (implicit tx: S#Tx): E = BitNot(ex)
+    def unary_- (implicit tx: S#Tx): E = Neg   (a)
+    def unary_~ (implicit tx: S#Tx): E = BitNot(a)
 
     import BinaryOp._
 
-    def + (b: E)(implicit tx: S#Tx): E = Plus  (ex, b)
-    def - (b: E)(implicit tx: S#Tx): E = Minus (ex, b)
-    def * (b: E)(implicit tx: S#Tx): E = Times (ex, b)
-    def / (b: E)(implicit tx: S#Tx): E = IDiv  (ex, b)
-    def & (b: E)(implicit tx: S#Tx): E = BitAnd(ex, b)
-    def | (b: E)(implicit tx: S#Tx): E = BitOr (ex, b)
-    def ^ (b: E)(implicit tx: S#Tx): E = BitXor(ex, b)
-  }
+    def + (b: E)(implicit tx: S#Tx): E = Plus  (a, b)
+    def - (b: E)(implicit tx: S#Tx): E = Minus (a, b)
+    def * (b: E)(implicit tx: S#Tx): E = Times (a, b)
+    def / (b: E)(implicit tx: S#Tx): E = IDiv  (a, b)
+    def & (b: E)(implicit tx: S#Tx): E = BitAnd(a, b)
+    def | (b: E)(implicit tx: S#Tx): E = BitOr (a, b)
+    def ^ (b: E)(implicit tx: S#Tx): E = BitXor(a, b)
 
-  final class RichOps[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
-    import me.{`this` => ex}
-    private type E = Ex[S]
-
-    import UnaryOp._
-
-    def abs     (implicit tx: S#Tx): E = Abs     (ex)
+    def abs     (implicit tx: S#Tx): E = Abs     (a)
 
     // def toLong : E	         = UnOp( 'asLong, ex )
     // def toInteger : E	      = UnOp( 'asInteger, ex )
-    def signum  (implicit tx: S#Tx): E = Signum  (ex)
-    def squared (implicit tx: S#Tx): E = Squared (ex)
-    def cubed   (implicit tx: S#Tx): E = Cubed   (ex)
+    def signum  (implicit tx: S#Tx): E = Signum  (a)
+    def squared (implicit tx: S#Tx): E = Squared (a)
+    def cubed   (implicit tx: S#Tx): E = Cubed   (a)
 
     import BinaryOp._
 
-    def min   (b: E)(implicit tx: S#Tx): E = Min   (ex, b)
-    def max   (b: E)(implicit tx: S#Tx): E = Max   (ex, b)
-    def absdif(b: E)(implicit tx: S#Tx): E = Absdif(ex, b)
+    def min   (b: E)(implicit tx: S#Tx): E = Min   (a, b)
+    def max   (b: E)(implicit tx: S#Tx): E = Max   (a, b)
+    def absdif(b: E)(implicit tx: S#Tx): E = Absdif(a, b)
 
     //      def clip2( b: E ) : E      = Clip2( ex, b )
     //      def fold2( b: E ) : E      = Fold2( ex, b )

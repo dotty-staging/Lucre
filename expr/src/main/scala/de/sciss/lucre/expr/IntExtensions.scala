@@ -328,22 +328,19 @@ object IntExtensions {
     def >     (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntGt (a, b)
     def <=    (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntLeq(a, b)
     def >=    (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntGeq(a, b)
-  }
 
-  final class RichOps[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
-    import me.{`this` => ex}
-    private type E = Ex[S]
+    // ---- more ops ----
 
-    def abs     (implicit tx: S#Tx): E = Abs     (ex)
+    def abs     (implicit tx: S#Tx): E = Abs     (a)
     // def toLong : E	         = UnOp.make( 'asLong, ex )
     // def toInteger : E	      = UnOp.make( 'asInteger, ex )
-    def signum  (implicit tx: S#Tx): E = Signum  (ex)
-    def squared (implicit tx: S#Tx): E = Squared (ex)
-    def cubed   (implicit tx: S#Tx): E = Cubed   (ex)
+    def signum  (implicit tx: S#Tx): E = Signum  (a)
+    def squared (implicit tx: S#Tx): E = Squared (a)
+    def cubed   (implicit tx: S#Tx): E = Cubed   (a)
 
-    def min   (b: E)(implicit tx: S#Tx): E = Min   (ex, b)
-    def max   (b: E)(implicit tx: S#Tx): E = Max   (ex, b)
-    def absdif(b: E)(implicit tx: S#Tx): E = Absdif(ex, b)
+    def min   (b: E)(implicit tx: S#Tx): E = Min   (a, b)
+    def max   (b: E)(implicit tx: S#Tx): E = Max   (a, b)
+    def absdif(b: E)(implicit tx: S#Tx): E = Absdif(a, b)
 
     //      def clip2( b: E ) : E      = Clip2.make( ex, b )
     //      def fold2( b: E ) : E      = Fold2.make( ex, b )

@@ -49,6 +49,7 @@ package object expr {
     DoubleExtensions  .init()
     BooleanExtensions .init()
     StringExtensions  .init()
+    SpanLikeExtensions.init()
     SpanExtensions    .init()
   }
 

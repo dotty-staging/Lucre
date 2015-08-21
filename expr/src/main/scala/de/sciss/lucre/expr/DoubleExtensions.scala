@@ -532,12 +532,12 @@ object DoubleExtensions {
   }
 
   final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
-    import me.{`this` => ex}
+    import me.{`this` => a}
     private type E = Ex[S]
 
     import UnaryOp._
 
-    def unary_- (implicit tx: S#Tx): E = Neg(ex)
+    def unary_- (implicit tx: S#Tx): E = Neg(a)
 
     // def bitNot : E	         = BitNot.make( ex )
     // def toDouble : E	         = UnOp.make( 'asDouble, ex )
@@ -545,52 +545,43 @@ object DoubleExtensions {
 
     import BinaryOp._
 
-    def +(b: E)(implicit tx: S#Tx): E = Plus(ex, b)
-
-    def -(b: E)(implicit tx: S#Tx): E = Minus(ex, b)
-
-    def *(b: E)(implicit tx: S#Tx): E = Times(ex, b)
-
-    def /(b: E)(implicit tx: S#Tx): E = Div(ex, b)
-  }
-
-  final class RichOps[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
-    import me.{`this` => ex}
-
-    private type E = Ex[S]
+    def + (b: E)(implicit tx: S#Tx): E = Plus (a, b)
+    def - (b: E)(implicit tx: S#Tx): E = Minus(a, b)
+    def * (b: E)(implicit tx: S#Tx): E = Times(a, b)
+    def / (b: E)(implicit tx: S#Tx): E = Div  (a, b)
 
     import UnaryOp._
 
-    def abs       (implicit tx: S#Tx): E = Abs       (ex)
-    def ceil      (implicit tx: S#Tx): E = Ceil      (ex)
-    def floor     (implicit tx: S#Tx): E = Floor     (ex)
-    def frac      (implicit tx: S#Tx): E = Frac      (ex)
-    def signum    (implicit tx: S#Tx): E = Signum    (ex)
-    def squared   (implicit tx: S#Tx): E = Squared   (ex)
+    def abs       (implicit tx: S#Tx): E = Abs       (a)
+    def ceil      (implicit tx: S#Tx): E = Ceil      (a)
+    def floor     (implicit tx: S#Tx): E = Floor     (a)
+    def frac      (implicit tx: S#Tx): E = Frac      (a)
+    def signum    (implicit tx: S#Tx): E = Signum    (a)
+    def squared   (implicit tx: S#Tx): E = Squared   (a)
     // def cubed     : E = Cubed     (ex)
-    def sqrt      (implicit tx: S#Tx): E = Sqrt      (ex)
-    def exp       (implicit tx: S#Tx): E = Exp       (ex)
-    def reciprocal(implicit tx: S#Tx): E = Reciprocal(ex)
-    def midicps   (implicit tx: S#Tx): E = Midicps   (ex)
-    def cpsmidi   (implicit tx: S#Tx): E = Cpsmidi   (ex)
-    def midiratio (implicit tx: S#Tx): E = Midiratio (ex)
-    def ratiomidi (implicit tx: S#Tx): E = Ratiomidi (ex)
-    def dbamp     (implicit tx: S#Tx): E = Dbamp     (ex)
-    def ampdb     (implicit tx: S#Tx): E = Ampdb     (ex)
-    def octcps    (implicit tx: S#Tx): E = Octcps    (ex)
-    def cpsoct    (implicit tx: S#Tx): E = Cpsoct    (ex)
-    def log       (implicit tx: S#Tx): E = Log       (ex)
-    def log2      (implicit tx: S#Tx): E = Log2      (ex)
-    def log10     (implicit tx: S#Tx): E = Log10     (ex)
-    def sin       (implicit tx: S#Tx): E = Sin       (ex)
-    def cos       (implicit tx: S#Tx): E = Cos       (ex)
-    def tan       (implicit tx: S#Tx): E = Tan       (ex)
-    def asin      (implicit tx: S#Tx): E = Asin      (ex)
-    def acos      (implicit tx: S#Tx): E = Acos      (ex)
-    def atan      (implicit tx: S#Tx): E = Atan      (ex)
-    def sinh      (implicit tx: S#Tx): E = Sinh      (ex)
-    def cosh      (implicit tx: S#Tx): E = Cosh      (ex)
-    def tanh      (implicit tx: S#Tx): E = Tanh      (ex)
+    def sqrt      (implicit tx: S#Tx): E = Sqrt      (a)
+    def exp       (implicit tx: S#Tx): E = Exp       (a)
+    def reciprocal(implicit tx: S#Tx): E = Reciprocal(a)
+    def midicps   (implicit tx: S#Tx): E = Midicps   (a)
+    def cpsmidi   (implicit tx: S#Tx): E = Cpsmidi   (a)
+    def midiratio (implicit tx: S#Tx): E = Midiratio (a)
+    def ratiomidi (implicit tx: S#Tx): E = Ratiomidi (a)
+    def dbamp     (implicit tx: S#Tx): E = Dbamp     (a)
+    def ampdb     (implicit tx: S#Tx): E = Ampdb     (a)
+    def octcps    (implicit tx: S#Tx): E = Octcps    (a)
+    def cpsoct    (implicit tx: S#Tx): E = Cpsoct    (a)
+    def log       (implicit tx: S#Tx): E = Log       (a)
+    def log2      (implicit tx: S#Tx): E = Log2      (a)
+    def log10     (implicit tx: S#Tx): E = Log10     (a)
+    def sin       (implicit tx: S#Tx): E = Sin       (a)
+    def cos       (implicit tx: S#Tx): E = Cos       (a)
+    def tan       (implicit tx: S#Tx): E = Tan       (a)
+    def asin      (implicit tx: S#Tx): E = Asin      (a)
+    def acos      (implicit tx: S#Tx): E = Acos      (a)
+    def atan      (implicit tx: S#Tx): E = Atan      (a)
+    def sinh      (implicit tx: S#Tx): E = Sinh      (a)
+    def cosh      (implicit tx: S#Tx): E = Cosh      (a)
+    def tanh      (implicit tx: S#Tx): E = Tanh      (a)
 
     // def rand : E              = UnOp.make( 'rand, ex )
     // def rand2 : E             = UnOp.make( 'rand2, ex )
@@ -616,34 +607,34 @@ object DoubleExtensions {
 
     import BinaryOp._
 
-    def min     (b: E)(implicit tx: S#Tx): E = Min     (ex, b)
-    def max     (b: E)(implicit tx: S#Tx): E = Max     (ex, b)
-    def round   (b: E)(implicit tx: S#Tx): E = RoundTo   (ex, b)
-    def roundup (b: E)(implicit tx: S#Tx): E = RoundUpTo (ex, b)
-    def trunc   (b: E)(implicit tx: S#Tx): E = Trunc   (ex, b)
-    def atan2   (b: E)(implicit tx: S#Tx): E = Atan2   (ex, b)
-    def hypot   (b: E)(implicit tx: S#Tx): E = Hypot   (ex, b)
-    def hypotx  (b: E)(implicit tx: S#Tx): E = Hypotx  (ex, b)
-    def pow     (b: E)(implicit tx: S#Tx): E = Pow     (ex, b)
+    def min     (b: E)(implicit tx: S#Tx): E = Min     (a, b)
+    def max     (b: E)(implicit tx: S#Tx): E = Max     (a, b)
+    def round   (b: E)(implicit tx: S#Tx): E = RoundTo (a, b)
+    def roundup (b: E)(implicit tx: S#Tx): E = RoundUpTo(a,b)
+    def trunc   (b: E)(implicit tx: S#Tx): E = Trunc   (a, b)
+    def atan2   (b: E)(implicit tx: S#Tx): E = Atan2   (a, b)
+    def hypot   (b: E)(implicit tx: S#Tx): E = Hypot   (a, b)
+    def hypotx  (b: E)(implicit tx: S#Tx): E = Hypotx  (a, b)
+    def pow     (b: E)(implicit tx: S#Tx): E = Pow     (a, b)
 
     //      def ring1( b: E ) : E     = Ring1.make( ex, b )
     //      def ring2( b: E ) : E     = Ring2.make( ex, b )
     //      def ring3( b: E ) : E     = Ring3.make( ex, b )
     //      def ring4( b: E ) : E     = Ring4.make( ex, b )
-    def difsqr  (b: E)(implicit tx: S#Tx): E = Difsqr  (ex, b)
-    def sumsqr  (b: E)(implicit tx: S#Tx): E = Sumsqr  (ex, b)
-    def sqrsum  (b: E)(implicit tx: S#Tx): E = Sqrsum  (ex, b)
-    def sqrdif  (b: E)(implicit tx: S#Tx): E = Sqrdif  (ex, b)
-    def absdif  (b: E)(implicit tx: S#Tx): E = Absdif  (ex, b)
+    def difsqr  (b: E)(implicit tx: S#Tx): E = Difsqr  (a, b)
+    def sumsqr  (b: E)(implicit tx: S#Tx): E = Sumsqr  (a, b)
+    def sqrsum  (b: E)(implicit tx: S#Tx): E = Sqrsum  (a, b)
+    def sqrdif  (b: E)(implicit tx: S#Tx): E = Sqrdif  (a, b)
+    def absdif  (b: E)(implicit tx: S#Tx): E = Absdif  (a, b)
     // def thresh  (b: E): E = Thresh  (ex, b)
 
     //      def amclip( b: E ) : E    = Amclip.make( ex, b )
     //      def scaleneg( b: E ) : E  = Scaleneg.make( ex, b )
-    def clip2   (b: E)(implicit tx: S#Tx): E = Clip2   (ex, b)
+    def clip2   (b: E)(implicit tx: S#Tx): E = Clip2   (a, b)
 
     //      def excess( b: E ) : E    = Excess.make( ex, b )
-    def fold2   (b: E)(implicit tx: S#Tx): E = Fold2   (ex, b)
-    def wrap2   (b: E)(implicit tx: S#Tx): E = Wrap2   (ex, b)
+    def fold2   (b: E)(implicit tx: S#Tx): E = Fold2   (a, b)
+    def wrap2   (b: E)(implicit tx: S#Tx): E = Wrap2   (a, b)
 
     // def firstarg( b: Double ) : Double  = d
 
