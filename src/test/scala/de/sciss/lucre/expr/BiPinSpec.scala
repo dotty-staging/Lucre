@@ -3,6 +3,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre
 import de.sciss.lucre.bitemp.BiPin
 import de.sciss.lucre.stm
+import de.sciss.model.Change
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
@@ -217,7 +218,7 @@ class BiPinSpec extends ConfluentEventSpec {
       val time = timeH()
       val expr = exprH()
 
-      val Expr.Var( exprVar ) = expr.value
+      val Expr.Var(exprVar) = expr.value
 
       exprVar() = 5
       obs.assertEquals()
@@ -226,53 +227,46 @@ class BiPinSpec extends ConfluentEventSpec {
 //      )
       obs.clear()
 
-      val Expr.Var( timeVar ) = time.key
+      val Expr.Var(timeVar) = time.key
       timeVar() = 15000L
       //         println( "DEBUG " + bip.debugList() )
       //         println( "DEBUG " + bip.valueAt( 10000L ))
       val tup1 = tup1H()
       assert( bip.valueAt( 10000L ) === Some( tup1.value ))
       assert( bip.valueAt( 15000L ) === Some( time.value))
-      obs.assertEquals()
-//        //            BiPin.Collection( bip, Vec( Span(     0L, 15000L ) -> (1: IntEx),
-//        //                                            Span( 15000L, 20000L ) -> (3: IntEx) ))
-//        BiPin.Update[ S, Int ]( bip, Vec( BiPin.Element( time, Change( 10000L -> 3, 15000L -> 3 ))))
-//      )
+      obs.assertEquals(
+        BiPin.Update[S, IE](bip, BiPin.Moved(Change(10000L, 15000L), time) :: Nil)
+      )
       obs.clear()
 
       timeVar() = -5000L
       assert( bip.valueAt(    -1L ) === Some( time.value ))
       assert( bip.valueAt( 15001L ) === Some( tup1.value ))
-      obs.assertEquals()
-//        //            BiPin.Collection( bip, Vec( Span(     0L, 20000L ) -> (1: IntEx),
-//        //                                            Span( -5000L,     0L ) -> (3: IntEx) ))
-//        BiPin.Update[ S, Int ]( bip, Vec( BiPin.Element( time, Change( 15000L -> 3, -5000L -> 3 ))))
-//      )
+      obs.assertEquals(
+        BiPin.Update[S, IE](bip, BiPin.Moved(Change(15000L, -5000L), time) :: Nil)
+      )
       obs.clear()
 
       timeVar() = 25000L // the region -5000 ... 0 is 'swallowed' (NO: OBSOLETE)
-      obs.assertEquals()
-//        //            BiPin.Collection( bip, Vec( Span( 25000L, 30000L ) -> (3: IntEx) ))
-//        BiPin.Update[ S, Int ]( bip, Vec( BiPin.Element( time, Change( -5000L -> 3, 25000L -> 3 ))))
-//      )
+      obs.assertEquals(
+        BiPin.Update[S, IE](bip, BiPin.Moved(Change(-5000L, 25000L), time) :: Nil)
+      )
       obs.clear()
 
       timeVar() = 35000L
-      obs.assertEquals()
-//        //            BiPin.Collection( bip, Vec( Span( 20000L, 30000L ) -> (2: IntEx),
-//        //                                            Span.from( 35000L )    -> (3: IntEx) ))
-//        BiPin.Update[ S, Int ]( bip, Vec( BiPin.Element( time, Change( 25000L -> 3, 35000L -> 3 ))))
-//      )
+      obs.assertEquals(
+        BiPin.Update[S, IE](bip, BiPin.Moved(Change(25000L, 35000L), time) :: Nil)
+      )
       obs.clear()
 
       exprVar() = 6
-      obs.assertEquals()
-//        //            BiPin.Element( bip, Vec( expr -> Change( 5, 6 )))
-//        BiPin.Update[ S, Int ]( bip, Vec( BiPin.Element( expr, Change( 30000L -> 5, 30000L -> 6 ))))
-//      )
+      obs.assertEquals(
+        // BiPin.Update[S, IE](bip, BiPin.Moved(Change(30000L, 30000L), expr) :: Nil)
+      )
       obs.clear()
 
-      assert( bip.debugList() === scala.List( 0L -> 1, 20000L -> 2, 30000L -> 6, 35000L -> 3 ))
+      assert( bip.debugList().map { case (k, v) => (k, v.value) } ===
+        scala.List( 0L -> 1, 20000L -> 2, 30000L -> 6, 35000L -> 3 ))
     }
   }
 }
