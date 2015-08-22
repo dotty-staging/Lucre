@@ -15,13 +15,13 @@ package de.sciss.lucre.expr
 package impl
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.stm.{NoSys, Sys}
+import de.sciss.lucre.stm.{Obj, NoSys, Sys}
 import de.sciss.model
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
 
-trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
+trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { self =>
   final protected type Ex [S <: Sys[S]] = Expr      [S, A]
   final protected type ExV[S <: Sys[S]] = Expr.Var  [S, A]
   final protected type ExC[S <: Sys[S]] = Expr.Const[S, A]
@@ -105,7 +105,7 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   // ---- private ----
 
   private[this] final class Const[S <: Sys[S]](val id: S#ID, val constValue: A) extends ConstImpl[S, A] {
-    def typeID: Int = tpe.typeID
+    def tpe: Obj.Type = self
 
     protected def writeData(out: DataOutput): Unit = valueSerializer.write(constValue, out)
   }
@@ -113,7 +113,7 @@ trait ExprTypeImpl[A] extends Type.Expr[A] with TypeImpl1[Repr[A]#L] { tpe =>
   private[this] final class Var[S <: Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: Targets[S])
     extends VarImpl[S, A] {
 
-    def typeID: Int = tpe.typeID
+    def tpe: Obj.Type = self
   }
 
   private[this] val anySer    = new Ser   [NoSys]

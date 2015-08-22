@@ -21,7 +21,7 @@ import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.geom.LongSpace.TwoDim
 import de.sciss.lucre.geom.{DistanceMeasure, LongDistanceMeasure2D, LongPoint2D, LongPoint2DLike, LongRectangle, LongSpace}
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Identifiable, NoSys, Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Identifiable, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -32,7 +32,7 @@ import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 object BiGroupImpl {
-  import BiGroup.{Leaf, MaxCoordinate, MaxSide, MaxSquare, MinCoordinate, Modifiable, TimedElem}
+  import BiGroup.{Leaf, MaxCoordinate, MaxSide, MaxSquare, MinCoordinate, Modifiable, Entry}
 
   def spanToPoint(span: SpanLike): LongPoint2D = span match {
     case Span(start, stop)  => LongPoint2D(start,     stop     )
@@ -149,8 +149,8 @@ object BiGroupImpl {
     if (showLog) println(s"<bigroup> $what")
 
   type Tree    [S <: Sys[S], A          ] = SkipOctree[S, TwoDim, A]
-  type LeafImpl[S <: Sys[S], A <: Obj[S]] = (SpanLike, Vec[TimedElemImpl[S, A]])
-  type TreeImpl[S <: Sys[S], A <: Obj[S]] = SkipOctree[S, TwoDim, LeafImpl[S, A]]
+  type LeafImpl[S <: Sys[S], A <: Elem[S]] = (SpanLike, Vec[EntryImpl[S, A]])
+  type TreeImpl[S <: Sys[S], A <: Elem[S]] = SkipOctree[S, TwoDim, LeafImpl[S, A]]
 
   def verifyConsistency[S <: Sys[S], A](group: BiGroup[S, A], reportOnly: Boolean)
                                        (implicit tx: S#Tx): Vec[String] =
@@ -162,16 +162,16 @@ object BiGroupImpl {
       }
     }
 
-  def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] = anySer.asInstanceOf[Ser[S, A]]
+  def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] = anySer.asInstanceOf[Ser[S, A]]
 
   private val anySer = new Ser[NoSys, Obj[NoSys]]
 
-  def modifiableSerializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, A]] =
+  def modifiableSerializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, A]] =
     anyModSer.asInstanceOf[ModSer[S, A]]
 
   private val anyModSer = new ModSer[NoSys, Obj[NoSys]]
 
-  def readModifiable[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)
+  def readModifiable[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)
                                               (implicit tx: S#Tx): BiGroup.Modifiable[S, A] = {
     val targets = evt.Targets.read[S](in, access)
     read(in, access, targets)
@@ -182,29 +182,29 @@ object BiGroupImpl {
     read(in, access, targets)
   }
 
-  def readIdentifiedTimed[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+  def readIdentifiedEntry[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val targets = Targets.read(in, access)
-    readTimed(in, access, targets)
+    readEntry(in, access, targets)
   }
 
-  private class Ser[S <: Sys[S], A <: Obj[S]] extends ObjSerializer[S, BiGroup[S, A]] {
+  private class Ser[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, BiGroup[S, A]] {
     def tpe = BiGroup
   }
 
-  private class ModSer[S <: Sys[S], A <: Obj[S]] extends ObjSerializer[S, BiGroup.Modifiable[S, A]] {
+  private class ModSer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, BiGroup.Modifiable[S, A]] {
     def tpe = BiGroup
   }
 
-  private[lucre] final class TimedElemImpl[S <: Sys[S], A <: Obj[S]](val targets : evt.Targets[S],
+  private[lucre] final class EntryImpl[S <: Sys[S], A <: Elem[S]](val targets : evt.Targets[S],
                                                                      val span    : Expr[S, SpanLike],
                                                                      val value   : A)
-    extends evti.SingleNode[S, Change[SpanLike]] with TimedElem[S, A] {
+    extends evti.SingleNode[S, Change[SpanLike]] with Entry[S, A] {
 
-    def typeID: Int = TimedElem.typeID
+    def tpe: Obj.Type = Entry
 
-    override def toString = s"TimedElem$id"
+    override def toString = s"Entry$id"
 
-    /** Tricky override to allow comparison with BiGroup.TimedElem.Wrapper */
+    /** Tricky override to allow comparison with BiGroup.Entry.Wrapper */
     override def equals(that: Any): Boolean = that match {
       case m: Identifiable[_] => this.id == m.id
       case _ => super.equals(that)
@@ -231,23 +231,23 @@ object BiGroupImpl {
     }
   }
 
-  implicit def timedSer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, TimedElemImpl[S, A]] =
-    anyTimedSer.asInstanceOf[TimedSer[S, A]]
+  implicit def entrySer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, EntryImpl[S, A]] =
+    anyEntrySer.asInstanceOf[EntrySer[S, A]]
 
-  private val anyTimedSer = new TimedSer[NoSys, Obj[NoSys]]
+  private val anyEntrySer = new EntrySer[NoSys, Obj[NoSys]]
 
-  private def readTimed[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                                 (implicit tx: S#Tx): TimedElemImpl[S, A] = {
+  private def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                                 (implicit tx: S#Tx): EntryImpl[S, A] = {
     val span  = expr.SpanLike .read(in, access)
-    val value = Obj           .read(in, access).asInstanceOf[A]
-    new TimedElemImpl(targets, span, value)
+    val value = Elem          .read(in, access).asInstanceOf[A]
+    new EntryImpl(targets, span, value)
   }
 
-  private final class TimedSer[S <: Sys[S], A <: Obj[S]] extends ObjSerializer[S, TimedElemImpl[S, A]] {
-    def tpe = TimedElem
+  private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, EntryImpl[S, A]] {
+    def tpe = Entry
   }
 
-  abstract class Impl[S <: Sys[S], A <: Obj[S]]
+  abstract class Impl[S <: Sys[S], A <: Elem[S]]
     extends Modifiable[S, A]
     with evt.impl.SingleNode[S, BiGroup.Update[S, A]] {
 
@@ -261,7 +261,7 @@ object BiGroupImpl {
 
     // ---- implemented ----
 
-    def typeID: Int = BiGroup.typeID
+    final def tpe: Obj.Type = BiGroup
 
     final def treeHandle = tree
 
@@ -269,33 +269,33 @@ object BiGroupImpl {
 
     def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
 
-    // Note: must be after `TimedSer`
+    // Note: must be after `EntrySer`
     protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, A] =
       SkipOctree.empty[S, TwoDim, LeafImpl[S, A]](BiGroup.MaxSquare)
 
-    // Note: must be after `TimedSer`
+    // Note: must be after `EntrySer`
     protected final def readTree(in: DataInput, access: S#Acc)(implicit tx: S#Tx): TreeImpl[S, A] =
       SkipOctree.read[S, TwoDim, LeafImpl[S, A]](in, access)
 
     // ---- event behaviour ----
 
     object changed extends Changed with evt.impl.Generator[S, BiGroup.Update[S, A]] {
-      def += (elem: TimedElemImpl[S, A])(implicit tx: S#Tx): Unit = elem.changed ---> this
-      def -= (elem: TimedElemImpl[S, A])(implicit tx: S#Tx): Unit = elem.changed -/-> this
+      def += (entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = entry.changed ---> this
+      def -= (entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = entry.changed -/-> this
 
       def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[BiGroup.Update[S, A]] = {
         val par = pull.parents(this)
         log(s"$this.pullUpdate -> parents = $par")
 
         val changes: List[BiGroup.Moved[S, A]] = par.flatMap { evt =>
-          val timed = evt.node.asInstanceOf[TimedElemImpl[S, A]]
-          val ch0   = pull(timed.changed)
-          log(s"$this.pullUpdate -> from timed $timed pulled $ch0")
+          val entry = evt.node.asInstanceOf[EntryImpl[S, A]]
+          val ch0   = pull(entry.changed)
+          log(s"$this.pullUpdate -> from entry $entry pulled $ch0")
           ch0.map {
             case ch @ Change(spanValOld, spanValNew) =>
-              assert(removeNoFire(spanValOld, timed))
-              addNoFire          (spanValNew, timed)
-              BiGroup.Moved(ch, timed)
+              assert(removeNoFire(spanValOld, entry))
+              addNoFire          (spanValNew, entry)
+              BiGroup.Moved(ch, entry)
           }
         } (breakOut)
 
@@ -318,40 +318,40 @@ object BiGroupImpl {
       val changes = tree.iterator.toList.flatMap {
         case (spanVal, seq) =>
           seq.map {
-            timed => BiGroup.Removed(spanVal, timed)
+            entry => BiGroup.Removed(spanVal, entry)
           }
       }
       tree.clear()
       if (changes.nonEmpty) changed.fire(BiGroup.Update(group, changes))
     }
 
-    final def add(span: Expr[S, SpanLike], elem: A)(implicit tx: S#Tx): TimedElem[S, A] = {
+    final def add(span: Expr[S, SpanLike], elem: A)(implicit tx: S#Tx): Entry[S, A] = {
       log(s"$this.add($span, $elem)")
       val spanVal = span.value
       val tgt     = evt.Targets[S]
-      val timed   = new TimedElemImpl[S, A](tgt, span, elem).connect()
-      addNoFire(spanVal, timed)
+      val entry   = new EntryImpl[S, A](tgt, span, elem).connect()
+      addNoFire(spanVal, entry)
 
-      changed += timed
-      changed.fire(BiGroup.Update(group, BiGroup.Added(spanVal, timed) :: Nil))
+      changed += entry
+      changed.fire(BiGroup.Update(group, BiGroup.Added(spanVal, entry) :: Nil))
 
-      timed
+      entry
     }
 
-    private def addNoFire(spanVal: SpanLike, timed: TimedElemImpl[S, A])(implicit tx: S#Tx): Unit = {
+    private def addNoFire(spanVal: SpanLike, entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = {
       val point = spanToPoint(spanVal)
       //if( showLog ) println( "add at point " + point )
       //         val entry   = (span, elem)
       tree.transformAt(point) {
-        case None           => Some(spanVal -> Vec    (timed))
-        case Some((_, seq)) => Some(spanVal -> (seq :+ timed))
+        case None           => Some(spanVal -> Vector (entry))
+        case Some((_, seq)) => Some(spanVal -> (seq :+ entry))
       }
     }
 
     final def remove(span: Expr[S, SpanLike], elem: A)(implicit tx: S#Tx): Boolean = {
-      val spanVal = span.value
-      val point   = spanToPoint(spanVal)
-      val timedO  = tree.get(point).flatMap {
+      val spanVal   = span.value
+      val point     = spanToPoint(spanVal)
+      val entryOpt  = tree.get(point).flatMap {
         case (_, Vec(single)) =>
           if (single.span == span && single.value == elem) {
             tree.removeAt(point)
@@ -360,7 +360,7 @@ object BiGroupImpl {
             None
           }
         case (_, seq) =>
-          val (equal, diff) = seq.partition(timed => timed.span == span && timed.value == elem)
+          val (equal, diff) = seq.partition(entry => entry.span == span && entry.value == elem)
           if (equal.nonEmpty) {
             tree.add((spanVal, diff))
             equal.headOption
@@ -369,28 +369,28 @@ object BiGroupImpl {
           }
       }
 
-      timedO.foreach { timed =>
-        changed -= timed
-        changed.fire(BiGroup.Update(group, BiGroup.Removed(spanVal, timed) :: Nil))
-        timed.dispose()
+      entryOpt.foreach { entry =>
+        changed -= entry
+        changed.fire(BiGroup.Update(group, BiGroup.Removed(spanVal, entry) :: Nil))
+        entry.dispose()
       }
 
-      timedO.isDefined
+      entryOpt.isDefined
     }
 
-    private def removeNoFire(spanVal: SpanLike, timed: TimedElemImpl[S, A])(implicit tx: S#Tx): Boolean = {
+    private def removeNoFire(spanVal: SpanLike, entry: EntryImpl[S, A])(implicit tx: S#Tx): Boolean = {
       val point = spanToPoint(spanVal)
       val entry = tree.get(point)
       entry match {
         case Some((_, Vec(single))) =>
-          if (single == timed) {
+          if (single == entry) {
             assert(tree.removeAt(point).isDefined)
             true
           } else {
             false
           }
         case Some((_, seq)) =>
-          val seqNew = seq.filterNot(_ == timed)
+          val seqNew = seq.filterNot(_ == entry)
           if (seqNew.size != seq.size) {
             assert(tree.add((spanVal, seqNew)))
             true
@@ -436,14 +436,14 @@ object BiGroupImpl {
       BiGroupImpl.eventBefore(tree)(BiGroup.MaxCoordinate)
   }
 
-  def newModifiable[S <: Sys[S], A <: Obj[S]](implicit tx: S#Tx): Modifiable[S, A] =
+  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
     new Impl[S, A] {
       protected val targets = evt.Targets[S]
 
       val tree: TreeImpl[S, A] = newTree()
     }
 
-  private def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
+  private def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
                                             (implicit tx: S#Tx): Impl[S, A] =
     new Impl[S, A] {
       protected val targets: evt.Targets[S] = _targets

@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.lucre.event.Event
 import de.sciss.lucre.stm.impl.{ElemImpl => Impl}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, Writable}
@@ -46,5 +47,7 @@ object Elem {
   * via `Elem.addType` and can be de-serialized through `Elem.read`.
   */
 trait Elem[S <: Sys[S]] extends Writable with Disposable[S#Tx] {
-  def typeID: Int
+  def tpe: Elem.Type
+
+  private[lucre] def event(slot: Int): Event[S, Any]
 }

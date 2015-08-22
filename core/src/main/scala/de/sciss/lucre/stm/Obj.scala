@@ -13,16 +13,14 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.event.{Event, Targets}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
-import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.serial.{DataInput, Serializer}
 
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 
-  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer
+  implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer
 
   trait Type extends Elem.Type {
     private[this] lazy val _init: Unit = Obj.addType(this)
@@ -51,5 +49,5 @@ object Obj {
 trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
   override def toString = s"Obj$id"
 
-  private[lucre] def event(slot: Int): Event[S, Any]
+  override def tpe: Obj.Type
 }

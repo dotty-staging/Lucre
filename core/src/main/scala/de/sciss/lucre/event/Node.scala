@@ -14,7 +14,7 @@
 package de.sciss.lucre.event
 
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{NoSys, Obj, Sys}
+import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput}
 
@@ -158,7 +158,7 @@ sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Rea
   * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
   * targets.
   */
-trait Node[S <: Sys[S]] extends Obj[S] {
+trait Node[S <: Sys[S]] extends Elem[S] /* Obj[S] */ {
   override def toString = s"Node$id"
 
   protected def targets: Targets[S]
@@ -170,7 +170,7 @@ trait Node[S <: Sys[S]] extends Obj[S] {
   final def id: S#ID = targets.id
 
   final def write(out: DataOutput): Unit = {
-    out.writeInt(typeID)
+    out.writeInt(tpe.typeID)
     targets.write(out)
     writeData(out)
   }

@@ -20,7 +20,7 @@ import de.sciss.lucre.artifact.Artifact.Modifiable
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.List
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{NoSys, Sys}
+import de.sciss.lucre.stm.{Obj, NoSys, Sys}
 import de.sciss.lucre.{data, event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -127,7 +127,7 @@ object ArtifactImpl {
     extends Location.Modifiable[S]
     with evt.impl.SingleNode[S, Location.Update[S]] { loc =>
 
-    def typeID: Int = Location.typeID
+    def tpe: Obj.Type = Location
 
     override def toString = s"ArtifactLocation$id"
 
@@ -182,7 +182,7 @@ object ArtifactImpl {
     with evt.impl.MappingNode[S, Change[File], Location.Update[S]]
     with evt.impl.SingleNode[S, Change[File]] {
 
-    def typeID: Int = Artifact.typeID
+    def tpe: Obj.Type = Artifact
 
     override def toString = s"Artifact$id"
 

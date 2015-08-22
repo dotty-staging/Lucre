@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.impl.{MapImpl => Impl}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.lucre.data
 import de.sciss.serial.{DataInput, Serializer}
 
@@ -25,13 +25,13 @@ object Map extends Obj.Type {
   final val typeID = 24
 
   object Modifiable {
-    def apply[S <: Sys[S], K, V <: Obj[S]](implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] =
+    def apply[S <: Sys[S], K, V <: Elem[S]](implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] =
       Impl[S, K, V]
 
-    def read[S <: Sys[S], K, V <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] =
+    def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] =
       Impl.modRead(in, access)
 
-    implicit def serializer[S <: Sys[S], K, V <: Obj[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
+    implicit def serializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
       Impl.modSerializer
   }
 
@@ -56,14 +56,14 @@ object Map extends Obj.Type {
     def -=(key: K)(implicit tx: S#Tx): this.type
   }
 
-  def read[S <: Sys[S], K, V <: Obj[S]](in: DataInput, access: S#Acc)
+  def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
                                        (implicit tx: S#Tx, keyType: Type.Expr[K]): Map[S, K, V] =
     Impl.read(in, access)
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
 
-  implicit def serializer[S <: Sys[S], K, V <: Obj[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Map[S, K, V]] =
+  implicit def serializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Map[S, K, V]] =
     Impl.serializer
 
   final case class Update[S <: Sys[S], K, V](map: Map[S, K, V], changes: Vec[Change[S, K, V]])

@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.{Boolean => BooleanEx, Int => IntEx}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput}
@@ -163,9 +163,7 @@ object BooleanExtensions  {
                                               _1: Expr[S, Boolean], _2: Expr[S, Boolean])
     extends impl.NodeImpl[S, Boolean] {
 
-    def typeID: Int = Boolean.typeID
-
-    protected def reader = BooleanEx.serializer[S]
+    def tpe: Obj.Type = Boolean
 
     def connect()(implicit tx: S#Tx): this.type = {
       _1.changed ---> changed

@@ -18,8 +18,8 @@ import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{NoSys, Obj, Sys}
-import de.sciss.lucre.{event => evt, expr}
+import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
+import de.sciss.lucre.{event => evt, stm, expr}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -31,17 +31,17 @@ object BiPinImpl {
 
   private type Tree[S <: Sys[S], A] = SkipList.Map[S, Long, Leaf[S, A]]
 
-  def newEntry[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
+  def newEntry[S <: Sys[S], A <: Elem[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
     if (Expr.isConst(key)) new ConstEntry(            key, value)
     else                   new NodeEntry (Targets[S], key, value).connect()
 
-  def readEntry[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = {
+  def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = {
     val tpe = in.readInt()
     if (tpe != Entry.typeID) sys.error(s"Type mismatch. Found $tpe, expected ${Entry.typeID}")
     in.readByte() match {
       case 3 =>
         val key     = expr.Long.read(in, access)
-        val value   = Obj.read(in, access).asInstanceOf[A]
+        val value   = Elem.read(in, access).asInstanceOf[A]
         new ConstEntry(key, value)
 
       case 0 =>
@@ -50,31 +50,31 @@ object BiPinImpl {
     }
   }
 
-  def entrySerializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
+  def entrySerializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
     anyEntrySer.asInstanceOf[EntrySer[S, A]]
 
   private val anyEntrySer = new EntrySer[NoSys, Obj[NoSys]]
 
-  private final class EntrySer[S <: Sys[S], A <: Obj[S]] extends Serializer[S#Tx, S#Acc, Entry[S, A]] {
+  private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends Serializer[S#Tx, S#Acc, Entry[S, A]] {
     def write(e: Entry[S, A], out: DataOutput): Unit = e.write(out)
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = readEntry(in, access)
   }
 
-  def readIdentifiedEntry[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+  def readIdentifiedEntry[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = {
     val targets = Targets.read[S](in, access)
     readEntry(in, access, targets)
   }
 
-  private def readEntry[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                                                 (implicit tx: S#Tx): Entry[S, A] with Obj[S] = {
+  private def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: Targets[S])
+                                                 (implicit tx: S#Tx): Entry[S, A] = {
     val key     = expr.Long.read(in, access)
-    val value   = Obj.read(in, access).asInstanceOf[A]
+    val value   = Elem.read(in, access).asInstanceOf[A]
     new NodeEntry(targets, key, value)
   }
 
-  private trait EntryImpl[S <: Sys[S], A <: Obj[S]] extends Entry[S, A] {
-    final def typeID: Int = Entry.typeID
+  private trait EntryImpl[S <: Sys[S], A <: Elem[S]] extends Entry[S, A] {
+    final def tpe: Elem.Type = Entry
 
     final protected def writeData(out: DataOutput): Unit = {
       key  .write(out)
@@ -82,22 +82,14 @@ object BiPinImpl {
     }
   }
 
-  private case class ConstEntry[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A)
-    extends EntryImpl[S, A] {
-
-    def write(out: DataOutput): Unit = {
-      out.writeInt(typeID)
-      out.writeByte(3)
-      writeData(out)
-    }
+  private case class ConstEntry[S <: Sys[S], A <: Elem[S]](key: Expr[S, Long], value: A)
+    extends EntryImpl[S, A] with stm.impl.ConstElemImpl[S] {
 
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
-
-    def dispose()(implicit tx: S#Tx): Unit = ()
   }
 
-  private final class NodeEntry[S <: Sys[S], A <: Obj[S]](protected val targets: Targets[S],
-                                                          val key: Expr[S, Long], val value: A)
+  private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
+                                                           val key: Expr[S, Long], val value: A)
     extends EntryImpl[S, A] with evt.impl.SingleNode[S, Change[Long]] {
 
     // bueno, it's not really the "root", but the type is the same
@@ -120,12 +112,12 @@ object BiPinImpl {
     BiPinImpl.readImpl(in, access, targets)
   }
 
-  private implicit def leafSerializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, Leaf[S, A]] =
+  private implicit def leafSerializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Leaf[S, A]] =
     anyLeafSer.asInstanceOf[LeafSer[S, A]]
 
   private val anyLeafSer = new LeafSer[NoSys, Obj[NoSys]]
 
-  private final class LeafSer[S <: Sys[S], A <: Obj[S]] extends Serializer[S#Tx, S#Acc, Leaf[S, A]] {
+  private final class LeafSer[S <: Sys[S], A <: Elem[S]] extends Serializer[S#Tx, S#Acc, Leaf[S, A]] {
     def write(leaf: BiPin.Leaf[S, A], out: DataOutput): Unit = {
       val sz = leaf.size
       out.writeInt(sz)
@@ -140,45 +132,44 @@ object BiPinImpl {
     }
   }
 
-  def newModifiable[S <: Sys[S], A <: Obj[S]](implicit tx: S#Tx): Modifiable[S, A] = {
+  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] = {
     val tree: Tree[S, A] = SkipList.Map.empty[S, Long, Leaf[S, A]]()
     new Impl(evt.Targets[S], tree)
   }
 
-  def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
+  def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
     anySer.asInstanceOf[Ser[S, A, BiPin[S, A]]]
 
-  def modifiableSerializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin.Modifiable[S, A]] =
+  def modifiableSerializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin.Modifiable[S, A]] =
     anySer.asInstanceOf[Ser[S, A, BiPin.Modifiable[S, A]]]
 
   private val anySer = new Ser[NoSys, Obj[NoSys], BiPin[NoSys, Obj[NoSys]]]
 
-  def readModifiable[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)
+  def readModifiable[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)
                                               (implicit tx: S#Tx): BiPin.Modifiable[S, A] = {
     val targets = evt.Targets.read[S](in, access)
     readImpl(in, access, targets)
   }
 
-  def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
+  def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
     readModifiable(in, access)
 
-  private def readImpl[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  private def readImpl[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                 (implicit tx: S#Tx): Impl[S, A] = {
     val tree: Tree[S, A] = SkipList.Map.read[S, Long, Leaf[S, A]](in, access)
     new Impl(targets, tree)
   }
 
-  private class Ser[S <: Sys[S], A <: Obj[S], Repr >: Impl[S, A] <: BiPin[S, A]] extends ObjSerializer[S, Repr] {
+  private class Ser[S <: Sys[S], A <: Elem[S], Repr >: Impl[S, A] <: BiPin[S, A]] extends ObjSerializer[S, Repr] {
     def tpe = BiPin
   }
 
   private final class Impl[S <: Sys[S], A](protected val targets: evt.Targets[S], tree: Tree[S, A])
-                                          
     extends Modifiable[S, A]
     with evt.impl.SingleNode[S, Update[S, A]] {
     pin =>
 
-    def typeID: Int = BiPin.typeID
+    def tpe: Obj.Type = BiPin
 
     override def toString: String = s"BiPin${tree.id}"
 

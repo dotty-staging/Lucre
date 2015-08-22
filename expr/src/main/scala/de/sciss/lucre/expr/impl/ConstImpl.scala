@@ -18,7 +18,7 @@ import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 
-trait ConstImpl[S <: Sys[S], A] extends Expr.Const[S, A] with evt.impl.ConstImpl[S, Change[A]] {
+trait ConstImpl[S <: Sys[S], A] extends Expr.Const[S, A] with evt.impl.ConstObjImpl[S, Change[A]] {
   final def value(implicit tx: S#Tx): A = constValue
 
   override def toString = constValue.toString

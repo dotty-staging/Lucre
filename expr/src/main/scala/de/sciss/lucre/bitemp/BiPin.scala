@@ -13,12 +13,12 @@
 
 package de.sciss.lucre.bitemp
 
+import de.sciss.lucre.bitemp.impl.{BiPinImpl => Impl}
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.Expr
-import de.sciss.lucre.stm.{Disposable, Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.model
-import de.sciss.serial.{Writable, DataInput, Serializer}
-import impl.{BiPinImpl => Impl}
+import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.implicitConversions
@@ -33,27 +33,27 @@ object BiPin extends Obj.Type {
 
   final case class Update[S <: Sys[S], A](pin: BiPin[S, A], changes: List[Change[S, A]])
 
-  object Entry extends Obj.Type {
+  object Entry extends Elem.Type {
     final val typeID = 26
 
-    def apply[S <: Sys[S], A <: Obj[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
+    def apply[S <: Sys[S], A <: Elem[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
       Impl.newEntry(key, value)
 
-    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] =
       Impl.readIdentifiedEntry(in, access)
 
-//    implicit def fromTuple[S <: Sys[S], K, V, A <: Obj[S]](tup: (K, V))
+//    implicit def fromTuple[S <: Sys[S], K, V, A <: Elem[S]](tup: (K, V))
 //                                                          (implicit tx: S#Tx,
 //                                                           key  : K => Expr[S, Long],
 //                                                           value: V => A): Entry[S, A] = apply[S, A](tup._1, tup._2)
 
-    implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
+    implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
       Impl.entrySerializer[S, A]
 
-    implicit def fromTuple[S <: Sys[S], A <: Obj[S]](tup: (Expr[S, Long], A))(implicit tx: S#Tx): Entry[S, A] =
+    implicit def fromTuple[S <: Sys[S], A <: Elem[S]](tup: (Expr[S, Long], A))(implicit tx: S#Tx): Entry[S, A] =
       apply[S, A](tup._1, tup._2)
   }
-  trait Entry[S <: Sys[S], A] extends Publisher[S, model.Change[Long]] with Writable with Disposable[S#Tx] {
+  trait Entry[S <: Sys[S], A] extends Elem[S] with Publisher[S, model.Change[Long]] {
     def key  : Expr[S, Long]
     def value: A
   }
@@ -75,13 +75,13 @@ object BiPin extends Obj.Type {
       if (v.isInstanceOf[Modifiable[_, _]]) Some(v.asInstanceOf[Modifiable[S, A]]) else None
     }
 
-    def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
+    def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
       Impl.readModifiable[S, A](in, access)
 
-    def apply[S <: Sys[S], A <: Obj[S]](implicit tx: S#Tx): Modifiable[S, A] =
+    def apply[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
       Impl.newModifiable[S, A]
 
-    implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin.Modifiable[S, A]] =
+    implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin.Modifiable[S, A]] =
       Impl.modifiableSerializer[S, A]
   }
 
@@ -91,10 +91,10 @@ object BiPin extends Obj.Type {
     def clear()(implicit tx: S#Tx): Unit
   }
 
-  def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
+  def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
     Impl.read[S, A](in, access)
 
-  implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
+  implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
     Impl.serializer[S, A]
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =

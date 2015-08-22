@@ -19,7 +19,7 @@ import de.sciss.lucre.data.Iterator
 import de.sciss.lucre.event.{EventLike, Publisher}
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.geom.LongSquare
-import de.sciss.lucre.stm.{Obj, Identifiable, Sys}
+import de.sciss.lucre.stm.{Elem, Obj, Identifiable, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 import de.sciss.span.{SpanLike => SpanLikeV}
@@ -37,7 +37,7 @@ object BiGroup extends Obj.Type {
 
   override def init(): Unit = {
     super.init()
-    TimedElem.init()
+    Entry.init()
   }
 
   // ---- updates ----
@@ -45,65 +45,66 @@ object BiGroup extends Obj.Type {
   final case class Update[S <: Sys[S], A](group: BiGroup[S, A], changes: List[Change[S, A]])
 
   sealed trait Change[S <: Sys[S], +A] {
-    def elem: TimedElem[S, A]
+    def elem: Entry[S, A]
   }
 
-  final case class Added[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: TimedElem[S, A])
+  final case class Added[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: Entry[S, A])
     extends Change[S, A]
 
-  final case class Removed[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: TimedElem[S, A])
+  final case class Removed[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: Entry[S, A])
     extends Change[S, A]
 
-  final case class Moved[S <: Sys[S], A](change: m.Change[SpanLikeV], elem: TimedElem[S, A])
+  final case class Moved[S <: Sys[S], A](change: m.Change[SpanLikeV], elem: Entry[S, A])
     extends Change[S, A]
 
   // ---- structural data ----
 
-  type Leaf[S <: Sys[S], +A] = (SpanLikeV /* Span.HasStart */ , Vec[TimedElem[S, A]])
+  type Leaf[S <: Sys[S], +A] = (SpanLikeV /* Span.HasStart */ , Vec[Entry[S, A]])
 
-  object TimedElem extends Obj.Type {
+  // XXX TODO --- eventually we might drop Obj in favour of Elem
+  object Entry extends Obj.Type {
     final val typeID = 28
 
-    def apply[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A): TimedElem[S, A] =
-      Wrapper(id, span, value)
-
-    private final case class Wrapper[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A)
-      extends TimedElem[S, A] {
-
-      override def toString = s"TimedElem$id"
-
-      override def equals(that: Any): Boolean = that match {
-        case m: Identifiable[_] => this.id == m.id
-        case _ => super.equals(that)
-      }
-
-      override def hashCode = id.hashCode()
-    }
+//    def apply[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A): Entry[S, A] =
+//      Wrapper(id, span, value)
+//
+//    private final case class Wrapper[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A)
+//      extends Entry[S, A] {
+//
+//      override def toString = s"Entry$id"
+//
+//      override def equals(that: Any): Boolean = that match {
+//        case m: Identifiable[_] => this.id == m.id
+//        case _ => super.equals(that)
+//      }
+//
+//      override def hashCode = id.hashCode()
+//    }
 
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
-      Impl.readIdentifiedTimed(in, access)
+      Impl.readIdentifiedEntry(in, access)
   }
 
-  trait TimedElem[S <: Sys[S], +A] extends Identifiable[S#ID] {
+  trait Entry[S <: Sys[S], +A] extends Obj[S] {
     def span : Expr[S, SpanLikeV]
     def value: A
 
-    override def toString = s"TimedElem($id, $span, $value)"
+    override def toString = s"Entry($id, $span, $value)"
   }
 
   object Modifiable {
-    implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, A]] =
+    implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, A]] =
       Impl.modifiableSerializer[S, A]
 
-    def apply[S <: Sys[S], A <: Obj[S]](implicit tx: S#Tx): Modifiable[S, A] =
+    def apply[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
       Impl.newModifiable[S, A]
 
-    def read[S <: Sys[S], A <: Obj[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
+    def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
       Impl.readModifiable(in, access)
   }
 
   trait Modifiable[S <: Sys[S], A] extends BiGroup[S, A] {
-    def add(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): TimedElem[S, A]
+    def add(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): Entry[S, A]
 
     def remove(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): Boolean
 
@@ -112,14 +113,14 @@ object BiGroup extends Obj.Type {
     override def changed: EventLike[S, BiGroup.Update[S, A]]
   }
 
-  implicit def serializer[S <: Sys[S], A <: Obj[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] =
+  implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] =
     Impl.serializer[S, A]
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
 }
 
-trait BiGroup[S <: Sys[S], A] extends evt.Node[S] with Publisher[S, BiGroup.Update[S, A]] {
+trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S, A]] {
 
   import BiGroup.Leaf
 
