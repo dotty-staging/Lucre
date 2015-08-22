@@ -71,7 +71,7 @@ object SpanExtensions  {
     }
   }
 
-  final class Ops2(val `this`: Span.type) extends AnyVal { me =>
+  final class Ops2(val `this`: span.Span.type) extends AnyVal { me =>
     // import me.{`this` => ex}
     def apply[S <: Sys[S]](start: Expr[S, Long], stop: Expr[S, Long])(implicit tx: S#Tx): Ex[S] =
       (start, stop) match {
