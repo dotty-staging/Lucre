@@ -22,3 +22,6 @@ import de.sciss.lucre.stm.Sys
 trait Root[S <: Sys[S], +A] extends Event[S, A] {
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = Some(pull.resolve[A])
 }
+
+/** A generator without further sources. */
+trait RootGenerator[S <: Sys[S], A] extends Generator[S, A] with Root[S, A]

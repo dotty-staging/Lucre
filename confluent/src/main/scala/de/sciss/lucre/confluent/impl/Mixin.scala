@@ -16,9 +16,10 @@ package impl
 
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.data.Ancestor
+import de.sciss.lucre.event.Observer
 import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{TxnLike, DataStore}
+import de.sciss.lucre.stm.{IdentifierMap, TxnLike, DataStore}
 import de.sciss.serial
 import de.sciss.serial.{DataOutput, DataInput, ImmutableSerializer}
 
@@ -52,6 +53,11 @@ trait Mixin[S <: Sys[S]]
 
   final val eventCache: CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]] =
     DurableCacheMapImpl.newIntCache(eventVarMap)
+
+  final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] = {
+    val map = InMemoryConfluentMap.newIntMap[S]
+    new InMemoryIDMapImpl(map)
+  }
 
   private val global: GlobalState[S, D] = 
     durable.step { implicit tx =>

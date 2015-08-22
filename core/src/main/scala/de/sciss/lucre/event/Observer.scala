@@ -57,7 +57,7 @@ object Observer {
   private object Dummy extends Disposable[Any] {
     override def toString = "Observer.Dummy"
 
-    def dispose()(implicit tx: Any) = ()
+    def dispose()(implicit tx: Any): Unit = ()
   }
 }
 trait Observer[S <: Sys[S], -A] extends Disposable[S#Tx] {

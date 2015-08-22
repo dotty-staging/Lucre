@@ -45,6 +45,9 @@ object DurableImpl {
 
     protected def eventStore: DataStore
 
+    final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
+
     private[stm] def tryReadEvent[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A] = {
       log(s"readE  <$id>")
       eventStore.get(_.writeInt(id))(valueFun)
@@ -515,8 +518,5 @@ object DurableImpl {
     override def toString = s"Durable@${hashCode.toHexString}"
 
     def wrap(peer: InTxn): S#Tx = new TxnImpl(this, peer)
-
-    protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
   }
 }

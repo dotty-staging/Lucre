@@ -101,7 +101,7 @@ object InMemoryImpl {
     def dispose()(implicit tx: S#Tx): Unit = ()
 
     override def toString = s"<$id>"
-    override def hashCode: Int = id.##
+    override def hashCode: Int    = id.##
 
     override def equals(that: Any) = that match {
       case thatID: InMemoryLike.ID[_] => thatID.id == id
@@ -123,7 +123,7 @@ object InMemoryImpl {
   private final class TxnImpl(val system: InMemory, val peer: InTxn)
     extends TxnMixin[InMemory] {
 
-    implicit def inMemory = this
+    implicit def inMemory: S#I#Tx = this
 
     override def toString = s"InMemory.Txn@${hashCode.toHexString}"
   }

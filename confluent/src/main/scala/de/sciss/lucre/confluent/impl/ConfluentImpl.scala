@@ -40,10 +40,5 @@ object ConfluentImpl {
       new RegularTxn(this, dtx, inputAccess, retroactive, cursorCache)
 
     protected def wrapRoot(peer: InTxn): S#Tx = new RootTxn(this, peer)
-
-    protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] = {
-      val map = InMemoryConfluentMap.newIntMap[S]
-      new InMemoryIDMapImpl(map)
-    }
   }
 }
