@@ -58,7 +58,7 @@ object Targets {
     }
   }
 
-  private[lucre] def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
+  /* private[lucre] */ def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     val id = tx.readID(in, access)
     val children = tx.readVar /* readEventVar */[Children[S]](id, in)
     new Impl[S](0, id, children)
