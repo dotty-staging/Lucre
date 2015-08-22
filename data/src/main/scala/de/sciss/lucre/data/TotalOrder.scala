@@ -770,7 +770,7 @@ object TotalOrder {
         if (recE.tag != -1) msg.append("Placed key was already placed before. ")
         if (prevTag < 0) msg.append("Predecessor of placed key has not yet been placed. ")
         if (nextTag < 0) msg.append("Successor of placed key has not yet been placed. ")
-        msg.toString()
+        msg.toString
       })
 
       recE.updateTag(recTag)

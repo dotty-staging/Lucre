@@ -41,11 +41,11 @@ object Iterator {
   private final class Wrap[A](peer: collection.Iterator[A])
     extends Iterator[Any, A] {
 
-    def hasNext(implicit tx: Any) = peer.hasNext
+    def hasNext(implicit tx: Any): Boolean = peer.hasNext
 
     def next()(implicit tx: Any): A = peer.next()
 
-    override def toString = peer.toString()
+    override def toString: String = peer.toString
   }
 
   private final class Concat[Tx, A](a: Iterator[Tx, A], b: Iterator[Tx, A])
