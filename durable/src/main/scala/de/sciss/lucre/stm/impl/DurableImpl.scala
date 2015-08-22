@@ -38,7 +38,7 @@ object DurableImpl {
   def apply(mainStore: DataStore, eventStore: DataStore): Durable =
     new System(store = mainStore, eventStore = eventStore)
 
-  trait Mixin[S <: D[S], I <: Sys[I]] extends DurableLike[S] {
+  trait Mixin[S <: D[S], I <: Sys[I]] extends DurableLike[S] with ReactionMapImpl.Mixin[S] {
     system =>
 
     protected def store: DataStore
@@ -507,7 +507,7 @@ object DurableImpl {
 
   private final class System(@field protected val store     : DataStore,
                              @field protected val eventStore: DataStore)
-    extends Mixin[Durable, InMemory] with Durable with ReactionMapImpl.Mixin[Durable] {
+    extends Mixin[Durable, InMemory] with Durable {
 
     private type S = Durable
 
