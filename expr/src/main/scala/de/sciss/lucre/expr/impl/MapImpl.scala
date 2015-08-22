@@ -16,6 +16,7 @@ package impl
 
 import de.sciss.lucre.data.{Iterator, Ordering, SkipList}
 import de.sciss.lucre.expr.Map.Modifiable
+import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -38,21 +39,15 @@ object MapImpl {
     new ModSer[S, K, V]
 
   private class Ser[S <: Sys[S], K, V <: Obj[S]](implicit keyType: Type.Expr[K])
-    extends Obj.Serializer[S, Map[S, K, V]] {
+    extends ObjSerializer[S, Map[S, K, V]] {
 
-    def typeID: Int = Map.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Map[S, K, V] =
-      MapImpl.read(in, access, targets)
+    def tpe = Map
   }
 
   private class ModSer[S <: Sys[S], K, V <: Obj[S]](implicit keyType: Type.Expr[K])
-    extends Obj.Serializer[S, Modifiable[S, K, V]] {
+    extends ObjSerializer[S, Modifiable[S, K, V]] {
 
-    def typeID: Int = Map.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Modifiable[S, K, V] =
-      MapImpl.read(in, access, targets)
+    def tpe = Map
   }
 
   def read[S <: Sys[S], K, V <: Obj[S]](in: DataInput, access: S#Acc)

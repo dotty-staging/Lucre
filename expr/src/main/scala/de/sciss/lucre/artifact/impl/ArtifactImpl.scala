@@ -17,12 +17,13 @@ package impl
 import java.io.File
 
 import de.sciss.lucre.artifact.Artifact.Modifiable
-import de.sciss.lucre.event.{Targets, EventLike}
+import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.List
-import de.sciss.lucre.stm.{NoSys, Obj, Sys}
+import de.sciss.lucre.stm.impl.ObjSerializer
+import de.sciss.lucre.stm.{NoSys, Sys}
 import de.sciss.lucre.{data, event => evt}
 import de.sciss.model.Change
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 object ArtifactImpl {
   import Artifact.Child
@@ -61,22 +62,18 @@ object ArtifactImpl {
     new Impl[S](targets, location, _child)
   }
 
-  def serializer   [S <: Sys[S]]: Obj.Serializer[S, Artifact           [S]] = anySer   .asInstanceOf[Ser   [S]]
-  def modSerializer[S <: Sys[S]]: Obj.Serializer[S, Artifact.Modifiable[S]] = anyModSer.asInstanceOf[ModSer[S]]
+  def serializer   [S <: Sys[S]]: Serializer[S#Tx, S#Acc, Artifact           [S]] = anySer   .asInstanceOf[Ser   [S]]
+  def modSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Artifact.Modifiable[S]] = anyModSer.asInstanceOf[ModSer[S]]
 
   private val anySer    = new Ser   [NoSys]
   private val anyModSer = new ModSer[NoSys]
 
-  private final class Ser[S <: Sys[S]] extends Obj.Serializer[S, Artifact[S]] {
-    def typeID: Int = Artifact.typeID
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Artifact[S] =
-      readArtifact(in, access, targets)
+  private final class Ser[S <: Sys[S]] extends ObjSerializer[S, Artifact[S]] {
+    def tpe = Artifact
   }
 
-  private final class ModSer[S <: Sys[S]] extends Obj.Serializer[S, Artifact.Modifiable[S]] {
-    def typeID: Int = Artifact.typeID
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Artifact.Modifiable[S] =
-      readArtifact(in, access, targets)
+  private final class ModSer[S <: Sys[S]] extends ObjSerializer[S, Artifact.Modifiable[S]] {
+    def tpe = Artifact
   }
 
   // ---- location ----
@@ -94,9 +91,9 @@ object ArtifactImpl {
   def readModLocation[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Location.Modifiable[S] =
     modLocationSerializer[S].read(in, access)
 
-  def locationSerializer[S <: Sys[S]]: Obj.Serializer[S, Location[S]] = anyLocSer.asInstanceOf[LocSer[S]]
+  def locationSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Location[S]] = anyLocSer.asInstanceOf[LocSer[S]]
 
-  def modLocationSerializer[S <: Sys[S]]: Obj.Serializer[S, Location.Modifiable[S]] =
+  def modLocationSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Location.Modifiable[S]] =
     anyModLocSer.asInstanceOf[ModLocSer[S]]
 
   def readIdentifiedLocation[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Location[S] = {
@@ -116,19 +113,12 @@ object ArtifactImpl {
     new LocationImpl[S](targets, directory, artifacts)
   }
 
-  private final class LocSer[S <: Sys[S]] extends Obj.Serializer[S, Location[S]] {
-    def typeID: Int = Location.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])
-            (implicit tx: S#Tx): Location[S] = readLoc(in, access,targets)
+  private final class LocSer[S <: Sys[S]] extends ObjSerializer[S, Location[S]] {
+    def tpe = Location
   }
 
-  private final class ModLocSer[S <: Sys[S]] extends Obj.Serializer[S, Location.Modifiable[S]] {
-    def typeID: Int = Location.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])
-            (implicit tx: S#Tx): Location.Modifiable[S] =
-      readLoc(in, access,targets)
+  private final class ModLocSer[S <: Sys[S]] extends ObjSerializer[S, Location.Modifiable[S]] {
+    def tpe = Location
   }
 
   private final class LocationImpl[S <: Sys[S]](protected val targets: evt.Targets[S],

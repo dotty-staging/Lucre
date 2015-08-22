@@ -17,6 +17,7 @@ package impl
 import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.Expr
+import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt, expr}
 import de.sciss.model.Change
@@ -167,13 +168,8 @@ object BiPinImpl {
     new Impl(targets, tree)
   }
 
-  private class Ser[S <: Sys[S], A <: Obj[S], Repr >: Impl[S, A] <: BiPin[S, A]]
-    extends Obj.Serializer[S, Repr] {
-
-    protected def typeID: Int = BiPin.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Repr =
-      BiPinImpl.readImpl(in, access, targets)
+  private class Ser[S <: Sys[S], A <: Obj[S], Repr >: Impl[S, A] <: BiPin[S, A]] extends ObjSerializer[S, Repr] {
+    def tpe = BiPin
   }
 
   private final class Impl[S <: Sys[S], A](protected val targets: evt.Targets[S], tree: Tree[S, A])

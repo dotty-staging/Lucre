@@ -20,6 +20,7 @@ import de.sciss.lucre.event.{impl => evti, Targets}
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.geom.LongSpace.TwoDim
 import de.sciss.lucre.geom.{DistanceMeasure, LongDistanceMeasure2D, LongPoint2D, LongPoint2DLike, LongRectangle, LongSpace}
+import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Identifiable, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
@@ -186,20 +187,12 @@ object BiGroupImpl {
     readTimed(in, access, targets)
   }
 
-  private class Ser[S <: Sys[S], A <: Obj[S]] extends Obj.Serializer[S, BiGroup[S, A]] {
-    protected def typeID: Int = BiGroup.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): BiGroup[S, A] = {
-      BiGroupImpl.read(in, access, targets)
-    }
+  private class Ser[S <: Sys[S], A <: Obj[S]] extends ObjSerializer[S, BiGroup[S, A]] {
+    def tpe = BiGroup
   }
 
-  private class ModSer[S <: Sys[S], A <: Obj[S]] extends Obj.Serializer[S, BiGroup.Modifiable[S, A]] {
-    protected def typeID: Int = BiGroup.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): BiGroup.Modifiable[S, A] = {
-      BiGroupImpl.read(in, access, targets)
-    }
+  private class ModSer[S <: Sys[S], A <: Obj[S]] extends ObjSerializer[S, BiGroup.Modifiable[S, A]] {
+    def tpe = BiGroup
   }
 
   private[lucre] final class TimedElemImpl[S <: Sys[S], A <: Obj[S]](val targets : evt.Targets[S],
@@ -250,11 +243,8 @@ object BiGroupImpl {
     new TimedElemImpl(targets, span, value)
   }
 
-  private final class TimedSer[S <: Sys[S], A <: Obj[S]] extends Obj.Serializer[S, TimedElemImpl[S, A]] {
-    def typeID: Int = TimedElem.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): TimedElemImpl[S, A] =
-      readTimed(in, access, targets)
+  private final class TimedSer[S <: Sys[S], A <: Obj[S]] extends ObjSerializer[S, TimedElemImpl[S, A]] {
+    def tpe = TimedElem
   }
 
   abstract class Impl[S <: Sys[S], A <: Obj[S]]

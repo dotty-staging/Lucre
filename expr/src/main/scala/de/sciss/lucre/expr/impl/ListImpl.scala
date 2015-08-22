@@ -16,6 +16,7 @@ package impl
 
 import de.sciss.lucre.data.Iterator
 import de.sciss.lucre.event.{impl => eimpl, Targets}
+import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -35,7 +36,8 @@ object ListImpl {
     }
   }
   
-  def serializer[S <: Sys[S], Elem <: Obj[S]]: Obj.Serializer[S, List[S, Elem]] = anySer.asInstanceOf[Ser[S, Elem]]
+  def serializer[S <: Sys[S], Elem <: Obj[S]]: Serializer[S#Tx, S#Acc, List[S, Elem]] =
+    anySer.asInstanceOf[Ser[S, Elem]]
 
   private val anySer = new Ser[NoSys, Obj[NoSys]]
 
@@ -44,18 +46,12 @@ object ListImpl {
 
   private val anyModSer = new ModSer[NoSys, Obj[NoSys]]
 
-  private class Ser[S <: Sys[S], Elem <: Obj[S]] extends Obj.Serializer[S, List[S, Elem]] {
-    def typeID: Int = List.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): List[S, Elem] =
-      ListImpl.read(in, access, targets)
+  private class Ser[S <: Sys[S], Elem <: Obj[S]] extends ObjSerializer[S, List[S, Elem]] {
+    def tpe = List
   }
 
-  private class ModSer[S <: Sys[S], Elem <: Obj[S]] extends Obj.Serializer[S, Modifiable[S, Elem]] {
-    def typeID: Int = List.typeID
-
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Modifiable[S, Elem] =
-      ListImpl.read(in, access, targets)
+  private class ModSer[S <: Sys[S], Elem <: Obj[S]] extends ObjSerializer[S, Modifiable[S, Elem]] {
+    def tpe = List
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
