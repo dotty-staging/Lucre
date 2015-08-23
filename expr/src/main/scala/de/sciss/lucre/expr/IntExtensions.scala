@@ -18,6 +18,7 @@ import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
+import scala.language.higherKinds
 
 object IntExtensions {
   private[this] lazy val _init: Unit = {
@@ -37,8 +38,8 @@ object IntExtensions {
     val name = "Int-1 Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr[S, Int] = {
-      val op: UnaryOp[_] = (opID: @switch) match {
+                                  (implicit tx: S#Tx): Ex[S] = {
+      val op /* : UnaryOp[_, _] */ = (opID: @switch) match {
         // ---- Int => Int ----
         case Neg    .id => Neg
         case BitNot .id => BitNot
@@ -61,7 +62,7 @@ object IntExtensions {
     val name = "Int-2 Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr[S, Int] = {
+                                  (implicit tx: S#Tx): Ex[S] = {
       val op: BinaryOp = (opID: @switch) match {
         case Plus               .id => Plus
         case Minus              .id => Minus
@@ -94,19 +95,19 @@ object IntExtensions {
       }
       val _1 = IntObj.read(in, access)
       val _2 = IntObj.read(in, access)
-      new impl.Tuple2(IntObj, op, targets, _1, _2)
+      ??? // RRR new impl.Tuple2(IntObj, op, targets, _1, _2)
     }
   }
 
   // ---- operators ----
 
-  sealed trait UnaryOp[T1] extends impl.Tuple1Op[Int, T1] {
+  sealed trait UnaryOp[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] extends impl.Tuple1Op[Int, T1, IntObj, ReprT1] {
     def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                         (implicit tx: S#Tx): impl.Tuple1[S, Int, T1]
+                         (implicit tx: S#Tx): Ex[S] //  impl.Tuple1[S, Int, T1]
 
-    def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"${_1}.$name"
+    def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
-    def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
+    def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
       case Expr.Const(c)  => IntObj.newConst(value(c))
       case _              => ??? // RRR new impl.Tuple1(IntObj, this, Targets[S], a).connect()
     }
@@ -121,11 +122,11 @@ object IntExtensions {
 
   // ---- Int => Int ----
 
-  private[this] sealed abstract class IntUnaryOp extends UnaryOp[Int] {
+  private[this] sealed abstract class IntUnaryOp extends UnaryOp[Int, IntObj] {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                               (implicit tx: S#Tx): impl.Tuple1[S, Int, Int] = {
+                               (implicit tx: S#Tx): Ex[S] = {
       val _1 = IntObj.read(in, access)
-      new impl.Tuple1(IntObj, this, targets, _1)
+      ??? // RRR new impl.Tuple1(IntObj, this, targets, _1)
     }
   }
 
@@ -165,11 +166,11 @@ object IntExtensions {
 
   // ---- Boolean => Int ----
 
-  sealed trait BooleanUnaryOp extends UnaryOp[Boolean] {
+  sealed trait BooleanUnaryOp extends UnaryOp[Boolean, BooleanObj] {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                               (implicit tx: S#Tx): impl.Tuple1[S, Int, Boolean] = {
+                               (implicit tx: S#Tx): Ex[S] = {
       val _1 = BooleanObj.read(in, access)
-      new impl.Tuple1(IntObj, this, targets, _1)
+      ??? // RRR new impl.Tuple1(IntObj, this, targets, _1)
     }
   }
 
@@ -180,7 +181,7 @@ object IntExtensions {
 
   // ---- (Int, Int) => Int ----
 
-  private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int] {
+  private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int, IntObj, IntObj, IntObj] {
     final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => IntObj.newConst(value(ca, cb))
       case _                                => ??? // RRR new impl.Tuple2(IntObj, this, Targets[S], a, b).connect()

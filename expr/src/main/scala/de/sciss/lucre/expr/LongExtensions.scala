@@ -38,9 +38,9 @@ object LongExtensions {
     val name = "Long-Long Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr[S, Long] = {
+                                  (implicit tx: S#Tx): Ex[S] = {
       import UnaryOp._
-      val op: Op[_] = (opID: @switch) match {
+      val op /* : Op[_, _] */ = (opID: @switch) match {
         // ---- Long ----
         case Neg    .id => Neg
         case BitNot .id => BitNot
@@ -103,14 +103,14 @@ object LongExtensions {
   // ---- operators ----
 
   object UnaryOp {
-    trait Op[T1] extends impl.Tuple1Op[Long, T1] {
+    trait Op[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] extends impl.Tuple1Op[Long, T1, LongObj, ReprT1] {
       def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                           (implicit tx: S#Tx): impl.Tuple1[S, Long, T1]
+                           (implicit tx: S#Tx): Ex[S]
 
-      def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"${_1}.$name"
+      def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
-      def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
-        case Expr.Const(c)  => LongObj.newConst(value(c))
+      def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
+        case Expr.Const(c)  => ??? // RRR LongObj.newConst(value(c))
         case _              => ??? // RRR new impl.Tuple1(LongObj, this, Targets[S], a).connect()
       }
 
@@ -122,13 +122,11 @@ object LongExtensions {
       }
     }
 
-    sealed abstract class LongOp extends Op[Long] {
-      // def id: Int
-
+    sealed abstract class LongOp extends Op[Long, LongObj] {
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                                 (implicit tx: S#Tx): impl.Tuple1[S, Long, Long] = {
+                                 (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
-        new impl.Tuple1(LongObj, this, targets, _1)
+        ??? // RRR new impl.Tuple1(LongObj, this, targets, _1)
       }
     }
 
@@ -169,7 +167,7 @@ object LongExtensions {
   }
 
   private object BinaryOp {
-    sealed trait Op extends impl.Tuple2Op[Long, Long, Long] {
+    sealed trait Op extends impl.Tuple2Op[Long, Long, Long, LongObj, LongObj, LongObj] {
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => LongObj.newConst(value(ca, cb))
         case _                                => ??? // RRR new impl.Tuple2(LongObj, this, Targets[S], a, b).connect()

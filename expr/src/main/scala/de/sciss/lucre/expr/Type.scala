@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr
+import de.sciss.lucre.{stm, expr}
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
@@ -57,7 +57,9 @@ object Type {
   }
 
   trait Expr[A, Repr[~ <: Sys[~]] <: expr.Expr[~, A]] extends Obj.Type {
-    type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A]
+    type Ex   [S <: Sys[S]] = Repr[S] // yeah, well, we're waiting for Dotty
+    // type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A]
+    type Var  [S <: Sys[S]] = Repr[S] with stm.Var[S#Tx, Repr[S]]
     type Const[S <: Sys[S]] = Repr[S] with expr.Expr.Const[S, A]
 
     // ---- abstract ----
@@ -70,6 +72,11 @@ object Type {
     implicit def valueSerializer: ImmutableSerializer[A]
 
     // ---- public ----
+
+    object Var {
+      def unapply[S <: Sys[S]](expr: Ex[S]): Option[Var[S]] =
+        if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[S]]) else None
+    }
 
     implicit def newConst [S <: Sys[S]](value: A     )(implicit tx: S#Tx): Const[S]
     def newVar            [S <: Sys[S]](init: Repr[S])(implicit tx: S#Tx): Var  [S]

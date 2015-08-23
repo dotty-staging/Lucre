@@ -26,8 +26,8 @@ object BasicTest {
     import Ops._
 
     val res1 = system.step { implicit tx =>
-      val a = Int.newConst[S](1234)
-      val b = Int.newConst[S](5678)
+      val a = IntObj.newConst[S](1234)
+      val b = IntObj.newConst[S](5678)
       val c = b - a
       c.value
     }
@@ -39,8 +39,8 @@ object BasicTest {
     val (res2, aH) = system.step { implicit tx =>
       observations = Vector.empty
 
-      val a = Int.newVar[S](1234)
-      val b = Int.newVar[S](5678)
+      val a = IntObj.newVar[S](1234)
+      val b = IntObj.newVar[S](5678)
       val c = b - a
 
 
@@ -48,10 +48,13 @@ object BasicTest {
         case Change(_, now) => observations :+= now // println(s"c = $now")
       }}
 
+      implicitly[Int => IntObj[S]]
+      implicitly[Int => Expr[S, Int]](implicitly[Int => IntObj[S]])
+
       a() = 333
       b() = 666
 
-      import Int.varSerializer
+      // import Int.varSerializer
 
       (c.value, tx.newHandle(a))
     }

@@ -17,12 +17,12 @@ package bitemp
 import de.sciss.lucre.bitemp.impl.{BiGroupImpl => Impl}
 import de.sciss.lucre.data.Iterator
 import de.sciss.lucre.event.{EventLike, Publisher}
-import de.sciss.lucre.expr.Expr
+import de.sciss.lucre.expr.{SpanLikeObj, Expr}
 import de.sciss.lucre.geom.LongSquare
 import de.sciss.lucre.stm.{Elem, Obj, Identifiable, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
-import de.sciss.span.{SpanLike => SpanLikeV}
+import de.sciss.span.SpanLike
 import de.sciss.{model => m}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -48,27 +48,27 @@ object BiGroup extends Obj.Type {
     def elem: Entry[S, A]
   }
 
-  final case class Added[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: Entry[S, A])
+  final case class Added[S <: Sys[S], A](span: SpanLike /* Span.HasStart */ , elem: Entry[S, A])
     extends Change[S, A]
 
-  final case class Removed[S <: Sys[S], A](span: SpanLikeV /* Span.HasStart */ , elem: Entry[S, A])
+  final case class Removed[S <: Sys[S], A](span: SpanLike /* Span.HasStart */ , elem: Entry[S, A])
     extends Change[S, A]
 
-  final case class Moved[S <: Sys[S], A](change: m.Change[SpanLikeV], elem: Entry[S, A])
+  final case class Moved[S <: Sys[S], A](change: m.Change[SpanLike], elem: Entry[S, A])
     extends Change[S, A]
 
   // ---- structural data ----
 
-  type Leaf[S <: Sys[S], +A] = (SpanLikeV /* Span.HasStart */ , Vec[Entry[S, A]])
+  type Leaf[S <: Sys[S], +A] = (SpanLike /* Span.HasStart */ , Vec[Entry[S, A]])
 
   // XXX TODO --- eventually we might drop Obj in favour of Elem
   object Entry extends Obj.Type {
     final val typeID = 28
 
-//    def apply[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A): Entry[S, A] =
+//    def apply[S <: Sys[S], A](id: S#ID, span: SpanLikeObj[S], value: A): Entry[S, A] =
 //      Wrapper(id, span, value)
 //
-//    private final case class Wrapper[S <: Sys[S], A](id: S#ID, span: Expr[S, SpanLikeV], value: A)
+//    private final case class Wrapper[S <: Sys[S], A](id: S#ID, span: SpanLikeObj[S], value: A)
 //      extends Entry[S, A] {
 //
 //      override def toString = s"Entry$id"
@@ -86,7 +86,7 @@ object BiGroup extends Obj.Type {
   }
 
   trait Entry[S <: Sys[S], +A] extends Obj[S] {
-    def span : Expr[S, SpanLikeV]
+    def span : SpanLikeObj[S]
     def value: A
 
     override def toString = s"Entry($id, $span, $value)"
@@ -104,9 +104,9 @@ object BiGroup extends Obj.Type {
   }
 
   trait Modifiable[S <: Sys[S], A] extends BiGroup[S, A] {
-    def add(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): Entry[S, A]
+    def add(span: SpanLikeObj[S], elem: A)(implicit tx: S#Tx): Entry[S, A]
 
-    def remove(span: Expr[S, SpanLikeV], elem: A)(implicit tx: S#Tx): Boolean
+    def remove(span: SpanLikeObj[S], elem: A)(implicit tx: S#Tx): Boolean
 
     def clear()(implicit tx: S#Tx): Unit
 
@@ -148,7 +148,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     * @param span the the span to search within (this may be a half-bounded interval or even `Span.All`)
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def intersect(span: SpanLikeV)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
+  def intersect(span: SpanLike)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
 
   /** Performs a range query according to separate intervals for the allowed start and stop positions
     * of the element spans. That is, returns an iterator of all elements whose span satisfies the
@@ -167,7 +167,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     * @param stop    the constraint for the stop position of the spans of the elements filtered.
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def rangeSearch(start: SpanLikeV, stop: SpanLikeV)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
+  def rangeSearch(start: SpanLike, stop: SpanLike)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
 
   /** Queries the closest event (an element's span starting or stopping) at the given time or later
     *
@@ -200,7 +200,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     */
   def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[S#Tx, Leaf[S, A]], Iterator[S#Tx, Leaf[S, A]])
 
-  def debugList(implicit tx: S#Tx): List[(SpanLikeV, A)]
+  def debugList(implicit tx: S#Tx): List[(SpanLike, A)]
 
   def debugPrint(implicit tx: S#Tx): String
 }

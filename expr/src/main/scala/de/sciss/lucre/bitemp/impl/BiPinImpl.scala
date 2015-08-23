@@ -31,7 +31,7 @@ object BiPinImpl {
 
   private type Tree[S <: Sys[S], A] = SkipList.Map[S, Long, Leaf[S, A]]
 
-  def newEntry[S <: Sys[S], A <: Elem[S]](key: Expr[S, Long], value: A)(implicit tx: S#Tx): Entry[S, A] =
+  def newEntry[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
     if (Expr.isConst(key)) new ConstEntry(            key, value)
     else                   new NodeEntry (Targets[S], key, value).connect()
 
@@ -82,14 +82,14 @@ object BiPinImpl {
     }
   }
 
-  private case class ConstEntry[S <: Sys[S], A <: Elem[S]](key: Expr[S, Long], value: A)
+  private case class ConstEntry[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)
     extends EntryImpl[S, A] with stm.impl.ConstElemImpl[S] {
 
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
   }
 
   private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
-                                                           val key: Expr[S, Long], val value: A)
+                                                           val key: LongObj[S], val value: A)
     extends EntryImpl[S, A] with evt.impl.SingleNode[S, Change[Long]] {
 
     // bueno, it's not really the "root", but the type is the same

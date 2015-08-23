@@ -24,14 +24,6 @@ import scala.annotation.switch
 import scala.language.higherKinds
 
 trait ExprTypeImpl[A, Repr[~ <: Sys[~]] <: Expr[~, A]] extends Type.Expr[A, Repr] with TypeImpl1[Repr] { self =>
-  final protected type Ex[S <: Sys[S]] = Repr[S]
-  final protected type Change = model.Change[A]
-
-//  // ---- abstract ----
-//
-//  protected def readNode[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-//                                     (implicit tx: S#Tx): Ex[S] with Node[S]
-
   // ---- public ----
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
@@ -51,10 +43,8 @@ trait ExprTypeImpl[A, Repr[~ <: Sys[~]] <: Expr[~, A]] extends Type.Expr[A, Repr
     */
   protected def readNode[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                      (implicit tx: S#Tx): Ex[S] = {
-    // val tpe  = in.readInt()
-    // if (tpe != typeID) sys.error(s"Invalid type id (found $tpe, required $typeID)")
     val opID = in.readInt()
-    readExtension(/* cookie, */ op = opID, in = in, access = access, targets = targets)
+    readExtension(op = opID, in = in, access = access, targets = targets)
   }
 
   implicit final def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Repr[S]] */ =
@@ -63,7 +53,7 @@ trait ExprTypeImpl[A, Repr[~ <: Sys[~]] <: Expr[~, A]] extends Type.Expr[A, Repr
   implicit final def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Var[S]] /* Serializer[S#Tx, S#Acc, ReprVar[S]] */ =
     anyVarSer.asInstanceOf[VarSer[S]]
 
-  final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
+  implicit final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
     mkConst[S](tx.newID(), value)
 
   final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Var[S] = {

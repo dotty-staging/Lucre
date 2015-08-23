@@ -23,29 +23,37 @@ import de.sciss.span.{Span, SpanLike}
 import scala.language.higherKinds
 
 package object expr {
+  // type ExprRepr[A] = {type L[~ <: Sys[~]] <: Expr[~, A]}
+
   /** An expression type with installable extensions. */
   type TypeExpr1[A, Repr[~ <: Sys[~]] <: expr.Expr[~, A]] = Type.Expr[A, Repr] with Type._1[Repr]
 
   trait IntObj[S <: Sys[S]] extends Expr[S, Int]
-  val IntObj: TypeExpr1[Int, IntObj] = IntImpl
+  // The `val` approach is nice because it hides
+  // implementation details. Unfortunately that
+  // doesn't give us a real companion object,
+  // so implicit resolution, for example for
+  // serializers, won't work...
+
+  // val IntObj: TypeExpr1[Int, IntObj] = IntImpl
 
   trait LongObj[S <: Sys[S]] extends Expr[S, Long]
-  val LongObj: TypeExpr1[Long, LongObj] = LongImpl
+  // val LongObj: TypeExpr1[Long, LongObj] = LongImpl
 
   trait DoubleObj[S <: Sys[S]] extends Expr[S, Double]
-  val DoubleObj: TypeExpr1[Double, DoubleObj] = DoubleImpl
+  // val DoubleObj: TypeExpr1[Double, DoubleObj] = DoubleImpl
 
   trait BooleanObj[S <: Sys[S]] extends Expr[S, Boolean]
-  val BooleanObj: TypeExpr1[Boolean, BooleanObj] = BooleanImpl
+  // val BooleanObj: TypeExpr1[Boolean, BooleanObj] = BooleanImpl
 
   trait StringObj[S <: Sys[S]] extends Expr[S, String]
-  val StringObj: TypeExpr1[String, StringObj] = StringImpl
+  // val StringObj: TypeExpr1[String, StringObj] = StringImpl
 
   trait SpanLikeObj[S <: Sys[S]] extends Expr[S, SpanLike]
-  val SpanLikeObj: TypeExpr1[SpanLike, SpanLikeObj] = SpanLikeImpl
+  // val SpanLikeObj: TypeExpr1[SpanLike, SpanLikeObj] = SpanLikeImpl
 
   trait SpanObj[S <: Sys[S]] extends Expr[S, Span]
-  val SpanObj: TypeExpr1[Span, SpanObj] = SpanImpl
+  // val SpanObj: TypeExpr1[Span, SpanObj] = SpanImpl
 
   def init(): Unit = {
     IntObj            .init()
@@ -73,7 +81,7 @@ package object expr {
     SpanExtensions    .init()
   }
 
-  private[this] object IntImpl extends impl.ExprTypeImpl[Int, IntObj] {
+  object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     final val typeID = 2
     final val valueSerializer = ImmutableSerializer.Int
 
@@ -82,7 +90,7 @@ package object expr {
     protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
   }
 
-  private[this] object LongImpl extends impl.ExprTypeImpl[Long, LongObj] {
+  object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     final val typeID = 3
     final val valueSerializer = ImmutableSerializer.Long
 
@@ -91,7 +99,7 @@ package object expr {
     protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
   }
 
-  private[this] object DoubleImpl extends impl.ExprTypeImpl[Double, DoubleObj] {
+  object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     final val typeID = 5
     final val valueSerializer = ImmutableSerializer.Double
 
@@ -100,7 +108,7 @@ package object expr {
     protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
   }
 
-  private[this] object BooleanImpl extends impl.ExprTypeImpl[Boolean, BooleanObj] {
+  object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     final val typeID = 6
     final val valueSerializer = ImmutableSerializer.Boolean
 
@@ -109,7 +117,7 @@ package object expr {
     protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
   }
 
-  private[this] object StringImpl extends impl.ExprTypeImpl[String, StringObj] {
+  object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     final val typeID = 8
     final val valueSerializer = ImmutableSerializer.String
 
@@ -118,7 +126,7 @@ package object expr {
     protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
   }
 
-  private[this] object SpanLikeImpl extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
+  object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     final val typeID = 9
     final val valueSerializer = SpanLike.serializer
 
@@ -127,7 +135,7 @@ package object expr {
     protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
   }
 
-  private[this] object SpanImpl extends impl.ExprTypeImpl[Span, SpanObj] {
+  object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     final val typeID = 10
     final val valueSerializer = Span.serializer
 

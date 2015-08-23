@@ -14,8 +14,8 @@ trait ConfluentEventSpec extends fixture.FlatSpec with Matchers {
   type D = S#D
   type FixtureParam = confluent.Cursor[S, D]
 
-  implicit final protected val IntType  = lucre.expr.Int
-  implicit final protected val LongType = lucre.expr.Long
+//  implicit final protected val IntType  = lucre.expr.Int
+//  implicit final protected val LongType = lucre.expr.Long
 
   init()
 

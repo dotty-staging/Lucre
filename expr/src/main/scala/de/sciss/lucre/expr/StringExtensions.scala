@@ -34,14 +34,14 @@ object StringExtensions  {
     val name = "String-2 Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr[S, String] = {
+                                  (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
       val op: Op = opID /* : @switch */ match {
         case Append.id => Append
       }
       val _1 = StringObj.read(in, access)
       val _2 = StringObj.read(in, access)
-      new impl.Tuple2(StringObj, op, targets, _1, _2)
+      ??? // RRR new impl.Tuple2(StringObj, op, targets, _1, _2)
     }
   }
 
@@ -57,7 +57,7 @@ object StringExtensions  {
   }
 
   private object BinaryOp {
-    sealed abstract class Op extends impl.Tuple2Op[String, String, String] {
+    sealed abstract class Op extends impl.Tuple2Op[String, String, String, StringObj, StringObj, StringObj] {
       def id: Int
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => StringObj.newConst(value(ca, cb))
@@ -66,7 +66,7 @@ object StringExtensions  {
 
       def value(a: String, b: String): String
 
-      def toString[S <: Sys[S]](_1: Expr[S, String], _2: Expr[S, String]): String = s"${_1}.$name(${_2})"
+      def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String = s"${_1}.$name(${_2})"
 
       def name: String = {
         val cn = getClass.getName

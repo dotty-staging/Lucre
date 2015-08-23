@@ -14,10 +14,9 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 
   */
 class BiPinSpec extends ConfluentEventSpec {
-  type IntEx = Expr[S, Int]
 
-  type LE = Expr[S, Long]
-  type IE = Expr[S, Int ]
+  type LE = LongObj[S]
+  type IE = IntObj [S]
   type E  = BiPin.Entry[S, IE]
 
   "BiPin" should "notify observers about all relevant collection events" in { system =>
@@ -31,7 +30,7 @@ class BiPinSpec extends ConfluentEventSpec {
     }
 
     import Ops._
-    implicit val intSer = Int.serializer[S]
+    // implicit val intSer = Int.serializer[S]
 
     val tuples: Seq[stm.Source[S#Tx, E]] = system.step { implicit tx =>
       // implicitly[Serializer[S#Tx, S#Acc, BiPin.Entry[S, Expr[S, Int]]]]
@@ -163,8 +162,8 @@ class BiPinSpec extends ConfluentEventSpec {
       res
     }
 
-    implicit val intVarSer  = lucre.expr.Int .varSerializer[ S ]
-    implicit val longVarSer = lucre.expr.Long.varSerializer[ S ]
+//    implicit val intVarSer  = lucre.expr.Int .varSerializer[ S ]
+//    implicit val longVarSer = lucre.expr.Long.varSerializer[ S ]
 
     //      confluent.showLog = true
     import Ops._
@@ -173,8 +172,8 @@ class BiPinSpec extends ConfluentEventSpec {
       // partial currently broken
       //         val time = Longs.newVar[ S ]( 10000L )
       //         val expr = Ints.newVar[ S ]( 4 )
-      val time = lucre.expr.Long.newVar /* newConfluentVar */[ S ]( 10000L )
-      val expr = lucre.expr.Int .newVar /* newConfluentVar */[ S ]( 4 )
+      val time = LongObj.newVar /* newConfluentVar */[ S ]( 10000L )
+      val expr = IntObj .newVar /* newConfluentVar */[ S ]( 4 )
       val th   = tx.newHandle( time -> (3: IE) : E)
       val eh   = tx.newHandle( (30000L: LE) -> expr : E)
       (th, eh)
@@ -218,7 +217,7 @@ class BiPinSpec extends ConfluentEventSpec {
       val time = timeH()
       val expr = exprH()
 
-      val Expr.Var(exprVar) = expr.value
+      val IntObj.Var(exprVar) = expr.value
 
       exprVar() = 5
       obs.assertEquals()
@@ -227,7 +226,7 @@ class BiPinSpec extends ConfluentEventSpec {
 //      )
       obs.clear()
 
-      val Expr.Var(timeVar) = time.key
+      val LongObj.Var(timeVar) = time.key
       timeVar() = 15000L
       //         println( "DEBUG " + bip.debugList() )
       //         println( "DEBUG " + bip.valueAt( 10000L ))

@@ -196,19 +196,13 @@ object BiGroupImpl {
   }
 
   private[lucre] final class EntryImpl[S <: Sys[S], A <: Elem[S]](val targets : evt.Targets[S],
-                                                                     val span    : Expr[S, SpanLike],
-                                                                     val value   : A)
+                                                                     val span : SpanLikeObj[S],
+                                                                     val value: A)
     extends evti.SingleNode[S, Change[SpanLike]] with Entry[S, A] {
 
     def tpe: Obj.Type = Entry
 
     override def toString = s"Entry$id"
-
-    /** Tricky override to allow comparison with BiGroup.Entry.Wrapper */
-    override def equals(that: Any): Boolean = that match {
-      case m: Identifiable[_] => this.id == m.id
-      case _ => super.equals(that)
-    }
 
     object changed extends Changed with evti.Root[S, Change[SpanLike]]
 
@@ -325,7 +319,7 @@ object BiGroupImpl {
       if (changes.nonEmpty) changed.fire(BiGroup.Update(group, changes))
     }
 
-    final def add(span: Expr[S, SpanLike], elem: A)(implicit tx: S#Tx): Entry[S, A] = {
+    final def add(span: SpanLikeObj[S], elem: A)(implicit tx: S#Tx): Entry[S, A] = {
       log(s"$this.add($span, $elem)")
       val spanVal = span.value
       val tgt     = evt.Targets[S]
@@ -348,7 +342,7 @@ object BiGroupImpl {
       }
     }
 
-    final def remove(span: Expr[S, SpanLike], elem: A)(implicit tx: S#Tx): Boolean = {
+    final def remove(span: SpanLikeObj[S], elem: A)(implicit tx: S#Tx): Boolean = {
       val spanVal   = span.value
       val point     = spanToPoint(spanVal)
       val entryOpt  = tree.get(point).flatMap {

@@ -22,13 +22,13 @@ class BiPinSerializationSpec extends ConfluentEventSpec {
     //      implicit val bipSer = BiPin.Expr.Modifiable.serializer[ S, Int ]
 
     import Ops._
-    import Long.{serializer => longSer}
-    import Int .{serializer => intSer }
+//    import Long.{serializer => longSer}
+//    import Int .{serializer => intSer }
 
     val (keyH, valueH) = system.step { implicit tx =>
       val bip = bipH() // tx.refresh( acc, bip0 )
-      val key   : Expr[S, scala.Long] = 1234L
-      val value : Expr[S, scala.Int ] = 5678
+      val key   : LongObj[S] = 1234L
+      val value : IntObj [S] = 5678
       bip.add(key -> value)
       (tx.newHandle(key), tx.newHandle(value))
     }

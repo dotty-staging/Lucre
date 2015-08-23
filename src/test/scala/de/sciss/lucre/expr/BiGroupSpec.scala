@@ -68,7 +68,7 @@ class BiGroupSpec extends ConfluentEventSpec {
     )
 
     // val dummy = event.Dummy[S, Unit]
-    implicit val sl = SpanLike
+    // implicit val sl = SpanLike
 
     def withSpans(spanLikes: Vec[_SpanLike]): Unit = {
       val spans = spanLikes.collect {
@@ -89,7 +89,7 @@ class BiGroupSpec extends ConfluentEventSpec {
       val manual = calcManual()
 
       system.step { implicit tx =>
-        val g = BiGroup.Modifiable[S, Expr[S, Int]]
+        val g = BiGroup.Modifiable[S, IntObj[S]]
 
         import Ops._
         spanLikes.foreach(g.add(_, 0))
