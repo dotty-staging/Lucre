@@ -56,23 +56,25 @@ object Type {
     def registerExtension(ext: Type.Extension1[Repr]): Unit
   }
 
-  trait Expr[A] extends Obj.Type {
+  trait Expr[A, Repr[~ <: Sys[~]] <: expr.Expr[~, A]] extends Obj.Type {
+    type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A]
+    type Const[S <: Sys[S]] = Repr[S] with expr.Expr.Const[S, A]
 
     // ---- abstract ----
 
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr[S, A]
+    def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr[S]
 
-    implicit def serializer   [S <: Sys[S]]: Serializer[S#Tx, S#Acc, expr.Expr    [S, A]]
-    implicit def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, expr.Expr.Var[S, A]]
+    implicit def serializer   [S <: Sys[S]]: Serializer[S#Tx, S#Acc, Repr[S]]
+    implicit def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Var [S]]
 
     implicit def valueSerializer: ImmutableSerializer[A]
 
     // ---- public ----
 
-    def newConst [S <: Sys[S]](value: A)(implicit tx: S#Tx): expr.Expr.Const[S, A]
-    def newVar   [S <: Sys[S]](init: expr.Expr[S, A])(implicit tx: S#Tx): expr.Expr.Var[S, A]
+    implicit def newConst [S <: Sys[S]](value: A     )(implicit tx: S#Tx): Const[S]
+    def newVar            [S <: Sys[S]](init: Repr[S])(implicit tx: S#Tx): Var  [S]
 
-    def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr.Const[S, A]
-    def readVar  [S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): expr.Expr.Var[S, A]
+    def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Const[S]
+    def readVar  [S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Var  [S]
   }
 }

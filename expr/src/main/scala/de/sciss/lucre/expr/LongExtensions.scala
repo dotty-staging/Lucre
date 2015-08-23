@@ -15,25 +15,22 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.{Long => LongEx}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
 
 object LongExtensions {
-  import de.sciss.lucre.expr.Long.{newConst, read}
-
-  private[this] type Ex[S <: Sys[S]] = Expr[S, Long]
-
   private[this] lazy val _init: Unit = {
-    LongEx.registerExtension(LongTuple1s)
-    LongEx.registerExtension(LongTuple2s)
+    LongObj.registerExtension(LongTuple1s)
+    LongObj.registerExtension(LongTuple2s)
   }
 
   def init(): Unit = _init
 
-  private[this] object LongTuple1s extends Type.Extension1[Repr[Long]#L] {
+  type Ex[S <: Sys[S]] = LongObj[S]
+
+  private[this] object LongTuple1s extends Type.Extension1[LongObj] {
     // final val arity = 1
     final val opLo  = UnaryOp.Neg  .id
     final val opHi  = UnaryOp.Cubed.id
@@ -56,7 +53,7 @@ object LongExtensions {
     }
   }
 
-  private[this] object LongTuple2s extends Type.Extension1[Repr[Long]#L] {
+  private[this] object LongTuple2s extends Type.Extension1[LongObj] {
     // final val arity = 2
     final val opLo  = BinaryOp.Plus  .id
     final val opHi  = BinaryOp.Absdif.id
@@ -64,7 +61,7 @@ object LongExtensions {
     val name = "Long-Long Ops"
 
     def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Expr[S, Long] = {
+                                  (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
       val op: Op = (opID: @switch) match {
         // ---- Long ----
@@ -97,9 +94,9 @@ object LongExtensions {
         //               case 44 => Fold2
         //               case 45 => Wrap2
       }
-      val _1 = read(in, access)
-      val _2 = read(in, access)
-      new impl.Tuple2(lucre.expr.Long, op, targets, _1, _2)
+      val _1 = LongObj.read(in, access)
+      val _2 = LongObj.read(in, access)
+      ??? // RRR new impl.Tuple2(LongObj, op, targets, _1, _2)
     }
   }
 
@@ -113,8 +110,8 @@ object LongExtensions {
       def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"${_1}.$name"
 
       def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
-        case Expr.Const(c)  => newConst(value(c))
-        case _              => new impl.Tuple1(lucre.expr.Long, this, Targets[S], a).connect()
+        case Expr.Const(c)  => LongObj.newConst(value(c))
+        case _              => ??? // RRR new impl.Tuple1(LongObj, this, Targets[S], a).connect()
       }
 
       def name: String = {
@@ -130,8 +127,8 @@ object LongExtensions {
 
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                  (implicit tx: S#Tx): impl.Tuple1[S, Long, Long] = {
-        val _1 = lucre.expr.Long.read(in, access)
-        new impl.Tuple1(lucre.expr.Long, this, targets, _1)
+        val _1 = LongObj.read(in, access)
+        new impl.Tuple1(LongObj, this, targets, _1)
       }
     }
 
@@ -174,8 +171,8 @@ object LongExtensions {
   private object BinaryOp {
     sealed trait Op extends impl.Tuple2Op[Long, Long, Long] {
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
-        case (Expr.Const(ca), Expr.Const(cb)) => newConst(value(ca, cb))
-        case _                                => new impl.Tuple2(lucre.expr.Long, this, Targets[S], a, b).connect()
+        case (Expr.Const(ca), Expr.Const(cb)) => LongObj.newConst(value(ca, cb))
+        case _                                => ??? // RRR new impl.Tuple2(LongObj, this, Targets[S], a, b).connect()
       }
 
       def value(a: Long, b: Long): Long

@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.DataOutput
@@ -32,7 +32,7 @@ trait Tuple1Op[A, T1] {
   def toString[S <: Sys[S]](_1: Expr[S, T1]): String
 }
 
-final class Tuple1[S <: Sys[S], A, T1](val tpe: Type.Expr[A], val op: Tuple1Op[A, T1],
+final class Tuple1[S <: Sys[S], A, T1](val tpe: Elem.Type, val op: Tuple1Op[A, T1],
                                        protected val targets: evt.Targets[S],
                                        val _1: Expr[S, T1])
   extends impl.NodeImpl[S, A] {
@@ -84,7 +84,7 @@ trait Tuple2Op[A, T1, T2] {
   def toString[S <: Sys[S]](_1: Expr[S, T1], _2: Expr[S, T2]): String
 }
 
-final class Tuple2[S <: Sys[S], A, T1, T2](val tpe: Type.Expr[A], val op: Tuple2Op[A, T1, T2],
+final class Tuple2[S <: Sys[S], A, T1, T2](val tpe: Elem.Type, val op: Tuple2Op[A, T1, T2],
                                            protected val targets: evt.Targets[S],
                                            val _1: Expr[S, T1], val _2: Expr[S, T2])
   extends impl.NodeImpl[S, A] {

@@ -14,23 +14,22 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.{Boolean => BooleanEx, Int => IntEx}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
 
 object IntExtensions {
-  private[this] type Ex[S <: Sys[S]] = Expr[S, Int]
-
   private[this] lazy val _init: Unit = {
-    IntEx.registerExtension(IntTuple1s)
-    IntEx.registerExtension(IntTuple2s)
+    IntObj.registerExtension(IntTuple1s)
+    IntObj.registerExtension(IntTuple2s)
   }
 
   def init(): Unit = _init
 
-  private[this] object IntTuple1s extends Type.Extension1[Repr[Int]#L] {
+  type Ex[S <: Sys[S]] = IntObj[S]
+
+  private[this] object IntTuple1s extends Type.Extension1[IntObj] {
     // final val arity = 1
     final val opLo  = Neg         .id
     final val opHi  = BooleanToInt.id
@@ -54,7 +53,7 @@ object IntExtensions {
     }
   }
 
-  private[this] object IntTuple2s extends Type.Extension1[Repr[Int]#L] {
+  private[this] object IntTuple2s extends Type.Extension1[IntObj] {
     // final val arity = 2
     final val opLo  = Plus  .id
     final val opHi  = Absdif.id
@@ -93,9 +92,9 @@ object IntExtensions {
         //               case 44 => Fold2
         //               case 45 => Wrap2
       }
-      val _1 = IntEx.read(in, access)
-      val _2 = IntEx.read(in, access)
-      new impl.Tuple2(IntEx, op, targets, _1, _2)
+      val _1 = IntObj.read(in, access)
+      val _2 = IntObj.read(in, access)
+      new impl.Tuple2(IntObj, op, targets, _1, _2)
     }
   }
 
@@ -108,8 +107,8 @@ object IntExtensions {
     def toString[S <: Sys[S]](_1: Expr[S, T1]): String = s"${_1}.$name"
 
     def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
-      case Expr.Const(c)  => IntEx.newConst(value(c))
-      case _              => new impl.Tuple1(IntEx, this, Targets[S], a).connect()
+      case Expr.Const(c)  => IntObj.newConst(value(c))
+      case _              => ??? // RRR new impl.Tuple1(IntObj, this, Targets[S], a).connect()
     }
 
     def name: String = {
@@ -125,8 +124,8 @@ object IntExtensions {
   private[this] sealed abstract class IntUnaryOp extends UnaryOp[Int] {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                (implicit tx: S#Tx): impl.Tuple1[S, Int, Int] = {
-      val _1 = IntEx.read(in, access)
-      new impl.Tuple1(IntEx, this, targets, _1)
+      val _1 = IntObj.read(in, access)
+      new impl.Tuple1(IntObj, this, targets, _1)
     }
   }
 
@@ -169,8 +168,8 @@ object IntExtensions {
   sealed trait BooleanUnaryOp extends UnaryOp[Boolean] {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                (implicit tx: S#Tx): impl.Tuple1[S, Int, Boolean] = {
-      val _1 = BooleanEx.read(in, access)
-      new impl.Tuple1(IntEx, this, targets, _1)
+      val _1 = BooleanObj.read(in, access)
+      new impl.Tuple1(IntObj, this, targets, _1)
     }
   }
 
@@ -183,8 +182,8 @@ object IntExtensions {
 
   private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int] {
     final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
-      case (Expr.Const(ca), Expr.Const(cb)) => IntEx.newConst(value(ca, cb))
-      case _                                => new impl.Tuple2(IntEx, this, Targets[S], a, b).connect()
+      case (Expr.Const(ca), Expr.Const(cb)) => IntObj.newConst(value(ca, cb))
+      case _                                => ??? // RRR new impl.Tuple2(IntObj, this, Targets[S], a, b).connect()
     }
 
     def value(a: Int, b: Int): Int

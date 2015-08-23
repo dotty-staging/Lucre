@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.event.{EventLike, Targets}
-import de.sciss.lucre.expr.Expr
+import de.sciss.lucre.expr.{Expr, LongObj}
 import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt, stm, expr}
@@ -40,7 +40,7 @@ object BiPinImpl {
     if (tpe != Entry.typeID) sys.error(s"Type mismatch. Found $tpe, expected ${Entry.typeID}")
     in.readByte() match {
       case 3 =>
-        val key     = expr.Long.read(in, access)
+        val key     = LongObj.read(in, access)
         val value   = Elem.read(in, access).asInstanceOf[A]
         new ConstEntry(key, value)
 
@@ -68,7 +68,7 @@ object BiPinImpl {
 
   private def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                                  (implicit tx: S#Tx): Entry[S, A] = {
-    val key     = expr.Long.read(in, access)
+    val key     = LongObj.read(in, access)
     val value   = Elem.read(in, access).asInstanceOf[A]
     new NodeEntry(targets, key, value)
   }

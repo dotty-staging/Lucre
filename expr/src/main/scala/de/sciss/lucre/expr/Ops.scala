@@ -19,24 +19,24 @@ import de.sciss.span
 import scala.language.implicitConversions
 
 object Ops {
-  implicit def newIntConst[S <: Sys[S]](value: Int)(implicit tx: S#Tx): Expr.Const[S, Int] = Int.newConst(value)
-  implicit def intExprOps [S <: Sys[S]](ex: Expr[S, Int]): IntExtensions.Ops[S] = new IntExtensions.Ops(ex)
+  // implicit def newIntConst[S <: Sys[S]](value: Int)(implicit tx: S#Tx): Expr.Const[S, Int] = Int.newConst(value)
+  implicit def intObjOps [S <: Sys[S]](obj: IntObj[S]): IntExtensions.Ops[S] = new IntExtensions.Ops(obj)
 
-  implicit def newLongConst[S <: Sys[S]](value: Long)(implicit tx: S#Tx): Expr.Const[S, Long] = Long.newConst(value)
-  implicit def longExprOps [S <: Sys[S]](ex: Expr[S, Long]): LongExtensions.Ops[S] = new LongExtensions.Ops(ex)
+  // implicit def newLongConst[S <: Sys[S]](value: Long)(implicit tx: S#Tx): Expr.Const[S, Long] = Long.newConst(value)
+  implicit def longObjOps [S <: Sys[S]](obj: LongObj[S]): LongExtensions.Ops[S] = new LongExtensions.Ops(obj)
 
-  implicit def newDoubleConst[S <: Sys[S]](value: Double)(implicit tx: S#Tx): Expr.Const[S, Double] = Double.newConst(value)
-  implicit def doubleExprOps [S <: Sys[S]](ex: Expr[S, Double]): DoubleExtensions.Ops[S] = new DoubleExtensions.Ops(ex)
+  // implicit def newDoubleConst[S <: Sys[S]](value: Double)(implicit tx: S#Tx): Expr.Const[S, Double] = Double.newConst(value)
+  implicit def doubleObjOps [S <: Sys[S]](obj: DoubleObj[S]): DoubleExtensions.Ops[S] = new DoubleExtensions.Ops(obj)
 
-  implicit def newBooleanConst[S <: Sys[S]](value: Boolean)(implicit tx: S#Tx): Expr.Const[S, Boolean] = Boolean.newConst(value)
-  implicit def booleanExprOps [S <: Sys[S]](ex: Expr[S, Boolean]): BooleanExtensions.Ops[S] = new BooleanExtensions.Ops(ex)
+  // implicit def newBooleanConst[S <: Sys[S]](value: Boolean)(implicit tx: S#Tx): Expr.Const[S, Boolean] = Boolean.newConst(value)
+  implicit def booleanObjOps [S <: Sys[S]](obj: BooleanObj[S]): BooleanExtensions.Ops[S] = new BooleanExtensions.Ops(obj)
 
-  implicit def newStringConst[S <: Sys[S]](value: String)(implicit tx: S#Tx): Expr.Const[S, String] = String.newConst(value)
-  implicit def stringExprOps [S <: Sys[S]](ex: Expr[S, String]): StringExtensions.Ops[S] = new StringExtensions.Ops(ex)
+  // implicit def newStringConst[S <: Sys[S]](value: String)(implicit tx: S#Tx): Expr.Const[S, String] = String.newConst(value)
+  implicit def stringObjOps [S <: Sys[S]](obj: StringObj[S]): StringExtensions.Ops[S] = new StringExtensions.Ops(obj)
 
-  implicit def newSpanLikeConst[S <: Sys[S]](value: span.SpanLike)(implicit tx: S#Tx): Expr.Const[S, span.SpanLike] = SpanLike.newConst(value)
-  implicit def spanLikeExprOps [S <: Sys[S]](ex: Expr[S, span.SpanLike]): SpanLikeExtensions.Ops[S] = new SpanLikeExtensions.Ops(ex)
+  // implicit def newSpanLikeConst[S <: Sys[S]](value: span.SpanLike)(implicit tx: S#Tx): Expr.Const[S, span.SpanLike] = SpanLike.newConst(value)
+  implicit def spanLikeObjOps [S <: Sys[S]](obj: SpanLikeObj[S]): SpanLikeExtensions.Ops[S] = new SpanLikeExtensions.Ops(obj)
 
-  implicit def newSpanConst[S <: Sys[S]](value: span.Span)(implicit tx: S#Tx): Expr.Const[S, span.Span] = Span.newConst(value)
-  implicit def spanExprOps [S <: Sys[S]](ex: Expr[S, span.Span]): SpanExtensions.Ops[S] = new SpanExtensions.Ops(ex)
+  // implicit def newSpanConst[S <: Sys[S]](value: span.Span)(implicit tx: S#Tx): Expr.Const[S, span.Span] = Span.newConst(value)
+  implicit def spanObjOps [S <: Sys[S]](obj: SpanObj[S]): SpanExtensions.Ops[S] = new SpanExtensions.Ops(obj)
 }

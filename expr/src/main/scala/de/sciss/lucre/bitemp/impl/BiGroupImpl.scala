@@ -17,7 +17,7 @@ package bitemp.impl
 import de.sciss.lucre.bitemp.BiGroup
 import de.sciss.lucre.data.{DeterministicSkipOctree, Iterator, SkipOctree}
 import de.sciss.lucre.event.{impl => evti, Targets}
-import de.sciss.lucre.expr.Expr
+import de.sciss.lucre.expr.{Expr, SpanLikeObj}
 import de.sciss.lucre.geom.LongSpace.TwoDim
 import de.sciss.lucre.geom.{DistanceMeasure, LongDistanceMeasure2D, LongPoint2D, LongPoint2DLike, LongRectangle, LongSpace}
 import de.sciss.lucre.stm.impl.ObjSerializer
@@ -238,8 +238,8 @@ object BiGroupImpl {
 
   private def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                  (implicit tx: S#Tx): EntryImpl[S, A] = {
-    val span  = expr.SpanLike .read(in, access)
-    val value = Elem          .read(in, access).asInstanceOf[A]
+    val span  = SpanLikeObj.read(in, access)
+    val value = Elem       .read(in, access).asInstanceOf[A]
     new EntryImpl(targets, span, value)
   }
 
