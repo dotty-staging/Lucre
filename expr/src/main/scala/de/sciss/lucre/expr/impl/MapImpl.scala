@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package impl
 
 import de.sciss.lucre.data.{Iterator, Ordering, SkipList}
-import de.sciss.lucre.expr.Map.Modifiable
+import de.sciss.lucre.expr.Map.{Key, Modifiable}
 import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
@@ -24,38 +24,38 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 object MapImpl {
-  def apply[S <: Sys[S], K, V <: Elem[S]](implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] = {
+  def apply[S <: Sys[S], K, V <: Elem[S]](implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, V] = {
     val targets = evt.Targets[S]
     new Impl[S, K, V](targets) {
-      val peer = SkipList.Map.empty[S, K, Vec[Entry[K, V]]](tx, keyOrdering, keyType.valueSerializer,
+      val peer = SkipList.Map.empty[S, K, Vec[Entry[K, V]]](tx, keyOrdering, keyType.serializer,
         Serializer.indexedSeq(entrySerializer))
     }
   }
 
-  def serializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Map[S, K, V]] =
+  def serializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Key[K]): Serializer[S#Tx, S#Acc, Map[S, K, V]] =
     new Ser[S, K, V]
 
-  def modSerializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
+  def modSerializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Key[K]): Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
     new ModSer[S, K, V]
 
-  private class Ser[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K])
+  private class Ser[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Key[K])
     extends ObjSerializer[S, Map[S, K, V]] {
 
     def tpe = Map
   }
 
-  private class ModSer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K])
+  private class ModSer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Key[K])
     extends ObjSerializer[S, Modifiable[S, K, V]] {
 
     def tpe = Map
   }
 
   def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
-                                       (implicit tx: S#Tx, keyType: Type.Expr[K]): Map[S, K, V] =
+                                       (implicit tx: S#Tx, keyType: Key[K]): Map[S, K, V] =
     modRead(in, access)  // currently the same
 
   def modRead[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
-                                          (implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] = {
+                                          (implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, V] = {
     val targets   = evt.Targets.read(in, access)
     val keyTypeID = in.readInt()
     if (keyTypeID != keyType.typeID) sys.error(s"Type mismatch. Expected key ${keyType.typeID} but found $keyTypeID")
@@ -65,21 +65,21 @@ object MapImpl {
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val targets   = evt.Targets.read(in, access)
     val keyTypeID = in.readInt()
-    val keyType   = Obj.getType(keyTypeID).asInstanceOf[Type.Expr[_]]
+    val keyType   = Key(keyTypeID) // Obj.getType(keyTypeID).asInstanceOf[Key[_]]
     read(in, access, targets)(tx, keyType)
   }
 
   private def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                               (implicit tx: S#Tx, keyType: Type.Expr[K]): Impl[S, K, V] =
+                                               (implicit tx: S#Tx, keyType: Key[K]): Impl[S, K, V] =
     new Impl[S, K, V](targets) {
-      val peer = SkipList.Map.read[S, K, Vec[Entry[K, V]]](in, access)(tx, keyOrdering, keyType.valueSerializer,
+      val peer = SkipList.Map.read[S, K, Vec[Entry[K, V]]](in, access)(tx, keyOrdering, keyType.serializer,
         Serializer.indexedSeq(entrySerializer))
     }
 
   private final class Entry[K, V](val key: K, val value: V)
  
   private abstract class Impl[S <: Sys[S], K, V <: Elem[S]](protected val targets: evt.Targets[S])
-                                                          (implicit val keyType: Type.Expr[K])
+                                                          (implicit val keyType: Key[K])
     extends Modifiable[S, K, V] with evt.impl.SingleNode[S, Map.Update[S, K, V]] {
     map =>
 
@@ -101,13 +101,13 @@ object MapImpl {
 
     object entrySerializer extends Serializer[S#Tx, S#Acc, Entry[K, V]] {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[K, V] = {
-        val key   = keyType.valueSerializer.read(in)
+        val key   = keyType.serializer.read(in)
         val value = Elem.read(in, access).asInstanceOf[V]
         new Entry[K, V](key, value)
       }
 
       def write(entry: Entry[K, V], out: DataOutput): Unit = {
-        keyType.valueSerializer.write(entry.key, out)
+        keyType.serializer.write(entry.key, out)
         entry.value.write(out)
       }
     }

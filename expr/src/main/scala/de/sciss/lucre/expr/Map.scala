@@ -17,21 +17,48 @@ import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.impl.{MapImpl => Impl}
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.lucre.data
-import de.sciss.serial.{DataInput, Serializer}
+import de.sciss.serial.{ImmutableSerializer, DataInput, Serializer}
 
+import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 object Map extends Obj.Type {
   final val typeID = 24
+  
+  object Key {
+    implicit object Int extends Key[Int] {
+      final val typeID  = 2 // IntObj.typeID
+      def serializer    = ImmutableSerializer.Int // IntObj.valueSerializer
+    }
+    implicit object Long extends Key[Long] {
+      final val typeID  = 3 // LongObj.typeID
+      def serializer    = ImmutableSerializer.Long // LongObj.valueSerializer
+    }
+    implicit object String extends Key[String] {
+      final val typeID  = 8 // StringObj.typeID
+      def serializer    = ImmutableSerializer.String // StringObj.valueSerializer
+    }
+    
+    def apply(typeID: Int): Key[_] = (typeID: @switch) match {
+      case Int   .typeID => Int
+      case Long  .typeID => Int
+      case String.typeID => Int
+    }
+  }
+  /** Cheesy little type class for supported immutable keys. */ 
+  sealed trait Key[K] {
+    def typeID: Int
+    def serializer: ImmutableSerializer[K]
+  }
 
   object Modifiable {
-    def apply[S <: Sys[S], K, V <: Elem[S]](implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] =
+    def apply[S <: Sys[S], K: Key, V <: Elem[S]](implicit tx: S#Tx): Modifiable[S, K, V] =
       Impl[S, K, V]
 
-    def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx, keyType: Type.Expr[K]): Modifiable[S, K, V] =
+    def read[S <: Sys[S], K: Key, V <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, K, V] =
       Impl.modRead(in, access)
 
-    implicit def serializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
+    implicit def serializer[S <: Sys[S], K: Key, V <: Elem[S]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
       Impl.modSerializer
   }
 
@@ -56,14 +83,14 @@ object Map extends Obj.Type {
     def -=(key: K)(implicit tx: S#Tx): this.type
   }
 
-  def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
-                                       (implicit tx: S#Tx, keyType: Type.Expr[K]): Map[S, K, V] =
+  def read[S <: Sys[S], K: Key, V <: Elem[S]](in: DataInput, access: S#Acc)
+                                       (implicit tx: S#Tx): Map[S, K, V] =
     Impl.read(in, access)
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
 
-  implicit def serializer[S <: Sys[S], K, V <: Elem[S]](implicit keyType: Type.Expr[K]): Serializer[S#Tx, S#Acc, Map[S, K, V]] =
+  implicit def serializer[S <: Sys[S], K: Key, V <: Elem[S]]: Serializer[S#Tx, S#Acc, Map[S, K, V]] =
     Impl.serializer
 
   final case class Update[S <: Sys[S], K, V](map: Map[S, K, V], changes: Vec[Change[S, K, V]])
