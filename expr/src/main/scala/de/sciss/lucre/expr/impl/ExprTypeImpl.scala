@@ -22,16 +22,16 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import scala.annotation.switch
 import scala.language.higherKinds
 
-trait ExprTypeImpl[A, Repr[~ <: Sys[~]] <: Expr[~, A]] extends Type.Expr[A, Repr] with TypeImpl1[Repr] { self =>
+trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, Repr] with TypeImpl1[Repr] { self =>
   // ---- public ----
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
     (in.readByte(): @switch) match {
-      case 3 => readIdentifiedConst(in, access)
+      case 3 => readIdentifiedConst[S](in, access)
       case 0 =>
         val targets = Targets.readIdentified[S](in, access)
         in.readByte() match {
-          case 0 => readIdentifiedVar (in, access, targets)
+          case 0 => readIdentifiedVar[S](in, access, targets)
           case 1 => readNode(in, access, targets)
         }
       case cookie => sys.error(s"Unexpected cookie $cookie")
@@ -105,7 +105,7 @@ trait ExprTypeImpl[A, Repr[~ <: Sys[~]] <: Expr[~, A]] extends Type.Expr[A, Repr
   }
 
   protected trait VarImpl[S <: Sys[S]]
-    extends expr.impl.VarImpl[S, A] {
+    extends expr.impl.VarImpl[S, A, Ex[S]] {
 
     final def tpe: Obj.Type = self
   }

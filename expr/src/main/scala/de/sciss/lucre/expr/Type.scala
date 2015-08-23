@@ -57,7 +57,8 @@ object Type {
     def registerExtension(ext: Type.Extension1[Repr]): Unit
   }
 
-  trait Expr[A, Repr[~ <: Sys[~]] <: expr.Expr[~, A]] extends Obj.Type {
+  trait Expr[A1, Repr[~ <: Sys[~]] <: expr.Expr[~, A1]] extends Obj.Type {
+    type A = A1
     type Ex   [S <: Sys[S]] = Repr[S] // yeah, well, we're waiting for Dotty
     // type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A]
     type Var  [S <: Sys[S]] = Repr[S] with stm.Var[S#Tx, Repr[S]]

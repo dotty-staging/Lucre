@@ -15,21 +15,20 @@ package de.sciss.lucre.expr
 package impl
 
 import de.sciss.lucre.event.{Pull, impl => evti}
+import de.sciss.lucre.stm
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 import de.sciss.serial.DataOutput
 
-trait VarImpl[S <: Sys[S], A]
-  extends Expr.Var[S, A]
+trait VarImpl[S <: Sys[S], A, Repr <: Expr[S, A]]
+  extends Expr[S, A] with stm.Var[S#Tx, Repr] // .Var[S, A]
   with NodeImpl[S, A] { self =>
 
   // ---- abstract ----
 
-  protected def ref: S#Var[Ex]
+  protected def ref: S#Var[Repr]
 
   // ---- implemented ----
-
-  private type Ex = Expr[S, A]
 
   object changed extends Changed with evti.Generator[S, Change[A]] {
     private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] =
@@ -57,9 +56,9 @@ trait VarImpl[S <: Sys[S], A]
 
   private[this]def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> changed
 
-  final def apply()(implicit tx: S#Tx): Ex = ref()
+  final def apply()(implicit tx: S#Tx): Repr = ref()
 
-  final def update(expr: Ex)(implicit tx: S#Tx): Unit = {
+  final def update(expr: Repr)(implicit tx: S#Tx): Unit = {
     val before = ref()
     if (before != expr) {
       before.changed -/-> this.changed
@@ -71,8 +70,6 @@ trait VarImpl[S <: Sys[S], A]
       changed.fire(Change(beforeV, exprV))
     }
   }
-
-  final def transform(f: Ex => Ex)(implicit tx: S#Tx): Unit = this() = f(this())
 
   final def value(implicit tx: S#Tx): A = ref().value
 

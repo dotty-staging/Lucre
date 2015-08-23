@@ -82,65 +82,135 @@ package object expr {
   }
 
   object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
+    import expr.{IntObj => Repr}
+
     final val typeID = 2
     final val valueSerializer = ImmutableSerializer.Int
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: Int)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 
   object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
+    import expr.{LongObj => Repr}
+
     final val typeID = 3
     final val valueSerializer = ImmutableSerializer.Long
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: Long)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 
   object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
+    import expr.{DoubleObj => Repr}
+
     final val typeID = 5
     final val valueSerializer = ImmutableSerializer.Double
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: Double)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 
   object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
+    import expr.{BooleanObj => Repr}
+
     final val typeID = 6
     final val valueSerializer = ImmutableSerializer.Boolean
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: Boolean)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 
   object StringObj extends impl.ExprTypeImpl[String, StringObj] {
+    import expr.{StringObj => Repr}
+
     final val typeID = 8
     final val valueSerializer = ImmutableSerializer.String
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: String)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 
   object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
+    import expr.{SpanLikeObj => Repr}
+
     final val typeID = 9
     final val valueSerializer = SpanLike.serializer
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: SpanLike)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 
   object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
+    import expr.{SpanObj => Repr}
+
     final val typeID = 10
     final val valueSerializer = Span.serializer
 
-    protected def mkConst[S <: Sys[S]](id: S#ID, value: Span)(implicit tx: S#Tx): Const[S] = ???
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] = ???
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
   }
 }
