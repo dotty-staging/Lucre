@@ -19,6 +19,7 @@ import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.language.higherKinds
+import scala.language.implicitConversions
 
 object Type {
   trait Extension {

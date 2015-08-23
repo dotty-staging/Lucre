@@ -17,7 +17,6 @@ package impl
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr
 import de.sciss.lucre.stm.{Obj, NoSys, Sys}
-import de.sciss.model
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
@@ -53,7 +52,7 @@ trait ExprTypeImpl[A, Repr[~ <: Sys[~]] <: Expr[~, A]] extends Type.Expr[A, Repr
   implicit final def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Var[S]] /* Serializer[S#Tx, S#Acc, ReprVar[S]] */ =
     anyVarSer.asInstanceOf[VarSer[S]]
 
-  implicit final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
+  final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
     mkConst[S](tx.newID(), value)
 
   final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Var[S] = {

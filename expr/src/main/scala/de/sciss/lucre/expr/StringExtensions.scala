@@ -14,8 +14,11 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.impl.Tuple2Op
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.DataInput
+
+import scala.language.higherKinds
 
 object StringExtensions  {
   private[this] lazy val _init: Unit = {
@@ -41,8 +44,17 @@ object StringExtensions  {
       }
       val _1 = StringObj.read(in, access)
       val _2 = StringObj.read(in, access)
-      ??? // RRR new impl.Tuple2(StringObj, op, targets, _1, _2)
+      new Tuple2(targets, op, _1, _2)
     }
+  }
+
+  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
+                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
+      protected val targets: Targets[S], val op: Tuple2Op[String, T1, T2, StringObj, ReprT1, ReprT2],
+      val _1: ReprT1[S], val _2: ReprT2[S])
+    extends impl.Tuple2[S, String, T1, T2, StringObj, ReprT1, ReprT2] with StringObj[S] {
+
+    def tpe: Obj.Type = StringObj
   }
 
   // ----- operators -----
@@ -61,7 +73,8 @@ object StringExtensions  {
       def id: Int
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => StringObj.newConst(value(ca, cb))
-        case _                                => ??? // RRR new impl.Tuple2(StringObj, this, Targets[S], a, b).connect()
+        case _  =>
+          new Tuple2(Targets[S], this, a, b).connect()
       }
 
       def value(a: String, b: String): String

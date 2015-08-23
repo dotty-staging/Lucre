@@ -15,11 +15,13 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
+import scala.language.higherKinds
 
 object DoubleExtensions {
   private[this] lazy val _init: Unit = {
@@ -75,8 +77,15 @@ object DoubleExtensions {
         case Tanh       .id => Tanh
       }
       val _1 = DoubleObj.read(in, access)
-      ??? // RRR new impl.Tuple1(DoubleObj, op, targets, _1)
+      new Tuple1(targets, op, _1)
     }
+  }
+
+  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
+      protected val targets: Targets[S], val op: Tuple1Op[Double, T1, DoubleObj, ReprT1], val _1: ReprT1[S])
+    extends impl.Tuple1[S, Double, T1, DoubleObj, ReprT1] with DoubleObj[S] {
+
+    def tpe: Obj.Type = DoubleObj
   }
 
   private[this] object DoubleTuple2s extends Type.Extension1[DoubleObj] {
@@ -139,8 +148,17 @@ object DoubleExtensions {
       }
       val _1 = DoubleObj.read(in, access)
       val _2 = DoubleObj.read(in, access)
-      ??? // RRR new impl.Tuple2(DoubleObj, op, targets, _1, _2)
+      new Tuple2(targets, op, _1, _2)
     }
+  }
+
+  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
+                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
+      protected val targets: Targets[S], val op: Tuple2Op[Double, T1, T2, DoubleObj, ReprT1, ReprT2],
+      val _1: ReprT1[S], val _2: ReprT2[S])
+    extends impl.Tuple2[S, Double, T1, T2, DoubleObj, ReprT1, ReprT2] with DoubleObj[S] {
+
+    def tpe: Obj.Type = DoubleObj
   }
 
   // ----- operators -----
@@ -150,9 +168,9 @@ object DoubleExtensions {
 
     sealed abstract class Op extends impl.Tuple1Op[Double, Double, DoubleObj, DoubleObj] {
       def id: Int
-      final def apply[S <: Sys[S]](a: Ex[S])(implicit tx: S#Tx): Ex[S] = a match {
-        case Expr.Const(c)  => ??? // RRR DoubleObj.newConst(value(c))
-        case _              => ??? // RRR new impl.Tuple1(DoubleObj, this, evt.Targets[S], a).connect()
+      final def apply[S <: Sys[S]](_1: Ex[S])(implicit tx: S#Tx): Ex[S] = _1 match {
+        case Expr.Const(c)  => DoubleObj.newConst(value(c))
+        case _              => new Tuple1(Targets[S], this, _1).connect()
       }
 
       def toString[S <: Sys[S]](_1: Ex[S]): String = s"${_1}.$name"
@@ -348,9 +366,10 @@ object DoubleExtensions {
 
     sealed abstract class Op extends impl.Tuple2Op[Double, Double, Double, DoubleObj, DoubleObj, DoubleObj] {
 
-      final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
+      final def apply[S <: Sys[S]](_1: Ex[S], _2: Ex[S])(implicit tx: S#Tx): Ex[S] = (_1, _2) match {
         case (Expr.Const(ca), Expr.Const(cb)) => DoubleObj.newConst(value(ca, cb))
-        case _                                => ??? // RRR new impl.Tuple2(DoubleObj, this, evt.Targets[S], a, b).connect()
+        case _ =>
+          new Tuple2(Targets[S], this, _1, _2).connect()
       }
 
       def value(a: Double, b: Double): Double

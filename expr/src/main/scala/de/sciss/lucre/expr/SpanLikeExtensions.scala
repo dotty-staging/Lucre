@@ -13,12 +13,15 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.event.Targets
+import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
+import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span, SpanLike}
 
 import scala.annotation.switch
+import scala.language.higherKinds
 
 object SpanLikeExtensions {
   private[this] lazy val _init: Unit = {
@@ -76,6 +79,22 @@ object SpanLikeExtensions {
     }
   }
 
+  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
+      protected val targets: Targets[S], val op: Tuple1Op[SpanLike, T1, SpanLikeObj, ReprT1], val _1: ReprT1[S])
+    extends impl.Tuple1[S, SpanLike, T1, SpanLikeObj, ReprT1] with SpanLikeObj[S] {
+
+    def tpe: Obj.Type = SpanLikeObj
+  }
+
+  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
+                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
+      protected val targets: Targets[S], val op: Tuple2Op[SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2],
+      val _1: ReprT1[S], val _2: ReprT2[S])
+    extends impl.Tuple2[S, SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2] with SpanLikeObj[S] {
+
+    def tpe: Obj.Type = SpanLikeObj
+  }
+
   // ---- operators ----
 
   final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
@@ -105,12 +124,11 @@ object SpanLikeExtensions {
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
-        ??? // RRR new impl.Tuple1(SpanLikeObj, this, targets, _1)
+        new Tuple1(targets, this, _1)
       }
 
-      final def apply[S <: Sys[S]](a: LongObj[S])(implicit tx: S#Tx): Ex[S] = {
-        ??? // RRR new impl.Tuple1(SpanLikeObj, this, evt.Targets[S], a).connect()
-      }
+      final def apply[S <: Sys[S]](a: LongObj[S])(implicit tx: S#Tx): Ex[S] =
+        new Tuple1(Targets[S], this, a).connect()
     }
 
     case object From extends LongOp {
@@ -154,12 +172,13 @@ object SpanLikeExtensions {
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = SpanLikeObj.read(in, access)
         val _2 = LongObj    .read(in, access)
-        ??? // RRR new impl.Tuple2(SpanLikeObj, this, targets, _1, _2)
+        new Tuple2(targets, this, _1, _2)
       }
 
       final def apply[S <: Sys[S]](a: Ex[S], b: LongObj[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => SpanLikeObj.newConst(value(ca, cb))
-        case _                                => ??? // RRR new impl.Tuple2(SpanLikeObj, this, evt.Targets[S], a, b).connect()
+        case _  =>
+          new Tuple2(Targets[S], this, a, b).connect()
       }
     }
 
@@ -171,12 +190,11 @@ object SpanLikeExtensions {
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
         val _2 = LongObj.read(in, access)
-        ??? // RRR new impl.Tuple2(SpanLikeObj, this, targets, _1, _2)
+        new Tuple2(targets, this, _1, _2)
       }
 
-      final def apply[S <: Sys[S]](a: LongObj[S], b: LongObj[S])(implicit tx: S#Tx): Ex[S] = {
-        ??? // RRR new impl.Tuple2(SpanLikeObj, this, evt.Targets[S], a, b).connect()
-      }
+      final def apply[S <: Sys[S]](a: LongObj[S], b: LongObj[S])(implicit tx: S#Tx): Ex[S] =
+        new Tuple2(Targets[S], this, a, b).connect()
     }
 
     case object Apply extends LongLongOp {

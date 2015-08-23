@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
+import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
@@ -45,8 +46,15 @@ object BooleanExtensions  {
         case Not.id => Not
       }
       val _1 = BooleanObj.read(in, access)
-      ??? // RRR new impl.Tuple1(BooleanObj, op, targets, _1)
+      new Tuple1[S, Boolean, BooleanObj](targets, op, _1)
     }
+  }
+
+  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
+    protected val targets: Targets[S], val op: Tuple1Op[Boolean, T1, BooleanObj, ReprT1], val _1: ReprT1[S])
+    extends impl.Tuple1[S, Boolean, T1, BooleanObj, ReprT1] with BooleanObj[S] {
+
+    def tpe: Obj.Type = BooleanObj
   }
 
   private[this] object BooleanTuple2s extends Type.Extension1[BooleanObj] {
@@ -100,14 +108,24 @@ object BooleanExtensions  {
   private[this] abstract class UnaryOp[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]]
     extends impl.Tuple1Op[Boolean, T1, BooleanObj, ReprT1] {
 
-    final def apply[S <: Sys[S]](a: Expr[S, T1])(implicit tx: S#Tx): Ex[S] = a match {
-      case Expr.Const(ca) => BooleanObj.newConst(value(ca))
-      case _ => ??? // RRR new impl.Tuple1(BooleanObj, this, Targets[S], a).connect()
+    final def apply[S <: Sys[S]](_1: ReprT1[S])(implicit tx: S#Tx): Ex[S] = _1 match {
+      case Expr.Const(a) => BooleanObj.newConst(value(a))
+      case _ =>
+        new Tuple1[S, T1, ReprT1](Targets[S], this, _1).connect()
     }
 
     def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"$name${_1}"
 
     def name: String
+  }
+
+  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
+                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
+       protected val targets: Targets[S], val op: Tuple2Op[Boolean, T1, T2, BooleanObj, ReprT1, ReprT2],
+       val _1: ReprT1[S], val _2: ReprT2[S])
+    extends impl.Tuple2[S, Boolean, T1, T2, BooleanObj, ReprT1, ReprT2] with BooleanObj[S] {
+
+    def tpe: Obj.Type = BooleanObj
   }
 
   private[this] case object Not extends UnaryOp[Boolean, BooleanObj] {
@@ -149,14 +167,14 @@ object BooleanExtensions  {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Ex[S] = {
       val _1 = IntObj.read(in, access)
       val _2 = IntObj.read(in, access)
-      ??? // RRR new impl.Tuple2(BooleanObj, op, targets, _1, _2)
+      new Tuple2(targets, op, _1, _2)
     }
 
     // ---- impl ----
 
     final def apply[S <: Sys[S]](a: IntObj[S], b: IntObj[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanObj.newConst(value(ca, cb))
-      case _ => ??? // RRR new impl.Tuple2(BooleanObj, this, Targets[S], a, b).connect()
+      case _ => new Tuple2(Targets[S], this, a, b).connect()
     }
   }
 

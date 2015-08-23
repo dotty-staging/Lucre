@@ -14,11 +14,11 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.stm.Sys
-import de.sciss.span
 
 import scala.language.implicitConversions
 
-object Ops {
+object Ops extends Ops
+trait Ops {
   // implicit def newIntConst[S <: Sys[S]](value: Int)(implicit tx: S#Tx): Expr.Const[S, Int] = Int.newConst(value)
   implicit def intObjOps [S <: Sys[S]](obj: IntObj[S]): IntExtensions.Ops[S] = new IntExtensions.Ops(obj)
 
