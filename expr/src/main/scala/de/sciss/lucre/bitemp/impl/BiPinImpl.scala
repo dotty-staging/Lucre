@@ -19,7 +19,7 @@ import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.{Expr, LongObj}
 import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
-import de.sciss.lucre.{event => evt, stm, expr}
+import de.sciss.lucre.{event => evt, stm}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -144,15 +144,6 @@ object BiPinImpl {
     anySer.asInstanceOf[Ser[S, A, BiPin.Modifiable[S, A]]]
 
   private val anySer = new Ser[NoSys, Obj[NoSys], BiPin[NoSys, Obj[NoSys]]]
-
-  def readModifiable[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)
-                                              (implicit tx: S#Tx): BiPin.Modifiable[S, A] = {
-    val targets = evt.Targets.read[S](in, access)
-    readImpl(in, access, targets)
-  }
-
-  def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
-    readModifiable(in, access)
 
   private def readImpl[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                 (implicit tx: S#Tx): Impl[S, A] = {

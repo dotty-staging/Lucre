@@ -171,12 +171,6 @@ object BiGroupImpl {
 
   private val anyModSer = new ModSer[NoSys, Obj[NoSys]]
 
-  def readModifiable[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)
-                                              (implicit tx: S#Tx): BiGroup.Modifiable[S, A] = {
-    val targets = evt.Targets.read[S](in, access)
-    read(in, access, targets)
-  }
-
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val targets = Targets.read(in, access)
     read(in, access, targets)

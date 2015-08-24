@@ -76,7 +76,7 @@ object BiPin extends Obj.Type {
     }
 
     def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
-      Impl.readModifiable[S, A](in, access)
+      serializer[S, A].read(in, access)
 
     def apply[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
       Impl.newModifiable[S, A]
@@ -92,7 +92,7 @@ object BiPin extends Obj.Type {
   }
 
   def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
-    Impl.read[S, A](in, access)
+    serializer[S, A].read(in, access)
 
   implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
     Impl.serializer[S, A]

@@ -99,7 +99,7 @@ object BiGroup extends Obj.Type {
       Impl.newModifiable[S, A]
 
     def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
-      Impl.readModifiable(in, access)
+      serializer[S, A].read(in, access)
   }
 
   trait Modifiable[S <: Sys[S], A] extends BiGroup[S, A] {
