@@ -16,7 +16,7 @@ package de.sciss.lucre.artifact
 import java.io.File
 
 import de.sciss.lucre.artifact.impl.{ArtifactImpl => Impl}
-import de.sciss.lucre.expr.{Expr, Type}
+import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.{DataInput, Serializer}
 
@@ -25,7 +25,8 @@ import scala.annotation.tailrec
 object Artifact extends Obj.Type {
   final val typeID = 0x10008
 
-  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] = Impl.read(in, access)
+  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] =
+    serializer[S].read(in, access)
 
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Artifact[S]] = Impl.serializer
 
@@ -57,7 +58,7 @@ object Artifact extends Obj.Type {
 
   object Modifiable {
     def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S] =
-      Impl.readMod(in, access)
+      serializer[S].read(in, access)
 
     def copy[S <: Sys[S]](from: Artifact[S])(implicit tx: S#Tx): Modifiable[S] =
       Impl.copy(from)

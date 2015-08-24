@@ -35,7 +35,7 @@ object ObjImpl {
   def addType(tpe: Obj.Type): Unit = sync.synchronized {
     val typeID = tpe.typeID
     if (map.contains(typeID))
-      throw new IllegalArgumentException(s"Object type $typeID was already registered")
+      throw new IllegalArgumentException(s"Object type $typeID was already registered ($tpe overrides ${map(typeID)})")
 
     map += typeID -> tpe
   }

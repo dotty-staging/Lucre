@@ -35,7 +35,7 @@ object ElemImpl {
   def addType(tpe: Elem.Type): Unit = sync.synchronized {
     val typeID = tpe.typeID
     if (map.contains(typeID))
-      throw new IllegalArgumentException(s"Element type $typeID was already registered")
+      throw new IllegalArgumentException(s"Element type $typeID was already registered ($tpe overrides ${map(typeID)})")
 
     map += typeID -> tpe
   }

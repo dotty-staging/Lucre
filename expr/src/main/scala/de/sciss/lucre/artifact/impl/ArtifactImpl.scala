@@ -20,8 +20,8 @@ import de.sciss.lucre.artifact.Artifact.Modifiable
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.List
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Obj, NoSys, Sys}
-import de.sciss.lucre.{data, event => evt}
+import de.sciss.lucre.stm.{NoSys, Obj, Sys}
+import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -41,12 +41,6 @@ object ArtifactImpl {
 
   def copy[S <: Sys[S]](from: Artifact[S])(implicit tx: S#Tx): Artifact.Modifiable[S] =
     apply[S](from.location, from.child)
-
-  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] =
-    serializer[S].read(in, access)
-
-  def readMod[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact.Modifiable[S] =
-    modSerializer[S].read(in, access)
 
   def readIdentifiedArtifact[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] = {
     val targets = Targets.read[S](in, access)
