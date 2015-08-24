@@ -340,12 +340,12 @@ object IntExtensions {
 
     // ---- (Int, Int) => Boolean ----
 
-    def sig_==(b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntEq (a, b)
-    def sig_!=(b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntNeq(a, b)
-    def <     (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntLt (a, b)
-    def >     (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntGt (a, b)
-    def <=    (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntLeq(a, b)
-    def >=    (b: E)(implicit tx: S#Tx): Expr[S, Boolean] = BooleanExtensions.IntGeq(a, b)
+    def sig_==(b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntEq (a, b)
+    def sig_!=(b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntNeq(a, b)
+    def <     (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntLt (a, b)
+    def >     (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntGt (a, b)
+    def <=    (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntLeq(a, b)
+    def >=    (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntGeq(a, b)
 
     // ---- more ops ----
 
