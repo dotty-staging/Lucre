@@ -16,10 +16,11 @@ package de.sciss.lucre.stm.impl
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm.InMemoryLike.Var
-import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Source, TxnLike}
+import de.sciss.lucre.stm.{Obj, Sys, IdentifierMap, InMemory, InMemoryLike, Source, TxnLike}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TMap, TxnExecutor}
+import scala.language.higherKinds
 
 object InMemoryImpl {
   private type S = InMemory
@@ -32,13 +33,8 @@ object InMemoryImpl {
     final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
-    //    final def newID(peer: InTxn): S#ID = {
-//      // // since idCnt is a ScalaRef and not InMemory#Var, make sure we don't forget to mark the txn dirty!
-//      // dirty = true
-//      val res = idCnt.get(peer) + 1
-//      idCnt.set(res)(peer)
-//      new IDImpl[S](res)
-//    }
+    final private[lucre] val attrMap: IdentifierMap[S#ID, S#Tx, Map[String, Obj[S]]] =
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[String, Obj[S]]](_.id)
 
     final private[lucre] def newIDValue()(implicit tx: S#Tx): Int = {
       val peer  = tx.peer
@@ -81,11 +77,6 @@ object InMemoryImpl {
 
     def apply()     (implicit tx: S#Tx): A    = peer.get   (tx.peer)
     def update(v: A)(implicit tx: S#Tx): Unit = peer.set(v)(tx.peer)
-
-    //    def transform(f: A => A)(implicit tx: S#Tx): Unit = {
-//      peer.transform(f)(tx.peer)
-//      // tx.markDirty()
-//    }
 
     def write(out: DataOutput): Unit = ()
 
@@ -133,8 +124,6 @@ object InMemoryImpl {
 
     final def newID(): S#ID = new IDImpl(system.newIDValue()(this))
 
-//    final def newPartialID(): S#ID = newID()
-
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
 
@@ -152,11 +141,6 @@ object InMemoryImpl {
       val peer = ScalaRef(init)
       new VarImpl(peer)
     }
-
-//    final def newLocalVar[A](init: S#Tx => A): LocalVar[S#Tx, A] = new impl.LocalVarImpl[S, A](init)
-//
-//    final def newPartialVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
-//      newVar(id, init)
 
     final def newIntVar(id: S#ID, init: Int): S#Var[Int] = {
       val peer = ScalaRef(init)
@@ -178,14 +162,8 @@ object InMemoryImpl {
     final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
       IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, A](_.id)
 
-//    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
-//      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, A](new IDImpl(0))(_.id)
-
     def readVar[A](id: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
       opNotSupported("readVar")
-
-//    def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
-//      readVar(pid, in)
 
     def readBooleanVar(id: S#ID, in: DataInput): S#Var[Boolean] = opNotSupported("readBooleanVar")
     def readIntVar    (id: S#ID, in: DataInput): S#Var[Int    ] = opNotSupported("readIntVar"    )
@@ -193,15 +171,40 @@ object InMemoryImpl {
 
     def readID(in: DataInput, acc: S#Acc): S#ID = opNotSupported("readID")
 
-//    def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)
-
-//    def readDurableIDMap[A](in: DataInput)
-//                           (implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
-//      opNotSupported("readDurableIDMap")
-
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
+    // ---- context ----
+
     def newContext(): S#Context = new ContextImpl[S]
+
+    // ---- attributes ----
+
+    def attrGet[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String): Option[Repr[S]] =
+      system.attrMap.getOrElse(obj.id, Map.empty)(this).get(key).asInstanceOf[Option[Repr[S]]]
+
+    def attrPut[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String, value: Repr[S]): Unit = {
+      val a    = system.attrMap
+      val id   = obj.id
+      val map0 = a.getOrElse(id, Map.empty)(this)
+      val map1 = map0 + (key -> value)
+      a.put(id, map1)(this)
+    }
+
+    def attrRemove(obj: Obj[S], key: String): Unit = {
+      val a    = system.attrMap
+      val id   = obj.id
+      val map0 = a.getOrElse(id, Map.empty)(this)
+      if (map0.nonEmpty) {
+        val map1 = map0 - key
+        if (map1.isEmpty)
+          a.remove(id)(this)
+        else
+          a.put(id, map1)(this)
+      }
+    }
+
+    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] =
+      system.attrMap.get(obj.id)(this).fold[Iterator[(String, Obj[S])]](Iterator.empty)(_.iterator)
   }
 
   private final class System extends Mixin[InMemory] with InMemory {

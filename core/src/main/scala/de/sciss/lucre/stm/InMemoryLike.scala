@@ -44,7 +44,7 @@ trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
 
   type Tx <: InMemoryLike.Txn[S]
 
-  // private[stm] def newID(peer: InTxn): S#ID
+  private[lucre] def attrMap: IdentifierMap[S#ID, S#Tx, Map[String, Obj[S]]]
 
   private[lucre] def newIDValue()(implicit tx: S#Tx): Int
 

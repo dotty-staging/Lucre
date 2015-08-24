@@ -13,10 +13,11 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.event.{EventLike, ReactionMap}
+import de.sciss.lucre.event.ReactionMap
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
+import scala.language.higherKinds
 
 object TxnLike {
   /** Implicitly extracts a Scala STM transaction from a `TxnLike` instance. */
@@ -112,18 +113,11 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- attributes ----
 
-//  def attr[Repr[~ <: Sys[~]] <: Obj[~]](key: String)(implicit tx: S#Tx): Option[Repr[S]] = ???
-//
-//  def attrGet(key: String)(implicit tx: S#Tx): Option[Obj[S]] = ???
-//
-//  def attrContains(key: String)(implicit tx: S#Tx): Boolean = ???
-//
-//  def attrKeys(implicit tx: S#Tx): Set[String] = ???
-//
-//  def attrIterator(implicit tx: S#Tx): Iterator[S#Tx, (String, Obj[S])] = ???
-//
-//  def attrPut   [Repr[~ <: Sys[~]] <: Obj[~]](key: String, value: Repr[S])(implicit tx: S#Tx): Unit     = ???
-//  def attrRemove(key: String               )(implicit tx: S#Tx): Boolean  = ???
-//
-//  def attrChanged: EventLike[S, AttrUpdate[S]] = ???
+  def attrPut[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String, value: Repr[S]): Unit
+  def attrGet[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String): Option[Repr[S]]
+  def attrRemove                          (obj: Obj[S], key: String): Unit
+
+  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])]
+
+  // def attrChanged: EventLike[S, AttrUpdate[S]]
 }

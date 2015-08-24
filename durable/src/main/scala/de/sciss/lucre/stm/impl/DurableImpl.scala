@@ -21,6 +21,7 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import scala.annotation.elidable
 import scala.annotation.meta.field
 import scala.concurrent.stm.{InTxn, Ref, Txn, TxnExecutor}
+import scala.language.higherKinds
 
 object DurableImpl {
   private type D[S <: DurableLike[S]] = DurableLike[S]
@@ -294,7 +295,17 @@ object DurableImpl {
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
 
+    // ---- context ----
+
     def newContext(): S#Context = ???
+
+    // ---- attributes ----
+
+    def attrGet[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String): Option[Repr[S]] = ???
+    def attrPut[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String, value: Repr[S]): Unit = ???
+    def attrRemove(obj: Obj[S], key: String): Unit = ???
+
+    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ???
   }
 
   private final class IDImpl[S <: D[S]](@field val id: Int) extends DurableLike.ID[S] {
@@ -503,7 +514,8 @@ object DurableImpl {
     lazy val inMemory: InMemory#Tx = system.inMemory.wrap(peer)
 
     override def toString = s"Durable.Txn@${hashCode.toHexString}"
-  }
+
+ }
 
   private final class System(@field protected val store     : DataStore,
                              @field protected val eventStore: DataStore)

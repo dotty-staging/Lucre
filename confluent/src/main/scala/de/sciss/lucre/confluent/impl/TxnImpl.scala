@@ -17,12 +17,13 @@ package impl
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.event.ReactionMap
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Durable, InMemory, IdentifierMap}
+import de.sciss.lucre.stm.{Obj, Durable, InMemory, IdentifierMap}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, ImmutableSerializer}
 
-import scala.collection.immutable.{Queue => IQueue, IntMap, IndexedSeq => Vec}
+import scala.collection.immutable.{Queue => IQueue, IndexedSeq => Vec}
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
+import scala.language.higherKinds
 
 trait TxnMixin[S <: Sys[S]]
   extends Txn[S] with stm.impl.BasicTxnImpl[S] with VersionInfo.Modifiable {
@@ -122,15 +123,19 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
+  // ---- context ----
+
   def newContext(): S#Context = ???
 
-  //  final def newPartialID(): S#ID = {
-//    if (Confluent.DEBUG_DISABLE_PARTIAL) return newID()
-//
-//    val res = new PartialID[S](system.newIDValue()(this), Path.empty[S])
-//    log(s"txn newPartialID $res")
-//    res
-//  }
+  // ---- attributes ----
+
+  def attrGet[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String): Option[Repr[S]] = ???
+  def attrPut[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String, value: Repr[S]): Unit = ???
+  def attrRemove(obj: Obj[S], key: String): Unit = ???
+
+  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ???
+
+  // ----
 
   final def readTreeVertexLevel(term: Long): Int = {
     system.store.get(out => {
@@ -253,21 +258,6 @@ trait TxnMixin[S <: Sys[S]]
     new InMemoryIDMapImpl[S, A](map)
   }
 
-//  final def newDurableIDMap[A](implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-//    mkDurableIDMap(system.newIDValue()(this))
-//  }
-//
-//  final def removeDurableIDMap[A](map: IdentifierMap[S#ID, S#Tx, A]): Unit =
-//    durableIDMaps -= map.id.base
-//
-//  private def mkDurableIDMap[A](id: Int)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-//    val map = DurablePersistentMap.newConfluentLongMap[S](system.store, system.indexMap, isOblivious = false)
-//    val idi = new ConfluentID(id, Path.empty[S])
-//    val res = new DurableIDMapImpl[S, A](idi, map)
-//    durableIDMaps += id -> res
-//    res
-//  }
-
   final protected def readSource(in: DataInput, pid: S#ID): S#ID = {
     val base = in./* PACKED */ readInt()
     new ConfluentID(base, pid.path)
@@ -325,23 +315,6 @@ trait TxnMixin[S <: Sys[S]]
     log(s"txn readID $res")
     res
   }
-
-//  final def readPartialID(in: DataInput, acc: S#Acc): S#ID = {
-//    if (Confluent.DEBUG_DISABLE_PARTIAL) return readID(in, acc)
-//
-//    val base  = in./* PACKED */ readInt()
-//    val res   = new PartialID(base, Path.readAndAppend(in, acc)(this))
-//    log(s"txn readPartialID $res")
-//    res
-//  }
-
-//  final def readDurableIDMap[A](in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
-//    val id = in./* PACKED */ readInt()
-//    durableIDMaps.get(id) match {
-//      case Some(existing) => existing.asInstanceOf[DurableIDMapImpl[S, A]]
-//      case _              => mkDurableIDMap(id)
-//    }
-//  }
 
   override def toString = s"confluent.Sys#Tx$inputAccess"
 }
