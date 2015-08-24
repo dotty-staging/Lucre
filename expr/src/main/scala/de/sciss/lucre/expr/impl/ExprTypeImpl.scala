@@ -21,6 +21,7 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
 import scala.language.higherKinds
+import scala.language.implicitConversions
 
 trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, Repr] with TypeImpl1[Repr] { self =>
   // ---- public ----
@@ -52,7 +53,8 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   implicit final def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Var[S]] /* Serializer[S#Tx, S#Acc, ReprVar[S]] */ =
     anyVarSer.asInstanceOf[VarSer[S]]
 
-  final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
+  // repeat `implicit` here because IntelliJ IDEA will not recognise it otherwise (SCL-9076)
+  implicit final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
     mkConst[S](tx.newID(), value)
 
   final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Var[S] = {
