@@ -35,7 +35,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
           case 0 => readIdentifiedVar[S](in, access, targets)
           case 1 => readNode(in, access, targets)
         }
-      case cookie => sys.error(s"Unexpected cookie $cookie")
+      case cookie => readCookie(in, access, cookie)
     }
 
   /** The default implementation reads a type `Int` as operator id `Int`
@@ -46,6 +46,13 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     val opID = in.readInt()
     readExtension(op = opID, in = in, access = access, targets = targets)
   }
+
+  /** Reads an identified object whose cookie is neither `3` (constant) nor `0` (node).
+    * By default this throws an exception. Sub-classes may use a cookie greater
+    * than `3` for other constant types.
+    */
+  protected def readCookie[S <: Sys[S]](in: DataInput, access: S#Acc, cookie: Byte)(implicit tx: S#Tx): Ex[S] =
+    sys.error(s"Unexpected cookie $cookie")
 
   implicit final def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Repr[S]] */ =
     anySer.asInstanceOf[Ser[S]]

@@ -20,6 +20,7 @@ import de.sciss.lucre.stm.Sys
 import de.sciss.serial.ImmutableSerializer
 import de.sciss.span.{Span, SpanLike}
 
+import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
 package object expr {
@@ -28,7 +29,6 @@ package object expr {
   /** An expression type with installable extensions. */
   type TypeExpr1[A, Repr[~ <: Sys[~]] <: expr.Expr[~, A]] = Type.Expr[A, Repr] with Type._1[Repr]
 
-  trait IntObj[S <: Sys[S]] extends Expr[S, Int]
   // The `val` approach is nice because it hides
   // implementation details. Unfortunately that
   // doesn't give us a real companion object,
@@ -37,23 +37,14 @@ package object expr {
 
   // val IntObj: TypeExpr1[Int, IntObj] = IntImpl
 
-  trait LongObj[S <: Sys[S]] extends Expr[S, Long]
-  // val LongObj: TypeExpr1[Long, LongObj] = LongImpl
-
-  trait DoubleObj[S <: Sys[S]] extends Expr[S, Double]
-  // val DoubleObj: TypeExpr1[Double, DoubleObj] = DoubleImpl
-
-  trait BooleanObj[S <: Sys[S]] extends Expr[S, Boolean]
-  // val BooleanObj: TypeExpr1[Boolean, BooleanObj] = BooleanImpl
-
-  trait StringObj[S <: Sys[S]] extends Expr[S, String]
-  // val StringObj: TypeExpr1[String, StringObj] = StringImpl
-
-  trait SpanLikeObj[S <: Sys[S]] extends Expr[S, SpanLike]
-  // val SpanLikeObj: TypeExpr1[SpanLike, SpanLikeObj] = SpanLikeImpl
-
-  trait SpanObj[S <: Sys[S]] extends Expr[S, Span]
-  // val SpanObj: TypeExpr1[Span, SpanObj] = SpanImpl
+  trait IntObj      [S <: Sys[S]] extends Expr[S, Int     ]
+  trait LongObj     [S <: Sys[S]] extends Expr[S, Long    ]
+  trait DoubleObj   [S <: Sys[S]] extends Expr[S, Double  ]
+  trait BooleanObj  [S <: Sys[S]] extends Expr[S, Boolean ]
+  trait StringObj   [S <: Sys[S]] extends Expr[S, String  ]
+  trait SpanLikeObj [S <: Sys[S]] extends Expr[S, SpanLike]
+  trait SpanObj     [S <: Sys[S]] extends Expr[S, Span    ]
+  trait DoubleVector[S <: Sys[S]] extends Expr[S, Vec[Double]]
 
   def init(): Unit = {
     IntObj            .init()
@@ -63,6 +54,7 @@ package object expr {
     StringObj         .init()
     SpanLikeObj       .init()
     SpanObj           .init()
+    DoubleVector      .init()
 
     List              .init()
     Map               .init()
@@ -200,6 +192,25 @@ package object expr {
 
     final val typeID = 10
     final val valueSerializer = Span.serializer
+
+    protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+      new _Const[S](id, value)
+
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
+      new _Var[S](targets, vr)
+
+    private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+      extends ConstImpl[S] with Repr[S]
+
+    private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+      extends VarImpl[S] with Repr[S]
+  }
+
+  object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
+    import expr.{DoubleVector => Repr}
+
+    final val typeID = 0x2005 //  0x2000 | DoubleObj.typeID
+    final val valueSerializer = ImmutableSerializer.indexedSeq[Double]
 
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
