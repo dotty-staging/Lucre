@@ -249,7 +249,9 @@ object BiGroupImpl {
 
     // ---- implemented ----
 
-    final def tpe: Obj.Type = BiGroup
+    // DO NOT DEFINE THE TYPE, BECAUSE THIS IS
+    // USED AS A MIXIN, E.G. BY TIMELINE
+    // final def tpe: Obj.Type = BiGroup
 
     final def treeHandle = tree
 
@@ -427,6 +429,7 @@ object BiGroupImpl {
   def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
     new Impl[S, A] {
       protected val targets = evt.Targets[S]
+      final def tpe: Obj.Type = BiGroup
 
       val tree: TreeImpl[S, A] = newTree()
     }
@@ -435,6 +438,7 @@ object BiGroupImpl {
                                             (implicit tx: S#Tx): Impl[S, A] =
     new Impl[S, A] {
       protected val targets: evt.Targets[S] = _targets
+      final def tpe: Obj.Type = BiGroup
 
       val tree: TreeImpl[S, A] = readTree(in, access)
     }

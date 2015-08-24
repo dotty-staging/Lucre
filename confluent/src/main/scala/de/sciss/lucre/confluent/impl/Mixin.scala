@@ -35,7 +35,6 @@ trait Mixin[S <: Sys[S]]
   // ---- abstract methods ----
 
   protected def storeFactory: DataStore.Factory
-  protected def eventStore  : DataStore
 
   protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx]): S#Tx
   protected def wrapRoot(peer: InTxn): S#Tx
@@ -47,12 +46,6 @@ trait Mixin[S <: Sys[S]]
   final val store         = storeFactory.open("k-main")
   private val varMap      = DurablePersistentMap.newConfluentIntMap[S](store, this, isOblivious = false)
   final val fullCache     = DurableCacheMapImpl.newIntCache(varMap)
-  // final val partialCache  = PartialCacheMapImpl.newIntCache(DurablePersistentMap.newPartialMap[S](store, this))
-
-  private val eventVarMap = DurablePersistentMap.newConfluentIntMap[S](eventStore, this, isOblivious = true)
-
-  final val eventCache: CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]] =
-    DurableCacheMapImpl.newIntCache(eventVarMap)
 
   final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] = {
     val map = InMemoryConfluentMap.newIntMap[S]
@@ -361,7 +354,6 @@ trait Mixin[S <: Sys[S]]
   def close(): Unit = {
     store     .close()
     durable   .close()
-    eventStore.close()
   }
 
   def numRecords    (implicit tx: S#Tx): Int = store.numEntries
@@ -618,6 +610,8 @@ trait Mixin[S <: Sys[S]]
     } getOrElse {
       sys.error(s"Trying to access nonexistent vertex ${term.toInt}")
     }
+
+  // ---- PartialMapHandler ----
 
   final def getIndexTreeTerm(term: Long)(implicit tx: S#Tx): Long = {
     implicit val dtx = durableTx(tx)

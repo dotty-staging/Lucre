@@ -23,21 +23,12 @@ import scala.language.implicitConversions
 object Durable {
   private type S = Durable
 
-//  def apply(store: DataStore): S = Impl(store)
-//
-//  def apply(factory: DataStore.Factory, name: String = "data"): S = Impl(factory, name)
+  def apply(factory: DataStore.Factory, mainName: String = "data"): S =
+    Impl(factory, mainName = mainName)
 
-  def apply(factory: DataStore.Factory, mainName: String = "data", eventName: String = "event"): S =
-    Impl(factory, mainName = mainName, eventName = eventName)
+  def apply(mainStore: DataStore): S = Impl(mainStore = mainStore)
 
-  def apply(mainStore: DataStore, eventStore: DataStore): S =
-    Impl(mainStore = mainStore, eventStore = eventStore)
-
-  // implicit def inMemory(tx: Durable#Tx): InMemory#Tx = tx.inMemory
-
-  trait Txn extends DurableLike.Txn[Durable] {
-    // private[Durable] def inMemory: InMemory#Tx
-  }
+  trait Txn extends DurableLike.Txn[Durable]
 }
 
 object DurableLike {
@@ -77,17 +68,16 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   private[stm] def tryRead[A](id: Long)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A]
 
-  private[lucre] def write(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
+  private[lucre] def write(id: Int )(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
+  private[stm]   def write(id: Long)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
 
-  private[stm] def write(id: Long)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
+  private[stm]  def remove(id: Int )(implicit tx: S#Tx): Unit
+  private[stm]  def remove(id: Long)(implicit tx: S#Tx): Unit
 
-  private[stm] def remove(id: Int)(implicit tx: S#Tx): Unit
+  private[stm]  def exists(id: Int )(implicit tx: S#Tx): Boolean
+  private[stm]  def exists(id: Long)(implicit tx: S#Tx): Boolean
 
-  private[stm] def remove(id: Long)(implicit tx: S#Tx): Unit
-
-  private[stm] def exists(id: Int)(implicit tx: S#Tx): Boolean
-
-  private[stm] def exists(id: Long)(implicit tx: S#Tx): Boolean
+  private[stm] def store: DataStore
 
   private[lucre] def newIDValue()(implicit tx: S#Tx): Int
 

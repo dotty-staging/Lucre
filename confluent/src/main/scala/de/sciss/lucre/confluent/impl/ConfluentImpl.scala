@@ -14,20 +14,19 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.event.Observer
-import de.sciss.lucre.stm.{IdentifierMap, DataStore, Durable}
+import de.sciss.lucre.stm.{DataStore, Durable}
 
 import scala.concurrent.stm.InTxn
 
 object ConfluentImpl {
   def apply(storeFactory: DataStore.Factory): Confluent = {
     val mainStore   = storeFactory.open("data")
-    val eventStore  = storeFactory.open("event", overwrite = true)
-    val durable     = Durable(mainStore, eventStore)
-    new System(storeFactory, eventStore, durable)
+    // val eventStore  = storeFactory.open("event", overwrite = true)
+    val durable     = Durable(mainStore /* , eventStore */)
+    new System(storeFactory, /* eventStore, */ durable)
   }
 
-  private final class System(protected val storeFactory: DataStore.Factory, protected val eventStore: DataStore,
+  private final class System(protected val storeFactory: DataStore.Factory, // protected val eventStore: DataStore,
                              val durable: Durable)
     extends Mixin[Confluent] with Confluent {
 

@@ -26,46 +26,20 @@ import scala.language.higherKinds
 object DurableImpl {
   private type D[S <: DurableLike[S]] = DurableLike[S]
 
-//  def apply(store: DataStore): Durable = new System(store)
-//
-//  def apply(factory: DataStore.Factory, name: String = "data"): Durable = apply(factory.open(name))
-
-  def apply(factory: DataStore.Factory, mainName: String, eventName: String): Durable = {
+  def apply(factory: DataStore.Factory, mainName: String): Durable = {
     val mainStore   = factory.open(mainName)
-    val eventStore  = factory.open(eventName, overwrite = true)
-    apply(mainStore = mainStore, eventStore = eventStore)
+    apply(mainStore = mainStore)
   }
 
-  def apply(mainStore: DataStore, eventStore: DataStore): Durable =
-    new System(store = mainStore, eventStore = eventStore)
+  def apply(mainStore: DataStore): Durable = new System(store = mainStore)
 
   trait Mixin[S <: D[S], I <: Sys[I]] extends DurableLike[S] with ReactionMapImpl.Mixin[S] {
     system =>
 
-    protected def store: DataStore
-
-    protected def eventStore: DataStore
+    def store: DataStore
 
     final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
-
-    private[stm] def tryReadEvent[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A] = {
-      log(s"readE  <$id>")
-      eventStore.get(_.writeInt(id))(valueFun)
-    }
-
-    private[stm] def writeEvent(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit = {
-      log(s"writE <$id>")
-      eventStore.put(_.writeInt(id))(valueFun)
-    }
-
-    private[stm] def removeEvent(id: Int)(implicit tx: S#Tx): Unit = {
-      log(s"remoE <$id>")
-      eventStore.remove(_.writeInt(id))
-    }
-
-    // we could use two independent counters, but well... let's keep it simple.
-    private[stm] def newEventIDValue()(implicit tx: S#Tx): Int = newIDValue()
 
     @field private[this] val idCntVar = step { implicit tx =>
       val _id = store.get(_.writeInt(0))(_.readInt()).getOrElse(1)
@@ -118,10 +92,7 @@ object DurableImpl {
       b.result()
     }
 
-    def close(): Unit = {
-      eventStore.close()
-      store     .close()
-    }
+    def close(): Unit = store.close()
 
     def numRecords(implicit tx: S#Tx): Int = store.numEntries
 
@@ -178,18 +149,11 @@ object DurableImpl {
 
     final def newID(): S#ID = new IDImpl[S](system.newIDValue()(this))
 
-//    final def newPartialID(): S#ID = newID()
-
     final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val res = new VarImpl[S, A](system.newIDValue()(this), ser)
       res.setInit(init)(this)
       res
     }
-
-//    final def newLocalVar[A](init: S#Tx => A): LocalVar[S#Tx, A] = new impl.LocalVarImpl[S, A](init)
-//
-//    final def newPartialVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
-//      newVar(id, init)
 
     final def newCachedVar[A](init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val res = new CachedVarImpl[S, A](system.newIDValue()(this), Ref(init), ser)
@@ -232,16 +196,10 @@ object DurableImpl {
     final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, A](_.id)
 
-//    final def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] =
-//      new IDMapImpl[S, A](newID())
-
     final def readVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val id = in./* PACKED */ readInt()
       new VarImpl[S, A](id, ser)
     }
-
-//    final def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
-//      readVar(pid, in)
 
     final def readCachedVar[A](in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val id = in./* PACKED */ readInt()
@@ -517,8 +475,8 @@ object DurableImpl {
 
  }
 
-  private final class System(@field protected val store     : DataStore,
-                             @field protected val eventStore: DataStore)
+  private final class System(@field val store     : DataStore
+                             /*, @field protected val eventStore: DataStore */)
     extends Mixin[Durable, InMemory] with Durable {
 
     private type S = Durable
