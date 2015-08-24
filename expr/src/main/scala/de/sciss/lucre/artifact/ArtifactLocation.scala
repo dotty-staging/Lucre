@@ -78,7 +78,7 @@ object ArtifactLocation extends Obj.Type {
 /** An artifact location is a directory on an external storage. */
 trait ArtifactLocation[S <: Sys[S]] extends Obj[S] with Publisher[S, ArtifactLocation.Update[S]] {
   def directory(implicit tx: S#Tx): File
-  def iterator (implicit tx: S#Tx): data.Iterator[S#Tx, Artifact[S]]
+  def iterator (implicit tx: S#Tx): Iterator[Artifact[S]]
 
   def modifiableOption: Option[ArtifactLocation.Modifiable[S]]
 }

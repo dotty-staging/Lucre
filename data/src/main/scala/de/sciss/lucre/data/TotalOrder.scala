@@ -452,20 +452,20 @@ object TotalOrder {
        * the `dirty` iterator are about to be relabelled, but at the point of calling
        * this method the tags still carry their previous values.
        */
-      def beforeRelabeling(/* inserted: A, */ dirty: Iterator[Tx, A])(implicit tx: Tx): Unit
+      def beforeRelabeling(/* inserted: A, */ dirty: Iterator[A])(implicit tx: Tx): Unit
 
       /**
        * This method is invoked right after relabelling finishes. That is, the items in
        * the `clean` iterator have been relabelled and the tags carry their new values.
        */
-      def afterRelabeling(/* inserted: A, */ clean: Iterator[Tx, A])(implicit tx: Tx): Unit
+      def afterRelabeling(/* inserted: A, */ clean: Iterator[A])(implicit tx: Tx): Unit
     }
 
     final class NoRelabelObserver[Tx /* <: Txn[ _ ] */ , A]
       extends RelabelObserver[Tx, A] {
 
-      def beforeRelabeling(/* inserted: A, */ dirty: Iterator[Tx, A])(implicit tx: Tx) = ()
-      def afterRelabeling (/* inserted: A, */ clean: Iterator[Tx, A])(implicit tx: Tx) = ()
+      def beforeRelabeling(/* inserted: A, */ dirty: Iterator[A])(implicit tx: Tx) = ()
+      def afterRelabeling (/* inserted: A, */ clean: Iterator[A])(implicit tx: Tx) = ()
 
       override def toString = "NoRelabelObserver"
     }
@@ -662,16 +662,16 @@ object TotalOrder {
     */
   private final class RelabelIterator[S <: Sys[S], A](recOff: Int, num: Int, recE: Map.Entry[S, A],
                                                       firstK: KeyOption[S, A],
-                                                      entryView: A => Map.Entry[S, A])
-    extends Iterator[S#Tx, A] {
+                                                      entryView: A => Map.Entry[S, A])(implicit tx: S#Tx)
+    extends Iterator[A] {
 
     private var currK: KeyOption[S, A] = firstK
     private var cnt = 0
 
-    def hasNext(implicit tx: S#Tx): Boolean = cnt < num
+    def hasNext: Boolean = cnt < num
 
-    def next()(implicit tx: S#Tx): A = {
-      if (cnt == num) endReached()
+    def next(): A = {
+      if (cnt == num) throw new java.util.NoSuchElementException("next on empty iterator")
       val res = currK.get
       cnt += 1
       // if we're reaching the recE, skip it.

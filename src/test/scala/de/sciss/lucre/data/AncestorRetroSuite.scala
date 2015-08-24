@@ -323,7 +323,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
   final class RelabelObserver[S <: Sys[S], V <: VertexLike[S, V]](name: String,
                                                                   t: SkipOctree[S, IntSpace.ThreeDim, V])
   extends TotalOrder.Map.RelabelObserver[ S#Tx, VertexSource[ S, V ]] {
-    def beforeRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[S#Tx, VertexSource[S, V]])
+    def beforeRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[S, V]])
                         (implicit tx: S#Tx): Unit = {
       if (verbose) println(s"RELABEL $name - begin")
       //         val v0 = v0s.source
@@ -349,7 +349,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
       if (verbose) println("RELABEL " + name + " - end")
     }
 
-    def afterRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[S#Tx, VertexSource[S, V]])
+    def afterRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[S, V]])
                        (implicit tx: S#Tx): Unit = {
       if (verbose) println(s"RELABEL $name + begin")
       //         val v0 = v0s.source

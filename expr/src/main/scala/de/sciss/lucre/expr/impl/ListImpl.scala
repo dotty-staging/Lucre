@@ -14,8 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre.data.Iterator
-import de.sciss.lucre.event.{impl => eimpl, Targets}
+import de.sciss.lucre.event.{Targets, impl => eimpl}
 import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
@@ -72,12 +71,12 @@ object ListImpl {
                                               val pred: S#Var[Cell[S, A]],
                                               val succ: S#Var[Cell[S, A]])
 
-  private final class Iter[S <: Sys[S], A](private var cell: Cell[S, A]) extends Iterator[S#Tx, A] {
+  private final class Iter[S <: Sys[S], A](private var cell: Cell[S, A])(implicit tx: S#Tx) extends Iterator[A] {
     override def toString = if (cell == null) "empty iterator" else "non-empty iterator"
 
-    def hasNext(implicit tx: S#Tx) = cell != null
+    def hasNext: Boolean = cell != null
 
-    def next()(implicit tx: S#Tx): A = {
+    def next(): A = {
       if (cell == null) throw new NoSuchElementException("next on empty iterator")
       val res = cell.elem
       cell    = cell.succ()
@@ -352,6 +351,6 @@ object ListImpl {
       if (rec != null) rec.elem else throw new NoSuchElementException("last of empty list")
     }
 
-    final def iterator(implicit tx: S#Tx): Iterator[S#Tx, A] = new Iter(headRef())
+    final def iterator(implicit tx: S#Tx): Iterator[A] = new Iter(headRef())
   }
 }

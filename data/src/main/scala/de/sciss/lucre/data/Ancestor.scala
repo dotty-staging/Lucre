@@ -510,10 +510,10 @@ object Ancestor {
     }
 
     // ---- RelabelObserver ----
-    final def beforeRelabeling(iter: Iterator[S#Tx, M])(implicit tx: S#Tx): Unit =
+    final def beforeRelabeling(iter: Iterator[M])(implicit tx: S#Tx): Unit =
       iter.foreach(skip -= _)
 
-    final def afterRelabeling(iter: Iterator[S#Tx, M])(implicit tx: S#Tx): Unit =
+    final def afterRelabeling(iter: Iterator[M])(implicit tx: S#Tx): Unit =
       iter.foreach(skip += _)
 
     final def debugPrint(implicit tx: S#Tx): String = {

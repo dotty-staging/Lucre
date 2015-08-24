@@ -131,7 +131,7 @@ object ArtifactImpl {
 
     override def toString = s"ArtifactLocation$id"
 
-    def iterator(implicit tx: S#Tx): data.Iterator[S#Tx, Artifact[S]] = artifacts.iterator
+    def iterator(implicit tx: S#Tx): Iterator[Artifact[S]] = artifacts.iterator
 
     def modifiableOption: Option[Location.Modifiable[S]] = Some(this)
 

@@ -874,7 +874,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
     this
   }
 
-  final def rangeQuery[Area](qs: QueryShape[Area, D])(implicit tx: S#Tx): Iterator[S#Tx, A] = {
+  final def rangeQuery[Area](qs: QueryShape[Area, D])(implicit tx: S#Tx): Iterator[A] = {
     val q = new RangeQuery(qs)
     q.findNextValue()
     q
@@ -1031,7 +1031,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
     l.parent.demoteLeaf(point /* pointView( l.value ) */ , l)
   }
 
-  final def iterator(implicit tx: S#Tx): Iterator[S#Tx, A] = skipList.iterator.map(_.value)
+  final def iterator(implicit tx: S#Tx): Iterator[A] = skipList.iterator.map(_.value)
 
   private final class NNIter[M](val bestLeaf: LeafOrEmpty, val bestDist: M, val rmax: M)
 
@@ -1587,7 +1587,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
   }
 
   // note: Iterator is not specialized, hence we can safe use the effort to specialize in A anyway
-  private final class RangeQuery[Area](qs: QueryShape[Area, D]) extends Iterator[S#Tx, A] {
+  private final class RangeQuery[Area](qs: QueryShape[Area, D])(implicit tx: S#Tx) extends Iterator[A] {
     val sz          = numOrthants
     val stabbing    = MQueue.empty[(BranchLike, Area)]
     // Tuple2 is specialized for Long, too!
@@ -1600,9 +1600,9 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
 
     //      findNextValue()
 
-    override def toString = octree.toString + ".rangeQuery(" + qs + ")"
+    override def toString = s"$octree.rangeQuery($qs)"
 
-    def hasNext(implicit tx: S#Tx): Boolean = hasNextVar
+    def hasNext: Boolean = hasNextVar
 
     // search downwards:
     // "At each square q ∈ Qi we either go to a child square in Qi
@@ -1657,14 +1657,14 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
       }
     }
 
-    def next()(implicit tx: S#Tx): A = {
-      if (!hasNextVar) endReached()
+    def next(): A = {
+      if (!hasNextVar) throw new java.util.NoSuchElementException("next on empty iterator")
       val res = current
       findNextValue()
       res
     }
 
-    def findNextValue()(implicit tx: S#Tx): Unit = {
+    def findNextValue(): Unit = {
       while (true) {
         if (in.isEmpty) {
           if (stabbing.isEmpty) {

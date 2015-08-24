@@ -109,7 +109,7 @@ trait List[S <: Sys[S], A] extends Obj[S] with Publisher[S, List.Update[S, A]] {
   def head(implicit tx: S#Tx): A
   def last(implicit tx: S#Tx): A
 
-  def iterator(implicit tx: S#Tx): data.Iterator[S#Tx, A]
+  def iterator(implicit tx: S#Tx): Iterator[A]
 
   def modifiableOption: Option[List.Modifiable[S, A]]
 

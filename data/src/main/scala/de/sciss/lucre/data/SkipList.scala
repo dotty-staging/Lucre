@@ -100,8 +100,8 @@ object SkipList {
 
   trait Map[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ B] extends SkipList[S, A, (A, B)] {
 
-    def keysIterator  (implicit tx: S#Tx): Iterator[S#Tx, A]
-    def valuesIterator(implicit tx: S#Tx): Iterator[S#Tx, B]
+    def keysIterator  (implicit tx: S#Tx): Iterator[A]
+    def valuesIterator(implicit tx: S#Tx): Iterator[B]
 
     /** Inserts a new entry into the map.
       *
@@ -182,7 +182,7 @@ sealed trait SkipList[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) *
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
 
-  def iterator(implicit tx: S#Tx): Iterator[S#Tx, E]
+  def iterator(implicit tx: S#Tx): Iterator[E]
 
   def debugPrint()(implicit tx: S#Tx): String
 

@@ -15,11 +15,10 @@ package de.sciss.lucre
 package bitemp
 
 import de.sciss.lucre.bitemp.impl.{BiGroupImpl => Impl}
-import de.sciss.lucre.data.Iterator
 import de.sciss.lucre.event.{EventLike, Publisher}
-import de.sciss.lucre.expr.{SpanLikeObj, Expr}
+import de.sciss.lucre.expr.SpanLikeObj
 import de.sciss.lucre.geom.LongSquare
-import de.sciss.lucre.stm.{Elem, Obj, Identifiable, Sys}
+import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 import de.sciss.span.SpanLike
@@ -126,7 +125,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
 
   def modifiableOption: Option[BiGroup.Modifiable[S, A]]
 
-  def iterator(implicit tx: S#Tx): data.Iterator[S#Tx, Leaf[S, A]]
+  def iterator(implicit tx: S#Tx): Iterator[Leaf[S, A]]
 
   /** Queries all elements intersecting a given point in time.
     * That is, returns an iterator of all elements whose span contains the time point
@@ -137,7 +136,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     * @param time the point in time to search at
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def intersect(time: Long)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
+  def intersect(time: Long)(implicit tx: S#Tx): Iterator[Leaf[S, A]]
 
   /** Queries all elements intersecting a given time span.
     * That is, returns an iterator of all elements whose span contains or partly overlaps the query span.
@@ -148,7 +147,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     * @param span the the span to search within (this may be a half-bounded interval or even `Span.All`)
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def intersect(span: SpanLike)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
+  def intersect(span: SpanLike)(implicit tx: S#Tx): Iterator[Leaf[S, A]]
 
   /** Performs a range query according to separate intervals for the allowed start and stop positions
     * of the element spans. That is, returns an iterator of all elements whose span satisfies the
@@ -167,7 +166,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     * @param stop    the constraint for the stop position of the spans of the elements filtered.
     * @return  a (possibly empty) iterator of the intersecting elements
     */
-  def rangeSearch(start: SpanLike, stop: SpanLike)(implicit tx: S#Tx): Iterator[S#Tx, Leaf[S, A]]
+  def rangeSearch(start: SpanLike, stop: SpanLike)(implicit tx: S#Tx): Iterator[Leaf[S, A]]
 
   /** Queries the closest event (an element's span starting or stopping) at the given time or later
     *
@@ -198,7 +197,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     *          start at the query time, the second iterator (`_2`) contains the event which
     *          stop at the query time
     */
-  def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[S#Tx, Leaf[S, A]], Iterator[S#Tx, Leaf[S, A]])
+  def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[Leaf[S, A]], Iterator[Leaf[S, A]])
 
   def debugList(implicit tx: S#Tx): List[(SpanLike, A)]
 

@@ -114,9 +114,9 @@ trait Map[S <: Sys[S], K, V] extends Obj[S] with Publisher[S, Map.Update[S, K, V
     */
   def size(implicit tx: S#Tx): Int
 
-  def iterator      (implicit tx: S#Tx): data.Iterator[S#Tx, (K, V)]
-  def keysIterator  (implicit tx: S#Tx): data.Iterator[S#Tx, K]
-  def valuesIterator(implicit tx: S#Tx): data.Iterator[S#Tx, V]
+  def iterator      (implicit tx: S#Tx): Iterator[(K, V)]
+  def keysIterator  (implicit tx: S#Tx): Iterator[K]
+  def valuesIterator(implicit tx: S#Tx): Iterator[V]
 
   /** Searches for the map for a given key.
     *

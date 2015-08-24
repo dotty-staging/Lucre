@@ -172,13 +172,13 @@ object HASkipList {
       new MapLeaf(en)
     }
 
-    def keysIterator(implicit tx: S#Tx): Iterator[S#Tx, A] = {
+    def keysIterator(implicit tx: S#Tx): Iterator[A] = {
       val i = new KeyIteratorImpl
       i.init()
       i
     }
 
-    def valuesIterator(implicit tx: S#Tx): Iterator[S#Tx, B] = {
+    def valuesIterator(implicit tx: S#Tx): Iterator[B] = {
       val i = new ValueIteratorImpl
       i.init()
       i
@@ -216,13 +216,13 @@ object HASkipList {
       if (c eq null) None else stepRight(c)
     }
 
-    private final class KeyIteratorImpl extends IteratorImpl[A] {
+    private final class KeyIteratorImpl(implicit tx: S#Tx) extends IteratorImpl[A] {
       protected def getValue(l: Leaf[S, A, (A, B)], idx: Int): A = l.key(idx)
 
       override def toString = "KeyIterator"
     }
 
-    private final class ValueIteratorImpl extends IteratorImpl[B] {
+    private final class ValueIteratorImpl(implicit tx: S#Tx) extends IteratorImpl[B] {
       protected def getValue(l: Leaf[S, A, (A, B)], idx: Int): B = l.entry(idx)._2
 
       override def toString = "ValueIterator"
@@ -862,7 +862,7 @@ object HASkipList {
       }
     }
 
-    final def iterator(implicit tx: S#Tx): Iterator[S#Tx, E] = {
+    final def iterator(implicit tx: S#Tx): Iterator[E] = {
       val i = new EntryIteratorImpl
       i.init()
       i
@@ -886,13 +886,13 @@ object HASkipList {
       }
     }
 
-    private final class EntryIteratorImpl extends IteratorImpl[E] {
+    private final class EntryIteratorImpl(implicit tx: S#Tx) extends IteratorImpl[E] {
       protected def getValue(l: Leaf[S, A, E], idx: Int): E = l.entry(idx)
 
       override def toString = "Iterator"
     }
 
-    protected sealed abstract class IteratorImpl[/* @spec(ialized) */ C] extends Iterator[S#Tx, C] {
+    protected sealed abstract class IteratorImpl[/* @spec(ialized) */ C](implicit tx: S#Tx) extends Iterator[C] {
       private var l: Leaf[S, A, E]  = null
       private var nextValue: C      = _
       private var isRight           = true
@@ -921,10 +921,10 @@ object HASkipList {
         if (c ne null) pushDown(c, 0, r = true)
       }
 
-      def hasNext(implicit tx: S#Tx): Boolean = l ne null // ordering.nequiv( nextKey, maxKey )
+      def hasNext: Boolean = l ne null // ordering.nequiv( nextKey, maxKey )
 
-      def next()(implicit tx: S#Tx): C = {
-        if (!hasNext) throw endReached()
+      def next(): C = {
+        if (!hasNext) throw new java.util.NoSuchElementException("next on empty iterator")
         val res = nextValue
         idx += 1
         if (idx == (if (isRight) l.size - 1 else l.size) /* || ordering.equiv( l.key( idx ), maxKey ) */ ) {

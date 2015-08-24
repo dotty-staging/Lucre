@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.event.ReactionMap
+import de.sciss.lucre.event.{EventLike, ReactionMap}
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
@@ -66,23 +66,6 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   def newVarArray[A](size: Int): Array[S#Var[A]]
 
-  //  def newPartialID(): S#ID
-  //  def newPartialVar[A](id: S#ID, init: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
-
-  // def newLocalVar[A](init: S#Tx => A): LocalVar[S#Tx, A]
-
-  //  /** Creates a new durable transactional map for storing and retrieving values based on a mutable's identifier
-  //    * as key. If a system is confluently persistent, the `get` operation will find the most recent key that
-  //    * matches the search key.
-  //    *
-  //    * ID maps can be used by observing views to look up associated view meta data even though they may be
-  //    * presented with a more recent access path of the model peer (e.g. when a recent event is fired and observed).
-  //    *
-  //    * @param serializer the serializer for values in the map
-  //    * @tparam A         the value type in the map
-  //    */
-  //  def newDurableIDMap[A](implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A]
-
   /** Creates a new in-memory transactional map for storing and retrieving values based on a mutable's identifier
     * as key. If a system is confluently persistent, the `get` operation will find the most recent key that
     * matches the search key. Objects are not serialized but kept live in memory.
@@ -99,13 +82,7 @@ trait Txn[S <: Sys[S]] extends TxnLike {
   def readIntVar    (id: S#ID, in: DataInput): S#Var[Int]
   def readLongVar   (id: S#ID, in: DataInput): S#Var[Long]
 
-  // def readPartialVar[A](id: S#ID, in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
-
   def readID(in: DataInput, acc: S#Acc): S#ID
-
-  // def readPartialID(in: DataInput, acc: S#Acc): S#ID
-
-  // def readDurableIDMap[A](in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A]
 
   /** Creates a handle (in-memory) to refresh a stale version of an object, assuming that the future transaction is issued
     * from the same cursor that is used to create the handle, except for potentially having advanced.
@@ -118,8 +95,6 @@ trait Txn[S <: Sys[S]] extends TxnLike {
     */
   def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A]
 
-  // ---- former `Obj` ----
-
   // ---- completion ----
 
   def beforeCommit(fun: S#Tx => Unit): Unit
@@ -131,13 +106,24 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   def use[A](context: S#Context)(fun: => A): A
 
-  // ---- former event ----
+  // ---- events ----
 
   private[lucre] def reactionMap: ReactionMap[S]
 
-//  private[lucre] def newEventVar[A]    (id: S#ID)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
-//  private[lucre] def readEventVar[A]   (id: S#ID, in: DataInput)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): event.Var[S, A]
+  // ---- attributes ----
 
-//  private[lucre] def newEventValidity (id: S#ID): event.Validity[S#Tx]
-//  private[lucre] def readEventValidity(id: S#ID, in: DataInput): event.Validity[S#Tx]
+//  def attr[Repr[~ <: Sys[~]] <: Obj[~]](key: String)(implicit tx: S#Tx): Option[Repr[S]] = ???
+//
+//  def attrGet(key: String)(implicit tx: S#Tx): Option[Obj[S]] = ???
+//
+//  def attrContains(key: String)(implicit tx: S#Tx): Boolean = ???
+//
+//  def attrKeys(implicit tx: S#Tx): Set[String] = ???
+//
+//  def attrIterator(implicit tx: S#Tx): Iterator[S#Tx, (String, Obj[S])] = ???
+//
+//  def attrPut   [Repr[~ <: Sys[~]] <: Obj[~]](key: String, value: Repr[S])(implicit tx: S#Tx): Unit     = ???
+//  def attrRemove(key: String               )(implicit tx: S#Tx): Boolean  = ???
+//
+//  def attrChanged: EventLike[S, AttrUpdate[S]] = ???
 }

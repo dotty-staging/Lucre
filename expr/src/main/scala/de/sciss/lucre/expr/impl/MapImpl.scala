@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
-import de.sciss.lucre.data.{Iterator, Ordering, SkipList}
+import de.sciss.lucre.data.{Ordering, SkipList}
 import de.sciss.lucre.expr.Map.{Key, Modifiable}
 import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
@@ -117,11 +117,11 @@ object MapImpl {
       vec.find(_.key == key).map(_.value)
     }
 
-    final def iterator(implicit tx: S#Tx): Iterator[S#Tx, (K, V)] = peer.iterator.flatMap {
+    final def iterator(implicit tx: S#Tx): Iterator[(K, V)] = peer.iterator.flatMap {
       case (key, vec) => vec.map(entry => key -> entry.value)
     }
-    final def keysIterator  (implicit tx: S#Tx): Iterator[S#Tx, K] = peer.valuesIterator.flatMap(_.map(_.key  ))
-    final def valuesIterator(implicit tx: S#Tx): Iterator[S#Tx, V] = peer.valuesIterator.flatMap(_.map(_.value))
+    final def keysIterator  (implicit tx: S#Tx): Iterator[K] = peer.valuesIterator.flatMap(_.map(_.key  ))
+    final def valuesIterator(implicit tx: S#Tx): Iterator[V] = peer.valuesIterator.flatMap(_.map(_.value))
 
     final def size(implicit tx: S#Tx): Int = {
       // XXX TODO: a bit ugly...
