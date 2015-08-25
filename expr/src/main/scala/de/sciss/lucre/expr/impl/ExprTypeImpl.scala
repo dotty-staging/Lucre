@@ -77,6 +77,8 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     serializer[S].read(in, access)
 
   final def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Const[S] = {
+    val tpe = in.readInt()
+    if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
     val cookie = in.readByte()
     if (cookie != 3) sys.error(s"Unexpected cookie $cookie")
     readIdentifiedConst(in, access)
@@ -90,6 +92,8 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   }
 
   final def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Var[S] = {
+    val tpe = in.readInt()
+    if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
     val targets = Targets.read[S](in, access)
     val cookie = in.readByte()
     if (cookie != 0) sys.error(s"Unexpected cookie $cookie")
