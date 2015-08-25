@@ -115,7 +115,7 @@ object MapImpl {
     final def keysIterator  (implicit tx: S#Tx): Iterator[K] = peer.valuesIterator.flatMap(_.map(_.key  ))
     final def valuesIterator(implicit tx: S#Tx): Iterator[V] = peer.valuesIterator.flatMap(_.map(_.value))
 
-    final def get[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] =
+    final def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] =
       peer.get(key).flatMap { vec =>
         vec.collectFirst {
           case entry if entry.key == key && ct.runtimeClass.isAssignableFrom(entry.value.getClass) =>

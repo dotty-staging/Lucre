@@ -139,7 +139,7 @@ trait Map[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
 
-  def get[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
+  def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
 
   // def viewGet(key: K)(implicit tx: S#Tx): stm.Source[S#Tx, Option[V]]
 }
