@@ -1424,7 +1424,7 @@ object HASkipList {
 
       val id      = tx.readID(in, access)
       val version = in.readByte()
-      require(version == SER_VERSION, s"Incompatible serialized version (found $version, required $SER_VERSION).")
+      if (version != SER_VERSION) sys.error(s"Incompatible serialized version (found $version, required $SER_VERSION).")
 
       val minGap = in.readByte()
       new MapImpl[S, A, B](id, minGap, keyObserver, list => tx.readVar[Node[S, A, B]](id, in)(list))

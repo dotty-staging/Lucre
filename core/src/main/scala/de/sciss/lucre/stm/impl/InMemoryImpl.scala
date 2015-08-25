@@ -179,10 +179,10 @@ object InMemoryImpl {
 
     // ---- attributes ----
 
-    def attrGet[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String): Option[Repr[S]] =
-      system.attrMap.getOrElse(obj.id, Map.empty)(this).get(key).asInstanceOf[Option[Repr[S]]]
+    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] =
+      system.attrMap.getOrElse(obj.id, Map.empty)(this).get(key)
 
-    def attrPut[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String, value: Repr[S]): Unit = {
+    def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = {
       val a    = system.attrMap
       val id   = obj.id
       val map0 = a.getOrElse(id, Map.empty)(this)

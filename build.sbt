@@ -34,8 +34,8 @@ lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root: Project = Project(id = baseNameL, base = file("."))
-  .aggregate(core, expr, data, durable, confluent, bdb, bdb6)
-  .dependsOn(core, expr, data, durable, confluent, bdb /* , bdb6 */)
+  .aggregate(core, data, expr, durable, confluent, bdb, bdb6)
+  .dependsOn(core, data, expr, durable, confluent, bdb /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -64,6 +64,13 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
     buildInfoPackage := "de.sciss.lucre"
   )
 
+lazy val data = Project(id = s"$baseNameL-data", base = file("data"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    licenses := Seq(lgpl)
+  )
+
 lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
   .dependsOn(data)
   .settings(commonSettings)
@@ -77,21 +84,14 @@ lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
   )
 
 lazy val durable = Project(id = s"$baseNameL-durable", base = file("durable"))
-  .dependsOn(core)
-  .settings(commonSettings)
-  .settings(
-    licenses := Seq(lgpl)
-  )
-
-lazy val data = Project(id = s"$baseNameL-data", base = file("data"))
-  .dependsOn(core)
+  .dependsOn(data)
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl)
   )
 
 lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
-  .dependsOn(durable, data)
+  .dependsOn(durable)
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),

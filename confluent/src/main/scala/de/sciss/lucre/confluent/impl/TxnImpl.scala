@@ -129,8 +129,8 @@ trait TxnMixin[S <: Sys[S]]
 
   // ---- attributes ----
 
-  def attrGet[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String): Option[Repr[S]] = ???
-  def attrPut[Repr[~ <: Sys[~]] <: Obj[~]](obj: Obj[S], key: String, value: Repr[S]): Unit = ???
+  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ???
+  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ???
   def attrRemove(obj: Obj[S], key: String): Unit = ???
 
   def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ???
