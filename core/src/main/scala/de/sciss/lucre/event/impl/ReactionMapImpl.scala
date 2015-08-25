@@ -16,17 +16,19 @@ package impl
 
 import de.sciss.lucre.stm.{IdentifierMap, Sys}
 
+import scala.collection.immutable.{Map => IMap}
+
 object ReactionMapImpl {
   def apply[S <: Sys[S]](implicit tx: S#Tx): ReactionMap[S] = new Impl[S](tx.newInMemoryIDMap)
 
-  private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]])
+  private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#ID, S#Tx, IMap[Int, List[Observer[S, _]]]])
     extends Mixin[S] {
 
     override def toString = s"ReactionMap@${hashCode.toHexString}"
   }
 
   trait Mixin[S <: Sys[S]] extends ReactionMap[S] {
-    protected def eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]]
+    protected def eventMap: IdentifierMap[S#ID, S#Tx, IMap[Int, List[Observer[S, _]]]]
 
     // self-reference useful when Mixin is added to an event.Sys
     def reactionMap: ReactionMap[S] = this
@@ -34,7 +36,7 @@ object ReactionMapImpl {
     final def addEventReaction[A](event: Event[S, A], observer: Observer[S, A])(implicit tx: S#Tx): Boolean = {
       val id    = event.node.id
       val slot  = event.slot
-      val map0  = eventMap.getOrElse(id  , Map.empty)
+      val map0  = eventMap.getOrElse(id  , IMap.empty)
       val list0 = map0    .getOrElse(slot, Nil)
       val list1 = list0 ::: observer :: Nil
       val map1  = map0 + (slot -> list1)
@@ -58,7 +60,7 @@ object ReactionMapImpl {
     }
 
     def getEventReactions[A](event: Event[S, A])(implicit tx: S#Tx): List[Observer[S, A]] =
-      eventMap.getOrElse(event.node.id, Map.empty).getOrElse(event.slot, Nil)
+      eventMap.getOrElse(event.node.id, IMap.empty).getOrElse(event.slot, Nil)
         .asInstanceOf[List[Observer[S, A]]]
 
     def hasEventReactions[A](event: Event[S, A])(implicit tx: S#Tx): Boolean =

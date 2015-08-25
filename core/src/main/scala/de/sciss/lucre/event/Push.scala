@@ -18,6 +18,7 @@ import de.sciss.lucre.stm.Sys
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
 import scala.collection.breakOut
+import scala.collection.immutable.{Map => IMap}
 
 object Push {
   private[event] def apply[S <: Sys[S], A](origin: Event[S, A], update: A)(implicit tx: S#Tx): Unit = {
@@ -33,7 +34,7 @@ object Push {
 
   private def NoParents[S <: Sys[S]]: Parents[S] = Set.empty[Event[S, Any]]
 
-  // private type Visited[S <: Sys[S]] = Map[Event[S, Any], Parents[S]]
+  // private type Visited[S <: Sys[S]] = IMap[Event[S, Any], Parents[S]]
   private final class Reaction[S <: Sys[S], +A](update: A, observers: List[Observer[S, A]]) {
     def apply()(implicit tx: S#Tx): Unit =
       observers.foreach(_.apply(update))
@@ -41,8 +42,8 @@ object Push {
 
   private final class Impl[S <: Sys[S]](origin: Event[S, Any], val update: Any)(implicit tx: S#Tx)
     extends Pull[S] {
-    private var pushMap   = Map(origin -> NoParents[S])
-    private var pullMap   = Map.empty[EventLike[S, Any], Option[Any]]
+    private var pushMap   = IMap(origin -> NoParents[S])
+    private var pullMap   = IMap.empty[EventLike[S, Any], Option[Any]]
 
     private var indent    = ""
 
