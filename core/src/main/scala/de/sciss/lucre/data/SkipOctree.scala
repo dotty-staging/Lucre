@@ -11,14 +11,13 @@
  *  contact@sciss.de
  */
 
-package de.sciss
-package lucre
-package data
+package de.sciss.lucre.data
 
-import geom.{Space, DistanceMeasure, QueryShape}
-import collection.immutable.{IndexedSeq => Vec}
-import stm.{Mutable, Sys}
-import de.sciss.serial.{DataOutput, DataInput, Serializer}
+import de.sciss.lucre.geom.{DistanceMeasure, QueryShape, Space}
+import de.sciss.lucre.stm.{Mutable, Sys}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
+
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 object SkipOctree {
   implicit def nonTxnPointView[D <: Space[D], A](implicit view: A => D#PointLike): (A, Any) => D#PointLike =

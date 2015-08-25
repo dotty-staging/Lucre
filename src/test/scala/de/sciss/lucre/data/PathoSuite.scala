@@ -1,7 +1,7 @@
 package de.sciss.lucre.data
 
+import de.sciss.lucre.geom.{IntPoint2D, IntSpace, IntSquare}
 import de.sciss.lucre.stm.InMemory
-import de.sciss.lucre.geom.{IntSquare, IntPoint2D, IntSpace}
 import org.scalatest.FunSpec
 
 /*

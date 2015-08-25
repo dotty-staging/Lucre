@@ -1,7 +1,6 @@
-package de.sciss.lucre
-package data
+package de.sciss.lucre.data
 
-import stm.InMemory
+import de.sciss.lucre.stm.InMemory
 
 /*
 Output:

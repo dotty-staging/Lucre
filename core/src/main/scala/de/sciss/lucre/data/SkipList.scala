@@ -11,13 +11,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss
-package lucre
-package data
+package de.sciss.lucre.data
 
-import stm.{Mutable, Sys}
-import collection.immutable.{IndexedSeq => Vec}
-import de.sciss.serial.{DataOutput, DataInput, Serializer}
+import de.sciss.lucre.stm.{Mutable, Sys}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
+
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 object SkipList {
   /** A trait for observing the promotion and demotion of a key

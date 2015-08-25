@@ -16,7 +16,8 @@ package de.sciss.lucre.stm.impl
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm.InMemoryLike.Var
-import de.sciss.lucre.stm.{Obj, Sys, IdentifierMap, InMemory, InMemoryLike, Source, TxnLike}
+import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Obj, Source, TxnLike}
+import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TMap, TxnExecutor}
@@ -33,8 +34,8 @@ object InMemoryImpl {
     final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
-    final private[lucre] val attrMap: IdentifierMap[S#ID, S#Tx, Map[String, Obj[S]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[String, Obj[S]]](_.id)
+    final private[lucre] val attrMap: IdentifierMap[S#ID, S#Tx, Obj.AttrMap[S]] =
+      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Obj.AttrMap[S]](_.id)
 
     final private[lucre] def newIDValue()(implicit tx: S#Tx): Int = {
       val peer  = tx.peer
@@ -179,32 +180,37 @@ object InMemoryImpl {
 
     // ---- attributes ----
 
-    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] =
-      system.attrMap.getOrElse(obj.id, Map.empty)(this).get(key)
-
-    def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = {
-      val a    = system.attrMap
-      val id   = obj.id
-      val map0 = a.getOrElse(id, Map.empty)(this)
-      val map1 = map0 + (key -> value)
-      a.put(id, map1)(this)
+    def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
+      implicit val tx = this
+      system.attrMap.getOrElse(obj.id, evt.Map.Modifiable[S, String, Obj[S]])
     }
 
-    def attrRemove(obj: Obj[S], key: String): Unit = {
-      val a    = system.attrMap
-      val id   = obj.id
-      val map0 = a.getOrElse(id, Map.empty)(this)
-      if (map0.nonEmpty) {
-        val map1 = map0 - key
-        if (map1.isEmpty)
-          a.remove(id)(this)
-        else
-          a.put(id, map1)(this)
-      }
-    }
-
-    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] =
-      system.attrMap.get(obj.id)(this).fold[Iterator[(String, Obj[S])]](Iterator.empty)(_.iterator)
+//    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] =
+//      system.attrMap.getOrElse(obj.id, Map.empty)(this).get(key)
+//
+//    def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = {
+//      val a    = system.attrMap
+//      val id   = obj.id
+//      val map0 = a.getOrElse(id, Map.empty)(this)
+//      val map1 = map0 + (key -> value)
+//      a.put(id, map1)(this)
+//    }
+//
+//    def attrRemove(obj: Obj[S], key: String): Unit = {
+//      val a    = system.attrMap
+//      val id   = obj.id
+//      val map0 = a.getOrElse(id, Map.empty)(this)
+//      if (map0.nonEmpty) {
+//        val map1 = map0 - key
+//        if (map1.isEmpty)
+//          a.remove(id)(this)
+//        else
+//          a.put(id, map1)(this)
+//      }
+//    }
+//
+//    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] =
+//      system.attrMap.get(obj.id)(this).fold[Iterator[(String, Obj[S])]](Iterator.empty)(_.iterator)
   }
 
   private final class System extends Mixin[InMemory] with InMemory {

@@ -11,11 +11,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.event
 package impl
 
 import de.sciss.lucre.data.{Ordering, SkipList}
-import de.sciss.lucre.expr.Map.{Key, Modifiable}
+import de.sciss.lucre.event.Map.{Key, Modifiable}
 import de.sciss.lucre.stm.impl.ObjSerializer
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}

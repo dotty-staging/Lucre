@@ -1,8 +1,7 @@
-package de.sciss.lucre
-package data
+package de.sciss.lucre.data
 
-import stm.InMemory
-import de.sciss.lucre.geom.{IntDistanceMeasure2D, IntPoint2D, IntSquare, IntSpace}
+import de.sciss.lucre.geom.{IntDistanceMeasure2D, IntPoint2D, IntSpace, IntSquare}
+import de.sciss.lucre.stm.InMemory
 
 object NNPerf extends App {
   type S  = InMemory

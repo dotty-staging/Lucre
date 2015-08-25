@@ -11,12 +11,13 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
 
 import de.sciss.lucre.data.SkipList
-import de.sciss.lucre.event.{Observer, ReactionMap}
+import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.event.impl.ReactionMapImpl
+import de.sciss.lucre.event.{Observer, ReactionMap}
+import de.sciss.lucre.stm._
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.elidable
@@ -260,42 +261,53 @@ object DurableImpl {
 
     // ---- attributes ----
 
-    private[this] type AttrMap = SkipList.Map[S, String, Obj[S]]
+//    private[this] type AttrMap = SkipList.Map[S, String, Obj[S]]
 
-    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = {
+    def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
       val mId = obj.id.id.toLong << 32
       implicit val tx = this
-      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
-      mapOpt.flatMap(_.get(key))
-    }
-
-    def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = {
-      // we could go with one extra bit, but right now there
-      // is already a long-read method, so we'll
-      // use it for now.
-      val mId = obj.id.id.toLong << 32
-      implicit val tx = this
-      val map: AttrMap = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
-        .getOrElse(SkipList.Map.empty[S, String, Obj[S]])
-      map.add(key -> value)
-    }
-
-    def attrRemove(obj: Obj[S], key: String): Unit = {
-      val mId = obj.id.id.toLong << 32
-      implicit val tx = this
-      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
-      mapOpt.foreach { map =>
-        map.remove(key)
-        if (map.isEmpty) system.remove(mId)
+      val mapOpt: Option[Obj.AttrMap[S]] = system.tryRead(mId)(evt.Map.Modifiable.read[S, String, Obj[S]](_, ()))
+      mapOpt.getOrElse {
+        val map = evt.Map.Modifiable[S, String, Obj[S]]
+        system.write(mId)(map.write)
+        map
       }
     }
 
-    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = {
-      val mId = obj.id.id.toLong << 32
-      implicit val tx = this
-      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
-      mapOpt.fold[Iterator[(String, Obj[S])]](Iterator.empty)(_.iterator)
-    }
+//    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = {
+//      val mId = obj.id.id.toLong << 32
+//      implicit val tx = this
+//      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
+//      mapOpt.flatMap(_.get(key))
+//    }
+
+//    def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = {
+//      // we could go with one extra bit, but right now there
+//      // is already a long-read method, so we'll
+//      // use it for now.
+//      val mId = obj.id.id.toLong << 32
+//      implicit val tx = this
+//      val map: AttrMap = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
+//        .getOrElse(SkipList.Map.empty[S, String, Obj[S]])
+//      map.add(key -> value)
+//    }
+
+//    def attrRemove(obj: Obj[S], key: String): Unit = {
+//      val mId = obj.id.id.toLong << 32
+//      implicit val tx = this
+//      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
+//      mapOpt.foreach { map =>
+//        map.remove(key)
+//        if (map.isEmpty) system.remove(mId)
+//      }
+//    }
+//
+//    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = {
+//      val mId = obj.id.id.toLong << 32
+//      implicit val tx = this
+//      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
+//      mapOpt.fold[Iterator[(String, Obj[S])]](Iterator.empty)(_.iterator)
+//    }
   }
 
   private final class IDImpl[S <: D[S]](@field val id: Int) extends DurableLike.ID[S] {

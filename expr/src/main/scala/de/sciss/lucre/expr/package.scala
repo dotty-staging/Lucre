@@ -15,7 +15,7 @@ package de.sciss.lucre
 
 import de.sciss.lucre.artifact.{Artifact, ArtifactLocation}
 import de.sciss.lucre.bitemp.{BiPin, BiGroup}
-import de.sciss.lucre.event.Targets
+import de.sciss.lucre.event.{Map, Targets}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.ImmutableSerializer
 import de.sciss.span.{Span, SpanLike}

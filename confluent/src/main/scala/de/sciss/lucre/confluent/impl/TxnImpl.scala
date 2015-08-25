@@ -129,11 +129,13 @@ trait TxnMixin[S <: Sys[S]]
 
   // ---- attributes ----
 
-  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ???
-  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ???
-  def attrRemove(obj: Obj[S], key: String): Unit = ???
+  def attrMap(obj: Obj[S]): Obj.AttrMap[S] = ???
 
-  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ???
+//  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ???
+//  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ???
+//  def attrRemove(obj: Obj[S], key: String): Unit = ???
+//
+//  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ???
 
   // ----
 
@@ -144,7 +146,7 @@ trait TxnMixin[S <: Sys[S]]
     })(in => {
       in./* PACKED */ readInt()  // tree index!
       in./* PACKED */ readInt()
-    })(this).getOrElse(sys.error(s"Trying to access inexistent vertex ${term.toInt}"))
+    })(this).getOrElse(sys.error(s"Trying to access non-existent vertex ${term.toInt}"))
   }
 
   final def addInputVersion(path: S#Acc): Unit = {

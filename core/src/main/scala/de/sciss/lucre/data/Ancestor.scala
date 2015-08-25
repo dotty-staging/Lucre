@@ -11,9 +11,7 @@
  *  contact@sciss.de
  */
 
-package de.sciss
-package lucre
-package data
+package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.IntSpace.ThreeDim
 import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}

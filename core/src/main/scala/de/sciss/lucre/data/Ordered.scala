@@ -11,8 +11,7 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
-package data
+package de.sciss.lucre.data
 
 trait Ordered[-Tx, -A] {
   def compare(that: A)(implicit tx: Tx): Int

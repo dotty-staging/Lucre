@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
 import de.sciss.serial.{DataInput, Serializer}
@@ -41,6 +42,15 @@ object Obj {
 
   def addType(tpe: Type): Unit      = Impl.addType(tpe)
   def getType(id : Int ): Obj.Type  = Impl.getType(id )
+
+  // ---- attributes ----
+
+  type AttrMap    [S <: Sys[S]] = evt.Map.Modifiable[S, String, Obj[S]]
+  type AttrUpdate [S <: Sys[S]] = evt.Map.Update [S, String, Obj[S]]
+  val  AttrAdded                = evt.Map.Added
+  type AttrAdded  [S <: Sys[S]] = evt.Map.Added  [S, String, Obj[S]]
+  val  AttrRemoved              = evt.Map.Removed
+  type AttrRemoved[S <: Sys[S]] = evt.Map.Removed[S, String, Obj[S]]
 }
 
 /** An `Obj` is a type of element that has an `S#ID` identifier and
@@ -50,4 +60,6 @@ trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
   override def toString = s"Obj$id"
 
   override def tpe: Obj.Type
+
+  final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
 }

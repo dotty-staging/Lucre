@@ -11,8 +11,7 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
-package data
+package de.sciss.lucre.data
 
 object Ordering {
   implicit object Int extends Ordering[Any, scala.Int] {

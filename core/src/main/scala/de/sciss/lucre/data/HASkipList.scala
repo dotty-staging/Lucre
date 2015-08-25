@@ -11,15 +11,14 @@
  *  contact@sciss.de
  */
 
-package de.sciss
-package lucre
-package data
+package de.sciss.lucre.data
 
-import collection.mutable
-import collection.immutable.{IndexedSeq => Vec, Set => ISet}
-import annotation.{switch, tailrec}
-import stm.{Mutable, Sink, Sys}
-import serial.{DataInput, DataOutput, Serializer}
+import de.sciss.lucre.stm.{Mutable, Sink, Sys}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
+
+import scala.annotation.{switch, tailrec}
+import scala.collection.immutable.{IndexedSeq => Vec, Set => ISet}
+import scala.collection.mutable
 
 /** A transactional version of the deterministic k-(2k+1) top-down operated skip list
   * as described in T. Papadakis, Skip Lists and Probabilistic Analysis of

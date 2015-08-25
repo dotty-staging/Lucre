@@ -11,13 +11,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss
-package lucre
-package data
+package de.sciss.lucre.data
 
-import annotation.{switch, tailrec}
-import stm.{Mutable, Sys}
-import serial.{Writable, Serializer, DataInput, DataOutput}
+import de.sciss.lucre.stm.{Mutable, Sys}
+import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
+
+import scala.annotation.{switch, tailrec}
 
 /**
  * A transactional data structure to maintain an ordered sequence of elements such

@@ -11,18 +11,18 @@
  *  contact@sciss.de
  */
 
-package de.sciss
-package lucre
-package data
+package de.sciss.lucre.data
 
-import collection.immutable.{IndexedSeq => Vec}
-import collection.mutable.{PriorityQueue => MPriorityQueue, Queue => MQueue}
-import scala.annotation.{elidable, switch, tailrec}
-import geom.{QueryShape, DistanceMeasure, Space}
-import stm.{Identifiable, Sys, Mutable}
-import serial.{Writable, DataInput, DataOutput, Serializer}
 import java.io.PrintStream
+
+import de.sciss.lucre.geom.{DistanceMeasure, QueryShape, Space}
+import de.sciss.lucre.stm.{Identifiable, Mutable, Sys}
 import de.sciss.serial.impl.ByteArrayOutputStream
+import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
+
+import scala.annotation.{elidable, switch, tailrec}
+import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.collection.mutable.{PriorityQueue => MPriorityQueue, Queue => MQueue}
 
 /** A transactional deterministic skip octree as outlined in the paper by Eppstein et al.
   * It is constructed from a given space (dimensions) and a skip-gap parameter
@@ -461,8 +461,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
   extends SkipOctree[S, D, A] {
   octree =>
 
-  import DeterministicSkipOctree.{SER_VERSION, opNotSupported,
-    stat_reset, stat_rounds1, stat_pq_add1, stat_pq_rem1, stat_report, stat_debug}
+  import DeterministicSkipOctree.{SER_VERSION, opNotSupported, stat_debug, stat_pq_add1, stat_pq_rem1, stat_report, stat_reset, stat_rounds1}
 
   private type Order = TotalOrder.Set.Entry[S]
 

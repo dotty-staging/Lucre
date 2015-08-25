@@ -11,10 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.event
 
-import de.sciss.lucre.event.Publisher
-import de.sciss.lucre.expr.impl.{MapImpl => Impl}
+import de.sciss.lucre.event.impl.{MapImpl => Impl}
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
@@ -23,7 +22,9 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 
 object Map extends Obj.Type {
   final val typeID = 24
-  
+
+  override def init(): Unit = ()  // this type is known in advance
+
   object Key {
     implicit object Int extends Key[Int] {
       final val typeID  = 2 // IntObj.typeID

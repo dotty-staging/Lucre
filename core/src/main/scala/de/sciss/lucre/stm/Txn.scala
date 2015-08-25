@@ -113,11 +113,13 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- attributes ----
 
-  def attrPut   (obj: Obj[S], key: String, value: Obj[S]): Unit
-  def attrGet   (obj: Obj[S], key: String): Option[Obj[S]]
-  def attrRemove(obj: Obj[S], key: String): Unit
+  def attrMap(obj: Obj[S]): Obj.AttrMap[S]
 
-  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])]
+  //  def attrPut   (obj: Obj[S], key: String, value: Obj[S]): Unit
+  //  def attrGet   (obj: Obj[S], key: String): Option[Obj[S]]
+  //  def attrRemove(obj: Obj[S], key: String): Unit
+  //
+  //  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])]
 
   // def attrChanged: EventLike[S, AttrUpdate[S]]
 }

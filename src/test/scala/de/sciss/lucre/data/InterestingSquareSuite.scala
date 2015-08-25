@@ -1,8 +1,7 @@
-package de.sciss.lucre
-package data
+package de.sciss.lucre.data
 
+import de.sciss.lucre.geom.{IntPoint2D => P, IntSquare => Q}
 import org.scalatest.FunSpec
-import de.sciss.lucre.geom.{IntSquare => Q, IntPoint2D => P}
 
 /*
  To run only this suite
