@@ -56,7 +56,7 @@ object Map extends Obj.Type {
       Impl[S, K, V]
 
     def read[S <: Sys[S], K: Key, V <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, K, V] =
-      Impl.modRead(in, access)
+      serializer[S, K, V].read(in, access)
 
     implicit def serializer[S <: Sys[S], K: Key, V <: Elem[S]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
       Impl.modSerializer
@@ -85,7 +85,7 @@ object Map extends Obj.Type {
 
   def read[S <: Sys[S], K: Key, V <: Elem[S]](in: DataInput, access: S#Acc)
                                        (implicit tx: S#Tx): Map[S, K, V] =
-    Impl.read(in, access)
+    serializer[S, K, V].read(in, access)
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)

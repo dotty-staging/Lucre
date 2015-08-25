@@ -50,26 +50,14 @@ object MapImpl {
     def tpe = Map
   }
 
-  def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
-                                       (implicit tx: S#Tx, keyType: Key[K]): Map[S, K, V] =
-    modRead(in, access)  // currently the same
-
-  def modRead[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
-                                          (implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, V] = {
-    val keyTypeID = in.readInt()
-    if (keyTypeID != keyType.typeID) sys.error(s"Type mismatch. Expected key ${keyType.typeID} but found $keyTypeID")
-    val targets   = evt.Targets.read(in, access)
-    read(in, access, targets)
-  }
-
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+    val targets   = evt.Targets.read(in, access)
     val keyTypeID = in.readInt()
     val keyType   = Key(keyTypeID) // Obj.getType(keyTypeID).asInstanceOf[Key[_]]
-    val targets   = evt.Targets.read(in, access)
-    read(in, access, targets)(tx, keyType)
+    mkRead(in, access, targets)(tx, keyType)
   }
 
-  private def read[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  private def mkRead[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                (implicit tx: S#Tx, keyType: Key[K]): Impl[S, K, V] =
     new Impl[S, K, V](targets) {
       val peer = SkipList.Map.read[S, K, Vec[Entry[K, V]]](in, access)(tx, keyOrdering, keyType.serializer,
