@@ -76,8 +76,13 @@ object Type {
     // ---- public ----
 
     object Var {
-      def unapply[S <: Sys[S]](expr: Ex[S]): Option[Var[S]] =
-        if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[S]]) else None
+      def unapply[S <: Sys[S]](expr: Ex[S]): Option[Var[S]] = {
+        // !!! this wrongly reports `true` for `Const`, probably due
+        // to some erasure that scalac doesn't warn about
+        // if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[S]]) else None
+
+        if (expr.isInstanceOf[stm.Var[_, _]]) Some(expr.asInstanceOf[Var[S]]) else None
+      }
     }
 
     implicit def newConst [S <: Sys[S]](value: A     )(implicit tx: S#Tx): Const[S]
