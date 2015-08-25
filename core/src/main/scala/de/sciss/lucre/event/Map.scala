@@ -134,7 +134,7 @@ trait Map[S <: Sys[S], K, V] extends Obj[S] with Publisher[S, Map.Update[S, K, V
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
 
-  def apply[Repr[~ <: Sys[~]] <: V](key: K)(implicit tx: S#Tx, ct: ClassTag[Repr[S]]): Option[Repr[S]]
+  def get[Repr[~ <: Sys[~]] <: V](key: K)(implicit tx: S#Tx, ct: ClassTag[Repr[S]]): Option[Repr[S]]
 
   // def viewGet(key: K)(implicit tx: S#Tx): stm.Source[S#Tx, Option[V]]
 }
