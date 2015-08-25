@@ -21,7 +21,7 @@ import de.sciss.lucre.expr.SpanLikeObj
 import de.sciss.lucre.geom.LongSpace.TwoDim
 import de.sciss.lucre.geom.{DistanceMeasure, LongDistanceMeasure2D, LongPoint2D, LongPoint2DLike, LongRectangle, LongSpace}
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -190,8 +190,8 @@ object BiGroupImpl {
   }
 
   private[lucre] final class EntryImpl[S <: Sys[S], A <: Elem[S]](val targets : evt.Targets[S],
-                                                                     val span : SpanLikeObj[S],
-                                                                     val value: A)
+                                                                  val span : SpanLikeObj[S],
+                                                                  val value: A)
     extends evti.SingleNode[S, Change[SpanLike]] with Entry[S, A] {
 
     def tpe: Obj.Type = Entry
@@ -199,6 +199,9 @@ object BiGroupImpl {
     override def toString = s"Entry$id"
 
     object changed extends Changed with evti.Root[S, Change[SpanLike]]
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new EntryImpl(Targets[S], copy(span), copy(value)).connect()
 
     protected def writeData(out: DataOutput): Unit = {
       span .write(out)
@@ -427,19 +430,28 @@ object BiGroupImpl {
   }
 
   def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
-    new Impl[S, A] {
-      protected val targets = evt.Targets[S]
-      final def tpe: Obj.Type = BiGroup
-
+    new Impl1[S, A](Targets[S]) {
       val tree: TreeImpl[S, A] = newTree()
     }
 
   private def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
                                             (implicit tx: S#Tx): Impl[S, A] =
-    new Impl[S, A] {
-      protected val targets: evt.Targets[S] = _targets
-      final def tpe: Obj.Type = BiGroup
-
+    new Impl1[S, A](_targets) {
       val tree: TreeImpl[S, A] = readTree(in, access)
     }
+
+  private abstract class Impl1[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S]) extends Impl[S, A] { in =>
+    final def tpe: Obj.Type = BiGroup
+
+    final private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
+      new Impl1[S, A](Targets[S]) { out =>
+        val tree: TreeImpl[S, A] = newTree()
+        context.provide(in, out)
+        in.iterator.foreach { case (span, xsIn) =>
+          val xsOut = xsIn.map(entry => context(entry).asInstanceOf[EntryImpl[S, A]]) // XXX TODO --- should go with Entry
+          out.tree.add(span -> xsOut)
+        }
+        // connect()
+      }
+  }
 }

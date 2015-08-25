@@ -20,7 +20,7 @@ import de.sciss.lucre.artifact.Artifact.Modifiable
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.List
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{NoSys, Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Copy, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -36,7 +36,7 @@ object ArtifactImpl {
   def apply[S <: Sys[S]](location: Location[S], child: Child)(implicit tx: S#Tx): Artifact.Modifiable[S] = {
     val targets = evt.Targets[S]
     val _child  = tx.newVar(targets.id, child.path)
-    new Impl[S](targets, location, _child)
+    new Impl[S](targets, location, _child) // .connect()
   }
 
   def copy[S <: Sys[S]](from: Artifact[S])(implicit tx: S#Tx): Artifact.Modifiable[S] =
@@ -125,13 +125,14 @@ object ArtifactImpl {
 
     override def toString = s"ArtifactLocation$id"
 
-//    override def copy()(implicit tx: S#Tx): Obj[S] = {
-//      val res = Location(this.directory)
-//      iterator.foreach { child =>
-//        res.add(child.value)  // XXX TODO will lose object properties
-//      }
-//      res
-//    }
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] = {
+      val res = Location(this.directory)
+      copy.provide(this, res)
+      iterator.foreach { child =>
+        res.addDirect(copy(child))
+      }
+      res
+    }
 
     def iterator(implicit tx: S#Tx): Iterator[Artifact[S]] = artifacts.iterator
 
@@ -146,15 +147,16 @@ object ArtifactImpl {
       }
     }
 
-    object changed extends Changed
-      with evt.impl.Generator[S, Location.Update[S]]
-      with evt.impl.Root     [S, Location.Update[S]]
+    object changed extends Changed with evt.impl.RootGenerator[S, Location.Update[S]]
 
     def remove(artifact: Artifact[S])(implicit tx: S#Tx): Unit = {
       val idx = artifacts.indexOf(artifact)
       if (!artifacts.remove(artifact)) throw new NoSuchElementException(s"Artifact $artifact was not found in the store")
       changed.fire(Location.Removed(loc, idx, artifact))
     }
+
+    private[artifact] def addDirect(artifact: Artifact[S])(implicit tx: S#Tx): Unit =
+      artifacts.addLast(artifact)
 
     def add(file: File)(implicit tx: S#Tx): Artifact.Modifiable[S] = {
       val base      = _directory()
@@ -188,7 +190,8 @@ object ArtifactImpl {
 
     override def toString = s"Artifact$id"
 
-
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      ArtifactImpl(copy(location), child)
 
     def modifiableOption: Option[Modifiable[S]] = Some(this)
 

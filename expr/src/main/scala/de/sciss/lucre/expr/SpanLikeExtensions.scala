@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span, SpanLike}
@@ -84,6 +84,9 @@ object SpanLikeExtensions {
     extends impl.Tuple1[S, SpanLike, T1, SpanLikeObj, ReprT1] with SpanLikeObj[S] {
 
     def tpe: Obj.Type = SpanLikeObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple1(Targets[S], op, copy(_1)).connect()
   }
 
   final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
@@ -93,6 +96,9 @@ object SpanLikeExtensions {
     extends impl.Tuple2[S, SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2] with SpanLikeObj[S] {
 
     def tpe: Obj.Type = SpanLikeObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   // ---- operators ----

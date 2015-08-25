@@ -51,7 +51,11 @@ object ArtifactLocation extends Obj.Type {
       * @param file   the file to turn into a registered artifact
       */
     def add(file: File)(implicit tx: S#Tx): Artifact.Modifiable[S]
+
     def remove(artifact: Artifact[S])(implicit tx: S#Tx): Unit
+
+    /** Internal method used during copying. Does not fire event. */
+    private[artifact] def addDirect(artifact: Artifact[S])(implicit tx: S#Tx): Unit
 
     def directory_=(value: File)(implicit tx: S#Tx): Unit
   }

@@ -17,11 +17,10 @@ package impl
 import de.sciss.lucre.data.{Ordering, SkipList}
 import de.sciss.lucre.event.Map.{Key, Modifiable}
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Elem, Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -81,13 +80,13 @@ object MapImpl {
     
     // ---- implemented ----
 
-//    def copy()(implicit tx: S#Tx): Obj[S] = {
-//      val res = Map.Modifiable[S, K, Elem /* Repr */]
-//      iterator.foreach { case (k, v) =>
-//        res.put(k, v.copy()) // Obj.copy[S](v))
-//      }
-//      res
-//    }
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] = {
+      val res = Map.Modifiable[S, K, Elem /* Repr */]
+      iterator.foreach { case (k, v) =>
+        res.put(k, copy(v))
+      }
+      res
+    }
 
     implicit object keyOrdering extends Ordering[S#Tx, K] {
       def compare(a: K, b: K)(implicit tx: S#Tx): Int = {

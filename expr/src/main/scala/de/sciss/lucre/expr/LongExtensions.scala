@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
@@ -108,6 +108,9 @@ object LongExtensions {
     extends impl.Tuple2[S, Long, T1, T2, LongObj, ReprT1, ReprT2] with LongObj[S] {
 
     def tpe: Obj.Type = LongObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
@@ -115,6 +118,9 @@ object LongExtensions {
     extends impl.Tuple1[S, Long, T1, LongObj, ReprT1] with LongObj[S] {
 
     def tpe: Obj.Type = LongObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple1(Targets[S], op, copy(_1)).connect()
   }
 
   object UnaryOp {

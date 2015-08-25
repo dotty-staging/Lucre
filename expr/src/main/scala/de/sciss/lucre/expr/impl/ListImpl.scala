@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.event.{Targets, impl => eimpl}
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -25,16 +25,14 @@ import scala.annotation.{switch, tailrec}
 object ListImpl {
   import de.sciss.lucre.expr.List.Modifiable
 
-  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] = {
-
+  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
     new Impl[S, A] {
       protected val targets = evt.Targets[S]
       protected val sizeRef = tx.newIntVar(id, 0)
       protected val headRef = tx.newVar[C](id, null)(CellSer)
       protected val lastRef = tx.newVar[C](id, null)(CellSer)
     }
-  }
-  
+
   def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, List[S, A]] =
     anySer.asInstanceOf[Ser[S, A]]
 
@@ -96,6 +94,18 @@ object ListImpl {
     protected def sizeRef: S#Var[Int]
 
     override def toString = s"List$id"
+
+    // private type ListR[~ <: Sys[~]] = Modifiable[~, A]  // auxiliary
+
+    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
+      val out = newModifiable[S, A]
+      context.provide(this, out)
+      this.iterator.foreach { elem =>
+        out.addLast(context(elem))
+      }
+      // .connect
+      out
+    }
 
     // ---- event behaviour ----
 

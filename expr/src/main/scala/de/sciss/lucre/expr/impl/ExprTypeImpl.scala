@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr
-import de.sciss.lucre.stm.{Obj, NoSys, Sys}
+import de.sciss.lucre.stm.{Elem, Copy, Obj, NoSys, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
@@ -67,11 +67,11 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Var[S] = {
     val targets = Targets[S]
     val ref     = tx.newVar[Ex[S]](targets.id, init)
-    mkVar[S](targets, ref)
+    mkVar[S](targets, ref, connect = true)
   }
 
   protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S]
-  protected def mkVar  [S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S]
+  protected def mkVar  [S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)(implicit tx: S#Tx): Var[S]
 
   final def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
     serializer[S].read(in, access)
@@ -104,7 +104,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   private[this] def readIdentifiedVar[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                                   (implicit tx: S#Tx): Var[S] = {
     val ref = tx.readVar[Ex[S]](targets.id, in)
-    mkVar[S](targets, ref)
+    mkVar[S](targets, ref, connect = false)
   }
 
   // ---- private ----
@@ -115,12 +115,21 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     final def tpe: Obj.Type = self
 
     final protected def writeData(out: DataOutput): Unit = valueSerializer.write(constValue, out)
+
+    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
+      mkConst(tx.newID(), constValue)
   }
 
   protected trait VarImpl[S <: Sys[S]]
     extends expr.impl.VarImpl[S, A, Ex[S]] {
 
     final def tpe: Obj.Type = self
+
+    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
+      val newTgt = Targets[S]
+      val newVr  = tx.newVar(newTgt.id, context(ref()))
+      mkVar[S](newTgt, newVr, connect = true)
+    }
   }
 
   private[this] val anySer    = new Ser   [NoSys]

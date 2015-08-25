@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Copy, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput}
@@ -55,6 +55,9 @@ object BooleanExtensions  {
     extends impl.Tuple1[S, Boolean, T1, BooleanObj, ReprT1] with BooleanObj[S] {
 
     def tpe: Obj.Type = BooleanObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple1(Targets[S], op, copy(_1)).connect()
   }
 
   private[this] object BooleanTuple2s extends Type.Extension1[BooleanObj] {
@@ -126,6 +129,9 @@ object BooleanExtensions  {
     extends impl.Tuple2[S, Boolean, T1, T2, BooleanObj, ReprT1, ReprT2] with BooleanObj[S] {
 
     def tpe: Obj.Type = BooleanObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   private[this] case object Not extends UnaryOp[Boolean, BooleanObj] {
@@ -148,7 +154,7 @@ object BooleanExtensions  {
     def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Ex[S] = {
       val _1 = BooleanObj.read(in, access)
       val _2 = BooleanObj.read(in, access)
-      new LazyTuple2(op, targets, _1, _2)
+      new LazyTuple2(targets, op, _1, _2)
     }
 
     def isLazy: Boolean
@@ -159,7 +165,7 @@ object BooleanExtensions  {
 
     final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanObj.newConst(value(ca, cb))
-      case _ => new LazyTuple2(this, Targets[S], a, b).connect()
+      case _ => new LazyTuple2(Targets[S], this, a, b).connect()
     }
   }
 
@@ -178,7 +184,7 @@ object BooleanExtensions  {
     }
   }
 
-  private final class LazyTuple2[S <: Sys[S]](op: BooleanBinaryOp, protected val targets: evt.Targets[S],
+  private final class LazyTuple2[S <: Sys[S]](protected val targets: evt.Targets[S], op: BooleanBinaryOp,
                                               _1: Ex[S], _2: Ex[S])
     extends impl.NodeImpl[S, Boolean] with BooleanObj[S] {
 
@@ -198,6 +204,9 @@ object BooleanExtensions  {
     protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
     def value(implicit tx: S#Tx): Boolean = op.lazyValue(_1, _2)
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new LazyTuple2(Targets[S], op, copy(_1), copy(_2)).connect()
 
     protected def writeData(out: DataOutput): Unit = {
       out.writeByte(1)  // 'node not var'

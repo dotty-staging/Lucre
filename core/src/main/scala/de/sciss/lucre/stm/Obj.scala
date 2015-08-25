@@ -18,6 +18,8 @@ import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
 import de.sciss.serial.{DataInput, Serializer}
 
+import scala.language.higherKinds
+
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 
@@ -25,6 +27,11 @@ object Obj {
 //    // XXX TODO copy attributes as well
 //    obj.copy()
 //  }
+
+  def copy[S <: Sys[S], Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[S])(implicit tx: S#Tx): Repr[S] = {
+    val context = new impl.CopyImpl[S]
+    context(in)
+  }
 
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer
 

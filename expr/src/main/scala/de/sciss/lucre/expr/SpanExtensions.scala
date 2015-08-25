@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.{Tuple1Op, Tuple2Op}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 import de.sciss.span.Span
 
@@ -87,6 +87,9 @@ object SpanExtensions  {
     extends impl.Tuple2[S, Span, T1, T2, SpanObj, ReprT1, ReprT2] with SpanObj[S] {
 
     def tpe: Obj.Type = SpanObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   // XXX TODO: fold constants

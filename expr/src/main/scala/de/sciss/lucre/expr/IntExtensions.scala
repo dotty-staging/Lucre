@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.{Tuple1Op, Tuple2Op}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
@@ -107,6 +107,9 @@ object IntExtensions {
     extends impl.Tuple2[S, Int, T1, T2, IntObj, ReprT1, ReprT2] with IntObj[S] {
 
     def tpe: Obj.Type = IntObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   // ---- operators ----
@@ -135,6 +138,9 @@ object IntExtensions {
     extends impl.Tuple1[S, Int, T1, IntObj, ReprT1] with IntObj[S] {
 
     def tpe: Obj.Type = IntObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple1(Targets[S], op, copy(_1)).connect()
   }
 
   // ---- Int => Int ----

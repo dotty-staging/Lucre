@@ -18,7 +18,7 @@ import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.{Expr, LongObj}
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Elem, NoSys, Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt, stm}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -86,14 +86,20 @@ object BiPinImpl {
     extends EntryImpl[S, A] with stm.impl.ConstElemImpl[S] {
 
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new ConstEntry(copy(key), copy(value))
   }
 
   private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
                                                            val key: LongObj[S], val value: A)
     extends EntryImpl[S, A] with evt.impl.SingleNode[S, Change[Long]] {
 
-    // bueno, it's not really the "root", but the type is the same
+    // ok, it's not really the "root", but the type is the same
     object changed extends Changed with evt.impl.Root[S, Change[Long]]
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new NodeEntry(Targets[S], copy(key), copy(value)).connect()
 
     protected def disposeData()(implicit tx: S#Tx) = disconnect()
 
@@ -155,7 +161,7 @@ object BiPinImpl {
     def tpe = BiPin
   }
 
-  private final class Impl[S <: Sys[S], A](protected val targets: evt.Targets[S], tree: Tree[S, A])
+  private final class Impl[S <: Sys[S], A <: Elem[S]](protected val targets: evt.Targets[S], tree: Tree[S, A])
     extends Modifiable[S, A]
     with evt.impl.SingleNode[S, Update[S, A]] {
     pin =>
@@ -165,6 +171,20 @@ object BiPinImpl {
     override def toString: String = s"BiPin${tree.id}"
 
     def modifiableOption: Option[BiPin.Modifiable[S, A]] = Some(this)
+
+    // private type EntryR[~ <: Sys[~]] = Entry[~, A]  // auxiliary
+
+    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
+      val treeOut: Tree[S, A] = SkipList.Map.empty[S, Long, Leaf[S, A]]()
+      val out = new Impl(evt.Targets[S], tree)
+      context.provide(this, out)
+      this.tree.iterator.foreach { case (time, xsIn) =>
+        val xsOut = xsIn.map(e => context(e))
+        treeOut.add(time -> xsOut)
+      }
+      // out.connect()
+      out
+    }
 
     // ---- event behaviour ----
 

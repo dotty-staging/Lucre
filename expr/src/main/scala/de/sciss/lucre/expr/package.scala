@@ -82,8 +82,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -101,8 +105,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -120,8 +128,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -139,8 +151,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -158,8 +174,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -177,8 +197,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -196,8 +220,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]
@@ -215,8 +243,12 @@ package object expr {
     protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
       new _Const[S](id, value)
 
-    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]])(implicit tx: S#Tx): Var[S] =
-      new _Var[S](targets, vr)
+    protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                    (implicit tx: S#Tx): Var[S] = {
+      val res = new _Var[S](targets, vr)
+      if (connect) res.connect()
+      res
+    }
 
     private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
       extends ConstImpl[S] with Repr[S]

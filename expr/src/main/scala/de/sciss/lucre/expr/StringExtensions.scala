@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.Tuple2Op
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 
 import scala.language.higherKinds
@@ -55,6 +55,9 @@ object StringExtensions  {
     extends impl.Tuple2[S, String, T1, T2, StringObj, ReprT1, ReprT2] with StringObj[S] {
 
     def tpe: Obj.Type = StringObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   // ----- operators -----

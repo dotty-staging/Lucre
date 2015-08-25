@@ -16,7 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Elem, Copy, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.DataInput
 
@@ -86,6 +86,9 @@ object DoubleExtensions {
     extends impl.Tuple1[S, Double, T1, DoubleObj, ReprT1] with DoubleObj[S] {
 
     def tpe: Obj.Type = DoubleObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple1(Targets[S], op, copy(_1)).connect()
   }
 
   private[this] object DoubleTuple2s extends Type.Extension1[DoubleObj] {
@@ -159,6 +162,9 @@ object DoubleExtensions {
     extends impl.Tuple2[S, Double, T1, T2, DoubleObj, ReprT1, ReprT2] with DoubleObj[S] {
 
     def tpe: Obj.Type = DoubleObj
+
+    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
+      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
   }
 
   // ----- operators -----
