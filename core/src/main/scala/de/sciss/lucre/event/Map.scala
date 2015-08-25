@@ -65,6 +65,8 @@ object Map extends Obj.Type {
   }
 
   trait Modifiable[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] extends Map[S, K, Repr] {
+    // override def copy()(implicit tx: S#Tx): Modifiable[S, K, Repr]
+
     /** Inserts a new entry into the map.
       *
       * @param  key  the key to insert

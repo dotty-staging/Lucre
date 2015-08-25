@@ -21,6 +21,11 @@ import de.sciss.serial.{DataInput, Serializer}
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 
+//  def copy[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): Obj[S] = {
+//    // XXX TODO copy attributes as well
+//    obj.copy()
+//  }
+
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer
 
   trait Type extends Elem.Type {
@@ -62,4 +67,6 @@ trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
   override def tpe: Obj.Type
 
   final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
+
+  // override def copy()(implicit tx: S#Tx): Obj[S]
 }

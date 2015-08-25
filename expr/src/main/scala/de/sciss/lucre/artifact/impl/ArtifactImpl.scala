@@ -116,14 +116,22 @@ object ArtifactImpl {
   }
 
   private final class LocationImpl[S <: Sys[S]](protected val targets: evt.Targets[S],
-                                                    _directory: S#Var[File],
-                                                    artifacts: List.Modifiable[S, Artifact[S]])
+                                                _directory: S#Var[File],
+                                                artifacts: List.Modifiable[S, Artifact[S]])
     extends Location.Modifiable[S]
     with evt.impl.SingleNode[S, Location.Update[S]] { loc =>
 
     def tpe: Obj.Type = Location
 
     override def toString = s"ArtifactLocation$id"
+
+//    override def copy()(implicit tx: S#Tx): Obj[S] = {
+//      val res = Location(this.directory)
+//      iterator.foreach { child =>
+//        res.add(child.value)  // XXX TODO will lose object properties
+//      }
+//      res
+//    }
 
     def iterator(implicit tx: S#Tx): Iterator[Artifact[S]] = artifacts.iterator
 
@@ -179,6 +187,8 @@ object ArtifactImpl {
     def tpe: Obj.Type = Artifact
 
     override def toString = s"Artifact$id"
+
+
 
     def modifiableOption: Option[Modifiable[S]] = Some(this)
 

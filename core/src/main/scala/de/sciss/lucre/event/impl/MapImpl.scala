@@ -81,6 +81,14 @@ object MapImpl {
     
     // ---- implemented ----
 
+//    def copy()(implicit tx: S#Tx): Obj[S] = {
+//      val res = Map.Modifiable[S, K, Elem /* Repr */]
+//      iterator.foreach { case (k, v) =>
+//        res.put(k, v.copy()) // Obj.copy[S](v))
+//      }
+//      res
+//    }
+
     implicit object keyOrdering extends Ordering[S#Tx, K] {
       def compare(a: K, b: K)(implicit tx: S#Tx): Int = {
         val ah = a.hashCode() // ##

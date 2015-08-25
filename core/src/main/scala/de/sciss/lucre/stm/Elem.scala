@@ -50,4 +50,6 @@ trait Elem[S <: Sys[S]] extends Writable with Disposable[S#Tx] {
   def tpe: Elem.Type
 
   private[lucre] def event(slot: Int): Event[S, Any]
+
+  // def copy()(implicit tx: S#Tx): Elem[S]
 }
