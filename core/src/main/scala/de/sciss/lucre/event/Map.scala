@@ -41,8 +41,8 @@ object Map extends Obj.Type {
     
     def apply(typeID: Int): Key[_] = (typeID: @switch) match {
       case Int   .typeID => Int
-      case Long  .typeID => Int
-      case String.typeID => Int
+      case Long  .typeID => Long
+      case String.typeID => String
     }
   }
   /** Cheesy little type class for supported immutable keys. */ 
