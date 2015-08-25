@@ -22,6 +22,8 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 object MapImpl {
   def apply[S <: Sys[S], K, V <: Elem[S]](implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, V] = {
@@ -102,7 +104,9 @@ object MapImpl {
 
     final def contains(key: K)(implicit tx: S#Tx): Boolean    = peer.get(key).exists(vec => vec.exists(_.key == key))
     final def get     (key: K)(implicit tx: S#Tx): Option[V]  = peer.get(key).flatMap { vec =>
-      vec.find(_.key == key).map(_.value)
+      vec.collectFirst {
+        case entry if entry.key == key => entry.value
+      }
     }
 
     final def iterator(implicit tx: S#Tx): Iterator[(K, V)] = peer.iterator.flatMap {
@@ -110,6 +114,14 @@ object MapImpl {
     }
     final def keysIterator  (implicit tx: S#Tx): Iterator[K] = peer.valuesIterator.flatMap(_.map(_.key  ))
     final def valuesIterator(implicit tx: S#Tx): Iterator[V] = peer.valuesIterator.flatMap(_.map(_.value))
+
+    final def apply[Repr[~ <: Sys[~]] <: V](key: K)(implicit tx: S#Tx, ct: ClassTag[Repr[S]]): Option[Repr[S]] =
+      peer.get(key).flatMap { vec =>
+        vec.collectFirst {
+          case entry if entry.key == key && ct.runtimeClass.isAssignableFrom(entry.value.getClass) =>
+            entry.value.asInstanceOf[Repr[S]]
+        }
+      }
 
     final def size(implicit tx: S#Tx): Int = {
       // XXX TODO: a bit ugly...

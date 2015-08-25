@@ -19,6 +19,8 @@ import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 object Map extends Obj.Type {
   final val typeID = 24
@@ -131,6 +133,8 @@ trait Map[S <: Sys[S], K, V] extends Obj[S] with Publisher[S, Map.Update[S, K, V
     * @return     the value if it was found at the key, otherwise `None`
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
+
+  def apply[Repr[~ <: Sys[~]] <: V](key: K)(implicit tx: S#Tx, ct: ClassTag[Repr[S]]): Option[Repr[S]]
 
   // def viewGet(key: K)(implicit tx: S#Tx): stm.Source[S#Tx, Option[V]]
 }
