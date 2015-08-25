@@ -182,7 +182,13 @@ object InMemoryImpl {
 
     def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
       implicit val tx = this
-      system.attrMap.getOrElse(obj.id, evt.Map.Modifiable[S, String, Obj])
+      val am  = system.attrMap
+      val id  = obj.id
+      am.getOrElse(id, {
+        val m = evt.Map.Modifiable[S, String, Obj]
+        am.put(id, m)
+        m
+      })
     }
 
 //    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] =
