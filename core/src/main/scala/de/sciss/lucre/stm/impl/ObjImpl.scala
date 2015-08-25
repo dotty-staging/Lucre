@@ -14,7 +14,7 @@
 package de.sciss.lucre.stm
 package impl
 
-import de.sciss.serial.{DataOutput, DataInput, Serializer}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.meta.field
 
@@ -48,4 +48,33 @@ object ObjImpl {
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = ObjImpl.read(in, access)
   }
+
+  //  implicit def attrSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] = anyAttrSer.asInstanceOf[AttrSer[S]]
+  //
+  //  @field private[this] final val anyAttrSer = new AttrSer[NoSys]
+  //
+  //  private final class AttrSer[S <: Sys[S]] extends ObjSerializer[S, AttrMap[S]] {
+  //    protected def tpe: Obj.Type = ???
+  //  }
+  //
+  //  private final class AttrImpl[S <: Sys[S]](val targets: Targets[S])
+  //    extends SingleNode[S, AttrUpdate[S]] with AttrMap[S] {
+  //
+  //
+  //    protected def writeData(out: DataOutput): Unit = ???
+  //
+  //    def changed: EventLike[S, AttrUpdate[S]] = ???
+  //
+  //    def tpe: Type = ???
+  //
+  //    protected def disposeData()(implicit tx: S#Tx): Unit = ???
+  //  }
+  //
+  //  trait AttrMap[S <: Sys[S]] extends Node[S] with Publisher[S, AttrUpdate[S]] {
+  //    def put   (key: String, value: Obj[S])(implicit tx: S#Tx): Unit
+  //    def get   (key: String)(implicit tx: S#Tx): Option[Obj[S]]
+  //    def remove(key: String)(implicit tx: S#Tx): Unit
+  //
+  //    def iterator(implicit tx: S#Tx): Iterator[(String, Obj[S])]
+  //  }
 }

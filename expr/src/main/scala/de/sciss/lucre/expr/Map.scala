@@ -16,8 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.impl.{MapImpl => Impl}
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
-import de.sciss.lucre.data
-import de.sciss.serial.{ImmutableSerializer, DataInput, Serializer}
+import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
