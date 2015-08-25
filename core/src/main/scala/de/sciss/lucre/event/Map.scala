@@ -18,7 +18,6 @@ import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.annotation.switch
-import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -54,17 +53,18 @@ object Map extends Obj.Type {
   }
 
   object Modifiable {
-    def apply[S <: Sys[S], K: Key, V <: Elem[S]](implicit tx: S#Tx): Modifiable[S, K, V] =
-      Impl[S, K, V]
+    def apply[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, K, Repr] =
+      Impl[S, K, Repr]
 
-    def read[S <: Sys[S], K: Key, V <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, K, V] =
-      serializer[S, K, V].read(in, access)
+    def read[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc)
+                                                               (implicit tx: S#Tx): Modifiable[S, K, Repr] =
+      serializer[S, K, Repr].read(in, access)
 
-    implicit def serializer[S <: Sys[S], K: Key, V <: Elem[S]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, V]] =
+    implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
       Impl.modSerializer
   }
 
-  trait Modifiable[S <: Sys[S], K, V] extends Map[S, K, V] {
+  trait Modifiable[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] extends Map[S, K, Repr] {
     /** Inserts a new entry into the map.
       *
       * @param  key  the key to insert
@@ -85,17 +85,18 @@ object Map extends Obj.Type {
     def -=(key: K)(implicit tx: S#Tx): this.type
   }
 
-  def read[S <: Sys[S], K: Key, V <: Elem[S]](in: DataInput, access: S#Acc)
-                                       (implicit tx: S#Tx): Map[S, K, V] =
-    serializer[S, K, V].read(in, access)
+  def read[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc)
+                                       (implicit tx: S#Tx): Map[S, K, Repr] =
+    serializer[S, K, Repr].read(in, access)
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
 
-  implicit def serializer[S <: Sys[S], K: Key, V <: Elem[S]]: Serializer[S#Tx, S#Acc, Map[S, K, V]] =
+  implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
     Impl.serializer
 
-  final case class Update[S <: Sys[S], K, V](map: Map[S, K, V], changes: Vec[Change[S, K, V]])
+  final case class Update[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](map: Map[S, K, Repr],
+                                                                        changes: List[Change[S, K, Repr[S]]])
 
   sealed trait Change[S <: Sys[S], K, V] {
     def key  : K
@@ -105,8 +106,12 @@ object Map extends Obj.Type {
   final case class Added  [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
   final case class Removed[S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
 }
-trait Map[S <: Sys[S], K, V] extends Obj[S] with Publisher[S, Map.Update[S, K, V]] {
-  def modifiableOption: Option[Map.Modifiable[S, K, V]]
+trait Map[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]
+  extends Obj[S] with Publisher[S, Map.Update[S, K, Repr]] {
+
+  type V = Repr[S]
+
+  def modifiableOption: Option[Map.Modifiable[S, K, Repr]]
 
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
@@ -134,7 +139,7 @@ trait Map[S <: Sys[S], K, V] extends Obj[S] with Publisher[S, Map.Update[S, K, V
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
 
-  def get[Repr[~ <: Sys[~]] <: V](key: K)(implicit tx: S#Tx, ct: ClassTag[Repr[S]]): Option[Repr[S]]
+  def get[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
 
   // def viewGet(key: K)(implicit tx: S#Tx): stm.Source[S#Tx, Option[V]]
 }

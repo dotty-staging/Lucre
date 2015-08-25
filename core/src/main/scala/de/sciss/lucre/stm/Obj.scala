@@ -45,8 +45,8 @@ object Obj {
 
   // ---- attributes ----
 
-  type AttrMap    [S <: Sys[S]] = evt.Map.Modifiable[S, String, Obj[S]]
-  type AttrUpdate [S <: Sys[S]] = evt.Map.Update [S, String, Obj[S]]
+  type AttrMap    [S <: Sys[S]] = evt.Map.Modifiable[S, String, Obj]
+  type AttrUpdate [S <: Sys[S]] = evt.Map.Update [S, String, Obj]
   val  AttrAdded                = evt.Map.Added
   type AttrAdded  [S <: Sys[S]] = evt.Map.Added  [S, String, Obj[S]]
   val  AttrRemoved              = evt.Map.Removed

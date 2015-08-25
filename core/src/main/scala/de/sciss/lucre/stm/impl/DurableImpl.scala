@@ -266,9 +266,9 @@ object DurableImpl {
     def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
       val mId = obj.id.id.toLong << 32
       implicit val tx = this
-      val mapOpt: Option[Obj.AttrMap[S]] = system.tryRead(mId)(evt.Map.Modifiable.read[S, String, Obj[S]](_, ()))
+      val mapOpt: Option[Obj.AttrMap[S]] = system.tryRead(mId)(evt.Map.Modifiable.read[S, String, Obj](_, ()))
       mapOpt.getOrElse {
-        val map = evt.Map.Modifiable[S, String, Obj[S]]
+        val map = evt.Map.Modifiable[S, String, Obj]
         system.write(mId)(map.write)
         map
       }
