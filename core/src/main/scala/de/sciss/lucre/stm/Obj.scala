@@ -61,5 +61,5 @@ trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
 
   override def tpe: Obj.Type
 
-  final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
+  final def attrMap(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
 }

@@ -56,16 +56,16 @@ object MapImpl {
 
   def modRead[S <: Sys[S], K, V <: Elem[S]](in: DataInput, access: S#Acc)
                                           (implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, V] = {
-    val targets   = evt.Targets.read(in, access)
     val keyTypeID = in.readInt()
     if (keyTypeID != keyType.typeID) sys.error(s"Type mismatch. Expected key ${keyType.typeID} but found $keyTypeID")
+    val targets   = evt.Targets.read(in, access)
     read(in, access, targets)
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
-    val targets   = evt.Targets.read(in, access)
     val keyTypeID = in.readInt()
     val keyType   = Key(keyTypeID) // Obj.getType(keyTypeID).asInstanceOf[Key[_]]
+    val targets   = evt.Targets.read(in, access)
     read(in, access, targets)(tx, keyType)
   }
 
