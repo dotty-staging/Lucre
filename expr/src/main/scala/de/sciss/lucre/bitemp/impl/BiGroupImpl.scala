@@ -262,6 +262,12 @@ object BiGroupImpl {
 
     def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
 
+    protected final def copyTree(in: TreeImpl[S, A], out: TreeImpl[S, A])(implicit tx: S#Tx, context: Copy[S]): Unit =
+      in.iterator.foreach { case (span, xsIn) =>
+        val xsOut = xsIn.map(entry => context(entry))
+        out.add(span -> xsOut)
+      }
+
     // Note: must be after `EntrySer`
     protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, A] =
       SkipOctree.empty[S, TwoDim, LeafImpl[S, A]](BiGroup.MaxSquare)
@@ -442,12 +448,6 @@ object BiGroupImpl {
 
   private abstract class Impl1[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S]) extends Impl[S, A] { in =>
     final def tpe: Obj.Type = BiGroup
-
-    protected final def copyTree(in: TreeImpl[S, A], out: TreeImpl[S, A])(implicit tx: S#Tx, context: Copy[S]): Unit =
-      in.iterator.foreach { case (span, xsIn) =>
-        val xsOut = xsIn.map(entry => context(entry))
-        out.add(span -> xsOut)
-      }
 
     final private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
       new Impl1[S, A](Targets[S]) { out =>
