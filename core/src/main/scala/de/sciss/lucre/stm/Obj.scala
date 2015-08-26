@@ -29,7 +29,7 @@ object Obj {
 //  }
 
   def copy[S <: Sys[S], Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[S])(implicit tx: S#Tx): Repr[S] = {
-    val context = new impl.CopyImpl[S]
+    val context = Copy[S]
     context(in)
   }
 
