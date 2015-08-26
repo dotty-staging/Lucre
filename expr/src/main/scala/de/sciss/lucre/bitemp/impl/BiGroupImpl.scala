@@ -283,6 +283,8 @@ object BiGroupImpl {
       def -= (entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = entry.changed -/-> this
 
       def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[BiGroup.Update[S, A]] = {
+        if (pull.isOrigin(this)) return Some(pull.resolve)
+
         val par = pull.parents(this)
         log(s"$this.pullUpdate -> parents = $par")
 
