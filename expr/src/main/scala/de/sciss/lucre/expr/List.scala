@@ -86,6 +86,11 @@ object List extends Obj.Type {
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
+
+//  /** Hint key for copying the list. The value is a predicate function `(A) => Boolean`
+//    * to determine which elements to copy. If absent, the entire list is copied
+//    */
+//  final val hintFilter = "filter"
 }
 
 /** An observable linked list with fast `head` and `last` operations.

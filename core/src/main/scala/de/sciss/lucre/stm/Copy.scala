@@ -33,6 +33,9 @@ trait Copy[S <: Sys[S]] {
 
   def getHint[Repr <: Elem[S]](in: Repr, key: String): Option[Any]
 
+  /** Copies all attributes from input to output. */
+  def copyAttr(in: Obj[S], out: Obj[S]): Unit
+
   /** Stores an early copy of an object from within its own `copy` method,
     * to allow mutual correspondences.
     */

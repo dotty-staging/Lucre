@@ -69,6 +69,8 @@ object ListImpl {
                                               val pred: S#Var[Cell[S, A]],
                                               val succ: S#Var[Cell[S, A]])
 
+  private final val filterAll = (in: Any) => true
+
   private final class Iter[S <: Sys[S], A](private var cell: Cell[S, A])(implicit tx: S#Tx) extends Iterator[A] {
     override def toString = if (cell == null) "empty iterator" else "non-empty iterator"
 
@@ -98,10 +100,13 @@ object ListImpl {
     // private type ListR[~ <: Sys[~]] = Modifiable[~, A]  // auxiliary
 
     private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
-      val out = newModifiable[S, A]
+      val out     = newModifiable[S, A]
+      // val filter  = context.getHint(this, List.hintFilter).asInstanceOf[Option[A => Boolean]]
+      //   .getOrElse(filterAll)
       context.provide(this, out)
       this.iterator.foreach { elem =>
-        out.addLast(context(elem))
+        // if (filter(elem))
+          out.addLast(context(elem))
       }
       // .connect
       out

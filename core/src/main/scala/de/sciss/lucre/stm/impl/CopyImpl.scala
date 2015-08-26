@@ -53,15 +53,19 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
   def getHint[Repr <: Elem[S]](in: Repr, key: String): Option[Any] =
     hintMap.get(in).flatMap(_.get(key))
 
+  def copyAttr(in: Obj[S], out: Obj[S]): Unit = {
+    val inAttr  = in .attr
+    val outAttr = out.attr
+    inAttr.iterator.foreach { case (key, value) =>
+      outAttr.put(key, apply(value))
+    }
+  }
+
   def apply[Repr <: Elem[S]](in: Repr): Repr = {
     val out = perform(in)
     (in, out) match {
       case (inObj: Obj[S], outObj: Obj[S]) => // copy the attributes
-        val inAttr  = inObj .attr
-        val outAttr = outObj.attr
-        inAttr.iterator.foreach { case (key, value) =>
-          outAttr.put(key, apply(value))
-        }
+        copyAttr(inObj, outObj)
       case _ =>
     }
     out
