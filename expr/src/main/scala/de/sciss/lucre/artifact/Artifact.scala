@@ -30,6 +30,12 @@ object Artifact extends Obj.Type {
 
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Artifact[S]] = Impl.serializer
 
+  def apply[S <: Sys[S]](location: ArtifactLocation[S], child: Child)(implicit tx: S#Tx): Artifact.Modifiable[S] =
+    Impl(location, child)
+
+  def apply[S <: Sys[S]](location: ArtifactLocation[S], file: File)(implicit tx: S#Tx): Artifact.Modifiable[S] =
+    apply(location, relativize(location.directory, file))
+
   def relativize(parent: File, sub: File): Child = {
     // Note: .getCanonicalFile will resolve symbolic links.
     // In order to support artifacts being symbolic links
