@@ -443,14 +443,17 @@ object BiGroupImpl {
   private abstract class Impl1[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S]) extends Impl[S, A] { in =>
     final def tpe: Obj.Type = BiGroup
 
+    protected final def copyTree(in: TreeImpl[S, A], out: TreeImpl[S, A])(implicit tx: S#Tx, context: Copy[S]): Unit =
+      in.iterator.foreach { case (span, xsIn) =>
+        val xsOut = xsIn.map(entry => context(entry))
+        out.add(span -> xsOut)
+      }
+
     final private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
       new Impl1[S, A](Targets[S]) { out =>
         val tree: TreeImpl[S, A] = newTree()
         context.provide(in, out)
-        in.iterator.foreach { case (span, xsIn) =>
-          val xsOut = xsIn.map(entry => context(entry).asInstanceOf[EntryImpl[S, A]]) // XXX TODO --- should go with Entry
-          out.tree.add(span -> xsOut)
-        }
+        copyTree(in.tree, out.tree)
         // connect()
       }
   }
