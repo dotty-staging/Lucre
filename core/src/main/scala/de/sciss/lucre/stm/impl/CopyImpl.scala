@@ -30,7 +30,7 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
     stateMap.put(in, Done(out))
   }
 
-  private def perform[Repr <: Elem[S]](in: Repr): Repr =
+  def apply[Repr <: Elem[S]](in: Repr): Repr =
     stateMap.get(in) match {
       case Some(Done(out)) => out.asInstanceOf[Repr]
       case Some(Busy) => throw new IllegalStateException(s"Cyclic object graph involving $in")
@@ -38,6 +38,11 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
         stateMap.put(in, Busy)
         val out = in.copy()(tx, this)
         stateMap.put(in, Done(out))
+        (in, out) match {
+          case (inObj: Obj[S], outObj: Obj[S]) => // copy the attributes
+            copyAttr(inObj, outObj)
+          case _ =>
+        }
         out.asInstanceOf[Repr]
     }
 
@@ -59,15 +64,5 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
     inAttr.iterator.foreach { case (key, value) =>
       outAttr.put(key, apply(value))
     }
-  }
-
-  def apply[Repr <: Elem[S]](in: Repr): Repr = {
-    val out = perform(in)
-    (in, out) match {
-      case (inObj: Obj[S], outObj: Obj[S]) => // copy the attributes
-        copyAttr(inObj, outObj)
-      case _ =>
-    }
-    out
   }
 }
