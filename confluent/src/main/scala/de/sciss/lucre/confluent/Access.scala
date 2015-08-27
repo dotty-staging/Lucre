@@ -15,12 +15,14 @@ package de.sciss.lucre.confluent
 
 import de.sciss.fingertree.FingerTree
 import de.sciss.lucre.stm.TxnLike
-import de.sciss.serial.Writable
+import de.sciss.serial.{DataInput, Writable}
 
 object Access {
-  def root[S <: Sys[S]]: Access[S] = impl.PathImpl.root[S]
-  def info[S <: Sys[S]](access: Access[S])(implicit tx: TxnLike, system: S): VersionInfo =
+  def root[S <: Sys[S]]: S#Acc /* Access[S] */ = impl.PathImpl.root[S]
+  def info[S <: Sys[S]](access: S#Acc /* Access[S] */)(implicit tx: TxnLike, system: S): VersionInfo =
     system.versionInfo(access.term)
+
+  def read[S <: Sys[S]](in: DataInput): S#Acc = impl.PathImpl.read(in)
 }
 
 trait Access[S <: Sys[S]] extends Writable with PathLike {
