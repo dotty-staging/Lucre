@@ -46,15 +46,18 @@ object DoubleRootTest extends App {
     //
     //    val cursor = durable.step { implicit tx => cursorAcc() }
 
-    val (varAcc, cursor ) = confluent.rootWithDurable { implicit tx =>
+    val (varAcc, csrData) = confluent.rootWithDurable { implicit tx =>
       println("Init confluent")
       val id = tx.newID()
       val vr = tx.newIntVar(id, 33)
       new Data(id, vr)
     } { implicit tx =>
       println("Init durable")
-      Cursor[S, D]()
+      Cursor.Data[S, D]()
     }
+
+    val cursor = Cursor.wrap(csrData)
+
     //    { tx => _ =>
     //      implicit val dtx = confluent.durableTx(tx)
     //      cursorAcc()

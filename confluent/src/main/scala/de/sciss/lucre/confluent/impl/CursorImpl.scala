@@ -14,9 +14,10 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.stm
+import de.sciss.lucre.confluent.Cursor.Data
+import de.sciss.lucre.{confluent, stm}
 import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.serial.{Serializer, DataInput, DataOutput}
 
 import scala.concurrent.stm.{Txn, TxnExecutor}
 
@@ -34,37 +35,79 @@ object CursorImpl {
     def read(in: DataInput, access: D1#Acc)(implicit tx: D1#Tx): Cursor[S, D1] = CursorImpl.read[S, D1](in)
   }
 
-  private final class PathSer[S <: Sys[S], D1 <: stm.DurableLike[D1]](implicit system: S { type D = D1 })
-    extends serial.Serializer[D1#Tx, D1#Acc, S#Acc] {
+  private trait NoSys extends Sys[NoSys] { type D = stm.Durable }
+
+  /* implicit */ def pathSerializer[S <: Sys[S], D <: stm.DurableLike[D]]: Serializer[D#Tx, D#Acc, S#Acc] =
+    anyPathSer.asInstanceOf[PathSer[S, D]]
+
+  private final val anyPathSer = new PathSer[NoSys, NoSys#D]
+
+  private final class PathSer[S <: Sys[S], D1 <: stm.DurableLike[D1]] // (implicit system: S { type D = D1 })
+    extends Serializer[D1#Tx, D1#Acc, S#Acc] {
 
     def write(v: S#Acc, out: DataOutput): Unit = v.write(out)
 
-    def read(in: DataInput, access: D1#Acc)(implicit tx: D1#Tx): S#Acc = system.readPath(in)
+    def read(in: DataInput, access: D1#Acc)(implicit tx: D1#Tx): S#Acc =
+      confluent.Access.read(in) // system.readPath(in)
   }
 
-  def apply[S <: Sys[S], D1 <: stm.DurableLike[D1]](init: S#Acc)
-                                                   (implicit tx: D1#Tx, system: S { type D = D1 }): Cursor[S, D1] = {
-    implicit val pathSer  = new PathSer[S, D1]
-    val id                = tx.newID()
-    val path              = tx.newVar[S#Acc](id, init)
-    new Impl[S, D1](id, path)
+  def newData[S <: Sys[S], D <: stm.DurableLike[D]](init: S#Acc = Access.root[S])(implicit tx: D#Tx): Data[S, D] = {
+    val id    = tx.newID()
+    val path  = tx.newVar(id, init)(pathSerializer[S, D])
+    new DataImpl(id, path)
   }
+
+  def dataSerializer[S <: Sys[S], D <: stm.DurableLike[D]]: Serializer[D#Tx, D#Acc, Data[S, D]] =
+    anyDataSer.asInstanceOf[DataSer[S, D]]
+
+  private final val anyDataSer = new DataSer[NoSys, NoSys#D]
+
+  private final class DataSer[S <: Sys[S], D <: stm.DurableLike[D]]
+    extends Serializer[D#Tx, D#Acc, Data[S, D]] {
+
+    def write(d: Data[S, D], out: DataOutput): Unit = d.write(out)
+
+    def read(in: DataInput, access: Unit)(implicit tx: D#Tx): Data[S, D] = readData[S, D](in)
+  }
+
+  def readData[S <: Sys[S], D <: stm.DurableLike[D]](in: DataInput)(implicit tx: D#Tx): Data[S, D] = {
+    val cookie  = in.readShort()
+    if (cookie != COOKIE) throw new IllegalStateException(s"Unexpected cookie $cookie (should be $COOKIE)")
+    val id      = tx.readID(in, ()) // implicitly[Serializer[D#Tx, D#Acc, D#ID]].read(in)
+    val path    = tx.readVar[S#Acc](id, in)(pathSerializer[S, D])
+    new DataImpl(id, path)
+  }
+
+  private final class DataImpl[S <: Sys[S], D <: stm.DurableLike[D]](val id: D#ID, val path: D#Var[S#Acc])
+    extends Data[S, D] {
+
+    def write(out: DataOutput): Unit = {
+      out.writeShort(COOKIE)
+      id  .write(out)
+      path.write(out)
+    }
+
+    def dispose()(implicit tx: D#Tx): Unit = {
+      path.dispose()
+      id  .dispose()
+    }
+  }
+
+  def apply[S <: Sys[S], D1 <: stm.DurableLike[D1]](data: Data[S, D1])
+                                                   (implicit system: S { type D = D1 }): Cursor[S, D1] =
+    new Impl[S, D1](data)
 
   def read[S <: Sys[S], D1 <: stm.DurableLike[D1]](in: DataInput)
                                                   (implicit tx: D1#Tx, system: S { type D = D1 }): Cursor[S, D1] = {
-    implicit val pathSer  = new PathSer[S, D1]
-    val cookie            = in.readShort()
-    if (cookie != COOKIE) throw new IllegalStateException(s"Unexpected cookie $cookie (should be $COOKIE)")
-    val id                = tx.readID(in, ())
-    val path              = tx.readVar[S#Acc](id, in)
-    new Impl[S, D1](id, path)
+    val data = readData[S, D1](in)
+    Cursor.wrap[S, D1](data)
   }
 
-  private final class Impl[S <: Sys[S], D1 <: stm.DurableLike[D1]](id: D1#ID, path: D1#Var[S#Acc])
+  private final class Impl[S <: Sys[S], D1 <: stm.DurableLike[D1]](val data: Data[S, D1])
                                                           (implicit system: S { type D = D1 })
     extends Cursor[S, D1] with Cache[S#Tx] {
 
-    override def toString = s"Cursor$id"
+    override def toString = s"Cursor${data.id}"
 
     private def topLevelAtomic[A](fun: D1#Tx => A): A = {
       if (Txn.findCurrent.isDefined)
@@ -77,44 +120,41 @@ object CursorImpl {
 
     def step[A](fun: S#Tx => A): A = {
       topLevelAtomic { implicit dtx =>
-        val inputAccess = path()
+        val inputAccess = data.path()
         performStep(inputAccess, retroactive = false, dtx = dtx, fun = fun)
       }
     }
 
     def stepFrom[A](inputAccess: S#Acc, retroactive: Boolean)(fun: S#Tx => A): A = {
       topLevelAtomic { implicit dtx =>
-        path() = inputAccess
+        data.path() = inputAccess
         performStep(inputAccess, retroactive, dtx, fun)
       }
     }
 
     private def performStep[A](inputAccess: S#Acc, retroactive: Boolean, dtx: D1#Tx, fun: S#Tx => A): A = {
       val tx = system.createTxn(dtx, inputAccess, retroactive, this)
-      logCursor(s"${id.toString} step. input path = $inputAccess")
+      logCursor(s"${data.id} step. input path = $inputAccess")
       fun(tx)
     }
 
     def flushCache(term: Long)(implicit tx: S#Tx): Unit = {
       implicit val dtx: D1#Tx = system.durableTx(tx)
       val newPath = tx.inputAccess.addTerm(term)
-      path()      = newPath
-      logCursor(s"${id.toString} flush path = $newPath")
+      data.path() = newPath
+      logCursor(s"${data.id} flush path = $newPath")
     }
 
     def position(implicit tx: S #Tx): S#Acc = position(system.durableTx(tx))
-    def position(implicit tx: D1#Tx): S#Acc = path()
+    def position(implicit tx: D1#Tx): S#Acc = data.path()
 
     def dispose()(implicit tx: D1#Tx): Unit = {
-      id  .dispose()
-      path.dispose()
-      logCursor(s"${id.toString} dispose")
+      data.dispose()
+//      id  .dispose()
+//      path.dispose()
+      logCursor(s"${data.id} dispose")
     }
 
-    def write(out: DataOutput): Unit = {
-      out.writeShort(COOKIE)
-      id  .write(out)
-      path.write(out)
-    }
+    def write(out: DataOutput): Unit = data.write(out)
   }
 }
