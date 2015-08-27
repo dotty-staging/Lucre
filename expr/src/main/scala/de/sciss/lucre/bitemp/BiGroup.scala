@@ -18,7 +18,7 @@ import de.sciss.lucre.bitemp.impl.{BiGroupImpl => Impl}
 import de.sciss.lucre.event.{EventLike, Publisher}
 import de.sciss.lucre.expr.SpanLikeObj
 import de.sciss.lucre.geom.LongSquare
-import de.sciss.lucre.stm.{Elem, Obj, Sys}
+import de.sciss.lucre.stm.{Sys, Elem, Obj}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 import de.sciss.span.SpanLike
@@ -80,11 +80,14 @@ object BiGroup extends Obj.Type {
 //      override def hashCode = id.hashCode()
 //    }
 
+    implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
+      Impl.entrySer[S, A]
+
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
       Impl.readIdentifiedEntry(in, access)
   }
 
-  trait Entry[S <: Sys[S], +A] extends Obj[S] {
+  trait Entry[S <: Sys[S], +A] extends Obj[S] with Publisher[S, m.Change[SpanLike]] {
     def span : SpanLikeObj[S]
     def value: A
 

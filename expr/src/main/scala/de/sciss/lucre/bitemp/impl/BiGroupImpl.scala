@@ -149,7 +149,7 @@ object BiGroupImpl {
     if (showLog) println(s"<bigroup> $what")
 
   type Tree    [S <: Sys[S], A          ] = SkipOctree[S, TwoDim, A]
-  type LeafImpl[S <: Sys[S], A <: Elem[S]] = (SpanLike, Vec[EntryImpl[S, A]])
+  type LeafImpl[S <: Sys[S], A <: Elem[S]] = (SpanLike, Vec[Entry[S, A]])
   type TreeImpl[S <: Sys[S], A <: Elem[S]] = SkipOctree[S, TwoDim, LeafImpl[S, A]]
 
   def verifyConsistency[S <: Sys[S], A](group: BiGroup[S, A], reportOnly: Boolean)
@@ -222,7 +222,7 @@ object BiGroupImpl {
     }
   }
 
-  implicit def entrySer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, EntryImpl[S, A]] =
+  implicit def entrySer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
     anyEntrySer.asInstanceOf[EntrySer[S, A]]
 
   private val anyEntrySer = new EntrySer[NoSys, Obj[NoSys]]
@@ -234,7 +234,7 @@ object BiGroupImpl {
     new EntryImpl(targets, span, value)
   }
 
-  private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, EntryImpl[S, A]] {
+  private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, Entry[S, A]] {
     def tpe = Entry
   }
 
@@ -279,8 +279,8 @@ object BiGroupImpl {
     // ---- event behaviour ----
 
     object changed extends Changed with evt.impl.Generator[S, BiGroup.Update[S, A]] {
-      def += (entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = entry.changed ---> this
-      def -= (entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = entry.changed -/-> this
+      def += (entry: Entry[S, A])(implicit tx: S#Tx): Unit = entry.changed ---> this
+      def -= (entry: Entry[S, A])(implicit tx: S#Tx): Unit = entry.changed -/-> this
 
       def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[BiGroup.Update[S, A]] = {
         if (pull.isOrigin(this)) return Some(pull.resolve)
@@ -289,7 +289,7 @@ object BiGroupImpl {
         log(s"$this.pullUpdate -> parents = $par")
 
         val changes: List[BiGroup.Moved[S, A]] = par.flatMap { evt =>
-          val entry = evt.node.asInstanceOf[EntryImpl[S, A]]
+          val entry = evt.node.asInstanceOf[Entry[S, A]]
           val ch0   = pull(entry.changed)
           log(s"$this.pullUpdate -> from entry $entry pulled $ch0")
           ch0.map {
@@ -339,7 +339,7 @@ object BiGroupImpl {
       entry
     }
 
-    private def addNoFire(spanVal: SpanLike, entry: EntryImpl[S, A])(implicit tx: S#Tx): Unit = {
+    private def addNoFire(spanVal: SpanLike, entry: Entry[S, A])(implicit tx: S#Tx): Unit = {
       val point = spanToPoint(spanVal)
       //if( showLog ) println( "add at point " + point )
       //         val entry   = (span, elem)
@@ -379,7 +379,7 @@ object BiGroupImpl {
       entryOpt.isDefined
     }
 
-    private def removeNoFire(spanVal: SpanLike, entry: EntryImpl[S, A])(implicit tx: S#Tx): Boolean = {
+    private def removeNoFire(spanVal: SpanLike, entry: Entry[S, A])(implicit tx: S#Tx): Boolean = {
       val point = spanToPoint(spanVal)
       val entry = tree.get(point)
       entry match {
