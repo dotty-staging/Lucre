@@ -23,11 +23,17 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
 
   private[this] val stateMap = mutable.Map.empty[Elem[S], State]
   private[this] val hintMap  = mutable.Map.empty[Elem[S], mutable.Map[String, Any]]
+  private[this] val deferred = mutable.Buffer.empty[() => Unit]
 
-  def provide[Repr <: Obj[S]](in: Repr, out: Repr): Unit = {
+  def defer[Repr <: Obj[S]](in: Repr, out: Repr)(code: => Unit): Unit = {
     if (!stateMap.get(in).contains(Busy))
       throw new IllegalStateException(s"Copy.provide must be called during copy process: $in")
     stateMap.put(in, Done(out))
+    deferred += (() => code)
+  }
+
+  def finish(): Unit = {
+    deferred.foreach(_.apply())
   }
 
   def apply[Repr <: Elem[S]](in: Repr): Repr =

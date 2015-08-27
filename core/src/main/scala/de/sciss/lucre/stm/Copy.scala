@@ -36,8 +36,17 @@ trait Copy[S <: Sys[S]] {
   /** Copies all attributes from input to output. */
   def copyAttr(in: Obj[S], out: Obj[S]): Unit
 
+//  /** Stores an early copy of an object from within its own `copy` method,
+//    * to allow mutual correspondences.
+//    */
+//  def provide[Repr <: Obj[S]](in: Repr, out: Repr): Unit
+
   /** Stores an early copy of an object from within its own `copy` method,
-    * to allow mutual correspondences.
+    * to allow mutual correspondences. The copy is only completed with
+    * the provided `code` thunk argument which will be executed in the
+    * `finish()` stage.
     */
-  def provide[Repr <: Obj[S]](in: Repr, out: Repr): Unit
+  def defer[Repr <: Obj[S]](in: Repr, out: Repr)(code: => Unit): Unit
+
+  def finish(): Unit
 }

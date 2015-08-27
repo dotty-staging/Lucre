@@ -454,8 +454,7 @@ object BiGroupImpl {
     final private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
       new Impl1[S, A](Targets[S]) { out =>
         val tree: TreeImpl[S, A] = newTree()
-        context.provide(in, out)
-        copyTree(in.tree, out.tree)
+        context.defer(in, out)(copyTree(in.tree, out.tree))
         // connect()
       }
   }

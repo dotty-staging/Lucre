@@ -30,7 +30,9 @@ object Obj {
 
   def copy[S <: Sys[S], Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[S])(implicit tx: S#Tx): Repr[S] = {
     val context = Copy[S]
-    context(in)
+    val res     = context(in)
+    context.finish()
+    res
   }
 
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Obj[S]] = Impl.serializer

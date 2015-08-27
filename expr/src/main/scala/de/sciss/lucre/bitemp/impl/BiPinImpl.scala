@@ -177,10 +177,11 @@ object BiPinImpl {
     private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
       val treeOut: Tree[S, A] = SkipList.Map.empty[S, Long, Leaf[S, A]]()
       val out = new Impl(evt.Targets[S], tree)
-      context.provide(this, out)
-      this.tree.iterator.foreach { case (time, xsIn) =>
-        val xsOut = xsIn.map(e => context(e))
-        treeOut.add(time -> xsOut)
+      context.defer(this, out) {
+        this.tree.iterator.foreach { case (time, xsIn) =>
+          val xsOut = xsIn.map(e => context(e))
+          treeOut.add(time -> xsOut)
+        }
       }
       // out.connect()
       out
