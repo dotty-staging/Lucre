@@ -272,10 +272,6 @@ object BiGroupImpl {
 
     final def treeHandle = tree
 
-    override def toString: String = s"BiGroup${tree.id}"
-
-    def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
-
     // Note: must be after `EntrySer`
     protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, E] =
       SkipOctree.empty[S, TwoDim, LeafImpl[S, E]](BiGroup.MaxSquare)
@@ -443,6 +439,8 @@ object BiGroupImpl {
 
     final def lastEvent(implicit tx: S#Tx): Option[Long] =
       BiGroupImpl.eventBefore(tree)(BiGroup.MaxCoordinate)
+
+    protected type GroupAux[~ <: Sys[~]] = BiGroup[~, E[~]]
   }
 
   def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
@@ -461,10 +459,13 @@ object BiGroupImpl {
 
     final def tpe: Obj.Type = BiGroup
 
+    override def toString: String = s"BiGroup${tree.id}"
+
+    def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
+
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
       new Impl1[Out, E](Targets[Out]) { out =>
         val tree: TreeImpl[Out, E] = out.newTree()
-        type GroupAux[~ <: Sys[~]] = BiGroup[~, E[~]]
         context.defer[GroupAux](in, out)(copyTree(in.tree, out.tree))
         // connect()
       }

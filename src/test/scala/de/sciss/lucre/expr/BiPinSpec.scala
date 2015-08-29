@@ -137,7 +137,7 @@ class BiPinSpec extends ConfluentEventSpec {
       assert(bip.valueAt  (tup3._1.value) === Some(tup3._2))
       assert(bip.intersect(tup3._1.value).map(_.get) === Vec[TUP](tup3))
 
-      // tup5 removal not noticable!
+      // tup5 removal not noticeable!
       obs.map(mapUpdate)
       obs.assertEquals(
         //            BiPin.Collection( bip, Vec( Span( 15000L, 20000L ) -> (3: IntEx) ))
