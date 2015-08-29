@@ -46,6 +46,7 @@ object DoubleRootTest extends App {
     //
     //    val cursor = durable.step { implicit tx => cursorAcc() }
 
+    implicit val screwYou = Cursor.Data.serializer[S, D] // "lovely" Scala type inference at its best
     val (varAcc, csrData) = confluent.rootWithDurable { implicit tx =>
       println("Init confluent")
       val id = tx.newID()

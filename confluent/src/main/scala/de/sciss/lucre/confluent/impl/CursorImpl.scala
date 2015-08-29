@@ -31,17 +31,17 @@ object CursorImpl {
 
     def write(v: Cursor[S, D1], out: DataOutput): Unit = v.write(out)
 
-    def read(in: DataInput, access: D1#Acc)(implicit tx: D1#Tx): Cursor[S, D1] = CursorImpl.read[S, D1](in)
+    def read(in: DataInput, access: Unit)(implicit tx: D1#Tx): Cursor[S, D1] = CursorImpl.read[S, D1](in)
   }
 
   private trait NoSys extends Sys[NoSys] { type D = stm.Durable }
 
-  /* implicit */ def pathSerializer[S <: Sys[S], D <: stm.DurableLike[D]]: Serializer[D#Tx, D#Acc, S#Acc] =
+  /* implicit */ def pathSerializer[S <: Sys[S], D <: stm.Sys[D]]: Serializer[D#Tx, D#Acc, S#Acc] =
     anyPathSer.asInstanceOf[PathSer[S, D]]
 
   private final val anyPathSer = new PathSer[NoSys, NoSys#D]
 
-  private final class PathSer[S <: Sys[S], D1 <: stm.DurableLike[D1]] // (implicit system: S { type D = D1 })
+  private final class PathSer[S <: Sys[S], D1 <: stm.Sys[D1]] // (implicit system: S { type D = D1 })
     extends Serializer[D1#Tx, D1#Acc, S#Acc] {
 
     def write(v: S#Acc, out: DataOutput): Unit = v.write(out)
@@ -50,34 +50,34 @@ object CursorImpl {
       confluent.Access.read(in) // system.readPath(in)
   }
 
-  def newData[S <: Sys[S], D <: stm.DurableLike[D]](init: S#Acc = Access.root[S])(implicit tx: D#Tx): Data[S, D] = {
+  def newData[S <: Sys[S], D <: stm.Sys[D]](init: S#Acc = Access.root[S])(implicit tx: D#Tx): Data[S, D] = {
     val id    = tx.newID()
     val path  = tx.newVar(id, init)(pathSerializer[S, D])
     new DataImpl[S, D](id, path)
   }
 
-  def dataSerializer[S <: Sys[S], D <: stm.DurableLike[D]]: Serializer[D#Tx, D#Acc, Data[S, D]] =
+  def dataSerializer[S <: Sys[S], D <: stm.Sys[D]]: Serializer[D#Tx, D#Acc, Data[S, D]] =
     anyDataSer.asInstanceOf[DataSer[S, D]]
 
   private final val anyDataSer = new DataSer[NoSys, NoSys#D]
 
-  private final class DataSer[S <: Sys[S], D <: stm.DurableLike[D]]
+  private final class DataSer[S <: Sys[S], D <: stm.Sys[D]]
     extends Serializer[D#Tx, D#Acc, Data[S, D]] {
 
     def write(d: Data[S, D], out: DataOutput): Unit = d.write(out)
 
-    def read(in: DataInput, access: Unit)(implicit tx: D#Tx): Data[S, D] = readData[S, D](in)
+    def read(in: DataInput, access: D#Acc)(implicit tx: D#Tx): Data[S, D] = readData[S, D](in, access)
   }
 
-  def readData[S <: Sys[S], D <: stm.DurableLike[D]](in: DataInput)(implicit tx: D#Tx): Data[S, D] = {
+  def readData[S <: Sys[S], D <: stm.Sys[D]](in: DataInput, access: D#Acc)(implicit tx: D#Tx): Data[S, D] = {
     val cookie  = in.readShort()
     if (cookie != COOKIE) throw new IllegalStateException(s"Unexpected cookie $cookie (should be $COOKIE)")
-    val id      = tx.readID(in, ()) // implicitly[Serializer[D#Tx, D#Acc, D#ID]].read(in)
+    val id      = tx.readID(in, access) // implicitly[Serializer[D#Tx, D#Acc, D#ID]].read(in)
     val path    = tx.readVar[S#Acc](id, in)(pathSerializer[S, D])
     new DataImpl[S, D](id, path)
   }
 
-  private final class DataImpl[S <: Sys[S], D <: stm.DurableLike[D]](val id: D#ID, val path: D#Var[S#Acc])
+  private final class DataImpl[S <: Sys[S], D <: stm.Sys[D]](val id: D#ID, val path: D#Var[S#Acc])
     extends Data[S, D] {
 
     def write(out: DataOutput): Unit = {
@@ -93,12 +93,12 @@ object CursorImpl {
   }
 
   def apply[S <: Sys[S], D1 <: stm.DurableLike[D1]](data: Data[S, D1])
-                                                   (implicit system: S { type D = D1 }): Cursor[S, D1] =
+                                                  (implicit system: S { type D = D1 }): Cursor[S, D1] =
     new Impl[S, D1](data)
 
   def read[S <: Sys[S], D1 <: stm.DurableLike[D1]](in: DataInput)
                                                   (implicit tx: D1#Tx, system: S { type D = D1 }): Cursor[S, D1] = {
-    val data = readData[S, D1](in)
+    val data = readData[S, D1](in, ())
     Cursor.wrap[S, D1](data)
   }
 
