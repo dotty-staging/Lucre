@@ -57,8 +57,8 @@ object List extends Obj.Type {
       serializer[S, A].read(in, access)
 
     /** Creates a new empty linked list. */
-    def apply[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
-      Impl.newModifiable[S, A]
+    def apply[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
+      Impl.newModifiable[S, E]
   }
 
   /** Modifiable extension of the linked list. Elements can be appended or prepended in O(1).

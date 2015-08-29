@@ -49,7 +49,11 @@ object Elem {
 trait Elem[S <: Sys[S]] extends Writable with Disposable[S#Tx] with Publisher[S, Any] {
   def tpe: Elem.Type
 
+  /** Selects an event during dispatch. Elements that do not provide events
+    * should simply throw an exception. They will in any case not be encountered during dispatch.
+    */
   private[lucre] def event(slot: Int): Event[S, Any]
 
-  private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S]
+  /** Makes a deep copy of an element, possibly translating it to a different system `Out`. */
+  private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out]
 }

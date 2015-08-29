@@ -116,8 +116,8 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
     final protected def writeData(out: DataOutput): Unit = valueSerializer.write(constValue, out)
 
-    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
-      mkConst(tx.newID(), constValue)
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      mkConst[Out](txOut.newID(), constValue)
   }
 
   protected trait VarImpl[S <: Sys[S]]
@@ -125,10 +125,10 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
     final def tpe: Obj.Type = self
 
-    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
-      val newTgt = Targets[S]
-      val newVr  = tx.newVar(newTgt.id, context(ref()))
-      mkVar[S](newTgt, newVr, connect = true)
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
+      val newTgt = Targets[Out]
+      val newVr  = txOut.newVar(newTgt.id, context(ref()))
+      mkVar[Out](newTgt, newVr, connect = true)
     }
   }
 

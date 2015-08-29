@@ -189,8 +189,8 @@ object ArtifactImpl {
 
     override def toString = s"Artifact$id"
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      ArtifactImpl(copy(location), child)
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      ArtifactImpl(context(location), child)
 
     def modifiableOption: Option[Modifiable[S]] = Some(this)
 

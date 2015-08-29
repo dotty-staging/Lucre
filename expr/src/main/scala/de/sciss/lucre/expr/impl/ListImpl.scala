@@ -25,8 +25,8 @@ import scala.annotation.{switch, tailrec}
 object ListImpl {
   import de.sciss.lucre.expr.List.Modifiable
 
-  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
-    new Impl[S, A] {
+  def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
+    new Impl[S, E] {
       protected val targets = evt.Targets[S]
       protected val sizeRef = tx.newIntVar(id, 0)
       protected val headRef = tx.newVar[C](id, null)(CellSer)
@@ -56,9 +56,9 @@ object ListImpl {
     ListImpl.read(in, access, targets)
   }
 
-  private def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
-                                               (implicit tx: S#Tx): Impl[S, A] =
-    new Impl[S, A] {
+  private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
+                                               (implicit tx: S#Tx): Impl[S, E] =
+    new Impl[S, E] {
       protected val targets = _targets
       protected val sizeRef = tx.readIntVar(id, in)
       protected val headRef = tx.readVar[C](id, in)
@@ -84,8 +84,10 @@ object ListImpl {
     }
   }
 
-  private abstract class Impl[S <: Sys[S], A <: Elem[S]]
-    extends Modifiable[S, A] with eimpl.SingleNode[S, List.Update[S, A]] { list =>
+  private abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
+    extends Modifiable[S, E[S]] with eimpl.SingleNode[S, List.Update[S, E[S]]] { list =>
+
+    type A = E[S]
 
     final def tpe: Obj.Type = List
 
@@ -99,11 +101,10 @@ object ListImpl {
 
     // private type ListR[~ <: Sys[~]] = Modifiable[~, A]  // auxiliary
 
-    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
-      val out     = newModifiable[S, A]
-      // val filter  = context.getHint(this, List.hintFilter).asInstanceOf[Option[A => Boolean]]
-      //   .getOrElse(filterAll)
-      context.defer(this, out) {
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
+      val out = newModifiable[Out, E]
+      type ListAux[~ <: Sys[~]] = List[~, E[~]]
+      context.defer[ListAux](this, out) {
         this.iterator.foreach { elem =>
           // if (filter(elem))
             out.addLast(context(elem))

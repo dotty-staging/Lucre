@@ -22,7 +22,7 @@ class BiPinSpec extends ConfluentEventSpec {
   "BiPin" should "notify observers about all relevant collection events" in { system =>
     val obs = new Observation
     val bipH = system.step { implicit tx =>
-      val bip = BiPin.Modifiable[S, IE]
+      val bip = BiPin.Modifiable[S, IntObj]
       bip.changed.react(obs.register)
       val res = tx.newHandle(bip)(BiPin.Modifiable.serializer[S, IE])
       obs.assertEmpty()
@@ -155,7 +155,7 @@ class BiPinSpec extends ConfluentEventSpec {
   "BiPin" should "notify observers about all relevant element events" in { system =>
     val obs = new Observation
     val bipH = system.step { implicit tx =>
-      val bip = BiPin.Modifiable[S, IE]
+      val bip = BiPin.Modifiable[S, IntObj]
       bip.changed.react(obs.register)
       val res = tx.newHandle(bip)(BiPin.Modifiable.serializer[S, IE])
       obs.assertEmpty()

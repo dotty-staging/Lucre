@@ -87,8 +87,8 @@ object BiPinImpl {
 
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new ConstEntry(copy(key), copy(value))
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new ConstEntry(context(key), context(value))
   }
 
   private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
@@ -98,8 +98,8 @@ object BiPinImpl {
     // ok, it's not really the "root", but the type is the same
     object changed extends Changed with evt.impl.Root[S, Change[Long]]
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new NodeEntry(Targets[S], copy(key), copy(value)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new NodeEntry(Targets[Out], context(key), context(value)).connect()
 
     protected def disposeData()(implicit tx: S#Tx) = disconnect()
 
@@ -138,8 +138,8 @@ object BiPinImpl {
     }
   }
 
-  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] = {
-    val tree: Tree[S, A] = SkipList.Map.empty[S, Long, Leaf[S, A]]()
+  def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] = {
+    val tree: Tree[S, E[S]] = SkipList.Map.empty[S, Long, Leaf[S, E[S]]]()
     new Impl(evt.Targets[S], tree)
   }
 
@@ -151,20 +151,25 @@ object BiPinImpl {
 
   private val anySer = new Ser[NoSys, Obj[NoSys], BiPin[NoSys, Obj[NoSys]]]
 
-  private def readImpl[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                                (implicit tx: S#Tx): Impl[S, A] = {
-    val tree: Tree[S, A] = SkipList.Map.read[S, Long, Leaf[S, A]](in, access)
+  private def readImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                                (implicit tx: S#Tx): Impl[S, E] = {
+    val tree: Tree[S, E[S]] = SkipList.Map.read[S, Long, Leaf[S, E[S]]](in, access)
     new Impl(targets, tree)
   }
 
-  private class Ser[S <: Sys[S], A <: Elem[S], Repr >: Impl[S, A] <: BiPin[S, A]] extends ObjSerializer[S, Repr] {
+  private class Ser[S <: Sys[S], A <: Elem[S], Repr <: BiPin[S, A]]
+    extends ObjSerializer[S, Repr] {
+
     def tpe = BiPin
   }
 
-  private final class Impl[S <: Sys[S], A <: Elem[S]](protected val targets: evt.Targets[S], tree: Tree[S, A])
-    extends Modifiable[S, A]
-    with evt.impl.SingleNode[S, Update[S, A]] {
+  private final class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: evt.Targets[S],
+                                                                   tree: Tree[S, E[S]])
+    extends Modifiable[S, E[S]]
+    with evt.impl.SingleNode[S, Update[S, E[S]]] {
     pin =>
+
+    type A = E[S]
 
     def tpe: Obj.Type = BiPin
 
@@ -172,14 +177,13 @@ object BiPinImpl {
 
     def modifiableOption: Option[BiPin.Modifiable[S, A]] = Some(this)
 
-    // private type EntryR[~ <: Sys[~]] = Entry[~, A]  // auxiliary
-
-    private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] = {
-      val treeOut: Tree[S, A] = SkipList.Map.empty[S, Long, Leaf[S, A]]()
-      val out = new Impl(evt.Targets[S], tree)
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
+      val treeOut: Tree[Out, E[Out]] = SkipList.Map.empty[Out, Long, Leaf[Out, E[Out]]]()
+      val out = new Impl[Out, E](evt.Targets[Out], treeOut)
       context.defer(this, out) {
         this.tree.iterator.foreach { case (time, xsIn) =>
-          val xsOut = xsIn.map(e => context(e))
+          type EntryAux[~ <: Sys[~]] = BiPin.Entry[~, E[~]]
+          val xsOut = xsIn.map(e => context[EntryAux](e))
           treeOut.add(time -> xsOut)
         }
       }

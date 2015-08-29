@@ -149,13 +149,14 @@ object BiGroupImpl {
     if (showLog) println(s"<bigroup> $what")
 
   type Tree    [S <: Sys[S], A          ] = SkipOctree[S, TwoDim, A]
-  type LeafImpl[S <: Sys[S], A <: Elem[S]] = (SpanLike, Vec[Entry[S, A]])
-  type TreeImpl[S <: Sys[S], A <: Elem[S]] = SkipOctree[S, TwoDim, LeafImpl[S, A]]
+  type LeafImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]] = (SpanLike, Vec[Entry[S, E[S]]])
+  type TreeImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]] = SkipOctree[S, TwoDim, LeafImpl[S, E]]
+  // type EntryRepr[Repr[~] <: Elem[~]]
 
   def verifyConsistency[S <: Sys[S], A](group: BiGroup[S, A], reportOnly: Boolean)
                                        (implicit tx: S#Tx): Vec[String] =
     group match {
-      case impl: Impl[S, A] => impl.treeHandle match {
+      case impl: Impl[S, _] => impl.treeHandle match {
         case t: DeterministicSkipOctree[S, _, _] =>
           DeterministicSkipOctree.verifyConsistency(t, reportOnly)
         case _ => sys.error("Not a deterministic octree implementation")
@@ -200,8 +201,8 @@ object BiGroupImpl {
 
     object changed extends Changed with evti.Root[S, Change[SpanLike]]
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new EntryImpl(Targets[S], copy(span), copy(value)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new EntryImpl(Targets[Out], context(span), context(value)).connect()
 
     protected def writeData(out: DataOutput): Unit = {
       span .write(out)
@@ -238,17 +239,30 @@ object BiGroupImpl {
     def tpe = Entry
   }
 
-  abstract class Impl[S <: Sys[S], A <: Elem[S]]
-    extends Modifiable[S, A]
-    with evt.impl.SingleNode[S, BiGroup.Update[S, A]] {
+  private final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](
+      in: TreeImpl[In, E], out: TreeImpl[Out, E])
+     (implicit txIn: In#Tx, txOut: Out#Tx, context: Copy[In, Out]): Unit = {
+
+    type EntryAux[~ <: Sys[~]] = Entry[~, E[~]]
+    in.iterator.foreach { case (span, xsIn) =>
+      val xsOut: Vec[EntryAux[Out]] = xsIn.map(entry => context[EntryAux](entry))
+      out.add(span -> xsOut)
+    }
+  }
+
+  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
+    extends Modifiable[S, E[S]]
+    with evt.impl.SingleNode[S, BiGroup.Update[S, E[S]]] {
 
     group =>
+
+    type A = E[S]
 
     // ---- abstract ----
 
     implicit final def pointView: (Leaf[S, A], S#Tx) => LongPoint2DLike = (tup, tx) => spanToPoint(tup._1)
 
-    protected def tree: TreeImpl[S, A]
+    protected def tree: TreeImpl[S, E]
 
     // ---- implemented ----
 
@@ -262,19 +276,13 @@ object BiGroupImpl {
 
     def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
 
-    protected final def copyTree(in: TreeImpl[S, A], out: TreeImpl[S, A])(implicit tx: S#Tx, context: Copy[S]): Unit =
-      in.iterator.foreach { case (span, xsIn) =>
-        val xsOut = xsIn.map(entry => context(entry))
-        out.add(span -> xsOut)
-      }
+    // Note: must be after `EntrySer`
+    protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, E] =
+      SkipOctree.empty[S, TwoDim, LeafImpl[S, E]](BiGroup.MaxSquare)
 
     // Note: must be after `EntrySer`
-    protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, A] =
-      SkipOctree.empty[S, TwoDim, LeafImpl[S, A]](BiGroup.MaxSquare)
-
-    // Note: must be after `EntrySer`
-    protected final def readTree(in: DataInput, access: S#Acc)(implicit tx: S#Tx): TreeImpl[S, A] =
-      SkipOctree.read[S, TwoDim, LeafImpl[S, A]](in, access)
+    protected final def readTree(in: DataInput, access: S#Acc)(implicit tx: S#Tx): TreeImpl[S, E] =
+      SkipOctree.read[S, TwoDim, LeafImpl[S, E]](in, access)
 
     // ---- event behaviour ----
 
@@ -437,24 +445,27 @@ object BiGroupImpl {
       BiGroupImpl.eventBefore(tree)(BiGroup.MaxCoordinate)
   }
 
-  def newModifiable[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
-    new Impl1[S, A](Targets[S]) {
-      val tree: TreeImpl[S, A] = newTree()
+  def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
+    new Impl1[S, E](Targets[S]) {
+      val tree: TreeImpl[S, E] = newTree()
     }
 
-  private def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
-                                            (implicit tx: S#Tx): Impl[S, A] =
-    new Impl1[S, A](_targets) {
-      val tree: TreeImpl[S, A] = readTree(in, access)
+  private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
+                                            (implicit tx: S#Tx): Impl[S, E] =
+    new Impl1[S, E](_targets) {
+      val tree: TreeImpl[S, E] = readTree(in, access)
     }
 
-  private abstract class Impl1[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S]) extends Impl[S, A] { in =>
+  private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: Targets[S])
+    extends Impl[S, E] { in =>
+
     final def tpe: Obj.Type = BiGroup
 
-    final private[lucre] def copy()(implicit tx: S#Tx, context: Copy[S]): Elem[S] =
-      new Impl1[S, A](Targets[S]) { out =>
-        val tree: TreeImpl[S, A] = newTree()
-        context.defer(in, out)(copyTree(in.tree, out.tree))
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new Impl1[Out, E](Targets[Out]) { out =>
+        val tree: TreeImpl[Out, E] = out.newTree()
+        type GroupAux[~ <: Sys[~]] = BiGroup[~, E[~]]
+        context.defer[GroupAux](in, out)(copyTree(in.tree, out.tree))
         // connect()
       }
   }

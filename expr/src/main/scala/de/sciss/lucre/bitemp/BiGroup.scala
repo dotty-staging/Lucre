@@ -98,8 +98,8 @@ object BiGroup extends Obj.Type {
     implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup.Modifiable[S, A]] =
       Impl.modifiableSerializer[S, A]
 
-    def apply[S <: Sys[S], A <: Elem[S]](implicit tx: S#Tx): Modifiable[S, A] =
-      Impl.newModifiable[S, A]
+    def apply[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
+      Impl.newModifiable[S, E]
 
     def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Modifiable[S, A] =
       serializer[S, A].read(in, access)

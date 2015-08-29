@@ -16,37 +16,34 @@ package de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.CopyImpl
 
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 object Copy {
-  def apply[S <: Sys[S]](implicit tx: S#Tx): Copy[S] = new CopyImpl[S]
+  def apply[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx): Copy[In, Out] =
+    new CopyImpl[In, Out]
 }
-trait Copy[S <: Sys[S]] {
+trait Copy[In <: Sys[In], Out <: Sys[Out]] {
   /** Makes a deep copy of the input element. Passing in an `Obj`
     * will also copy the attributes.
     */
-  def apply[Repr <: Elem[S]](in: Repr): Repr
+  def apply[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out]
 
   /** Provides a hint for the input element with key and value
     * by convention.
     */
-  def putHint[Repr <: Elem[S]](in: Repr, key: String, value: Any): Unit
+  def putHint[A](in: Elem[In], key: String, value: A): Unit
 
-  def getHint[Repr <: Elem[S]](in: Repr, key: String): Option[Any]
+  def getHint[A](in: Elem[In], key: String)(implicit ct: ClassTag[A]): Option[A]
 
   /** Copies all attributes from input to output. */
-  def copyAttr(in: Obj[S], out: Obj[S]): Unit
-
-//  /** Stores an early copy of an object from within its own `copy` method,
-//    * to allow mutual correspondences.
-//    */
-//  def provide[Repr <: Obj[S]](in: Repr, out: Repr): Unit
+  def copyAttr(in: Obj[In], out: Obj[Out]): Unit
 
   /** Stores an early copy of an object from within its own `copy` method,
     * to allow mutual correspondences. The copy is only completed with
     * the provided `code` thunk argument which will be executed in the
     * `finish()` stage.
     */
-  def defer[Repr <: Obj[S]](in: Repr, out: Repr)(code: => Unit): Unit
+  def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit
 
   def finish(): Unit
 }

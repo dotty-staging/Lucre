@@ -80,10 +80,10 @@ object MapImpl {
     
     // ---- implemented ----
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] = {
-      val res = Map.Modifiable[S, K, Elem /* Repr */]
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
+      val res = Map.Modifiable[Out, K, Elem /* Repr */]
       iterator.foreach { case (k, v) =>
-        res.put(k, copy(v))
+        res.put(k, context(v))
       }
       res
     }

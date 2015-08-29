@@ -56,8 +56,8 @@ object BooleanExtensions  {
 
     def tpe: Obj.Type = BooleanObj
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new Tuple1(Targets[S], op, copy(_1)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new Tuple1(Targets[Out], op, context(_1)).connect()
   }
 
   private[this] object BooleanTuple2s extends Type.Extension1[BooleanObj] {
@@ -130,8 +130,8 @@ object BooleanExtensions  {
 
     def tpe: Obj.Type = BooleanObj
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
   }
 
   private[this] case object Not extends UnaryOp[Boolean, BooleanObj] {
@@ -205,8 +205,8 @@ object BooleanExtensions  {
 
     def value(implicit tx: S#Tx): Boolean = op.lazyValue(_1, _2)
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new LazyTuple2(Targets[S], op, copy(_1), copy(_2)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new LazyTuple2(Targets[Out], op, context(_1), context(_2)).connect()
 
     protected def writeData(out: DataOutput): Unit = {
       out.writeByte(1)  // 'node not var'

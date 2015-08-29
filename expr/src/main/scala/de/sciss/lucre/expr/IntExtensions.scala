@@ -108,8 +108,8 @@ object IntExtensions {
 
     def tpe: Obj.Type = IntObj
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new Tuple2(Targets[S], op, copy(_1), copy(_2)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
   }
 
   // ---- operators ----
@@ -139,8 +139,8 @@ object IntExtensions {
 
     def tpe: Obj.Type = IntObj
 
-    private[lucre] def copy()(implicit tx: S#Tx, copy: Copy[S]): Elem[S] =
-      new Tuple1(Targets[S], op, copy(_1)).connect()
+    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
+      new Tuple1(Targets[Out], op, context(_1)).connect()
   }
 
   // ---- Int => Int ----

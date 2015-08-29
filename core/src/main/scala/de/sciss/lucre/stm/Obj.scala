@@ -28,8 +28,18 @@ object Obj {
 //    obj.copy()
 //  }
 
-  def copy[S <: Sys[S], Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[S])(implicit tx: S#Tx): Repr[S] = {
-    val context = Copy[S]
+  /** Copy an object graph with `in` as a leaf.
+    * This is short for the following sequence:
+    *
+    * {{{
+    * val c   = Copy[Int, Out]
+    * val out = c(in)
+    * c.finish()
+    * }}}
+    */
+  def copy[In <: Sys[In], Out <: Sys[Out], Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In])
+                                                                        (implicit txIn: In#Tx, txOut: Out#Tx): Repr[Out] = {
+    val context = Copy[In, Out]
     val res     = context(in)
     context.finish()
     res

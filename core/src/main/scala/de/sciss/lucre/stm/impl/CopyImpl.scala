@@ -15,17 +15,20 @@ package de.sciss.lucre.stm
 package impl
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
-final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
+final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx)
+  extends Copy[In, Out] {
+
   private[this] sealed trait State
-  private[this] final case class Done(elem: Elem[S]) extends State
+  private[this] final case class Done(elem: Elem[Out]) extends State
   private[this] case object Busy extends State
 
-  private[this] val stateMap = mutable.Map.empty[Elem[S], State]
-  private[this] val hintMap  = mutable.Map.empty[Elem[S], mutable.Map[String, Any]]
+  private[this] val stateMap = mutable.Map.empty[Elem[In], State]
+  private[this] val hintMap  = mutable.Map.empty[Elem[In], mutable.Map[String, Any]]
   private[this] val deferred = mutable.Buffer.empty[() => Unit]
 
-  def defer[Repr <: Obj[S]](in: Repr, out: Repr)(code: => Unit): Unit = {
+  def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
     if (!stateMap.get(in).contains(Busy))
       throw new IllegalStateException(s"Copy.provide must be called during copy process: $in")
     stateMap.put(in, Done(out))
@@ -36,23 +39,23 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
     deferred.foreach(_.apply())
   }
 
-  def apply[Repr <: Elem[S]](in: Repr): Repr =
+  def apply[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out] =
     stateMap.get(in) match {
-      case Some(Done(out)) => out.asInstanceOf[Repr]
+      case Some(Done(out)) => out.asInstanceOf[Repr[Out]]
       case Some(Busy) => throw new IllegalStateException(s"Cyclic object graph involving $in")
       case None =>
         stateMap.put(in, Busy)
-        val out = in.copy()(tx, this)
+        val out = in.copy()(txIn, txOut, this)
         stateMap.put(in, Done(out))
         (in, out) match {
-          case (inObj: Obj[S], outObj: Obj[S]) => // copy the attributes
+          case (inObj: Obj[In], outObj: Obj[Out]) => // copy the attributes
             copyAttr(inObj, outObj)
           case _ =>
         }
-        out.asInstanceOf[Repr]
+        out.asInstanceOf[Repr[Out]]
     }
 
-  def putHint[Repr <: Elem[S]](in: Repr, key: String, value: Any): Unit = {
+  def putHint[A](in: Elem[In], key: String, value: A): Unit = {
     val map = hintMap.getOrElse(in, {
       val res = mutable.Map.empty[String, Any]
       hintMap.put(in, res)
@@ -61,10 +64,13 @@ final class CopyImpl[S <: Sys[S]](implicit tx: S#Tx) extends Copy[S] {
     map.put(key, value)
   }
 
-  def getHint[Repr <: Elem[S]](in: Repr, key: String): Option[Any] =
-    hintMap.get(in).flatMap(_.get(key))
+  def getHint[A](in: Elem[In], key: String)(implicit ct: ClassTag[A]): Option[A] =
+    hintMap.get(in).flatMap(_.get(key) match {
+      case a: A => Some(a)
+      case _ => None
+    })
 
-  def copyAttr(in: Obj[S], out: Obj[S]): Unit = {
+  def copyAttr(in: Obj[In], out: Obj[Out]): Unit = {
     val inAttr  = in .attr
     val outAttr = out.attr
     inAttr.iterator.foreach { case (key, value) =>

@@ -89,7 +89,7 @@ class BiGroupSpec extends ConfluentEventSpec {
       val manual = calcManual()
 
       system.step { implicit tx =>
-        val g = BiGroup.Modifiable[S, IntObj[S]]
+        val g = BiGroup.Modifiable[S, IntObj]
 
         import Ops._
         spanLikes.foreach(g.add(_, 0))
