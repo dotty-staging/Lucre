@@ -197,7 +197,7 @@ object BiGroupImpl {
 
     def tpe: Obj.Type = Entry
 
-    override def toString = s"Entry$id"
+    override def toString = s"Entry($id, $span, $value)"
 
     object changed extends Changed with evti.Root[S, Change[SpanLike]]
 

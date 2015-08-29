@@ -33,6 +33,9 @@ trait ConfluentEventSpec extends fixture.FlatSpec with Matchers {
   final class Observation /* [S <: stm.Sys[S]] */ {
     private val seqRef = TxnLocal(init = Vec.empty[Any])
 
+    def map(fun: Any => Any)(implicit tx: S#Tx): Unit =
+      seqRef.transform(_.map(fun))(tx.peer)
+
     def register(tx: S#Tx)(upd: Any): Unit =
       seqRef.transform(_ :+ upd)(tx.peer)
 

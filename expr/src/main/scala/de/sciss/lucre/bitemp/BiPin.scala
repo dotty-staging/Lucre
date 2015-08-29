@@ -17,7 +17,7 @@ import de.sciss.lucre.bitemp.impl.{BiPinImpl => Impl}
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.LongObj
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
-import de.sciss.model
+import de.sciss.{model => m}
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -36,8 +36,10 @@ object BiPin extends Obj.Type {
   object Entry extends Elem.Type {
     final val typeID = 26
 
-    def apply[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
-      Impl.newEntry(key, value)
+//    def apply[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
+//      Impl.newEntry(key, value)
+
+    def unapply[S <: Sys[S], A](entry: Entry[S, A]): Entry[S, A] = entry
 
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] =
       Impl.readIdentifiedEntry(in, access)
@@ -50,24 +52,27 @@ object BiPin extends Obj.Type {
     implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
       Impl.entrySerializer[S, A]
 
-    implicit def fromTuple[S <: Sys[S], A <: Elem[S]](tup: (LongObj[S], A))(implicit tx: S#Tx): Entry[S, A] =
-      apply[S, A](tup._1, tup._2)
+//    implicit def fromTuple[S <: Sys[S], A <: Elem[S]](tup: (LongObj[S], A))(implicit tx: S#Tx): Entry[S, A] =
+//      apply[S, A](tup._1, tup._2)
   }
-  trait Entry[S <: Sys[S], A] extends Elem[S] with Publisher[S, model.Change[Long]] {
+  trait Entry[S <: Sys[S], +A] extends Elem[S] with Publisher[S, m.Change[Long]] {
     def key  : LongObj[S]
     def value: A
+
+    def isEmpty: Boolean = false
+    def get: (LongObj[S], A) = (key, value)
   }
 
   // type Entry[S <: Sys[S], A] = (LongObj[S], A)
-  type Leaf[S <: Sys[S], A] = Vec[Entry[S, A]]
+  type Leaf[S <: Sys[S], +A] = Vec[Entry[S, A]]
 
   sealed trait Change[S <: Sys[S], A] {
     def entry: Entry[S, A]
   }
 
-  final case class Added  [S <: Sys[S], A](time: Long              , entry: Entry[S, A]) extends Change[S, A]
-  final case class Removed[S <: Sys[S], A](time: Long              , entry: Entry[S, A]) extends Change[S, A]
-  final case class Moved  [S <: Sys[S], A](time: model.Change[Long], entry: Entry[S, A]) extends Change[S, A]
+  final case class Added  [S <: Sys[S], A](time: Long          , entry: Entry[S, A]) extends Change[S, A]
+  final case class Removed[S <: Sys[S], A](time: Long          , entry: Entry[S, A]) extends Change[S, A]
+  final case class Moved  [S <: Sys[S], A](time: m.Change[Long], entry: Entry[S, A]) extends Change[S, A]
 
   object Modifiable {
     /** Extractor to check if a `BiPin` is actually a `BiPin.Modifiable`. */
@@ -86,8 +91,8 @@ object BiPin extends Obj.Type {
   }
 
   trait Modifiable[S <: Sys[S], A] extends BiPin[S, A] {
-    def add   (entry: Entry[S, A])(implicit tx: S#Tx): Unit
-    def remove(entry: Entry[S, A])(implicit tx: S#Tx): Boolean
+    def add   (key: LongObj[S], value: A)(implicit tx: S#Tx): Unit
+    def remove(key: LongObj[S], value: A)(implicit tx: S#Tx): Boolean
     def clear()(implicit tx: S#Tx): Unit
   }
 

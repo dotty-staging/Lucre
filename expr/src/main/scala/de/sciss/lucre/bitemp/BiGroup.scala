@@ -19,7 +19,6 @@ import de.sciss.lucre.event.{EventLike, Publisher}
 import de.sciss.lucre.expr.SpanLikeObj
 import de.sciss.lucre.geom.LongSquare
 import de.sciss.lucre.stm.{Sys, Elem, Obj}
-import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 import de.sciss.span.SpanLike
 import de.sciss.{model => m}
@@ -64,21 +63,7 @@ object BiGroup extends Obj.Type {
   object Entry extends Obj.Type {
     final val typeID = 28
 
-//    def apply[S <: Sys[S], A](id: S#ID, span: SpanLikeObj[S], value: A): Entry[S, A] =
-//      Wrapper(id, span, value)
-//
-//    private final case class Wrapper[S <: Sys[S], A](id: S#ID, span: SpanLikeObj[S], value: A)
-//      extends Entry[S, A] {
-//
-//      override def toString = s"Entry$id"
-//
-//      override def equals(that: Any): Boolean = that match {
-//        case m: Identifiable[_] => this.id == m.id
-//        case _ => super.equals(that)
-//      }
-//
-//      override def hashCode = id.hashCode()
-//    }
+    def unapply[S <: Sys[S], A](entry: Entry[S, A]): Entry[S, A] = entry
 
     implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
       Impl.entrySer[S, A]
@@ -91,7 +76,8 @@ object BiGroup extends Obj.Type {
     def span : SpanLikeObj[S]
     def value: A
 
-    override def toString = s"Entry($id, $span, $value)"
+    def isEmpty: Boolean = false
+    def get: (SpanLikeObj[S], A) = (span, value)
   }
 
   object Modifiable {

@@ -180,7 +180,8 @@ object BiPinImpl {
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
       val treeOut: Tree[Out, E[Out]] = SkipList.Map.empty[Out, Long, Leaf[Out, E[Out]]]()
       val out = new Impl[Out, E](evt.Targets[Out], treeOut)
-      context.defer(this, out) {
+      type PinAux[~ <: Sys[~]] = BiPin[~, E[~]]
+      context.defer[PinAux](this, out) {
         this.tree.iterator.foreach { case (time, xsIn) =>
           type EntryAux[~ <: Sys[~]] = BiPin.Entry[~, E[~]]
           val xsOut = xsIn.map(e => context[EntryAux](e))
@@ -213,7 +214,7 @@ object BiPinImpl {
           changes.foreach {
             case Moved(timeChange, entry) =>
               if (timeChange.isSignificant) {
-                removeNoFire(timeChange.before, entry)
+                remove1(timeChange.before, entry.key, entry.value, fireAndDispose = false)
                 addNoFire   (timeChange.now   , entry)
               }
           }
@@ -247,12 +248,13 @@ object BiPinImpl {
       }
     }
 
-    def add(elem: Entry[S, A])(implicit tx: S#Tx): Unit = {
-      val timeVal = elem.key.value // timeValue
-      addNoFire(timeVal, elem)
+    def add(key: LongObj[S], value: A)(implicit tx: S#Tx): Unit = {
+      val timeVal = key.value // timeValue
+      val entry   = newEntry(key, value)
+      addNoFire(timeVal, entry)
 
-      changed += elem
-      changed.fire(Update(pin, Added(timeVal, elem) :: Nil))
+      changed += entry
+      changed.fire(Update(pin, Added(timeVal, entry) :: Nil))
     }
 
     def intersect(time: Long)(implicit tx: S#Tx): Leaf[S, A] = tree.floor(time) match {
@@ -282,35 +284,42 @@ object BiPinImpl {
           tree += timeVal -> Vec(elem)
       }
 
-    def remove(elem: Entry[S, A])(implicit tx: S#Tx): Boolean = {
-      val timeVal = elem.key.value // timeValue
-      val (found, visible) = removeNoFire(timeVal, elem)
-      if (visible) {
-        changed -= elem
-        changed.fire(Update(pin, Removed(timeVal, elem) :: Nil))
-        elem.dispose()
-      }
+    def remove(key: LongObj[S], value: A)(implicit tx: S#Tx): Boolean = {
+      val timeVal = key.value // timeValue
+      val found = remove1(timeVal, key, value, fireAndDispose = true)
       found
     }
 
-    private def removeNoFire(timeVal: Long, elem: Entry[S, A])(implicit tx: S#Tx): (Boolean, Boolean) = {
+    private def entryRemoved(timeVal: Long, entry: Entry[S, A], visible: Boolean)(implicit tx: S#Tx): Unit = {
+      changed -= entry
+      if (visible) changed.fire(Update(pin, Removed(timeVal, entry) :: Nil))
+      entry.dispose()
+    }
+
+    private def remove1(timeVal: Long, key: LongObj[S], value: A, fireAndDispose: Boolean)
+                       (implicit tx: S#Tx): Boolean = {
       tree.get(timeVal) match {
         case Some(Vec(single)) =>
-          val found = single == elem
-          if (found) tree -= timeVal
-          (found, found)
+          val found = single.key == key && single.value == value
+          if (found) {
+            tree -= timeVal
+            if (fireAndDispose) entryRemoved(timeVal, single, visible = true)
+          }
+          found
 
         case Some(seq) =>
-          val i       = seq.indexOf(elem)
+          val i       = seq.indexWhere(entry => entry.key == key && entry.value == value) // indexOf(elem)
           val found   = i >= 0
-          val visible = i == 0
           if (found) {
-            val seqNew = seq.patch(i, Vec.empty[Entry[S, A]], 1)
+            val visible = i == 0
+            val entry   = seq(i)
+            val seqNew  = seq.patch(i, Vec.empty[Entry[S, A]], 1)
             tree += timeVal -> seqNew
+            if (fireAndDispose) entryRemoved(timeVal, entry, visible = visible)
           }
-          (found, visible)
+          found
 
-        case None => (false, false)
+        case None => false
       }
     }
 
