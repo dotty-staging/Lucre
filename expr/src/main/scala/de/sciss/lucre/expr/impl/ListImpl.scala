@@ -21,6 +21,7 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.{switch, tailrec}
+import scala.language.higherKinds
 
 object ListImpl {
   import de.sciss.lucre.expr.List.Modifiable

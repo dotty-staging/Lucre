@@ -11,21 +11,20 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm.impl
-
-import de.sciss.lucre.stm.{Sys, Txn}
+package de.sciss.lucre.stm
+package impl
 
 import scala.annotation.meta.field
-import scala.concurrent.stm.Txn
+import scala.concurrent.stm.{Txn => ScalaTxn}
 
 trait BasicTxnImpl[S <: Sys[S]] extends Txn[S] {
   _: S#Tx =>
 
   def beforeCommit(fun: S#Tx => Unit): Unit =
-    Txn.beforeCommit(_ => fun(this))(peer)
+    ScalaTxn.beforeCommit(_ => fun(this))(peer)
 
   def afterCommit(code: => Unit): Unit =
-    Txn.afterCommit(_ => code)(peer)
+    ScalaTxn.afterCommit(_ => code)(peer)
 
   @field protected var _context: S#Context = _
 

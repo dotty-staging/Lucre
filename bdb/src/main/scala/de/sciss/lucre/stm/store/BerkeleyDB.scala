@@ -22,6 +22,7 @@ import de.sciss.lucre.stm._
 import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.meta.field
+import scala.collection.JavaConversions
 import scala.concurrent.duration.Duration
 import scala.concurrent.stm.{InTxnEnd, Txn => ScalaTxn, TxnLocal}
 import scala.language.implicitConversions
@@ -269,6 +270,11 @@ object BerkeleyDB {
 
   private[this] final class TxEnv(val env: Environment, val txnCfg: TransactionConfig)
     extends Txn.Resource {
+
+    override def toString = {
+      import JavaConversions.collectionAsScalaIterable
+      s"BerkeleyDB Transaction (${env.getDatabaseNames.mkString(", ")}) @${hashCode().toHexString}"
+    }
 
     @field private[this] val ioQueue   = new ConcurrentLinkedQueue[IO]
     @field private[this] val dbTxnRef  = TxnLocal(initialValue = { implicit tx =>
