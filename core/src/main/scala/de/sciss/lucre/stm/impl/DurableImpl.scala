@@ -11,7 +11,8 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm.impl
+package de.sciss.lucre.stm
+package impl
 
 import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.{event => evt}
@@ -22,7 +23,7 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.elidable
 import scala.annotation.meta.field
-import scala.concurrent.stm.{InTxn, Ref, Txn, TxnExecutor}
+import scala.concurrent.stm.{InTxn, Ref, Txn => ScalaTxn}
 import scala.language.higherKinds
 
 object DurableImpl {
@@ -74,11 +75,8 @@ object DurableImpl {
 
     // ---- cursor ----
 
-    def step[A](fun: S#Tx => A): A = {
-      if (Txn.findCurrent.isDefined)
-        throw new IllegalStateException("Nested transactions not supported yet by Durable system.")
-
-      TxnExecutor.defaultAtomic(itx => fun(wrap(itx)))
+    def step[A](fun: S#Tx => A): A = Txn.atomic { implicit itx =>
+      fun(wrap(itx))
     }
 
     def position(implicit tx: S#Tx): S#Acc = ()

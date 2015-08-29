@@ -15,11 +15,10 @@ package de.sciss.lucre.confluent
 package impl
 
 import de.sciss.lucre.confluent.Cursor.Data
+import de.sciss.lucre.stm.Txn
 import de.sciss.lucre.{confluent, stm}
 import de.sciss.serial
-import de.sciss.serial.{Serializer, DataInput, DataOutput}
-
-import scala.concurrent.stm.{Txn, TxnExecutor}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 object CursorImpl {
   private final val COOKIE  = 0x4375  // "Cu"
@@ -54,7 +53,7 @@ object CursorImpl {
   def newData[S <: Sys[S], D <: stm.DurableLike[D]](init: S#Acc = Access.root[S])(implicit tx: D#Tx): Data[S, D] = {
     val id    = tx.newID()
     val path  = tx.newVar(id, init)(pathSerializer[S, D])
-    new DataImpl(id, path)
+    new DataImpl[S, D](id, path)
   }
 
   def dataSerializer[S <: Sys[S], D <: stm.DurableLike[D]]: Serializer[D#Tx, D#Acc, Data[S, D]] =
@@ -75,7 +74,7 @@ object CursorImpl {
     if (cookie != COOKIE) throw new IllegalStateException(s"Unexpected cookie $cookie (should be $COOKIE)")
     val id      = tx.readID(in, ()) // implicitly[Serializer[D#Tx, D#Acc, D#ID]].read(in)
     val path    = tx.readVar[S#Acc](id, in)(pathSerializer[S, D])
-    new DataImpl(id, path)
+    new DataImpl[S, D](id, path)
   }
 
   private final class DataImpl[S <: Sys[S], D <: stm.DurableLike[D]](val id: D#ID, val path: D#Var[S#Acc])
@@ -109,13 +108,9 @@ object CursorImpl {
 
     override def toString = s"Cursor${data.id}"
 
-    private def topLevelAtomic[A](fun: D1#Tx => A): A = {
-      if (Txn.findCurrent.isDefined)
-        throw new IllegalStateException("Nested transactions not supported yet by Durable system.")
-      TxnExecutor.defaultAtomic { itx =>
-        val dtx = system.durable.wrap(itx)
-        fun(dtx)
-      }
+    private def topLevelAtomic[A](fun: D1#Tx => A): A = Txn.atomic { itx =>
+      val dtx = system.durable.wrap(itx)
+      fun(dtx)
     }
 
     def step[A](fun: S#Tx => A): A = {

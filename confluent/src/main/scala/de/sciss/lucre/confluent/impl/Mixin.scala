@@ -19,7 +19,7 @@ import de.sciss.lucre.data.Ancestor
 import de.sciss.lucre.event.Observer
 import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{IdentifierMap, TxnLike, DataStore}
+import de.sciss.lucre.stm.{Txn, IdentifierMap, TxnLike, DataStore}
 import de.sciss.serial
 import de.sciss.serial.{DataOutput, DataInput, ImmutableSerializer}
 
@@ -163,14 +163,10 @@ trait Mixin[S <: Sys[S]]
       tx.newHandle(confV) -> durV
     }
 
-  private def executeRoot[A](fun: S#Tx => A): A = {
-    if (ScalaTxn.findCurrent.isDefined)
-      throw new IllegalStateException("Nested transactions not supported yet by Durable system.")
+  private def executeRoot[A](fun: S#Tx => A): A = Txn.atomic { itx =>
     log("::::::: root :::::::")
-    TxnExecutor.defaultAtomic { itx =>
-      val tx = wrapRoot(itx)
-      fun(tx)
-    }
+    val tx = wrapRoot(itx)
+    fun(tx)
   }
 
   private def initRoot[A, B](initA: S#Tx => A, readB: S#Tx => B, initB: S#Tx => B)

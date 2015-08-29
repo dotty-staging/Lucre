@@ -1,6 +1,7 @@
 package de.sciss.lucre.stm
 
 import de.sciss.lucre.expr.IntObj
+import de.sciss.lucre.stm
 import de.sciss.lucre.stm.store.BerkeleyDB
 import org.scalatest.{Outcome, Matchers, fixture}
 
@@ -35,13 +36,11 @@ class CopySpec extends fixture.FlatSpec with Matchers {
       tx.newHandle(num1)
     }
 
-    val num2H = s1.step { implicit tx1 =>
-      val num1 = num1H()
-      s2.step { implicit tx2 =>
-        val num2 = Obj.copy[S, S, IntObj](num1)(tx1, tx2)
-        tx2.newHandle(num2)
-      }
-    }
+    val num2H = Txn.copy[S, S, stm.Source[S#Tx, IntObj[S]]] { (tx1, tx2) =>
+      val num1 = num1H()(tx1)
+      val num2 = Obj.copy[S, S, IntObj](num1)(tx1, tx2)
+      tx2.newHandle(num2)
+    } (s1, s2)
 
     s1.step { implicit tx =>
       val num = num1H()

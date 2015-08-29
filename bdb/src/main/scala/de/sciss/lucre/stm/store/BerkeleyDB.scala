@@ -271,7 +271,7 @@ object BerkeleyDB {
   private[this] final class TxEnv(val env: Environment, val txnCfg: TransactionConfig) extends ExternalDecider {
     @field private[this] val ioQueue   = new ConcurrentLinkedQueue[IO]
     @field private[this] val dbTxnRef  = TxnLocal(initialValue = { implicit tx =>
-      ScalaTxn.setExternalDecider(this)
+      Txn.addExternalDecider(this)
       val res = env.beginTransaction(null, txnCfg)
       val id  = res.getId
       log(s"txn begin  <$id>")

@@ -16,7 +16,8 @@ package de.sciss.lucre.stm
 import de.sciss.lucre.event.ReactionMap
 import de.sciss.serial.{DataInput, Serializer}
 
-import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
+import scala.concurrent.stm.Txn.ExternalDecider
+import scala.concurrent.stm.{Txn => ScalaTxn, InTxnEnd, TxnLocal, TxnExecutor, InTxn}
 import scala.language.higherKinds
 
 object TxnLike {
@@ -50,6 +51,58 @@ trait TxnLike {
   // def beforeCommit(fun: TxnLike => Unit): Unit
 }
 
+object Txn {
+  private[this] final class Decider(var instances: List[ExternalDecider])
+    extends ExternalDecider {
+
+    // XXX TODO -- this is potentially dangerous. If the inner
+    // (`prev`) decider completes and the outer `decider` fails,
+    // the transaction is rolled back, but the inner system
+    // may be inconsistent between in-memory and on-disk.
+    // I don't know how we can do better, though...
+    def shouldCommit(implicit txn: InTxnEnd): Boolean = instances.forall(_.shouldCommit)
+  }
+
+  private[this] val metaDecider = TxnLocal[Decider]()
+
+  private[lucre] def addExternalDecider(decider: ExternalDecider)(implicit tx: InTxn): Unit =
+    if (metaDecider.isInitialized) {
+      metaDecider().instances ::= decider
+    } else {
+      val meta = new Decider(decider :: Nil)
+      ScalaTxn.setExternalDecider(meta)
+      metaDecider() = meta
+    }
+
+  private[lucre] def requireEmpty(): Unit =
+    if (!allowNesting && ScalaTxn.findCurrent.isDefined)
+      throw new IllegalStateException("Nested transactions are not supported by this system.")
+
+  private[this] var allowNesting = false
+
+  def atomic[A](fun: InTxn => A): A = {
+    requireEmpty()
+    TxnExecutor.defaultAtomic(fun)
+  }
+
+  /** Allows to share a transaction between two systems, necessary
+    * for a cross-system `Obj.copy` operation.
+    */
+  def copy[S1 <: Sys[S1], S2 <: Sys[S2], A](fun: (S1#Tx, S2#Tx) => A)
+                                           (implicit cursor1: Cursor[S1], cursor2: Cursor[S2]): A = {
+    cursor1.step { tx1 =>
+      allowNesting = true // allow only for the next cursor step
+      try {
+        cursor2.step { implicit tx2 =>
+          allowNesting = false
+          fun(tx1, tx2)
+        }
+      } finally {
+        allowNesting = false
+      }
+    }
+  }
+}
 trait Txn[S <: Sys[S]] extends TxnLike {
   /** Back link to the underlying system. */
   val system: S
