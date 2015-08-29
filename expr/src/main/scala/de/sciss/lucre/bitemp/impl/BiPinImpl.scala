@@ -25,6 +25,7 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.higherKinds // ... my arse
 
 object BiPinImpl {
   import BiPin.{Added, Entry, Leaf, Modifiable, Moved, Removed, Update}
