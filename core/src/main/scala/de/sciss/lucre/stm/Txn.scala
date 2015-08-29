@@ -13,12 +13,16 @@
 
 package de.sciss.lucre.stm
 
+import java.io.Closeable
+
 import de.sciss.lucre.event.ReactionMap
 import de.sciss.serial.{DataInput, Serializer}
 
+import scala.annotation.tailrec
 import scala.concurrent.stm.Txn.ExternalDecider
 import scala.concurrent.stm.{Txn => ScalaTxn, InTxnEnd, TxnLocal, TxnExecutor, InTxn}
 import scala.language.higherKinds
+import scala.util.control.NonFatal
 
 object TxnLike {
   /** Implicitly extracts a Scala STM transaction from a `TxnLike` instance. */
@@ -52,26 +56,50 @@ trait TxnLike {
 }
 
 object Txn {
-  private[this] final class Decider(var instances: List[ExternalDecider])
+  trait Resource extends Closeable with ExternalDecider
+
+  private[this] final class Decider(var instances: List[Resource])
     extends ExternalDecider {
 
-    // XXX TODO -- this is potentially dangerous. If the inner
-    // (`prev`) decider completes and the outer `decider` fails,
-    // the transaction is rolled back, but the inner system
-    // may be inconsistent between in-memory and on-disk.
-    // I don't know how we can do better, though...
-    def shouldCommit(implicit txn: InTxnEnd): Boolean = instances.forall(_.shouldCommit)
+    def shouldCommit(implicit txn: InTxnEnd): Boolean = instances match {
+      case single :: Nil => single.shouldCommit
+      case _ => commitAll(instances, Nil)
+    }
+
+    @tailrec
+    private[this] def commitAll(remain: List[Resource], done: List[Resource])(implicit txn: InTxnEnd): Boolean =
+      remain match {
+        case head :: tail =>
+          if (head.shouldCommit) {
+            commitAll(tail, head :: done)
+          } else {
+            if (done.nonEmpty) {
+              Console.err.println(s"Resource $head failed to commit transaction.")
+              done.foreach { r =>
+                Console.err.println(s"Closing $r as a precaution. The system must be re-opened prior to further use.")
+                try {
+                  r.close()
+                } catch {
+                  case NonFatal(e) => e.printStackTrace()
+                }
+              }
+            }
+            false
+          }
+
+        case _ => true
+      }
   }
 
-  private[this] val metaDecider = TxnLocal[Decider]()
+  private[this] val decider = TxnLocal[Decider]()
 
-  private[lucre] def addExternalDecider(decider: ExternalDecider)(implicit tx: InTxn): Unit =
-    if (metaDecider.isInitialized) {
-      metaDecider().instances ::= decider
+  private[lucre] def addResource(resource: Resource)(implicit tx: InTxn): Unit =
+    if (decider.isInitialized) {
+      decider().instances ::= resource
     } else {
-      val meta = new Decider(decider :: Nil)
-      ScalaTxn.setExternalDecider(meta)
-      metaDecider() = meta
+      val d = new Decider(resource :: Nil)
+      ScalaTxn.setExternalDecider(d)
+      decider() = d
     }
 
   private[lucre] def requireEmpty(): Unit =

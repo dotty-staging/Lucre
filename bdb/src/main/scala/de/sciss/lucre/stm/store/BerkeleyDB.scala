@@ -23,7 +23,6 @@ import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.meta.field
 import scala.concurrent.duration.Duration
-import scala.concurrent.stm.Txn.ExternalDecider
 import scala.concurrent.stm.{InTxnEnd, Txn => ScalaTxn, TxnLocal}
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
@@ -268,10 +267,12 @@ object BerkeleyDB {
     def numEntries(implicit tx: TxnLike): Int = db.count().toInt
   }
 
-  private[this] final class TxEnv(val env: Environment, val txnCfg: TransactionConfig) extends ExternalDecider {
+  private[this] final class TxEnv(val env: Environment, val txnCfg: TransactionConfig)
+    extends Txn.Resource {
+
     @field private[this] val ioQueue   = new ConcurrentLinkedQueue[IO]
     @field private[this] val dbTxnRef  = TxnLocal(initialValue = { implicit tx =>
-      Txn.addExternalDecider(this)
+      Txn.addResource(this)
       val res = env.beginTransaction(null, txnCfg)
       val id  = res.getId
       log(s"txn begin  <$id>")
@@ -291,6 +292,7 @@ object BerkeleyDB {
       res
     })
 
+    def close(): Unit = env.close()
 
     def shouldCommit(implicit txn: InTxnEnd): Boolean = {
       val dbTxn = dbTxnRef()
