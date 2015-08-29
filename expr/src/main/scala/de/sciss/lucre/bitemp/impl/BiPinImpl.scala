@@ -170,6 +170,7 @@ object BiPinImpl {
     pin =>
 
     type A = E[S]
+    protected type PinAux[~ <: Sys[~]] = BiPin[~, E[~]]
 
     def tpe: Obj.Type = BiPin
 
@@ -180,7 +181,6 @@ object BiPinImpl {
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
       val treeOut: Tree[Out, E[Out]] = SkipList.Map.empty[Out, Long, Leaf[Out, E[Out]]]()
       val out = new Impl[Out, E](evt.Targets[Out], treeOut)
-      type PinAux[~ <: Sys[~]] = BiPin[~, E[~]]
       context.defer[PinAux](this, out) {
         this.tree.iterator.foreach { case (time, xsIn) =>
           type EntryAux[~ <: Sys[~]] = BiPin.Entry[~, E[~]]

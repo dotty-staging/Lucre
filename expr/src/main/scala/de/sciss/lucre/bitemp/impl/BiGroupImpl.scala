@@ -30,6 +30,7 @@ import de.sciss.span.{Span, SpanLike}
 import scala.annotation.elidable
 import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.higherKinds // ... my arse
 
 object BiGroupImpl {
   import BiGroup.{Entry, Leaf, MaxCoordinate, MaxSide, MaxSquare, MinCoordinate, Modifiable}
@@ -239,7 +240,7 @@ object BiGroupImpl {
     def tpe = Entry
   }
 
-  private final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](
+  final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](
       in: TreeImpl[In, E], out: TreeImpl[Out, E])
      (implicit txIn: In#Tx, txOut: Out#Tx, context: Copy[In, Out]): Unit = {
 
