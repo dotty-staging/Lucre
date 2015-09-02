@@ -13,6 +13,8 @@
 
 package de.sciss.lucre.stm
 
+import java.io.Closeable
+
 import de.sciss.serial.{DataInput, DataOutput}
 
 object DataStore {
@@ -26,7 +28,7 @@ object DataStore {
     def open(name: String, overwrite: Boolean = false): DataStore
   }
 }
-trait DataStore {
+trait DataStore extends Closeable {
   def put(   keyFun: DataOutput => Unit)(valueFun: DataOutput => Unit)(implicit tx: TxnLike): Unit
   def get[A](keyFun: DataOutput => Unit)(valueFun: DataInput => A)(    implicit tx: TxnLike): Option[A]
   def contains(keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean
@@ -35,5 +37,6 @@ trait DataStore {
   def flatGet[A](keyFun: DataOutput => Unit)(valueFun: DataInput => Option[A])(implicit tx: TxnLike) : Option[A]
 
   def numEntries(implicit tx: TxnLike): Int
-  def close(): Unit
+
+  // def close(): Unit
 }

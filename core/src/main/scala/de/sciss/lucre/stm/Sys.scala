@@ -13,6 +13,8 @@
 
 package de.sciss.lucre.stm
 
+import java.io.Closeable
+
 import de.sciss.lucre.event.ReactionMap
 import de.sciss.lucre.stm
 import de.sciss.serial.Serializer
@@ -26,7 +28,7 @@ import scala.language.higherKinds
   *
   * @tparam S   the representation type of the system
   */
-trait Sys[S <: Sys[S]] {
+trait Sys[S <: Sys[S]] extends Closeable {
   type I <: InMemoryLike[I]
 
   def inMemory: I

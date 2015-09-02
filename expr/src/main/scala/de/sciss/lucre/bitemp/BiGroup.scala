@@ -24,6 +24,7 @@ import de.sciss.span.SpanLike
 import de.sciss.{model => m}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.higherKinds
 
 object BiGroup extends Obj.Type {
   final val MaxSquare     = LongSquare(0, 0, 0x2000000000000000L)

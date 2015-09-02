@@ -21,6 +21,7 @@ import de.sciss.{model => m}
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.higherKinds
 import scala.language.implicitConversions
 
 object BiPin extends Obj.Type {
