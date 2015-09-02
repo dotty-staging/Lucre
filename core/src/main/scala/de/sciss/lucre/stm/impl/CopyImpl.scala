@@ -26,7 +26,12 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
 
   private[this] val stateMap = mutable.Map.empty[Elem[In], State]
   private[this] val hintMap  = mutable.Map.empty[Elem[In], mutable.Map[String, Any]]
-  private[this] val deferred = mutable.Buffer.empty[() => Unit]
+  private[this] var deferred: mutable.Buffer[() => Unit] = _
+
+  private def newPhase(): Unit =
+    deferred = mutable.Buffer.empty[() => Unit]
+
+  newPhase()
 
   def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
     if (!stateMap.get(in).contains(Busy))
@@ -35,9 +40,12 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
     deferred += (() => code)
   }
 
-  def finish(): Unit = {
-    deferred.foreach(_.apply())
-  }
+  def finish(): Unit =
+    while (deferred.nonEmpty) {
+      val d = deferred
+      newPhase()
+      d.foreach(_.apply())
+    }
 
   def apply[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out] =
     stateMap.get(in) match {
