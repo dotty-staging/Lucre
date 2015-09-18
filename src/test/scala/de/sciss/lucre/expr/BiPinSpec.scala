@@ -209,8 +209,8 @@ class BiPinSpec extends ConfluentEventSpec {
       val tup2 = (20000L: LE) -> (2: IE) // : E
 
       val bip  = bipH()
-      bip.add( tup1._1, tup2._2 )
-      bip.add( tup2._1, tup2._2 )
+      bip.add(tup1._1, tup1._2)
+      bip.add(tup2._1, tup2._2)
       obs.map(mapUpdate)
       obs.assertEquals(
         //            BiPin.Collection( bip, Vec( Span.from(     0L ) -> (1: IntEx) )),

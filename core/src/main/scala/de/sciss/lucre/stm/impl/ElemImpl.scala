@@ -14,6 +14,7 @@
 package de.sciss.lucre.stm
 package impl
 
+import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataOutput, DataInput, Serializer}
 
 import scala.annotation.meta.field
@@ -30,7 +31,8 @@ object ElemImpl {
   @field private[this] final val sync   = new AnyRef
   @field private[this] final val anySer = new Ser[NoSys]
 
-  @volatile private var map = Map.empty[Int, Elem.Type]
+  // @volatile private var map = Map.empty[Int, Elem.Type]
+  @volatile private var map = Map[Int, Elem.Type](evt.Map.typeID -> evt.Map)
 
   def addType(tpe: Elem.Type): Unit = sync.synchronized {
     val typeID = tpe.typeID

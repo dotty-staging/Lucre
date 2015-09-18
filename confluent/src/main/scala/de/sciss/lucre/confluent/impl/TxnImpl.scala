@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.event.ReactionMap
-import de.sciss.lucre.stm
+import de.sciss.lucre.{event => evt, stm}
 import de.sciss.lucre.stm.{Obj, Durable, InMemory, IdentifierMap}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, ImmutableSerializer}
@@ -129,7 +129,17 @@ trait TxnMixin[S <: Sys[S]]
 
   // ---- attributes ----
 
-  def attrMap(obj: Obj[S]): Obj.AttrMap[S] = ???
+  def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
+    val id        = obj.id
+    val mBase     = id.base | 0x80000000  // XXX TODO --- a bit cheesy to throw away one bit entirely
+    val mapOpt    = fullCache.getCacheTxn[Obj.AttrMap[S]](mBase, id.path)(this, Obj.attrMapSerializer)
+    mapOpt.getOrElse {
+      val map = evt.Map.Modifiable[S, String, Obj](evt.Map.Key.String, this)
+      fullCache.putCacheTxn(mBase, id.path, map)(this, Obj.attrMapSerializer)
+      markDirty()
+      map
+    }
+  }
 
 //  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ...
 //  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ...
@@ -179,12 +189,12 @@ trait TxnMixin[S <: Sys[S]]
 
   final def getNonTxn[A](id: S#ID)(implicit ser: ImmutableSerializer[A]): A = {
     log(s"txn get $id")
-    fullCache.getCacheNonTxn[A](id.base, id.path)(this, ser).getOrElse(sys.error("No value for " + id))
+    fullCache.getCacheNonTxn[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
   }
 
   final def getTxn[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A = {
     log(s"txn get' $id")
-    fullCache.getCacheTxn[A](id.base, id.path)(this, ser).getOrElse(sys.error("No value for " + id))
+    fullCache.getCacheTxn[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
   }
 
   final def putTxn[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {

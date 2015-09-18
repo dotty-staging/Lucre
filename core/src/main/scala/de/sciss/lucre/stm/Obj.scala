@@ -75,6 +75,11 @@ object Obj {
   type AttrAdded  [S <: Sys[S]] = evt.Map.Added  [S, String, Obj[S]]
   val  AttrRemoved              = evt.Map.Removed
   type AttrRemoved[S <: Sys[S]] = evt.Map.Removed[S, String, Obj[S]]
+
+  implicit def attrMapSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] =
+    anyAttrMapSer.asInstanceOf[Serializer[S#Tx, S#Acc, AttrMap[S]]]
+
+  private[this] val anyAttrMapSer = evt.Map.Modifiable.serializer[NoSys, String, Obj]
 }
 
 /** An `Obj` is a type of element that has an `S#ID` identifier and

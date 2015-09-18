@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 object Map extends Obj.Type {
   final val typeID = 24
 
-  override def init(): Unit = ()  // this type is known in advance
+  override def init(): Unit = ()  // this type is known in advance.
 
   object Key {
     implicit object Int extends Key[Int] {
