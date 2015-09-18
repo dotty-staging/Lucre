@@ -42,7 +42,6 @@
 0x10002	    Grapheme
 0x10003     ArtifactLocation
 
-0x10004     expr.List
 0x10005     Proc
 
 0x10006     Timeline

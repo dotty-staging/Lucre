@@ -16,7 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.Publisher
 import de.sciss.lucre.expr.impl.{ListImpl => Impl}
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
-import de.sciss.lucre.{data, event => evt}
+import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}

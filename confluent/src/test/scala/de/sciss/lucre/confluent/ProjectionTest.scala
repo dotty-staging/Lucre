@@ -62,18 +62,20 @@ trait ProjectionTest {
   class DynamicVar[-Tx, A] extends stm.Var[PCursor[Tx], A] {
     def apply()(implicit tx: PCursor[Tx]): A = getAt(tx.time)(tx.peer)
 
-    def getAt(time: Double)(implicit tx: Tx): A = ???
+    def getAt(time: Double)(implicit tx: Tx): A = notImplemented()
 
     def transform(fun: A => A)(implicit tx: PCursor[Tx]): Unit = this() = fun(this())
 
     def update(v: A)(implicit tx: PCursor[Tx]): Unit = setAt(tx.time, v)(tx.peer)
 
-    def setAt(time: Double, v: A)(implicit tx: Tx): Unit = ???
+    def setAt(time: Double, v: A)(implicit tx: Tx): Unit = notImplemented()
 
     def dispose()( implicit tx: PCursor[ Tx ]) = ()
 
     def write(out: DataOutput) = ()
 
-    def isFresh(implicit tx: PCursor[Tx]): Boolean = ???
+    def isFresh(implicit tx: PCursor[Tx]): Boolean = notImplemented()
+
+    private def notImplemented(): Nothing = sys.error("Not implemented")
   }
 }

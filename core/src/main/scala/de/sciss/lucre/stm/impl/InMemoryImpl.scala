@@ -20,7 +20,7 @@ import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Obj, Source, T
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TMap, TxnExecutor}
+import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TxnExecutor}
 import scala.language.higherKinds
 
 object InMemoryImpl {
@@ -101,16 +101,16 @@ object InMemoryImpl {
     }
   }
 
-  private final class ContextImpl[S <: InMemoryLike[S]] extends InMemoryLike.Context[S] {
-    private val map = TMap.empty[Any, Any]
-
-    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A = {
-      import TxnLike.peer
-      map.getOrElse(vr, vr.peer.get).asInstanceOf[A]
-    }
-
-    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit = map.put(vr, value)(tx.peer)
-  }
+//  private final class ContextImpl[S <: InMemoryLike[S]] extends InMemoryLike.Context[S] {
+//    private val map = TMap.empty[Any, Any]
+//
+//    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A = {
+//      import TxnLike.peer
+//      map.getOrElse(vr, vr.peer.get).asInstanceOf[A]
+//    }
+//
+//    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit = map.put(vr, value)(tx.peer)
+//  }
 
   private final class TxnImpl(val system: InMemory, val peer: InTxn)
     extends TxnMixin[InMemory] {
@@ -176,7 +176,7 @@ object InMemoryImpl {
 
     // ---- context ----
 
-    def newContext(): S#Context = new ContextImpl[S]
+    // def newContext(): S#Context = new ContextImpl[S]
 
     // ---- attributes ----
 

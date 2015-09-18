@@ -127,7 +127,7 @@ private[impl] final class VarImpl[S <: Sys[S], A](protected val id: S#ID, protec
 //                                                    (implicit ser: serial.Serializer[S#Tx, S#Acc, A])
 //  extends BasicVar[S, A] {
 //
-//  def meld(from: S#Acc)(implicit tx: S#Tx): A = ???
+//  def meld(from: S#Acc)(implicit tx: S#Tx): A = ...
 //
 //  def update(v: A)(implicit tx: S#Tx): Unit = {
 //    logPartial(s"$this set $v")

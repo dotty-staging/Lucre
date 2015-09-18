@@ -125,17 +125,17 @@ trait TxnMixin[S <: Sys[S]]
 
   // ---- context ----
 
-  def newContext(): S#Context = ???
+  // def newContext(): S#Context = ...
 
   // ---- attributes ----
 
   def attrMap(obj: Obj[S]): Obj.AttrMap[S] = ???
 
-//  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ???
-//  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ???
-//  def attrRemove(obj: Obj[S], key: String): Unit = ???
+//  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ...
+//  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ...
+//  def attrRemove(obj: Obj[S], key: String): Unit = ...
 //
-//  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ???
+//  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ...
 
   // ----
 

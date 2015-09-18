@@ -15,6 +15,7 @@ package de.sciss.lucre.stm
 package impl
 
 import scala.collection.mutable
+import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx)

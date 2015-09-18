@@ -1155,193 +1155,193 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
 //      }
   }
 
-    private def findNNTail(p0: Branch, pMinDist: M, pri: MPriorityQueue[VisitedNode[M]],
-                           _bestLeaf: LeafOrEmpty, _bestDist: M, _rmax: M)
-                          (implicit tx: S#Tx): NNIter[M] = {
-      stat_rounds1(_rmax)
-
-      var bestLeaf  = _bestLeaf
-      var bestDist  = _bestDist
-      var rmax      = _rmax
-
-      def inspectLeaf(l: LeafImpl): Unit = {
-        val ldist = metric.distance(point, pointView(l.value, tx))
-        if (metric.isMeasureGreater(bestDist, ldist)) {   // found a point that is closer than previously known best result
-          bestDist = ldist
-          bestLeaf = l
-          if (metric.isMeasureGreater(rmax, bestDist)) {  // update minimum required distance if necessary
-            stat_debug(s"better NN candidate ${l.value}")
-            rmax = bestDist // note: we'll re-check acceptedChildren at the end of the loop
-          }
-        }
-      }
-
-      // pMinDist = parent's minDist
-      def scanChildren(parent: Branch): Int = {
-        var numAccepted = 0
-        var i           = 0
-        while (i < sz) {
-          parent.child(i) match {
-            case l: LeafImpl => inspectLeaf(l)
-
-            case c: Branch =>
-              val cq        = c.hyperCube
-              val cMinDist  = metric.minDistance(point, cq)
-              if (cMinDist == pMinDist) {                       // equistabbing
-                stat_debug(s"... scanChild $cq has minDist $cMinDist == pMinDist ($pMinDist)")
-                // val cMaxDist  = metric.maxDistance(point, cq)
-                acceptedChildren(numAccepted) = c
-                acceptedMinDists(numAccepted) = cMinDist
-                // acceptedMaxDists(numAccepted) = cMaxDist
-                numAccepted += 1
-              }
-
-            case _ =>
-          }
-          i += 1
-        }
-
-        numAccepted
-      }
-
-      // TODO: this needs to use the skip structure
-      def ancestorOf(b: Branch): Branch = {
-        val h   = b.hyperCube
-
-        @tailrec def loop(q: Branch): Branch = {
-          val idx = q.hyperCube.indexOf(h)
-          q.child(idx) match {
-            case `b`        => q
-            case c: Branch  => loop(c)
-            case other      => sys.error(s"Unexpected child $other")
-          }
-        }
-        loop(p0)
-      }
-
-      def pushChildren(b: Branch, skip: Int): Unit = {
-        stat_debug(s"pushing child nodes of ${b.hyperCube} to priority queue")
-        assert(b.isInstanceOf[LeftBranch])
-        var i = 0
-        while (i < sz) {
-          if (i != skip) b.child(i) match {
-            case l: LeafImpl => inspectLeaf(l)
-
-            case c: Branch =>
-              // val cq        = c.hyperCube
-
-              // val cMinDist = metric.minDistance(point, cq)
-              // val cMinDist  = {
-              var j = 0
-              // var min = metric.maxValue
-              while (j < sz) {
-                c.child(j) match {
-                  case l: LeafImpl => inspectLeaf(l)
-                  case _ =>
-                }
-                j += 1
-              }
-              j = 0
-              while (j < sz) {
-                c.child(j) match {
-                  case cc: Branch =>
-                    val cch   = cc.hyperCube
-                    val cmin  = metric.minDistance(point, cch)
-                    //                      if (!metric.isMeasureGreater(cmin, rmax) &&
-                    //                           metric.isMeasureGreater( min, cmin)) min = cmin
-                    if (!metric.isMeasureGreater(cmin, rmax)) {
-                      // val cmax = metric.maxDistance(point, cch)
-                      val vn = new VisitedNode(cc, cmin /* , cmax */)
-                      pri += vn
-                      stat_pq_add1(cch)
-                    }
-
-                  case _ =>
-                }
-                j += 1
-              }
-
-            // min
-            // }
-
-            //              // ---- added filter ----
-            //              // if (!metric.isMeasureGreater(cMinDist, rmax)) {
-            //              if (cMinDist != metric.maxValue) {
-            //                val cMaxDist = metric.maxDistance(point, cq)  // ---- added ----
-            //                val vn = new VisitedNode(c, cMinDist, cMaxDist)
-            //                pri += vn
-            //                stat_pq_add1(cq)
-            //              }
-
-            case _ =>
-          }
-          i += 1
-        }
-      }
-
-      def finish(b: Branch): NNIter[M] = {
-        val b0      = inLowestLevel(b)
-        val numAnc  = 1 // XXX TODO needs to be retrieved from metric and numDim
-
-        @tailrec def checkendorfer(b: Branch, si: Int, _anc: Int): Unit = {
-          val a   = ancestorOf(b)
-          val ai  = a.hyperCube.indexOf(b.hyperCube)
-          var anc = _anc
-          if (ai == si) {
-            // pushChildren(a, si)
-            var i = 0
-            while (i < sz) {
-              a.child(i) match {
-                case l: LeafImpl  => inspectLeaf(l)
-                case c: Branch    => if (i != si) pushChildren(c, -1)
-                case _            =>
-              }
-              i += 1
-            }
-            anc -= 1
-          }
-
-          if (anc > 0 && a != p0) {
-            checkendorfer(a, si, anc)
-          }
-        }
-
-        pushChildren(b0, -1) // TODO: do not need to inspect leaves again!
-        if (b0 != p0) metric.stabbingDirections(point, p0.hyperCube, b0.hyperCube).foreach { si =>
-          stat_debug(s"searching for ancestor in ${if (si == 0) "SW" else if (si == 1) "SE" else if (si == 2) "NE" else if (si == 3) "NW"} direction")
-          checkendorfer(b0, si, numAnc)
-        }
-        //                val cMinDist  = metric.minDistance(point, c.hyperCube)
-        //                val cv  = new VisitedNode(c, cMinDist, null.asInstanceOf[M])
-        //                pri += cv
-
-        new NNIter(bestLeaf, bestDist, rmax)
-      }
-
-      @tailrec def loop(b: Branch): NNIter[M] = {
-        val num = scanChildren(b)
-        if (num >= 2) {
-          stat_debug(s"found $num equistabbing children. stop here")
-          finish(b)
-        } else if (num == 1) {
-          stat_debug(s"found 1 equistabbing child ${acceptedChildren(0).hyperCube}, minDist = ${acceptedMinDists(0)}. descend")
-          loop(acceptedChildren(0))
-        } else {
-          b.prevOption match {
-            case Some(prev) =>
-              stat_debug(s"found no equistabbing children. go to previous tree ${prev.hyperCube}")
-              loop(prev)
-            case _ =>
-              stat_debug("found no equistabbing children and ended in Q0. stop here")
-              finish(b)
-          }
-        }
-      }
-
-      val ph = inHighestLevel(p0)
-      stat_debug(s"begin round in ${ph.hyperCube}, minDist = $pMinDist")
-      loop(ph)
-    }
+//    private def findNNTail(p0: Branch, pMinDist: M, pri: MPriorityQueue[VisitedNode[M]],
+//                           _bestLeaf: LeafOrEmpty, _bestDist: M, _rmax: M)
+//                          (implicit tx: S#Tx): NNIter[M] = {
+//      stat_rounds1(_rmax)
+//
+//      var bestLeaf  = _bestLeaf
+//      var bestDist  = _bestDist
+//      var rmax      = _rmax
+//
+//      def inspectLeaf(l: LeafImpl): Unit = {
+//        val ldist = metric.distance(point, pointView(l.value, tx))
+//        if (metric.isMeasureGreater(bestDist, ldist)) {   // found a point that is closer than previously known best result
+//          bestDist = ldist
+//          bestLeaf = l
+//          if (metric.isMeasureGreater(rmax, bestDist)) {  // update minimum required distance if necessary
+//            stat_debug(s"better NN candidate ${l.value}")
+//            rmax = bestDist // note: we'll re-check acceptedChildren at the end of the loop
+//          }
+//        }
+//      }
+//
+//      // pMinDist = parent's minDist
+//      def scanChildren(parent: Branch): Int = {
+//        var numAccepted = 0
+//        var i           = 0
+//        while (i < sz) {
+//          parent.child(i) match {
+//            case l: LeafImpl => inspectLeaf(l)
+//
+//            case c: Branch =>
+//              val cq        = c.hyperCube
+//              val cMinDist  = metric.minDistance(point, cq)
+//              if (cMinDist == pMinDist) {                       // equistabbing
+//                stat_debug(s"... scanChild $cq has minDist $cMinDist == pMinDist ($pMinDist)")
+//                // val cMaxDist  = metric.maxDistance(point, cq)
+//                acceptedChildren(numAccepted) = c
+//                acceptedMinDists(numAccepted) = cMinDist
+//                // acceptedMaxDists(numAccepted) = cMaxDist
+//                numAccepted += 1
+//              }
+//
+//            case _ =>
+//          }
+//          i += 1
+//        }
+//
+//        numAccepted
+//      }
+//
+//      // TODO: this needs to use the skip structure
+//      def ancestorOf(b: Branch): Branch = {
+//        val h   = b.hyperCube
+//
+//        @tailrec def loop(q: Branch): Branch = {
+//          val idx = q.hyperCube.indexOf(h)
+//          q.child(idx) match {
+//            case `b`        => q
+//            case c: Branch  => loop(c)
+//            case other      => sys.error(s"Unexpected child $other")
+//          }
+//        }
+//        loop(p0)
+//      }
+//
+//      def pushChildren(b: Branch, skip: Int): Unit = {
+//        stat_debug(s"pushing child nodes of ${b.hyperCube} to priority queue")
+//        assert(b.isInstanceOf[LeftBranch])
+//        var i = 0
+//        while (i < sz) {
+//          if (i != skip) b.child(i) match {
+//            case l: LeafImpl => inspectLeaf(l)
+//
+//            case c: Branch =>
+//              // val cq        = c.hyperCube
+//
+//              // val cMinDist = metric.minDistance(point, cq)
+//              // val cMinDist  = {
+//              var j = 0
+//              // var min = metric.maxValue
+//              while (j < sz) {
+//                c.child(j) match {
+//                  case l: LeafImpl => inspectLeaf(l)
+//                  case _ =>
+//                }
+//                j += 1
+//              }
+//              j = 0
+//              while (j < sz) {
+//                c.child(j) match {
+//                  case cc: Branch =>
+//                    val cch   = cc.hyperCube
+//                    val cmin  = metric.minDistance(point, cch)
+//                    //                      if (!metric.isMeasureGreater(cmin, rmax) &&
+//                    //                           metric.isMeasureGreater( min, cmin)) min = cmin
+//                    if (!metric.isMeasureGreater(cmin, rmax)) {
+//                      // val cmax = metric.maxDistance(point, cch)
+//                      val vn = new VisitedNode(cc, cmin /* , cmax */)
+//                      pri += vn
+//                      stat_pq_add1(cch)
+//                    }
+//
+//                  case _ =>
+//                }
+//                j += 1
+//              }
+//
+//            // min
+//            // }
+//
+//            //              // ---- added filter ----
+//            //              // if (!metric.isMeasureGreater(cMinDist, rmax)) {
+//            //              if (cMinDist != metric.maxValue) {
+//            //                val cMaxDist = metric.maxDistance(point, cq)  // ---- added ----
+//            //                val vn = new VisitedNode(c, cMinDist, cMaxDist)
+//            //                pri += vn
+//            //                stat_pq_add1(cq)
+//            //              }
+//
+//            case _ =>
+//          }
+//          i += 1
+//        }
+//      }
+//
+//      def finish(b: Branch): NNIter[M] = {
+//        val b0      = inLowestLevel(b)
+//        val numAnc  = 1 // XXX TODO needs to be retrieved from metric and numDim
+//
+//        @tailrec def checkendorfer(b: Branch, si: Int, _anc: Int): Unit = {
+//          val a   = ancestorOf(b)
+//          val ai  = a.hyperCube.indexOf(b.hyperCube)
+//          var anc = _anc
+//          if (ai == si) {
+//            // pushChildren(a, si)
+//            var i = 0
+//            while (i < sz) {
+//              a.child(i) match {
+//                case l: LeafImpl  => inspectLeaf(l)
+//                case c: Branch    => if (i != si) pushChildren(c, -1)
+//                case _            =>
+//              }
+//              i += 1
+//            }
+//            anc -= 1
+//          }
+//
+//          if (anc > 0 && a != p0) {
+//            checkendorfer(a, si, anc)
+//          }
+//        }
+//
+//        pushChildren(b0, -1) // TODO: do not need to inspect leaves again!
+//        if (b0 != p0) metric.stabbingDirections(point, p0.hyperCube, b0.hyperCube).foreach { si =>
+//          stat_debug(s"searching for ancestor in ${if (si == 0) "SW" else if (si == 1) "SE" else if (si == 2) "NE" else if (si == 3) "NW"} direction")
+//          checkendorfer(b0, si, numAnc)
+//        }
+//        //                val cMinDist  = metric.minDistance(point, c.hyperCube)
+//        //                val cv  = new VisitedNode(c, cMinDist, null.asInstanceOf[M])
+//        //                pri += cv
+//
+//        new NNIter(bestLeaf, bestDist, rmax)
+//      }
+//
+//      @tailrec def loop(b: Branch): NNIter[M] = {
+//        val num = scanChildren(b)
+//        if (num >= 2) {
+//          stat_debug(s"found $num equistabbing children. stop here")
+//          finish(b)
+//        } else if (num == 1) {
+//          stat_debug(s"found 1 equistabbing child ${acceptedChildren(0).hyperCube}, minDist = ${acceptedMinDists(0)}. descend")
+//          loop(acceptedChildren(0))
+//        } else {
+//          b.prevOption match {
+//            case Some(prev) =>
+//              stat_debug(s"found no equistabbing children. go to previous tree ${prev.hyperCube}")
+//              loop(prev)
+//            case _ =>
+//              stat_debug("found no equistabbing children and ended in Q0. stop here")
+//              finish(b)
+//          }
+//        }
+//      }
+//
+//      val ph = inHighestLevel(p0)
+//      stat_debug(s"begin round in ${ph.hyperCube}, minDist = $pMinDist")
+//      loop(ph)
+//    }
 
     @tailrec private def inHighestLevel(b: Branch)(implicit tx: S#Tx): Branch = b.nextOption match {
       case Some(n)  => inHighestLevel(n)

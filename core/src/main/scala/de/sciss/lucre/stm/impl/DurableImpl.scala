@@ -14,16 +14,14 @@
 package de.sciss.lucre.stm
 package impl
 
-import de.sciss.lucre.data.SkipList
-import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
-import de.sciss.lucre.stm._
+import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.elidable
 import scala.annotation.meta.field
-import scala.concurrent.stm.{InTxn, Ref, Txn => ScalaTxn}
+import scala.concurrent.stm.{InTxn, Ref}
 import scala.language.higherKinds
 
 object DurableImpl {
@@ -255,7 +253,7 @@ object DurableImpl {
 
     // ---- context ----
 
-    def newContext(): S#Context = ???
+    // def newContext(): S#Context = ...
 
     // ---- attributes ----
 

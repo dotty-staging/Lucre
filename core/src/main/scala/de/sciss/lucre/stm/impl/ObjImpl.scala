@@ -55,20 +55,20 @@ object ObjImpl {
   //  @field private[this] final val anyAttrSer = new AttrSer[NoSys]
   //
   //  private final class AttrSer[S <: Sys[S]] extends ObjSerializer[S, AttrMap[S]] {
-  //    protected def tpe: Obj.Type = ???
+  //    protected def tpe: Obj.Type = ...
   //  }
   //
   //  private final class AttrImpl[S <: Sys[S]](val targets: Targets[S])
   //    extends SingleNode[S, AttrUpdate[S]] with AttrMap[S] {
   //
   //
-  //    protected def writeData(out: DataOutput): Unit = ???
+  //    protected def writeData(out: DataOutput): Unit = ...
   //
-  //    def changed: EventLike[S, AttrUpdate[S]] = ???
+  //    def changed: EventLike[S, AttrUpdate[S]] = ...
   //
-  //    def tpe: Type = ???
+  //    def tpe: Type = ...
   //
-  //    protected def disposeData()(implicit tx: S#Tx): Unit = ???
+  //    protected def disposeData()(implicit tx: S#Tx): Unit = ...
   //  }
   //
   //  trait AttrMap[S <: Sys[S]] extends Node[S] with Publisher[S, AttrUpdate[S]] {

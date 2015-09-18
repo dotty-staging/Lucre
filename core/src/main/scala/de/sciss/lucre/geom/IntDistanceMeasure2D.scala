@@ -124,12 +124,12 @@ object IntDistanceMeasure2D {
       }
     }
 
-    override def minDistance(p: PointLike, q: HyperCube): Long =
+    override def minDistance(p: PointLike, q: IntSquare): Long =
       if ((q.right >= p.x) || (q.bottom >= p.y)) {
         super.minDistance(p, q)
       } else Long.MaxValue
 
-    override def maxDistance(p: PointLike, q: HyperCube): Long =
+    override def maxDistance(p: PointLike, q: IntSquare): Long =
       if ((q.left >= p.x) || (q.top >= p.y)) {
         super.maxDistance(p, q)
       } else Long.MaxValue
@@ -164,12 +164,12 @@ object IntDistanceMeasure2D {
       }
     }
 
-    override def minDistance(p: PointLike, q: HyperCube): Long =
+    override def minDistance(p: PointLike, q: IntSquare): Long =
       if ((q.left <= p.x) || (q.top <= p.y)) {
         super.minDistance(p, q)
       } else Long.MaxValue
 
-    override def maxDistance(p: PointLike, q: HyperCube): Long =
+    override def maxDistance(p: PointLike, q: IntSquare): Long =
       if ((q.right <= p.x) || (q.bottom <= p.y)) {
         super.maxDistance(p, q)
       } else Long.MaxValue
@@ -187,10 +187,10 @@ object IntDistanceMeasure2D {
     override def toString = "IntDistanceMeasure2D.euclideanSq"
 
     def distance   (a: PointLike, b: PointLike) = b.distanceSq(a)
-    def minDistance(a: PointLike, b: HyperCube) = b.minDistanceSq(a)
-    def maxDistance(a: PointLike, b: HyperCube) = b.maxDistanceSq(a)
+    def minDistance(a: PointLike, b: IntSquare) = b.minDistanceSq(a)
+    def maxDistance(a: PointLike, b: IntSquare) = b.maxDistanceSq(a)
 
-//    override def isEquipotent(v: PointLike, rmax: Long, parent: HyperCube, child: HyperCube): Boolean = {
+//    override def isEquipotent(v: PointLike, rmax: Long, parent: IntSquare, child: IntSquare): Boolean = {
     //      val vx  = v.x
     //      val vy  = v.y
     //      val pl  = parent.left
@@ -304,22 +304,22 @@ object IntDistanceMeasure2D {
     //      }
     //    }
 
-    override def compareArea(a: HyperCube, b: HyperCube): Int = a.area compare b.area
+    // override def compareArea(a: IntSquare, b: IntSquare): Int = a.area compare b.area
   }
 
-  private final class Clip(underlying: Impl, quad: HyperCube) extends Impl {
+  private final class Clip(underlying: Impl, quad: IntSquare) extends Impl {
     override def toString = underlying.toString + ".clip(" + quad + ")"
 
     def distance   (a: PointLike, b: PointLike) = if (quad.contains(b)) underlying.distance(a, b) else Long.MaxValue
-    def minDistance(a: PointLike, b: HyperCube) = if (quad.contains(b)) underlying.minDistance(a, b) else Long.MaxValue
-    def maxDistance(a: PointLike, b: HyperCube) = if (quad.contains(b)) underlying.maxDistance(a, b) else Long.MaxValue
+    def minDistance(a: PointLike, b: IntSquare) = if (quad.contains(b)) underlying.minDistance(a, b) else Long.MaxValue
+    def maxDistance(a: PointLike, b: IntSquare) = if (quad.contains(b)) underlying.maxDistance(a, b) else Long.MaxValue
   }
 
   private final class Approximate(underlying: Impl, thresh: Long) extends Impl {
     override def toString = underlying.toString + ".approximate(" + thresh + ")"
 
-    def minDistance(a: PointLike, b: HyperCube) = underlying.minDistance(a, b)
-    def maxDistance(a: PointLike, b: HyperCube) = underlying.maxDistance(a, b)
+    def minDistance(a: PointLike, b: IntSquare) = underlying.minDistance(a, b)
+    def maxDistance(a: PointLike, b: IntSquare) = underlying.maxDistance(a, b)
 
     def distance(a: PointLike, b: PointLike) = {
       val res = underlying.distance(a, b) // b.distanceSq( a )
@@ -342,7 +342,7 @@ object IntDistanceMeasure2D {
       } else Long.MaxValue
     }
 
-    def minDistance(p: PointLike, q: HyperCube): Long = {
+    def minDistance(p: PointLike, q: IntSquare): Long = {
       val qe    = q.extent
       val qem1  = qe - 1
 
@@ -353,7 +353,7 @@ object IntDistanceMeasure2D {
       } else Long.MaxValue
     }
 
-    def maxDistance(p: PointLike, q: HyperCube): Long = {
+    def maxDistance(p: PointLike, q: IntSquare): Long = {
       val qe = q.extent
       val qem1 = qe - 1
 
@@ -380,7 +380,7 @@ object IntDistanceMeasure2D {
          } else Long.MaxValue
       }
 
-      def minDistance( p: PointLike, q: HyperCube ) : Long = {
+      def minDistance( p: PointLike, q: IntSquare ) : Long = {
          val qe   = q.extent
          val qem1 = qe - 1
 
@@ -391,7 +391,7 @@ object IntDistanceMeasure2D {
          } else Long.MaxValue
       }
 
-      def maxDistance( p: PointLike, q: HyperCube ) : Long = {
+      def maxDistance( p: PointLike, q: IntSquare ) : Long = {
          val qe   = q.extent
          val qem1 = qe - 1
 
@@ -414,7 +414,7 @@ object IntDistanceMeasure2D {
       apply(dx, dy)
     }
 
-    def minDistance(a: PointLike, q: HyperCube): Long = {
+    def minDistance(a: PointLike, q: IntSquare): Long = {
       val px  = a.x
       val py  = a.y
       val l   = q.left
@@ -469,7 +469,7 @@ object IntDistanceMeasure2D {
       applyMin(dx, dy)
     }
 
-    def maxDistance(a: PointLike, q: HyperCube): Long = {
+    def maxDistance(a: PointLike, q: IntSquare): Long = {
       val px = a.x
       val py = a.y
       if (px < q.cx) {
@@ -507,7 +507,7 @@ object IntDistanceMeasure2D {
 
     final def compareMeasure(a: Long, b: Long): Int = if (a > b) 1 else if (a < b) -1 else 0
 
-    final def clip       (quad  : HyperCube): M = new Clip       (this, quad  )
+    final def clip       (quad  : IntSquare): M = new Clip       (this, quad  )
     final def approximate(thresh: Long     ): M = new Approximate(this, thresh)
 
     final def orthant(idx: Int): M = {
@@ -520,87 +520,87 @@ object IntDistanceMeasure2D {
       new ExceptQuadrant(this, idx)
     }
 
-    override def stabbingDirections(v: PointLike, parent: HyperCube, child: HyperCube): List[Int] = {
-      val vx  = v.x
-      val vy  = v.y
-      val pl  = parent.left
-      val pt  = parent.top
-      val pr  = parent.right
-      val pb  = parent.bottom
-
-      if (vx < pl) {
-        // require(child.left == pl, s"v = $v, parent = $parent, child = $child")
-        if (child.top == pt) {
-          1 :: Nil              // only expanding to the right is relevant
-
-        } else if (child.bottom == pb) {
-          2 :: Nil              // only expanding to the right is relevant
-
-        } else {                // v is left to parent
-          1 :: 2 :: Nil
-        }
-
-      } else if (vx > pr) {
-        // require(child.right == pr, s"v = $v, parent = $parent, child = $child")
-        if (child.top == pt) {
-          0 :: Nil              // only expanding to the left is relevant
-
-        } else if (child.bottom == pb) {
-          3 :: Nil              // only expanding to the left is relevant
-
-        } else {                // v is left to parent
-          0 :: 3 :: Nil
-        }
-
-      } else {
-        if (vy < pt) {          // v outside of parent, to its top
-          // require(child.top == pt, s"v = $v, parent = $parent, child = $child")
-          if (child.left == pl) {
-            1 :: Nil
-          } else if (child.right == pr) {
-            0 :: Nil
-          } else {
-            0 :: 1 :: Nil
-          }
-
-        } else if (vy > pb) {   // v outside of parent, to its bottom
-          // require(child.bottom == pb, s"v = $v, parent = $parent, child = $child")
-          if (child.left == pl) {
-            2 :: Nil
-          } else if (child.right == pr) {
-            3 :: Nil
-          } else {
-            2 :: 3 :: Nil
-          }
-
-        } else {                // v is inside parent
-          if (child.left == pl) {
-            if (child.top == pt) {
-              1 :: Nil
-            } else if (child.bottom == pb) {
-              2 :: Nil
-            } else {
-              1 :: 2 :: Nil
-            }
-          } else if (child.right == pr) {
-            if (child.top == pt) {
-              0 :: Nil
-            } else if (child.bottom == pb) {
-              3 :: Nil
-            } else {
-              0 :: 3 :: Nil
-            }
-          } else {
-            if (child.top == pt) {
-              0 :: 1 :: Nil
-            } else if (child.bottom == pb) {
-              2 :: 3 :: Nil
-            } else {
-              0 :: 1 :: 2 :: 3 :: Nil
-            }
-          }
-        }
-      }
-    }
+//    override def stabbingDirections(v: PointLike, parent: IntSquare, child: IntSquare): List[Int] = {
+//      val vx  = v.x
+//      val vy  = v.y
+//      val pl  = parent.left
+//      val pt  = parent.top
+//      val pr  = parent.right
+//      val pb  = parent.bottom
+//
+//      if (vx < pl) {
+//        // require(child.left == pl, s"v = $v, parent = $parent, child = $child")
+//        if (child.top == pt) {
+//          1 :: Nil              // only expanding to the right is relevant
+//
+//        } else if (child.bottom == pb) {
+//          2 :: Nil              // only expanding to the right is relevant
+//
+//        } else {                // v is left to parent
+//          1 :: 2 :: Nil
+//        }
+//
+//      } else if (vx > pr) {
+//        // require(child.right == pr, s"v = $v, parent = $parent, child = $child")
+//        if (child.top == pt) {
+//          0 :: Nil              // only expanding to the left is relevant
+//
+//        } else if (child.bottom == pb) {
+//          3 :: Nil              // only expanding to the left is relevant
+//
+//        } else {                // v is left to parent
+//          0 :: 3 :: Nil
+//        }
+//
+//      } else {
+//        if (vy < pt) {          // v outside of parent, to its top
+//          // require(child.top == pt, s"v = $v, parent = $parent, child = $child")
+//          if (child.left == pl) {
+//            1 :: Nil
+//          } else if (child.right == pr) {
+//            0 :: Nil
+//          } else {
+//            0 :: 1 :: Nil
+//          }
+//
+//        } else if (vy > pb) {   // v outside of parent, to its bottom
+//          // require(child.bottom == pb, s"v = $v, parent = $parent, child = $child")
+//          if (child.left == pl) {
+//            2 :: Nil
+//          } else if (child.right == pr) {
+//            3 :: Nil
+//          } else {
+//            2 :: 3 :: Nil
+//          }
+//
+//        } else {                // v is inside parent
+//          if (child.left == pl) {
+//            if (child.top == pt) {
+//              1 :: Nil
+//            } else if (child.bottom == pb) {
+//              2 :: Nil
+//            } else {
+//              1 :: 2 :: Nil
+//            }
+//          } else if (child.right == pr) {
+//            if (child.top == pt) {
+//              0 :: Nil
+//            } else if (child.bottom == pb) {
+//              3 :: Nil
+//            } else {
+//              0 :: 3 :: Nil
+//            }
+//          } else {
+//            if (child.top == pt) {
+//              0 :: 1 :: Nil
+//            } else if (child.bottom == pb) {
+//              2 :: 3 :: Nil
+//            } else {
+//              0 :: 1 :: 2 :: 3 :: Nil
+//            }
+//          }
+//        }
+//      }
+//    }
   }
 }

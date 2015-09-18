@@ -184,7 +184,7 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   // ---- context ----
 
-  def newContext(): S#Context
+  // def newContext(): S#Context
 
   def use[A](context: S#Context)(fun: => A): A
 
