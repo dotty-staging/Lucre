@@ -35,7 +35,7 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
   newPhase()
 
   def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
-    if (!stateMap.get(in).contains(Busy))
+    if (stateMap.get(in) != Some(Busy))
       throw new IllegalStateException(s"Copy.provide must be called during copy process: $in")
     stateMap.put(in, Done(out))
     deferred += (() => code)

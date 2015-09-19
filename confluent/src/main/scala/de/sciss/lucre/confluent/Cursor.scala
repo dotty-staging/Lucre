@@ -42,10 +42,6 @@ object Cursor {
     def read[S <: Sys[S], D <: stm.Sys[D]](in: DataInput, access: D#Acc)(implicit tx: D#Tx): Data[S, D] =
       Impl.readData[S, D](in, access)
 
-    /** Obsolete method. Will be removed in next non-minor version! Aborts with exception */
-    def read[S <: Sys[S], D <: stm.Sys[D]](in: DataInput)(implicit tx: D#Tx): Data[S, D] =
-      sys.error(s"Obsolete method. Will be removed in next non-minor version") // XXX TODO
-
     implicit def serializer[S <: Sys[S], D <: stm.Sys[D]]: Serializer[D#Tx, D#Acc, Data[S, D]] =
       Impl.dataSerializer[S, D]
   }

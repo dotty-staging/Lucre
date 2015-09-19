@@ -40,7 +40,11 @@ object BiPin extends Obj.Type {
 //    def apply[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
 //      Impl.newEntry(key, value)
 
-    def unapply[S <: Sys[S], A](entry: Entry[S, A]): Entry[S, A] = entry
+    // Scala 2.11 only!
+    // def unapply[S <: Sys[S], A](entry: Entry[S, A]): Entry[S, A] = entry
+
+    def unapply[S <: Sys[S], A](entry: Entry[S, A]): Option[(LongObj[S], A)] =
+      Some((entry.key, entry.value))
 
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] =
       Impl.readIdentifiedEntry(in, access)
@@ -60,8 +64,9 @@ object BiPin extends Obj.Type {
     def key  : LongObj[S]
     def value: A
 
-    def isEmpty: Boolean = false
-    def get: (LongObj[S], A) = (key, value)
+    // Scala 2.11 only!
+    // def isEmpty: Boolean = false
+    // def get: (LongObj[S], A) = (key, value)
   }
 
   // type Entry[S <: Sys[S], A] = (LongObj[S], A)

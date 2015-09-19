@@ -212,7 +212,7 @@ object DeterministicSkipOctree {
               }
               cb.nextOption match {
                 case Some(next) =>
-                  if (!next.prevOption.contains(cb)) {
+                  if (next.prevOption != Some(cb)) {
                     errors :+= s"Asymmetric next link $cq $assertInfo"
                   }
                   if (next.hyperCube != cq) {
@@ -225,7 +225,7 @@ object DeterministicSkipOctree {
               }
               cb.prevOption match {
                 case Some(prev) =>
-                  if (!prev.nextOption.contains(cb)) {
+                  if (prev.nextOption != Some(cb)) {
                     errors :+= s"Asymmetric prev link $cq $assertInfo"
                   }
                   if (prev.hyperCube != cq) {

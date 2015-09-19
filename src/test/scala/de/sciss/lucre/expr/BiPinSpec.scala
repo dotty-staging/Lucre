@@ -2,10 +2,18 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.bitemp.BiPin
 import de.sciss.lucre.stm
+import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
+object BiPinSpec {
+  implicit class BiPinOps[S <: Sys[S], A](val `this`: BiPin.Entry[S, A]) extends AnyVal { me =>
+    import me.{`this` => entry}
+
+    def get: (LongObj[S], A) = (entry.key, entry.value)
+  }
+}
 /*
   To run only this suite:
 
@@ -13,6 +21,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 
   */
 class BiPinSpec extends ConfluentEventSpec {
+  import BiPinSpec.BiPinOps
 
   type LE = LongObj[S]
   type IE = IntObj [S]
@@ -39,6 +48,8 @@ class BiPinSpec extends ConfluentEventSpec {
         case BiPin.Moved  (time, BiPin.Entry(k, v)) => Moved  (time, (k, v))
       })
   }
+
+  // type Entry[S <: Sys[S], A] = (LongObj[S], A)
 
   "BiPin" should "notify observers about all relevant collection events" in { system =>
     val obs = new Observation
