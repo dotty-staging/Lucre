@@ -386,8 +386,8 @@ object BiGroupImpl {
 
     private def removeNoFire(spanVal: SpanLike, entry: Entry[S, A])(implicit tx: S#Tx): Boolean = {
       val point = spanToPoint(spanVal)
-      val entry = tree.get(point)
-      entry match {
+      val found = tree.get(point)
+      found match {
         case Some((_, Vec(single))) =>
           if (single == entry) {
             assert(tree.removeAt(point).isDefined)
