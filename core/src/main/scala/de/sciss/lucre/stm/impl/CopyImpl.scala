@@ -74,9 +74,8 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
   }
 
   def getHint[A](in: Elem[In], key: String)(implicit ct: ClassTag[A]): Option[A] =
-    hintMap.get(in).flatMap(_.get(key) match {
-      case a: A => Some(a)
-      case _ => None
+    hintMap.get(in).flatMap(_.get(key).collect {
+      case a: A => a
     })
 
   def copyAttr(in: Obj[In], out: Obj[Out]): Unit = {

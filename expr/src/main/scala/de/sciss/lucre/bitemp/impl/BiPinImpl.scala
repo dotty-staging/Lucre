@@ -215,8 +215,8 @@ object BiPinImpl {
           changes.foreach {
             case Moved(timeChange, entry) =>
               if (timeChange.isSignificant) {
-                remove1(timeChange.before, entry.key, entry.value, fireAndDispose = false)
-                addNoFire   (timeChange.now   , entry)
+                remove1   (timeChange.before, entry.key, entry.value, fireAndDispose = false)
+                addNoFire (timeChange.now   , entry)
               }
           }
           Some(Update[S, A](pin, changes))
@@ -266,7 +266,7 @@ object BiPinImpl {
     def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long] = tree.ceil(time + 1).map(_._1)
 
     def at     (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = intersect(time).headOption
-    def valueAt(time: Long)(implicit tx: S#Tx): Option[A]    = intersect(time).headOption.map(_.value)
+    def valueAt(time: Long)(implicit tx: S#Tx): Option[         A ] = intersect(time).headOption.map(_.value)
     def floor  (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = tree.floor(time).flatMap(_._2.headOption)
     def ceil   (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = tree.ceil (time).flatMap(_._2.headOption)
 
@@ -282,7 +282,7 @@ object BiPinImpl {
         case Some(oldLeaf) =>
           tree += timeVal -> (elem +: oldLeaf)
         case _ =>
-          tree += timeVal -> Vec(elem)
+          tree += timeVal -> Vector(elem)
       }
 
     def remove(key: LongObj[S], value: A)(implicit tx: S#Tx): Boolean = {
