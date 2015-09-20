@@ -187,6 +187,9 @@ object BiPinImpl {
           type EntryAux[~ <: Sys[~]] = BiPin.Entry[~, E[~]]
           val xsOut = xsIn.map(e => context[EntryAux](e))
           treeOut.add(time -> xsOut)
+          xsOut.foreach { entry =>
+            out.changed += entry
+          }
         }
       }
       // out.connect()
@@ -226,7 +229,9 @@ object BiPinImpl {
 
     protected def disposeData()(implicit tx: S#Tx): Unit = {
       tree.iterator.foreach { case (_, xs) =>
-          xs.foreach(_.dispose())
+        xs.foreach { entry =>
+          entry.dispose()
+        }
       }
       tree.dispose()
     }

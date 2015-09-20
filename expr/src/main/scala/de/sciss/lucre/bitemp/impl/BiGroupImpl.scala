@@ -241,13 +241,16 @@ object BiGroupImpl {
   }
 
   final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](
-      in: TreeImpl[In, E], out: TreeImpl[Out, E])
+      in: TreeImpl[In, E], out: TreeImpl[Out, E], outImpl: Impl[Out, E])
      (implicit txIn: In#Tx, txOut: Out#Tx, context: Copy[In, Out]): Unit = {
 
     type EntryAux[~ <: Sys[~]] = Entry[~, E[~]]
     in.iterator.foreach { case (span, xsIn) =>
       val xsOut: Vec[EntryAux[Out]] = xsIn.map(entry => context[EntryAux](entry))
       out.add(span -> xsOut)
+      xsOut.foreach { entry =>
+        outImpl.changed += entry
+      }
     }
   }
 
@@ -467,7 +470,7 @@ object BiGroupImpl {
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
       new Impl1[Out, E](Targets[Out]) { out =>
         val tree: TreeImpl[Out, E] = out.newTree()
-        context.defer[GroupAux](in, out)(copyTree(in.tree, out.tree))
+        context.defer[GroupAux](in, out)(copyTree(in.tree, out.tree, out))
         // connect()
       }
   }
