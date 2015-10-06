@@ -16,11 +16,12 @@ package impl
 
 import de.sciss.lucre.event.{impl => evti}
 import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.impl.ObjImpl
 import de.sciss.model.Change
 
 trait NodeImpl[S <: Sys[S], A]
   extends Expr[S, A]
-  with evti.SingleNode[S, Change[A]] { self =>
+  with evti.SingleNode[S, Change[A]] with ObjImpl[S] { self =>
 
   // final def changed: Event[S, Change[A]] = this
 

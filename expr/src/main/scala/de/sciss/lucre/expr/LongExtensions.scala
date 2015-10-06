@@ -38,7 +38,7 @@ object LongExtensions {
 
     val name = "Long-Long Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import UnaryOp._
       val op /* : Op[_, _] */ = (opID: @switch) match {
@@ -61,7 +61,7 @@ object LongExtensions {
 
     val name = "Long-Long Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
       val op: Op = (opID: @switch) match {
@@ -97,42 +97,42 @@ object LongExtensions {
       }
       val _1 = LongObj.read(in, access)
       val _2 = LongObj.read(in, access)
-      new Tuple2(targets, op, _1, _2)
+      new Tuple2[S, Long, LongObj, Long, LongObj](targets, op, _1, _2)
     }
   }
 
   final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
                                   T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
-      protected val targets: Targets[S], val op: Tuple2Op[Long, T1, T2, LongObj, ReprT1, ReprT2],
+      val targets: Targets.Obj[S], val op: Tuple2Op[Long, T1, T2, LongObj, ReprT1, ReprT2],
       val _1: ReprT1[S], val _2: ReprT2[S])
     extends impl.Tuple2[S, Long, T1, T2, LongObj, ReprT1, ReprT2] with LongObj[S] {
 
     def tpe: Obj.Type = LongObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
+      new Tuple2(Targets.Obj[Out], op, context(_1), context(_2)).connect()
   }
 
   final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
-      protected val targets: Targets[S], val op: Tuple1Op[Long, T1, LongObj, ReprT1], val _1: ReprT1[S])
+      val targets: Targets.Obj[S], val op: Tuple1Op[Long, T1, LongObj, ReprT1], val _1: ReprT1[S])
     extends impl.Tuple1[S, Long, T1, LongObj, ReprT1] with LongObj[S] {
 
     def tpe: Obj.Type = LongObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1(Targets[Out], op, context(_1)).connect()
+      new Tuple1(Targets.Obj[Out], op, context(_1)).connect()
   }
 
   object UnaryOp {
     trait Op[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] extends impl.Tuple1Op[Long, T1, LongObj, ReprT1] {
-      def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
+      def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                            (implicit tx: S#Tx): Ex[S]
 
       def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
       def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
         case Expr.Const(c)  => LongObj.newConst(value(c))
-        case _              => new Tuple1(Targets[S], this, a).connect()
+        case _              => new Tuple1(Targets.Obj[S], this, a).connect()
       }
 
       def name: String = {
@@ -144,10 +144,10 @@ object LongExtensions {
     }
 
     sealed abstract class LongOp extends Op[Long, LongObj] {
-      final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
+      final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
-        new Tuple1(targets, this, _1)
+        new Tuple1[S, Long, LongObj](targets, this, _1)
       }
     }
 
@@ -192,7 +192,7 @@ object LongExtensions {
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => LongObj.newConst(value(ca, cb))
         case _ =>
-          new Tuple2(Targets[S], this, a, b).connect()
+          new Tuple2[S, Long, LongObj, Long, LongObj](Targets.Obj[S], this, a, b).connect()
       }
 
       def value(a: Long, b: Long): Long

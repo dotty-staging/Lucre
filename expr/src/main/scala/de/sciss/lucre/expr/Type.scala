@@ -34,17 +34,17 @@ object Type {
   }
 
   trait Extension1[+Repr[~ <: Sys[~]]] extends Extension {
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                   (implicit tx: S#Tx): Repr[S]
   }
 
   trait Extension2[+Repr[~ <: Sys[~], _]] extends Extension {
-    def readExtension[S <: Sys[S], T1](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S], T1](opID: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                       (implicit tx: S#Tx): Repr[S, T1]
   }
 
   trait Extension3[+Repr[~ <: Sys[~], _, _]] extends Extension {
-    def readExtension[S <: Sys[S], T1, T2](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S], T1, T2](opID: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                           (implicit tx: S#Tx): Repr[S, T1, T2]
   }
 

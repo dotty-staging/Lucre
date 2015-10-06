@@ -105,10 +105,10 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
   // ---- implemented ----
 
   final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit =
-    node._targets.add(slot, sink)
+    node.targets.add(slot, sink)
 
   final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit =
-    node._targets.remove(slot, sink)
+    node.targets.remove(slot, sink)
 
   final def write(out: DataOutput): Unit = {
     out.writeByte(slot)

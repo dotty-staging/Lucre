@@ -23,11 +23,6 @@ import scala.language.higherKinds
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 
-//  def copy[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): Obj[S] = {
-//    // XXX TODO copy attributes as well
-//    obj.copy()
-//  }
-
   /** Copy an object graph with `in` as a leaf.
     * This is short for the following sequence:
     *
@@ -85,12 +80,10 @@ object Obj {
 /** An `Obj` is a type of element that has an `S#ID` identifier and
   * an attribute map. It can be the origin of event dispatch.
   */
-trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
+trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ObjID, S#Tx] {
   override def toString = s"Obj$id"
 
   override def tpe: Obj.Type
 
   final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
-
-  // override def copy()(implicit tx: S#Tx): Obj[S]
 }

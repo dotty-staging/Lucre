@@ -74,7 +74,7 @@ trait TypeImpl1[Repr[~ <: Sys[~]]] extends TypeImpl[Type.Extension1[Repr]] with 
 
   protected def mkExtArray(size: Int): Array[Type.Extension1[Repr]] = new Array(size)
 
-  final protected def readExtension[S <: Sys[S]](op: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+  final protected def readExtension[S <: Sys[S]](op: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                                 (implicit tx: S#Tx): Repr[S] = {
     val ext = findExt(op)
     if (ext == null) sys.error(s"Unknown extension operator $op")

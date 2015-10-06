@@ -94,6 +94,13 @@ trait Mixin[S <: Sys[S]]
     res
   }
 
+  final def newObjIDValue()(implicit tx: S#Tx): Int = {
+    implicit val dtx = durableTx(tx)
+    val res = global.idCnt() + 1
+    global.idCnt() = res + 1 // !
+    res
+  }
+
   final def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx]): S#Tx = {
     log(s"::::::: atomic - input access = $inputAccess${if (retroactive) " - retroactive" else ""} :::::::")
     wrapRegular(dtx, inputAccess, retroactive, cursorCache)

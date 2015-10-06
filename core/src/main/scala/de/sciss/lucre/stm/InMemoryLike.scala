@@ -21,6 +21,7 @@ object InMemoryLike {
   trait ID[S <: InMemoryLike[S]] extends Identifier[S#Tx] {
     private[stm] def id: Int
   }
+  trait ObjID[S <: InMemoryLike[S]] extends ID[S]
 
   trait Txn[S <: InMemoryLike[S]] extends stm.Txn[S] {
     private[stm] def getVar[A](vr: S#Var[A]): A
@@ -38,7 +39,8 @@ object InMemoryLike {
 }
 trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]   = InMemoryLike.Var[S, A]
-  final type ID       = InMemoryLike.ID[S]
+  final type ID       = InMemoryLike.ID   [S]
+  final type ObjID    = InMemoryLike.ObjID[S]
   final type Acc      = Unit
   final type Context  = InMemoryLike.Context[S]
 

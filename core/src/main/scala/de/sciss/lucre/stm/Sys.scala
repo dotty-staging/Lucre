@@ -52,6 +52,8 @@ trait Sys[S <: Sys[S]] extends Closeable {
     */
   type ID <: Identifier[S#Tx]
 
+  type ObjID <: ID
+
   /** The path access type for objects if they carry a temporal trace. This is
     * used by confluently persistent systems, while it is typically `Unit` for
     * ephemeral systems.

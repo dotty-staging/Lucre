@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.data.{Ordering, SkipList}
 import de.sciss.lucre.event.Map.{Key, Modifiable}
-import de.sciss.lucre.stm.impl.ObjSerializer
+import de.sciss.lucre.stm.impl.{ObjImpl, ObjSerializer}
 import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
 
 object MapImpl {
   def apply[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, Repr] = {
-    val targets = evt.Targets[S]
+    val targets = evt.Targets.Obj[S]
     new Impl[S, K, Repr](targets) {
       val peer = SkipList.Map.empty[S, K, List[Entry[K, V]]](tx, keyOrdering, keyType.serializer,
         Serializer.list(entrySerializer))
@@ -52,14 +52,16 @@ object MapImpl {
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
-    val targets   = evt.Targets.read(in, access)
+    val targets   = evt.Targets.Obj.read(in, access)
     val keyTypeID = in.readInt()
     val keyType   = Key(keyTypeID) // Obj.getType(keyTypeID).asInstanceOf[Key[_]]
     mkRead(in, access, targets)(tx, keyType)
   }
 
-  private def mkRead[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                               (implicit tx: S#Tx, keyType: Key[K]): Impl[S, K, Repr] =
+  private def mkRead[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc,
+                                                                   targets: evt.Targets.Obj[S])
+                                                                  (implicit tx: S#Tx,
+                                                                   keyType: Key[K]): Impl[S, K, Repr] =
     new Impl[S, K, Repr](targets) {
       val peer = SkipList.Map.read[S, K, List[Entry[K, V]]](in, access)(tx, keyOrdering, keyType.serializer,
         Serializer.list(entrySerializer))
@@ -67,9 +69,9 @@ object MapImpl {
 
   private final class Entry[K, V](val key: K, val value: V)
  
-  private abstract class Impl[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](protected val targets: evt.Targets[S])
+  private abstract class Impl[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](val targets: evt.Targets.Obj[S])
                                                           (implicit val keyType: Key[K])
-    extends Modifiable[S, K, Repr] with evt.impl.SingleNode[S, Map.Update[S, K, Repr]] {
+    extends Modifiable[S, K, Repr] with evt.impl.SingleNode[S, Map.Update[S, K, Repr]] with ObjImpl[S] {
     map =>
 
     final def tpe: Obj.Type = Map

@@ -18,7 +18,7 @@ import java.io.File
 
 import de.sciss.lucre.artifact.Artifact.Modifiable
 import de.sciss.lucre.event.{EventLike, Targets}
-import de.sciss.lucre.stm.impl.ObjSerializer
+import de.sciss.lucre.stm.impl.{ObjImpl, ObjSerializer}
 import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
@@ -33,7 +33,7 @@ object ArtifactImpl {
   // ---- artifact ----
 
   def apply[S <: Sys[S]](location: Location[S], child: Child)(implicit tx: S#Tx): Artifact.Modifiable[S] = {
-    val targets = evt.Targets[S]
+    val targets = evt.Targets.Obj[S]
     val _child  = tx.newVar(targets.id, child.path)
     new Impl[S](targets, location, _child) // .connect()
   }
@@ -42,11 +42,11 @@ object ArtifactImpl {
     apply[S](from.location, from.child)
 
   def readIdentifiedArtifact[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] = {
-    val targets = Targets.read[S](in, access)
+    val targets = Targets.Obj.read[S](in, access)
     readArtifact(in, access, targets)
   }
 
-  private def readArtifact[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
+  private def readArtifact[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                        (implicit tx: S#Tx): Artifact.Modifiable[S] = {
     val cookie    = in.readShort()
     if (cookie != SER_VERSION) sys.error(s"Version mismatch. Expected $SER_VERSION but found $cookie")
@@ -179,11 +179,12 @@ object ArtifactImpl {
 //    }
 //  }
 
-  private final class Impl[S <: Sys[S]](protected val targets: evt.Targets[S],
+  private final class Impl[S <: Sys[S]](val targets: evt.Targets.Obj[S],
                                         val location: Location[S], _child: S#Var[String])
     extends Artifact.Modifiable[S]
     with evt.impl.MappingNode[S, Change[File], Change[File]]
-    with evt.impl.SingleNode[S, Change[File]] {
+    with evt.impl.SingleNode[S, Change[File]]
+    with ObjImpl[S] {
 
     def tpe: Obj.Type = Artifact
 

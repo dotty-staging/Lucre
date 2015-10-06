@@ -15,6 +15,9 @@ package de.sciss.lucre.confluent
 
 import de.sciss.lucre.stm
 
+object Identifier {
+  trait Obj[S <: Sys[S]] extends Identifier[S]
+}
 trait Identifier[S <: Sys[S]] extends stm.Identifier[S#Tx] {
   def base: Int  // name, origin, base, agent, ancestry, germ, parent, root
   def path: S#Acc

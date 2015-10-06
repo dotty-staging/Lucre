@@ -20,7 +20,7 @@ import de.sciss.lucre.event.{Targets, impl => evti}
 import de.sciss.lucre.expr.SpanLikeObj
 import de.sciss.lucre.geom.LongSpace.TwoDim
 import de.sciss.lucre.geom.{DistanceMeasure, LongDistanceMeasure2D, LongPoint2D, LongPoint2DLike, LongRectangle, LongSpace}
-import de.sciss.lucre.stm.impl.ObjSerializer
+import de.sciss.lucre.stm.impl.{ObjImpl, ElemSerializer, ObjSerializer}
 import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
@@ -174,11 +174,11 @@ object BiGroupImpl {
   private val anyModSer = new ModSer[NoSys, Obj[NoSys]]
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
-    val targets = Targets.read(in, access)
+    val targets = Targets.Obj.read(in, access)
     read(in, access, targets)
   }
 
-  def readIdentifiedEntry[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+  def readIdentifiedEntry[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = {
     val targets = Targets.read(in, access)
     readEntry(in, access, targets)
   }
@@ -196,7 +196,7 @@ object BiGroupImpl {
                                                                   val value: A)
     extends evti.SingleNode[S, Change[SpanLike]] with Entry[S, A] {
 
-    def tpe: Obj.Type = Entry
+    def tpe: Elem.Type = Entry
 
     override def toString = s"Entry($id, $span, $value)"
 
@@ -236,7 +236,7 @@ object BiGroupImpl {
     new EntryImpl(targets, span, value)
   }
 
-  private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, Entry[S, A]] {
+  private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends ElemSerializer[S, Entry[S, A]] {
     def tpe = Entry
   }
 
@@ -256,7 +256,7 @@ object BiGroupImpl {
 
   abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
     extends Modifiable[S, E[S]]
-    with evt.impl.SingleNode[S, BiGroup.Update[S, E[S]]] {
+    with evt.impl.SingleNode[S, BiGroup.Update[S, E[S]]] with ObjImpl[S] {
 
     group =>
 
@@ -448,17 +448,17 @@ object BiGroupImpl {
   }
 
   def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
-    new Impl1[S, E](Targets[S]) {
+    new Impl1[S, E](Targets.Obj[S]) {
       val tree: TreeImpl[S, E] = newTree()
     }
 
-  private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
+  private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: Targets.Obj[S])
                                             (implicit tx: S#Tx): Impl[S, E] =
     new Impl1[S, E](_targets) {
       val tree: TreeImpl[S, E] = readTree(in, access)
     }
 
-  private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: Targets[S])
+  private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](val targets: Targets.Obj[S])
     extends Impl[S, E] { in =>
 
     final def tpe: Obj.Type = BiGroup
@@ -468,7 +468,7 @@ object BiGroupImpl {
     def modifiableOption: Option[BiGroup.Modifiable[S, A]] = Some(this)
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Impl1[Out, E](Targets[Out]) { out =>
+      new Impl1[Out, E](Targets.Obj[Out]) { out =>
         val tree: TreeImpl[Out, E] = out.newTree()
         context.defer[GroupAux](in, out)(copyTree(in.tree, out.tree, out))
         // connect()

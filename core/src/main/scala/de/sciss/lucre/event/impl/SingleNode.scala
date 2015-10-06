@@ -26,6 +26,7 @@ import de.sciss.lucre.stm.Sys
   * I don't know if `Reactor` still needs the `equals` implementation?
   */
 trait SingleNode[S <: Sys[S], +A] extends Node[S] { self =>
+  def id: S#ID = targets.id
 
   def changed: Event[S, A]
 

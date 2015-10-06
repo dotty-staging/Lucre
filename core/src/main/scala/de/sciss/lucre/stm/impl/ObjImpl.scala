@@ -79,3 +79,8 @@ object ObjImpl {
   //    def iterator(implicit tx: S#Tx): Iterator[(String, Obj[S])]
   //  }
 }
+trait ObjImpl[S <: Sys[S]] extends evt.Node[S] with Obj[S] {
+  override def targets: evt.Targets.Obj[S]
+
+  override def id: S#ObjID = targets.id
+}

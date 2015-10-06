@@ -61,7 +61,7 @@ object Push {
       val inlet = parent.slot
       incIndent()
       try {
-        val childEvents = parent.node._targets.children
+        val childEvents = parent.node.targets.children
         childEvents.foreach { case (inlet2, child) =>
           if (inlet2 == inlet) {
             visit(child, parent)

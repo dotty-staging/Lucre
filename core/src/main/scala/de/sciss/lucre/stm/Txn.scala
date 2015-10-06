@@ -137,7 +137,8 @@ trait Txn[S <: Sys[S]] extends TxnLike {
 
   def inMemory: S#I#Tx
 
-  def newID(): S#ID
+  def newID   (): S#ID
+  def newObjID(): S#ObjID
 
   // ---- variables ----
 
@@ -164,7 +165,8 @@ trait Txn[S <: Sys[S]] extends TxnLike {
   def readIntVar    (id: S#ID, in: DataInput): S#Var[Int]
   def readLongVar   (id: S#ID, in: DataInput): S#Var[Long]
 
-  def readID(in: DataInput, acc: S#Acc): S#ID
+  def readID   (in: DataInput, acc: S#Acc): S#ID
+  def readObjID(in: DataInput, acc: S#Acc): S#ObjID
 
   /** Creates a handle (in-memory) to refresh a stale version of an object, assuming that the future transaction is issued
     * from the same cursor that is used to create the handle, except for potentially having advanced.

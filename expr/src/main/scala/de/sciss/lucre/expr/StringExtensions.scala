@@ -36,28 +36,28 @@ object StringExtensions  {
 
     val name = "String-2 Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
       val op: Op = opID /* : @switch */ match {
         case Append.id => Append
       }
-      val _1 = StringObj.read(in, access)
-      val _2 = StringObj.read(in, access)
-      new Tuple2(targets, op, _1, _2)
+      val _1 = StringObj.read[S](in, access)
+      val _2 = StringObj.read[S](in, access)
+      new Tuple2[S, String, StringObj, String, StringObj](targets, op, _1, _2)
     }
   }
 
   final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
                                   T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
-      protected val targets: Targets[S], val op: Tuple2Op[String, T1, T2, StringObj, ReprT1, ReprT2],
+      val targets: Targets.Obj[S], val op: Tuple2Op[String, T1, T2, StringObj, ReprT1, ReprT2],
       val _1: ReprT1[S], val _2: ReprT2[S])
     extends impl.Tuple2[S, String, T1, T2, StringObj, ReprT1, ReprT2] with StringObj[S] {
 
     def tpe: Obj.Type = StringObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
+      new Tuple2(Targets.Obj[Out], op, context(_1), context(_2)).connect()
   }
 
   // ----- operators -----
@@ -77,7 +77,7 @@ object StringExtensions  {
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => StringObj.newConst(value(ca, cb))
         case _  =>
-          new Tuple2(Targets[S], this, a, b).connect()
+          new Tuple2[S, String, StringObj, String, StringObj](Targets.Obj[S], this, a, b).connect()
       }
 
       def value(a: String, b: String): String

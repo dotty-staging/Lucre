@@ -17,7 +17,7 @@ package impl
 import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.event.{EventLike, Targets}
 import de.sciss.lucre.expr.{Expr, LongObj}
-import de.sciss.lucre.stm.impl.ObjSerializer
+import de.sciss.lucre.stm.impl.{ObjImpl, ObjSerializer}
 import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt, stm}
 import de.sciss.model.Change
@@ -92,7 +92,7 @@ object BiPinImpl {
       new ConstEntry(context(key), context(value))
   }
 
-  private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
+  private final class NodeEntry[S <: Sys[S], A <: Elem[S]](val targets: Targets[S],
                                                            val key: LongObj[S], val value: A)
     extends EntryImpl[S, A] with evt.impl.SingleNode[S, Change[Long]] {
 
@@ -115,7 +115,7 @@ object BiPinImpl {
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
-    val targets = Targets.read(in, access)
+    val targets = Targets.Obj.read(in, access)
     BiPinImpl.readImpl(in, access, targets)
   }
 
@@ -141,7 +141,7 @@ object BiPinImpl {
 
   def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] = {
     val tree: Tree[S, E[S]] = SkipList.Map.empty[S, Long, Leaf[S, E[S]]]()
-    new Impl(evt.Targets[S], tree)
+    new Impl(Targets.Obj[S], tree)
   }
 
   def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
@@ -152,7 +152,7 @@ object BiPinImpl {
 
   private val anySer = new Ser[NoSys, Obj[NoSys], BiPin[NoSys, Obj[NoSys]]]
 
-  private def readImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  private def readImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: Targets.Obj[S])
                                                 (implicit tx: S#Tx): Impl[S, E] = {
     val tree: Tree[S, E[S]] = SkipList.Map.read[S, Long, Leaf[S, E[S]]](in, access)
     new Impl(targets, tree)
@@ -164,10 +164,10 @@ object BiPinImpl {
     def tpe = BiPin
   }
 
-  private final class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: evt.Targets[S],
+  private final class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](val targets: Targets.Obj[S],
                                                                    tree: Tree[S, E[S]])
     extends Modifiable[S, E[S]]
-    with evt.impl.SingleNode[S, Update[S, E[S]]] {
+    with evt.impl.SingleNode[S, Update[S, E[S]]] with ObjImpl[S] {
     pin =>
 
     type A = E[S]
@@ -181,7 +181,7 @@ object BiPinImpl {
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
       val treeOut: Tree[Out, E[Out]] = SkipList.Map.empty[Out, Long, Leaf[Out, E[Out]]]()
-      val out = new Impl[Out, E](evt.Targets[Out], treeOut)
+      val out = new Impl[Out, E](Targets.Obj[Out], treeOut)
       context.defer[PinAux](this, out) {
         this.tree.iterator.foreach { case (time, xsIn) =>
           type EntryAux[~ <: Sys[~]] = BiPin.Entry[~, E[~]]

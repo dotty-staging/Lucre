@@ -35,6 +35,7 @@ object DurableLike {
   trait ID[S <: DurableLike[S]] extends Identifier[S#Tx] {
     private[stm] def id: Int
   }
+  trait ObjID[S <: DurableLike[S]] extends ID[S]
 
   trait Txn[S <: DurableLike[S]] extends stm.Txn[S] {
     def newCachedVar[A](  init: A    )(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
@@ -47,7 +48,8 @@ object DurableLike {
 }
 trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]      = stm.Var[S#Tx, A]
-  final type ID          = DurableLike.ID[S]
+  final type ID          = DurableLike.ID   [S]
+  final type ObjID       = DurableLike.ObjID[S]
   final type Acc         = Unit
   // final type Entry[A]    = _Var[S#Tx, A]
   type Tx               <: DurableLike.Txn[S]
@@ -66,6 +68,7 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   private[lucre] def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): A
 
+  private[stm] def tryRead[A](id: Int )(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A]
   private[stm] def tryRead[A](id: Long)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A]
 
   private[lucre] def write(id: Int )(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit
@@ -79,7 +82,8 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   private[stm] def store: DataStore
 
-  private[lucre] def newIDValue()(implicit tx: S#Tx): Int
+  private[lucre] def newIDValue   ()(implicit tx: S#Tx): Int
+  private[lucre] def newObjIDValue()(implicit tx: S#Tx): Int
 
   def wrap(peer: InTxn): S#Tx  // XXX TODO this might go in Cursor?
 

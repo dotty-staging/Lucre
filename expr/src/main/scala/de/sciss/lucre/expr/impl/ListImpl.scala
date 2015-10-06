@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package impl
 
 import de.sciss.lucre.event.{Targets, impl => eimpl}
-import de.sciss.lucre.stm.impl.ObjSerializer
+import de.sciss.lucre.stm.impl.{ObjImpl, ObjSerializer}
 import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -28,7 +28,7 @@ object ListImpl {
 
   def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
     new Impl1[S, E] {
-      protected val targets = evt.Targets[S]
+      val targets           = evt.Targets.Obj[S]
       protected val sizeRef = tx.newIntVar(id, 0)
       protected val headRef = tx.newVar[C](id, null)(CellSer)
       protected val lastRef = tx.newVar[C](id, null)(CellSer)
@@ -53,14 +53,14 @@ object ListImpl {
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
-    val targets = Targets.read[S](in, access)
+    val targets = Targets.Obj.read[S](in, access)
     ListImpl.read(in, access, targets)
   }
 
-  private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
+  private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets.Obj[S])
                                                (implicit tx: S#Tx): Impl[S, E] =
     new Impl1[S, E] {
-      protected val targets = _targets
+      val targets           = _targets
       protected val sizeRef = tx.readIntVar(id, in)
       protected val headRef = tx.readVar[C](id, in)
       protected val lastRef = tx.readVar[C](id, in)
@@ -95,7 +95,7 @@ object ListImpl {
   }
 
   abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
-    extends Modifiable[S, E[S]] with eimpl.SingleNode[S, List.Update[S, E[S]]] { list =>
+    extends Modifiable[S, E[S]] with eimpl.SingleNode[S, List.Update[S, E[S]]] with ObjImpl[S] { list =>
 
     type A = E[S]
     protected type ListAux[~ <: Sys[~]] = List[~, E[~]]

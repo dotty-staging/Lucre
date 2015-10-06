@@ -88,7 +88,7 @@ object InMemoryImpl {
     }
   }
 
-  private final class IDImpl[S <: InMemoryLike[S]](val id: Int) extends InMemoryLike.ID[S] {
+  private final class IDImpl[S <: InMemoryLike[S]](val id: Int) extends InMemoryLike.ObjID[S] {
     def write(out: DataOutput): Unit = ()
     def dispose()(implicit tx: S#Tx): Unit = ()
 
@@ -123,7 +123,8 @@ object InMemoryImpl {
   trait TxnMixin[S <: InMemoryLike[S]] extends BasicTxnImpl[S] with InMemoryLike.Txn[S] {
     _: S#Tx =>
 
-    final def newID(): S#ID = new IDImpl(system.newIDValue()(this))
+    final def newID   (): S#ID    = new IDImpl(system.newIDValue()(this))
+    final def newObjID(): S#ObjID = new IDImpl(system.newIDValue()(this))
 
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
@@ -170,7 +171,8 @@ object InMemoryImpl {
     def readIntVar    (id: S#ID, in: DataInput): S#Var[Int    ] = opNotSupported("readIntVar"    )
     def readLongVar   (id: S#ID, in: DataInput): S#Var[Long   ] = opNotSupported("readLongVar"   )
 
-    def readID(in: DataInput, acc: S#Acc): S#ID = opNotSupported("readID")
+    def readID   (in: DataInput, acc: S#Acc): S#ID    = opNotSupported("readID"   )
+    def readObjID(in: DataInput, acc: S#Acc): S#ObjID = opNotSupported("readObjID")
 
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 

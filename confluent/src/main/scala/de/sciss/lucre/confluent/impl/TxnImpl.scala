@@ -123,6 +123,12 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
+  final def newObjID(): S#ObjID = {
+    val res = new ConfluentID[S](system.newObjIDValue()(this), Path.empty[S])
+    log(s"txn newID $res")
+    res
+  }
+
   // ---- context ----
 
   // def newContext(): S#Context = ...
@@ -131,7 +137,7 @@ trait TxnMixin[S <: Sys[S]]
 
   def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
     val id        = obj.id
-    val mBase     = id.base | 0x80000000  // XXX TODO --- a bit cheesy to throw away one bit entirely
+    val mBase     = id.base + 1 // | 0x80000000  // XXX TODO --- a bit cheesy to throw away one bit entirely
     val mapOpt    = fullCache.getCacheTxn[Obj.AttrMap[S]](mBase, id.path)(this, Obj.attrMapSerializer)
     mapOpt.getOrElse {
       val map = evt.Map.Modifiable[S, String, Obj](evt.Map.Key.String, this)
@@ -149,15 +155,14 @@ trait TxnMixin[S <: Sys[S]]
 
   // ----
 
-  final def readTreeVertexLevel(term: Long): Int = {
-    system.store.get(out => {
+  final def readTreeVertexLevel(term: Long): Int =
+    system.store.get { out =>
       out.writeByte(0)
       out.writeInt(term.toInt)
-    })(in => {
+    } { in =>
       in./* PACKED */ readInt()  // tree index!
       in./* PACKED */ readInt()
-    })(this).getOrElse(sys.error(s"Trying to access non-existent vertex ${term.toInt}"))
-  }
+    } (this) .getOrElse(sys.error(s"Trying to access non-existent vertex ${term.toInt}"))
 
   final def addInputVersion(path: S#Acc): Unit = {
     val sem1 = path.seminal
@@ -280,14 +285,13 @@ trait TxnMixin[S <: Sys[S]]
     new PartialID(base, pid.path)
   }
 
-  private def makeVar[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] /* BasicVar[ S, A ] */ = {
+  private def makeVar[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] =
     ser match {
       case plain: ImmutableSerializer[_] =>
         new VarImpl[S, A](id, plain.asInstanceOf[ImmutableSerializer[A]])
       case _ =>
         new VarTxImpl[S, A](id)
     }
-  }
 
   final def readVar[A](pid: S#ID, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
     val res = makeVar[A](readSource(in, pid))
@@ -322,6 +326,13 @@ trait TxnMixin[S <: Sys[S]]
   }
 
   final def readID(in: DataInput, acc: S#Acc): S#ID = {
+    val base  = in./* PACKED */ readInt()
+    val res   = new ConfluentID(base, Path.readAndAppend[S](in, acc)(this))
+    log(s"txn readID $res")
+    res
+  }
+
+  final def readObjID(in: DataInput, acc: S#Acc): S#ObjID = {
     val base  = in./* PACKED */ readInt()
     val res   = new ConfluentID(base, Path.readAndAppend[S](in, acc)(this))
     log(s"txn readID $res")

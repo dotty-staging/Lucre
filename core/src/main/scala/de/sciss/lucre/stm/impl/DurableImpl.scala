@@ -104,6 +104,13 @@ object DurableImpl {
       id
     }
 
+    def newObjIDValue()(implicit tx: S#Tx): Int = {
+      val id = idCntVar() + 1
+      log(s"new   <$id>")
+      idCntVar() = id + 1 // !
+      id
+    }
+
     def write(id: Long)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit = {
       log(s"writeL <$id>")
       store.put(_.writeLong(id))(valueFun)
@@ -130,10 +137,14 @@ object DurableImpl {
       store.get(_.writeLong(id))(valueFun)
     }
 
-    def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): A = {
-      log(s"read  <$id>")
-      store.get(_.writeInt(id))(valueFun).getOrElse(sys.error(s"Key not found $id"))
+    @inline
+    def tryRead[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A] = {
+      log(s"readL  <$id>")
+      store.get(_.writeInt(id))(valueFun)
     }
+
+    def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): A = tryRead(id)(valueFun)
+      .getOrElse(sys.error(s"Key not found $id"))
 
     def exists(id: Int)(implicit tx: S#Tx): Boolean = store.contains(_.writeInt(id))
 
@@ -145,7 +156,8 @@ object DurableImpl {
 
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
-    final def newID(): S#ID = new IDImpl[S](system.newIDValue()(this))
+    final def newID   (): S#ID    = new IDImpl[S](system.newIDValue   ()(this))
+    final def newObjID(): S#ObjID = new IDImpl[S](system.newObjIDValue()(this))
 
     final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val res = new VarImpl[S, A](system.newIDValue()(this), ser)
@@ -240,7 +252,12 @@ object DurableImpl {
       new IDImpl(base)
     }
 
-//    final def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)
+    final def readObjID(in: DataInput, acc: S#Acc): S#ObjID = {
+      val base = in./* PACKED */ readInt()
+      new IDImpl(base)
+    }
+
+      //    final def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)
 
 //    final def readDurableIDMap[A](in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
 //      val base  = in./* PACKED */ readInt()
@@ -260,7 +277,7 @@ object DurableImpl {
 //    private[this] type AttrMap = SkipList.Map[S, String, Obj[S]]
 
     def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
-      val mId = obj.id.id.toLong << 32
+      val mId = obj.id.id + 1 // .toLong << 32
       implicit val tx = this
       val mapOpt: Option[Obj.AttrMap[S]] = system.tryRead(mId)(evt.Map.Modifiable.read[S, String, Obj](_, ()))
       mapOpt.getOrElse {
@@ -306,7 +323,7 @@ object DurableImpl {
 //    }
   }
 
-  private final class IDImpl[S <: D[S]](@field val id: Int) extends DurableLike.ID[S] {
+  private final class IDImpl[S <: D[S]](@field val id: Int) extends DurableLike.ObjID[S] {
     def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id)
 
     override def hashCode: Int = id
@@ -512,7 +529,6 @@ object DurableImpl {
     lazy val inMemory: InMemory#Tx = system.inMemory.wrap(peer)
 
     override def toString = s"Durable.Txn@${hashCode.toHexString}"
-
  }
 
   private final class System(@field val store     : DataStore

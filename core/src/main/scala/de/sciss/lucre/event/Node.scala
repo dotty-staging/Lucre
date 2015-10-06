@@ -48,7 +48,7 @@ object Targets {
   def apply[S <: Sys[S]](implicit tx: S#Tx): Targets[S] = {
     val id        = tx.newID()
     val children  = tx.newVar /* newEventVar */[Children[S]](id, NoChildren)
-    new Impl[S](0, id, children)
+    new PlainImpl[S](id, children)
   }
 
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
@@ -61,29 +61,36 @@ object Targets {
   /* private[lucre] */ def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     val id = tx.readID(in, access)
     val children = tx.readVar /* readEventVar */[Children[S]](id, in)
-    new Impl[S](0, id, children)
+    new PlainImpl[S](id, children)
   }
 
-  private final class Impl[S <: Sys[S]](cookie: Int, val id: S#ID, childrenVar: /* event. */ S#Var[Children[S]])
-    extends Targets[S] {
+  private final class PlainImpl[S <: Sys[S]](val id: S#ID, protected val childrenVar: S#Var[Children[S]])
+    extends Impl[S]
 
-    def write(out: DataOutput): Unit = {
-      out        .writeByte(cookie)
+  private final class ObjImpl[S <: Sys[S]](val id: S#ObjID, protected val childrenVar: S#Var[Children[S]])
+    extends Impl[S] with Targets.Obj[S]
+
+  private trait Impl[S <: Sys[S]] extends Targets[S] {
+
+    protected def childrenVar: S#Var[Children[S]]
+
+    final def write(out: DataOutput): Unit = {
+      out        .writeByte(0)
       id         .write(out)
       childrenVar.write(out)
     }
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    final def dispose()(implicit tx: S#Tx): Unit = {
       if (children.nonEmpty) throw new IllegalStateException("Disposing a event reactor which is still being observed")
       id         .dispose()
       childrenVar.dispose()
     }
 
-    private[event] def children(implicit tx: S#Tx): Children[S] = childrenVar() // .getOrElse(NoChildren)
+    final private[event] def children(implicit tx: S#Tx): Children[S] = childrenVar() // .getOrElse(NoChildren)
 
     override def toString = s"Targets$id"
 
-    private[event] def add(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
+    final private[event] def add(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
       logEvent(s"$this.add($slot, $sel)")
       val tup = (slot.toByte, sel)
       val seq = childrenVar() // .get // .getFresh
@@ -92,7 +99,7 @@ object Targets {
       !seq.exists(_._1 == slot)
     }
 
-    private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
+    final private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
       logEvent(s"$this.remove($slot, $sel)")
       val tup = (slot, sel)
       val xs = childrenVar() // .getOrElse(NoChildren)
@@ -108,19 +115,42 @@ object Targets {
       }
     }
 
-    def isEmpty (implicit tx: S#Tx): Boolean = children.isEmpty   // XXX TODO this is expensive
-    def nonEmpty(implicit tx: S#Tx): Boolean = children.nonEmpty  // XXX TODO this is expensive
+    final def isEmpty (implicit tx: S#Tx): Boolean = children.isEmpty   // XXX TODO this is expensive
+    final def nonEmpty(implicit tx: S#Tx): Boolean = children.nonEmpty  // XXX TODO this is expensive
 
-    private[event] def _targets: Targets[S] = this
+    // private[event] def _targets: Targets[S] = this
   }
+
+  object Obj {
+    def apply[S <: Sys[S]](implicit tx: S#Tx): Targets.Obj[S] = {
+      val id        = tx.newObjID()
+      val children  = tx.newVar /* newEventVar */[Children[S]](id, NoChildren)
+      new ObjImpl[S](id, children)
+    }
+
+    def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets.Obj[S] = {
+      (in.readByte(): @switch) match {
+        case 0      => readIdentified(in, access)
+        case cookie => sys.error(s"Unexpected cookie $cookie")
+      }
+    }
+
+    /* private[lucre] */ def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)
+                                                        (implicit tx: S#Tx): Targets.Obj[S] = {
+      val id = tx.readObjID(in, access)
+      val children = tx.readVar /* readEventVar */[Children[S]](id, in)
+      new ObjImpl[S](id, children)
+    }
+  }
+  trait Obj[S <: Sys[S]] extends Targets[S] with stm.Mutable[S#ObjID, S#Tx]
 }
 
-/** An abstract trait unifying invariant and mutating targets. This object is responsible
+/** This object is responsible
   * for keeping track of the dependents of an event source which is defined as the outer
   * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
   * `propagate` a fired event.
   */
-sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Reactor[S] */ {
+trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] {
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   /** Adds a dependant to this node target.
@@ -161,13 +191,16 @@ sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Rea
 trait Node[S <: Sys[S]] extends Elem[S] with Mutable[S#ID, S#Tx] /* Obj[S] */ {
   override def toString = s"Node$id"
 
-  protected def targets: Targets[S]
+  // ---- abstract ----
+
+  def targets: Targets[S]
+
   protected def writeData(out: DataOutput): Unit
   protected def disposeData()(implicit tx: S#Tx): Unit
 
-  final private[event] def _targets: Targets[S] = targets
+  // ---- impl ----
 
-  final def id: S#ID = targets.id
+  def id: S#ID // = targets.id
 
   final def write(out: DataOutput): Unit = {
     out.writeInt(tpe.typeID)

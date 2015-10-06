@@ -60,8 +60,7 @@ object BiGroup extends Obj.Type {
 
   type Leaf[S <: Sys[S], +A] = (SpanLike /* Span.HasStart */ , Vec[Entry[S, A]])
 
-  // XXX TODO --- eventually we might drop Obj in favour of Elem
-  object Entry extends Obj.Type {
+  object Entry extends Elem.Type {
     final val typeID = 28
 
     def unapply[S <: Sys[S], A](entry: Entry[S, A]): Entry[S, A] = entry
@@ -69,11 +68,11 @@ object BiGroup extends Obj.Type {
     implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
       Impl.entrySer[S, A]
 
-    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] =
       Impl.readIdentifiedEntry(in, access)
   }
 
-  trait Entry[S <: Sys[S], +A] extends Obj[S] with Publisher[S, m.Change[SpanLike]] {
+  trait Entry[S <: Sys[S], +A] extends Elem[S] with Publisher[S, m.Change[SpanLike]] {
     def span : SpanLikeObj[S]
     def value: A
 

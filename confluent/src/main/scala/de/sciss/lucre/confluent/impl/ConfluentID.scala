@@ -18,7 +18,7 @@ import de.sciss.serial.DataOutput
 
 import scala.util.hashing.MurmurHash3
 
-private final class ConfluentID[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
+private final class ConfluentID[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier.Obj[S] {
   override def hashCode: Int = {
     import MurmurHash3._
     val h0  = productSeed
