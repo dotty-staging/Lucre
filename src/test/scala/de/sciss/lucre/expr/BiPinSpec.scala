@@ -306,8 +306,30 @@ class BiPinSpec extends ConfluentEventSpec {
       )
       obs.clear()
 
-      assert(bip.debugList().map { case (k, v) => (k, v.value) } ===
+      assert(bip.debugList.map { case (k, v) => (k, v.value) } ===
         scala.List(0L -> 1, 20000L -> 2, 30000L -> 6, 35000L -> 3))
     }
+  }
+
+  "BiPin" should "update cache correctly" in { system =>
+    val (bipH, nH) = system.step { implicit tx =>
+      val bip = BiPin.Modifiable[S, IntObj]
+      bip.add(10L, 1)
+      val n   = LongObj.newVar[S](20L)
+      bip.add(n, 2)
+      bip.add(30L, 3)
+      (tx.newHandle(bip), tx.newHandle(n))
+    }
+
+    val list = system.step { implicit tx =>
+      val n = nH()
+      n() = 40L
+      val bip = bipH()
+      assert(bip.valueAt(20L).map(_.value) === Some(1))
+      assert(bip.valueAt(30L).map(_.value) === Some(3))
+      assert(bip.valueAt(40L).map(_.value) === Some(2))
+      bip.debugList.map { case (m, p) => (m, p.value) }
+    }
+    assert(list === scala.List((10L, 1), (30L, 3), (40L, 2)))
   }
 }

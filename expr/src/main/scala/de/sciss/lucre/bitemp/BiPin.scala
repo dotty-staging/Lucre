@@ -165,5 +165,5 @@ sealed trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update
     */
   def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long]
 
-  def debugList()(implicit tx: S#Tx): List[(Long, A)]
+  def debugList(implicit tx: S#Tx): List[(Long, A)]
 }

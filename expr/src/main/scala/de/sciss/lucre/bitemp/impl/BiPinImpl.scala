@@ -198,7 +198,7 @@ object BiPinImpl {
 
     // ---- event behaviour ----
 
-    object changed extends Changed with evt.impl.Generator[S, Update[S, A]] {
+    object changed extends Changed with evt.impl.Generator[S, Update[S, A]] with evt.Caching {
       def += (elem: Entry[S, A])(implicit tx: S#Tx): Unit = elem.changed ---> this
       def -= (elem: Entry[S, A])(implicit tx: S#Tx): Unit = elem.changed -/-> this
 
@@ -329,7 +329,7 @@ object BiPinImpl {
       }
     }
 
-    def debugList()(implicit tx: S#Tx): List[(Long, A)] =
+    def debugList(implicit tx: S#Tx): List[(Long, A)] =
       tree.toList.flatMap {
         case (time, seq) => seq.map(time -> _.value)
       }

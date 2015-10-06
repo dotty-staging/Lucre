@@ -29,11 +29,6 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
 
     import types._
 
-//      def timeWarp( path: Sys#Acc ): Unit = {
-//         val s1 = s.asInstanceOf[ Confluent.System ]   // XXX ugly
-//         s1.step( s1.position_=( path )( _ ))
-//      }
-
     it("should be possible to navigate forward and backward and do updates") {
 
       ///////////////////////////// v0 /////////////////////////////

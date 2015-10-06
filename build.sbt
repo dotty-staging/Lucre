@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.2.0"
+lazy val projectVersion   = "3.2.1-SNAPSHOT"
 
 lazy val sleepyVersion5   = "5.0.104" // = Berkeley DB Java Edition; note: version 6 requires Java 7
 lazy val sleepyVersion6   = "6.2.7"
@@ -64,13 +64,6 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
     buildInfoPackage := "de.sciss.lucre"
   )
 
-//lazy val data = Project(id = s"$baseNameL-data", base = file("data"))
-//  .dependsOn(core)
-//  .settings(commonSettings)
-//  .settings(
-//    licenses := Seq(lgpl)
-//  )
-
 lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
   .dependsOn(core)
   .settings(commonSettings)
@@ -82,13 +75,6 @@ lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
       "de.sciss" %% "numbers" % numbersVersion
     )
   )
-
-//lazy val durable = Project(id = s"$baseNameL-durable", base = file("durable"))
-//  .dependsOn(core)
-//  .settings(commonSettings)
-//  .settings(
-//    licenses := Seq(lgpl)
-//  )
 
 lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
   .dependsOn(core)

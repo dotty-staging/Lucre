@@ -88,7 +88,8 @@ object Push {
     def pull(): Unit = {
       val reactions: List[Reaction[S, Any]] = pushMap.flatMap { case (event, _) =>
         val observers = tx.reactionMap.getEventReactions(event)
-        if (observers.isEmpty) None else apply[Any](event).map(new Reaction(_, observers))
+        if (observers.nonEmpty || event.isInstanceOf[Caching])
+          apply[Any](event).map(new Reaction(_, observers)) else None
       } (breakOut)
       logEvent(s"numReactions = ${reactions.size}")
       reactions.foreach(_.apply())
@@ -104,7 +105,7 @@ object Push {
       incIndent()
       try {
         pullMap.get(source) match {
-          case Some(res: Option[_]) =>
+          case Some(res) =>
             logEvent(s"${indent}pull $source  (new ? false)")
             res.asInstanceOf[Option[A]]
           case _ =>

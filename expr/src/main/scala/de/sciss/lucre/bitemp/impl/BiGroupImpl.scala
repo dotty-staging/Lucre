@@ -286,7 +286,7 @@ object BiGroupImpl {
 
     // ---- event behaviour ----
 
-    object changed extends Changed with evt.impl.Generator[S, BiGroup.Update[S, A]] {
+    object changed extends Changed with evt.impl.Generator[S, BiGroup.Update[S, A]] with evt.Caching {
       def += (entry: Entry[S, A])(implicit tx: S#Tx): Unit = entry.changed ---> this
       def -= (entry: Entry[S, A])(implicit tx: S#Tx): Unit = entry.changed -/-> this
 

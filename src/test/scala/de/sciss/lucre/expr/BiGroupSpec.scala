@@ -91,7 +91,7 @@ class BiGroupSpec extends ConfluentEventSpec {
       system.step { implicit tx =>
         val g = BiGroup.Modifiable[S, IntObj]
 
-        import Ops._
+        // import Ops._
         spanLikes.foreach(g.add(_, 0))
 
         // println(g.debugPrint)
@@ -106,5 +106,32 @@ class BiGroupSpec extends ConfluentEventSpec {
 
     withSpans(spans0)
     withSpans(spans1)
+  }
+
+  "BiGroup" should "update cache correctly" in { system =>
+    val (bipH, nH) = system.step { implicit tx =>
+      val bip = BiGroup.Modifiable[S, IntObj]
+      bip.add(_Span(10L, 11L), 1)
+      val n   = SpanLikeObj.newVar[S](_Span(20L, 21L))
+      bip.add(n, 2)
+      bip.add(_Span(30L, 31L), 3)
+      (tx.newHandle(bip), tx.newHandle(n))
+    }
+
+    val list = system.step { implicit tx =>
+      val n = nH()
+      n() = _Span(40L, 41L)
+      val bip = bipH()
+
+      def intersect(time: Long) =
+        bip.intersect(time).map { case (s, vec) => (s, vec.map { e => (e.span.value, e.value.value) }) } .toList
+
+      assert(intersect(10L) === scala.List((_Span(10L, 11L), Vec((_Span(10L, 11L), 1)))))
+      assert(intersect(20L) === Nil)
+      assert(intersect(30L) === scala.List((_Span(30L, 31L), Vec((_Span(30L, 31L), 3)))))
+      assert(intersect(40L) === scala.List((_Span(40L, 41L), Vec((_Span(40L, 41L), 2)))))
+      bip.debugList.map { case (m, p) => (m, p.value) }
+    }
+    assert(list === scala.List((_Span(10L, 11L), 1), (_Span(30L, 31L), 3), (_Span(40L, 41L), 2)))
   }
 }

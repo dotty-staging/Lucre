@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.stm.{Elem, Obj, Disposable, NoSys, Sys}
+import de.sciss.lucre.stm.{Disposable, Elem, NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Writable}
 
@@ -104,21 +104,11 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
 
   // ---- implemented ----
 
-  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = {
+  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit =
     node._targets.add(slot, sink)
-//    if (node._targets.add(slot, r) && !tx.reactionMap.hasEventReactions(this)) {
-//      log(s"$this connect")
-//      connect()
-//    }
-  }
 
-  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = {
+  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit =
     node._targets.remove(slot, sink)
-//    if (node._targets.remove(slot, r) && !tx.reactionMap.hasEventReactions(this)) {
-//      log(s"$this disconnect")
-//      disconnect()
-//    }
-  }
 
   final def write(out: DataOutput): Unit = {
     out.writeByte(slot)
