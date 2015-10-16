@@ -129,3 +129,159 @@ this shouldn't be costly.
 Alternatively, the `contextCreated` could be dispatched
 on the context itself. Does that make sense? Probably
 not, probably that makes maintenance a hell.
+
+-------------------------------------
+
+Regarding the events, perhaps the explicit more
+'manual' solution is way easier to grasp. In that case,
+a view looking at for example an `Expr[S, A]` will not
+be automatically subscribed to the events of any newly
+constructed bi-pin. Instead if it interested in tracking
+those, it will have to observe the `contextCreated`,
+then subscribe to the bi-pin and merge the two
+event streams. Which views could we imagine?
+
+- attr-map editor. It could have a switch for enabling
+  transport control at all.
+- a timeline view. It would be confusing and counter-productive
+  if virtual events were fired when the transport advances.
+- such virtual events would only ever make sense for real-time
+  (momentary) views. let's say we have a `Nuages` view. What
+  now? It would make more sense that each view adds to the
+  scheduler than to be surprised by some opaque virtual
+  events. Especially given that particular views might need
+  different timing, such as aural views that pay attention to
+  latency.
+  
+Everything else would be messy. A context would need to
+know every object under its control, such that a `position_=`
+emits events for those objects. That's simply not possible.
+
+-------------------------------------
+
+How do contexts compose -- do they compose at all?
+While we don't need to implement composition from the beginning,
+it would be stupid to miss design opportunities for future
+addition.
+
+Let's assume, there were still nominal contexts. A proc
+is created and placed in a folder. A colour attribute is
+added under the folder's context. That proc is brought
+onto a timeline. Should there be a way to preserve the
+folder-dependent colour on the timeline, and what happens
+if the colour is modified in the timeline, depending on
+the timeline cursor position?
+
+I don't see a straight forward way to formalise this.
+Let's say a context always relates to some outer container
+or collection (necessarily an `Obj`).
+
+Let's say two timeline objects are nested. Does it make sense
+that the modification of an inner child has anything to do
+with the outer timeline's context? It seems that _no_.
+
+In any case, it would be good if we were capable of
+querying all the contexts that affected an object.
+
+    trait Obj[S <: Sys[S]] {
+      def contexts: Contexts[S]
+    }
+    
+    trait Context[S <: Sys[S]] {
+      def owner: Obj[S] // needed?
+    }
+    
+    object Contexts {
+      sealed trait Update[S <: Sys[S]]
+      case class Added[S <: Sys[S]](context: S#Context) extends Update[S]
+    }
+    
+    trait Contexts[S <: Sys[S]] extends Publisher[S, Contexts.Update[S]] {
+      def iterator(implicit tx: S#Tx): Iterator[S#Context]
+    }
+
+This creates a lot of space and bidirectional links... Perhaps just
+query with a context:
+
+    trait Expr[S <: Sys[S], A] {
+      object contexts extends Publisher[S, ContextUpdate[S]] {
+        def get(context: S#Context)(implicit tx: S#Tx): Option[BiPin[S, Expr[S, A]]]
+      }
+    }
+
+That looks awful and wrong :(
+
+What kind of objects have we got?
+
+- expr-like. For a `TimeContext` we'd get a bi-pin (or something refined for `Expr[S, Double]`)
+- collections. E.g. `Folder`, `Timeline`, `Scan`. For a `TimeContext` we'd get a bi-group
+- composites. We simply look at all elements individually, e.g. `graph`. `inputs` and `outputs` for `Proc`
+
+-------------------------------------
+
+Of course, we could simplify life a lot but just giving up on the general context
+idea (for now), and just adding bi-pin kind of functionality where it would be
+needed to fully reflect a nuages-session in the timeline-view:
+
+- `Proc.graph`
+- `Scan`
+
+That implicates that no ports can be added or removed in performance time, neither can
+the name be changed, fade curves etc. We might add the possibility to "automate" booleans
+such as "mute". This removes static typing, because then `graph` would have to essentially
+become a `S#Var[Obj[S]]` just like the values of the attribute map :( Then it would even
+make sense to remove `graph` altogether and provide a conventional attr-map key. Or not
+allow graph modification in tP (fair enough). That leaves the question of the scans...
+
+    sealed trait ScanTarget
+    trait ListScanTarget     extends ScanTarget with List   [S, Scan]
+    trait TimelineScanTarget extends ScanTarget with BiGroup[S, Scan]
+    
+    trait Scan {
+      def target: ScanTarget
+      def target_=(t: ScanTarget): Unit
+    }
+    
+? _Not pretty_
+
+Of course, if like in a _graph_, the scan-links like _edges_ were part of the parent
+structure and not the _vertices_ aka procs, then this might be simpler.
+
+    // before
+    timeline.add(span, proc)
+    proc.outputs.add("out").add(Scan.Link.Scan(target))
+    
+    // after
+    timeline.add(span1, proc)
+    val scan = proc.outputs.add("out")
+    val link = Scan.Link.Scan(target)
+    timeline.add(span2, link)
+
+And
+
+    // before
+    ensemble.folder.addLast(proc)
+    proc.outputs.add("out").add(Scan.Link.Scan(target))
+    
+    // after
+    ensemble.folder.addLast(proc)
+    val scan = proc.outputs.add("out")
+    val link = Scan.Link.Scan(target)
+    ensemble.folder.addLast(link)
+
+? Seems straight forward.
+
+What happens with the awful mapping of scans to attribute values? Actually wasn't that
+even part of the grapheme interface?
+
+We should just remove `inputs` altogether and simply rebuild them as a cache of
+strings from the graph. Then the links always go into the attribute map.
+
+-------------------------------------
+
+The disadvantage of not having context is that having a bi-pin
+value somewhere doesn't make sense if the context is not a timeline.
+
+-------------------------------------
+
+The `copy` method would also need to support contexts.

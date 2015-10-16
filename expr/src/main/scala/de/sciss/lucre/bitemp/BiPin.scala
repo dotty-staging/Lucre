@@ -112,7 +112,7 @@ object BiPin extends Obj.Type {
     Impl.readIdentifiedObj(in, access)
 }
 
-sealed trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]] {
+trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]] {
   import BiPin.{Entry, Leaf}
 
   def modifiableOption: Option[BiPin.Modifiable[S, A]]
