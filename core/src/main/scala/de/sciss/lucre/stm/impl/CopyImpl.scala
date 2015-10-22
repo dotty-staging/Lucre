@@ -36,7 +36,7 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
 
   def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
     if (stateMap.get(in) != Some(Busy))
-      throw new IllegalStateException(s"Copy.provide must be called during copy process: $in")
+      throw new IllegalStateException(s"Copy.defer must be called during copy process: $in")
     stateMap.put(in, Done(out))
     deferred += (() => code)
   }
@@ -55,12 +55,17 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
       case None =>
         stateMap.put(in, Busy)
         val out = in.copy()(txIn, txOut, this)
-        stateMap.put(in, Done(out))
         (in, out) match {
-          case (inObj: Obj[In], outObj: Obj[Out]) => // copy the attributes
-            copyAttr(inObj, outObj)
+          case (inObj: Obj[In], outObj: Obj[Out]) =>      // copy the attributes
+            // NOTE: do not use `defer` which should be reserved for the
+            // object itself only. Because if that object has called `defer`,
+            // it will be found already as `Done`, causing a second `defer`
+            // to throw an exception. Simply add to `deferred!
+            //     defer(inObj, outObj)(copyAttr(inObj, outObj)) // ...later
+            deferred += (() => copyAttr(inObj, outObj))
           case _ =>
         }
+        stateMap.put(in, Done(out))
         out.asInstanceOf[Repr[Out]]
     }
 
