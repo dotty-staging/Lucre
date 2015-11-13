@@ -161,16 +161,16 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
   /** Queries the closest event (an element's span starting or stopping) at the given time or later
     *
     * @param time the query time
-    * @return a time, greater than or equal to the query time, at which the next event occurs, or `None` if
-    *         there are no events at or after the query time
+    * @return a time, greater than the query time, at which the next event occurs, or `None` if
+    *         there are no events after the query time
     */
   def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long]
 
   /** Queries the closest event (an element's span starting or stopping) at the given time or earlier
     *
     * @param time the query time
-    * @return a time, smaller than or equal to the query time, at which the previous event occurs, or `None` if
-    *         there are no events at or before the query time
+    * @return a time, smaller than the query time, at which the previous event occurs, or `None` if
+    *         there are no events before the query time
     */
   def eventBefore(time: Long)(implicit tx: S#Tx): Option[Long]
 
