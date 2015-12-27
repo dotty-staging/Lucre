@@ -25,12 +25,12 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.higherKinds // ... my arse
+import scala.language.higherKinds
 
 object BiPinImpl {
   import BiPin.{Added, Entry, Leaf, Modifiable, Moved, Removed, Update}
 
-  private type Tree[S <: Sys[S], A] = SkipList.Map[S, Long, Leaf[S, A]]
+  type Tree[S <: Sys[S], A] = SkipList.Map[S, Long, Leaf[S, A]]
 
   def newEntry[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
     if (Expr.isConst(key)) new ConstEntry(            key, value)
@@ -139,10 +139,10 @@ object BiPinImpl {
     }
   }
 
-  def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] = {
-    val tree: Tree[S, E[S]] = SkipList.Map.empty[S, Long, Leaf[S, E[S]]]()
-    new Impl(evt.Targets[S], tree)
-  }
+  def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
+    new Impl1[S, E](evt.Targets[S]) {
+      val tree: Tree[S, A] = newTree()
+    }
 
   def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiPin[S, A]] =
     anySer.asInstanceOf[Ser[S, A, BiPin[S, A]]]
@@ -153,10 +153,10 @@ object BiPinImpl {
   private val anySer = new Ser[NoSys, Obj[NoSys], BiPin[NoSys, Obj[NoSys]]]
 
   private def readImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                                (implicit tx: S#Tx): Impl[S, E] = {
-    val tree: Tree[S, E[S]] = SkipList.Map.read[S, Long, Leaf[S, E[S]]](in, access)
-    new Impl(targets, tree)
-  }
+                                                (implicit tx: S#Tx): Impl[S, E] =
+    new Impl1[S, E](targets) {
+      val tree: Tree[S, A] = readTree(in, access)
+    }
 
   private class Ser[S <: Sys[S], A <: Elem[S], Repr <: BiPin[S, A]]
     extends ObjSerializer[S, Repr] {
@@ -164,37 +164,40 @@ object BiPinImpl {
     def tpe = BiPin
   }
 
-  private final class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: evt.Targets[S],
-                                                                   tree: Tree[S, E[S]])
+  final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](in: Tree[In, E[In]], out: Tree[Out, E[Out]],
+                                                                                outImpl: Impl[Out, E])
+                                                                               (implicit txIn: In#Tx, txOut: Out#Tx, 
+                                                                                context: Copy[In, Out]): Unit = {
+
+    type EntryAux[~ <: Sys[~]] = Entry[~, E[~]]
+    in.iterator.foreach { case (time, xsIn) =>
+      val xsOut = xsIn.map(e => context[EntryAux](e))
+      out.add(time -> xsOut)
+      xsOut.foreach { entry =>
+        outImpl.changed += entry
+      }
+    }
+  }
+
+  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
     extends Modifiable[S, E[S]]
     with evt.impl.SingleNode[S, Update[S, E[S]]] {
     pin =>
 
     type A = E[S]
+
+    // ---- abstract ----
+    protected def tree: Tree[S, E[S]]
+
+    // ---- impl ----
+
     protected type PinAux[~ <: Sys[~]] = BiPin[~, E[~]]
 
-    def tpe: Obj.Type = BiPin
+    protected final def newTree()(implicit tx: S#Tx): Tree[S, A] =
+      SkipList.Map.empty[S, Long, Leaf[S, A]]()
 
-    override def toString: String = s"BiPin${tree.id}"
-
-    def modifiableOption: Option[BiPin.Modifiable[S, A]] = Some(this)
-
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
-      val treeOut: Tree[Out, E[Out]] = SkipList.Map.empty[Out, Long, Leaf[Out, E[Out]]]()
-      val out = new Impl[Out, E](evt.Targets[Out], treeOut)
-      context.defer[PinAux](this, out) {
-        this.tree.iterator.foreach { case (time, xsIn) =>
-          type EntryAux[~ <: Sys[~]] = BiPin.Entry[~, E[~]]
-          val xsOut = xsIn.map(e => context[EntryAux](e))
-          treeOut.add(time -> xsOut)
-          xsOut.foreach { entry =>
-            out.changed += entry
-          }
-        }
-      }
-      // out.connect()
-      out
-    }
+    protected final def readTree(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Tree[S, A] =
+      SkipList.Map.read[S, Long, Leaf[S, E[S]]](in, access)
 
     // ---- event behaviour ----
 
@@ -227,7 +230,7 @@ object BiPinImpl {
       }
     }
 
-    protected def disposeData()(implicit tx: S#Tx): Unit = {
+    protected final def disposeData()(implicit tx: S#Tx): Unit = {
       tree.iterator.foreach { case (_, xs) =>
         xs.foreach { entry =>
           entry.dispose()
@@ -236,11 +239,11 @@ object BiPinImpl {
       tree.dispose()
     }
 
-    protected def writeData(out: DataOutput): Unit = tree.write(out)
+    protected final def writeData(out: DataOutput): Unit = tree.write(out)
 
     // ---- collection behaviour ----
 
-    def clear()(implicit tx: S#Tx): Unit = {
+    final def clear()(implicit tx: S#Tx): Unit = {
       val it = tree.iterator
       if (it.hasNext) {
         val changes = it.toList.flatMap {
@@ -254,7 +257,7 @@ object BiPinImpl {
       }
     }
 
-    def add(key: LongObj[S], value: A)(implicit tx: S#Tx): Unit = {
+    final def add(key: LongObj[S], value: A)(implicit tx: S#Tx): Unit = {
       val timeVal = key.value // timeValue
       val entry   = newEntry(key, value)
       addNoFire(timeVal, entry)
@@ -263,26 +266,26 @@ object BiPinImpl {
       changed.fire(Update(pin, Added(timeVal, entry) :: Nil))
     }
 
-    def intersect(time: Long)(implicit tx: S#Tx): Leaf[S, A] = tree.floor(time) match {
+    final def intersect(time: Long)(implicit tx: S#Tx): Leaf[S, A] = tree.floor(time) match {
       case Some((_, seq)) => seq
       case _ => Vec.empty
     }
 
-    def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long] = tree.ceil(time + 1).map(_._1)
+    final def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long] = tree.ceil(time + 1).map(_._1)
 
-    def at     (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = intersect(time).headOption
-    def valueAt(time: Long)(implicit tx: S#Tx): Option[         A ] = intersect(time).headOption.map(_.value)
-    def floor  (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = tree.floor(time).flatMap(_._2.headOption)
-    def ceil   (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = tree.ceil (time).flatMap(_._2.headOption)
+    final def at     (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = intersect(time).headOption
+    final def valueAt(time: Long)(implicit tx: S#Tx): Option[         A ] = intersect(time).headOption.map(_.value)
+    final def floor  (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = tree.floor(time).flatMap(_._2.headOption)
+    final def ceil   (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = tree.ceil (time).flatMap(_._2.headOption)
 
-    /**
+    /*
      * Adds a new value, and returns the dirty which corresponds to the new region holding `elem`.
      *
      * @param timeVal the time value at which the new element is inserted
      * @param elem    the element which is inserted
      * @return
      */
-    private def addNoFire(timeVal: Long, elem: Entry[S, A])(implicit tx: S#Tx): Unit =
+    private[this] def addNoFire(timeVal: Long, elem: Entry[S, A])(implicit tx: S#Tx): Unit =
       tree.get(timeVal) match {
         case Some(oldLeaf) =>
           tree += timeVal -> (elem +: oldLeaf)
@@ -290,20 +293,20 @@ object BiPinImpl {
           tree += timeVal -> Vector(elem)
       }
 
-    def remove(key: LongObj[S], value: A)(implicit tx: S#Tx): Boolean = {
+    final def remove(key: LongObj[S], value: A)(implicit tx: S#Tx): Boolean = {
       val timeVal = key.value // timeValue
       val found = remove1(timeVal, key, value, fireAndDispose = true)
       found
     }
 
-    private def entryRemoved(timeVal: Long, entry: Entry[S, A], visible: Boolean)(implicit tx: S#Tx): Unit = {
+    private[this] final def entryRemoved(timeVal: Long, entry: Entry[S, A], visible: Boolean)(implicit tx: S#Tx): Unit = {
       changed -= entry
       if (visible) changed.fire(Update(pin, Removed(timeVal, entry) :: Nil))
       entry.dispose()
     }
 
-    private def remove1(timeVal: Long, key: LongObj[S], value: A, fireAndDispose: Boolean)
-                       (implicit tx: S#Tx): Boolean = {
+    private[this] final def remove1(timeVal: Long, key: LongObj[S], value: A, fireAndDispose: Boolean)
+                                   (implicit tx: S#Tx): Boolean = {
       tree.get(timeVal) match {
         case Some(Vec(single)) =>
           val found = single.key == key && single.value == value
@@ -332,6 +335,24 @@ object BiPinImpl {
     def debugList(implicit tx: S#Tx): List[(Long, A)] =
       tree.toList.flatMap {
         case (time, seq) => seq.map(time -> _.value)
+      }
+  }
+
+  private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: Targets[S])
+    extends Impl[S, E] { in =>
+
+    def tpe: Obj.Type = BiPin
+
+    override def toString: String = s"BiPin${tree.id}"
+
+    final def modifiableOption: Option[BiPin.Modifiable[S, A]] = Some(this)
+
+    private[lucre] final def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx,
+                                                     context: Copy[S, Out]): Elem[Out] =
+      new Impl1[Out, E](evt.Targets[Out]) { out =>
+        val tree: Tree[Out, A] = out.newTree()
+        context.defer[PinAux](in, out)(copyTree(in.tree, out.tree, out))
+        // out.connect()
       }
   }
 }
