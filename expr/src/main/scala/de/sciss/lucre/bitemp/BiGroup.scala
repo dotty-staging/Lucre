@@ -77,6 +77,7 @@ object BiGroup extends Obj.Type {
     def span : SpanLikeObj[S]
     def value: A
 
+    // improved support for pattern matching
     def isEmpty: Boolean = false
     def get: (SpanLikeObj[S], A) = (span, value)
   }
@@ -158,7 +159,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     */
   def rangeSearch(start: SpanLike, stop: SpanLike)(implicit tx: S#Tx): Iterator[Leaf[S, A]]
 
-  /** Queries the closest event (an element's span starting or stopping) at the given time or later
+  /** Queries the closest event (an element's span starting or stopping) later than the given time
     *
     * @param time the query time
     * @return a time, greater than the query time, at which the next event occurs, or `None` if
@@ -166,7 +167,7 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     */
   def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long]
 
-  /** Queries the closest event (an element's span starting or stopping) at the given time or earlier
+  /** Queries the closest event (an element's span starting or stopping) earlier than the given time
     *
     * @param time the query time
     * @return a time, smaller than the query time, at which the previous event occurs, or `None` if

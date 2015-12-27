@@ -1,6 +1,5 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre
 import de.sciss.lucre.confluent
 import de.sciss.lucre.confluent.Confluent
 import de.sciss.lucre.stm.store.BerkeleyDB
