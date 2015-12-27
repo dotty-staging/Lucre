@@ -12,13 +12,13 @@ import scala.collection.immutable.{IndexedSeq => Vec}
  test-only de.sciss.lucre.expr.BiGroupSpec
 
  */
-object BiGroupSpec {
-  // helper
-  implicit class SeqMinus[A](val `this`: Seq[A]) extends AnyVal {
-    def - (elem: A): Seq[A] = -- (elem :: Nil)
-    def -- (that: Seq[A]): Seq[A] = `this` diff that
-  }
-}
+//object BiGroupSpec {
+//  // helper
+//  implicit class SeqMinus[A](val `this`: Seq[A]) extends AnyVal {
+//    def - (elem: A): Seq[A] = -- (elem :: Nil)
+//    def -- (that: Seq[A]): Seq[A] = `this` diff that
+//  }
+//}
 class BiGroupSpec extends ConfluentEventSpec {
 
   // "OutOfMemoryError"
@@ -144,7 +144,7 @@ class BiGroupSpec extends ConfluentEventSpec {
 
   "A BiGroup" should "support correct range queries" in { system =>
 
-    val spans = Seq(
+    val putSpans = Seq[(SpanLike, String)](
       (Span.all           , "all"   ),
       (Span.from (10000)  , "from1" ),
       (Span.from (40000)  , "from2" ),
@@ -161,40 +161,48 @@ class BiGroupSpec extends ConfluentEventSpec {
     implicit val ser = BiGroup.Modifiable.serializer[S, StringObj[S]] // WTF -- why is this not inferred?
     val groupH = system.step { implicit tx =>
       val g = BiGroup.Modifiable[S, StringObj]
-      spans.foreach { case (span, name) =>
+      putSpans.foreach { case (span, name) =>
         g.add(span, name)
       }
       tx.newHandle(g)
     }
 
-    import BiGroupSpec.SeqMinus
+    val points: Seq[Long] = putSpans.flatMap {
+      case (Span(start, stop), _) => Seq(start - 1, start, start + 1, stop - 1, stop, stop + 1)
+      case (Span.From(start), _)  => Seq(start - 1, start, start + 1)
+      case (Span.Until(stop), _)  => Seq(stop - 1, stop , stop + 1)
+      case _ => Nil
+    } .distinct.sorted
+
+    val testSpans = Seq(Span.all, Span.void) ++ points.map(Span.from) ++ points.map(Span.until) ++
+      points.combinations(2).map { case Seq(start, stop) => Span(start, stop) } .toSeq
 
     system.step { implicit tx =>
       val g = groupH()
-      val listAll  = Seq("all","from1","from2","from3","until1","until2","until3","span1","span2","span3","span4")
-      val expected = Map(
-        (Span.void, Span.void)          -> Nil,
-        (Span.void, Span.from (0))      -> Nil,
-        (Span.void, Span.until(100000)) -> Nil,
-        (Span.void, Span(0, 100000))    -> Nil,
-        (Span.void, Span.all)           -> Nil,
-        (Span.from (0), Span.void)      -> Nil,
-        (Span.until(100000), Span.void) -> Nil,
-        (Span(0, 100000), Span.void)    -> Nil,
-        (Span.all, Span.void)           -> Nil,
-        (Span.all, Span.from(0))        -> listAll,
-        (Span.all, Span.from(8000))     -> listAll,
-        (Span.all, Span.from(8001))     -> (listAll - "span1"),
-        (Span.all, Span.from(9000))     -> (listAll - "span1"),
-        (Span.all, Span.from(9001))     -> (listAll -- Seq("span1", "until1")),
-        (Span.all, Span.from(60001))    -> Seq("all","from1","from2","from3"),
-        (Span.all, Span.all)            -> listAll
-      )
-      expected.foreach {
-        case ((start, stop), list) =>
-          val it  = g.rangeSearch(start = start, stop = stop)
-          val res = it.flatMap(_._2.map(_.value.value)).toList
-          assert(res.sorted === list.sorted)
+      for {
+        start <- testSpans
+        stop  <- testSpans
+      } {
+        val it  = g.rangeSearch(start = start, stop = stop)
+        val res = it.flatMap(_._2.map(_.value.value)).toList
+        val exp = putSpans.flatMap { case (span, name) =>
+          val startOk = start match {
+            case Span.All       => true
+            case Span.Void      => false
+            case Span.From (x)  => span.compareStart(x) >= 0
+            case Span.Until(x)  => span.compareStart(x) <  0
+            case Span(x, y)     => span.compareStart(x) >= 0 && span.compareStart(y) < 0
+          }
+          val stopOk = stop match {
+            case Span.All       => true
+            case Span.Void      => false
+            case Span.From (x)  => span.compareStop(x) >= 0
+            case Span.Until(x)  => span.compareStop(x) <  0
+            case Span(x, y)     => span.compareStop(x) >= 0 && span.compareStop(y) < 0
+          }
+          if (startOk && stopOk) Some(name) else None
+        }
+        assert(res.sorted === exp.sorted, s", query-start = $start, query-stop = $stop")
       }
     }
   }
