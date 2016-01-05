@@ -33,7 +33,7 @@ import scala.collection.mutable
   * Three implementation notes: (1) We treat the nodes as immutable at the moment, storing them
   * directly in the S#Val child pointers of their parents. While this currently seems to
   * have a performance advantage (?), we could try to avoid this by using S#Refs for
-  * the child pointers, making the nodes becomes mutables. We could avoid copying the
+  * the child pointers, making the nodes become mutable. We could avoid copying the
   * arrays for each insertion or deletion, at the cost of more space, but maybe better
   * performance.
   *
@@ -124,8 +124,8 @@ object HASkipList {
     }
 
     protected def newLeaf(key: A): Leaf[S, A, A] = {
-      val lkeys = Vector[A](key, null.asInstanceOf[A])
-      new SetLeaf[S, A](lkeys)
+      val lKeys = Vector[A](key, null.asInstanceOf[A])
+      new SetLeaf[S, A](lKeys)
     }
 
     def writeEntry(key: A, out: DataOutput): Unit = keySerializer.write(key, out)
@@ -289,7 +289,10 @@ object HASkipList {
       }
 
       val c = topN
-      if (c ne null) step(c)
+      if (c ne null) {
+        step(c)
+        downNode() = null
+      }
     }
 
     final protected def disposeData()(implicit tx: S#Tx): Unit =
@@ -539,8 +542,8 @@ object HASkipList {
       }
     }
 
-    private def addToLeaf(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppidx: Int, p: HeadOrBranch[S, A, E],
-                          pidx: Int, l: Leaf[S, A, E], isRight: Boolean)
+    private def addToLeaf(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppIdx: Int, p: HeadOrBranch[S, A, E],
+                          pIdx: Int, l: Leaf[S, A, E], isRight: Boolean)
                          (implicit tx: S#Tx): Option[E] = {
       val idx = if (isRight) indexInNodeR(key, l) else indexInNodeL(key, l)
       if (idx < 0) {
@@ -548,7 +551,7 @@ object HASkipList {
         val oldEntry = l.entry(idxP)
         if (entry != oldEntry) {
           val lNew = l.update(idxP, entry)
-          p.updateDown(pidx, lNew)
+          p.updateDown(pIdx, lNew)
         }
         Some(oldEntry)
 
@@ -558,20 +561,20 @@ object HASkipList {
           val tup = l.splitAndInsert(idx, entry)
           val left = tup._1
           val right = tup._2
-          val pNew = p.insertAfterSplit(pidx, splitKey, left, right)
-          pp.updateDown(ppidx, pNew)
+          val pNew = p.insertAfterSplit(pIdx, splitKey, left, right)
+          pp.updateDown(ppIdx, pNew)
           if (hasObserver) keyObserver.keyUp(splitKey)
         } else {
           val lNew = l.insert(idx, entry)
           // and overwrite down entry in pn's parent
-          p.updateDown(pidx, lNew)
+          p.updateDown(pIdx, lNew)
         }
         None
       }
     }
 
-    @tailrec private def addToBranch(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppidx: Int,
-                                     p: HeadOrBranch[S, A, E], pidx: Int, b: Branch[S, A, E], isRight: Boolean)
+    @tailrec private def addToBranch(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppIdx: Int,
+                                     p: HeadOrBranch[S, A, E], pIdx: Int, b: Branch[S, A, E], isRight: Boolean)
                                     (implicit tx: S#Tx): Option[E] = {
       val idx         = if (isRight) indexInNodeR(key, b) else indexInNodeL(key, b)
       val found       = idx < 0
@@ -579,7 +582,7 @@ object HASkipList {
       var bNew        = b
       var idxNew      = idxP
       var pNew        = p
-      var pidxNew     = pidx
+      var pIdxNew     = pIdx
       val bsz         = b.size
       val isRightNew  = isRight && idxP == bsz - 1
 
@@ -588,24 +591,24 @@ object HASkipList {
         val tup       = b.split
         val left      = tup._1
         val right     = tup._2
-        val pbNew     = p.insertAfterSplit(pidx, splitKey, left, right)
+        val pbNew     = p.insertAfterSplit(pIdx, splitKey, left, right)
         pNew          = pbNew
-        pp.updateDown(ppidx, pbNew)
+        pp.updateDown(ppIdx, pbNew)
         val mns       = arrMinSz
         if (idx < mns) {
           bNew        = left
         } else {
           bNew        = right
-          pidxNew    += 1
+          pIdxNew    += 1
           idxNew     -= mns
         }
         if (hasObserver) keyObserver.keyUp(splitKey)
       }
       val c = bNew.down(idxNew)
       if (c.isLeaf) {
-        addToLeaf  (key, entry, pNew, pidxNew, bNew, idxNew, c.asLeaf,   isRightNew)
+        addToLeaf  (key, entry, pNew, pIdxNew, bNew, idxNew, c.asLeaf,   isRightNew)
       } else {
-        addToBranch(key, entry, pNew, pidxNew, bNew, idxNew, c.asBranch, isRightNew)
+        addToBranch(key, entry, pNew, pIdxNew, bNew, idxNew, c.asBranch, isRightNew)
       }
     }
 
@@ -785,7 +788,7 @@ object HASkipList {
             // remove the entry at idxP from the branch,
             // and actualise b with virtual sibling. the key
             // at bNew's index idxP is now the one formerly at
-            // idxP1, hence the right-most key in csib.
+            // idxP1, hence the right-most key in cSib.
             bNew        = b.removeColumn(idxP)
             b.downRef(idxP).dispose()
             cNew        = c.mergeRight(cSib)
@@ -891,7 +894,7 @@ object HASkipList {
       override def toString = "Iterator"
     }
 
-    protected sealed abstract class IteratorImpl[/* @spec(ialized) */ C](implicit tx: S#Tx) extends Iterator[C] {
+    protected sealed abstract class IteratorImpl[C](implicit tx: S#Tx) extends Iterator[C] {
       private var l: Leaf[S, A, E]  = null
       private var nextValue: C      = _
       private var isRight           = true
@@ -949,24 +952,26 @@ object HASkipList {
       }
     }
 
-    def updateDown(i: Int, n: Node[S, A, E])(implicit tx: S#Tx): Unit =
+    def updateDown(i: Int, n: Node[S, A, E])(implicit tx: S#Tx): Unit = {
+      if (i != 0) throw new IndexOutOfBoundsException(i.toString)
       downNode() = n
+    }
 
-    def insertAfterSplit(pidx: Int, splitKey: A, left: Node[S, A, E], right: Node[S, A, E])
+    def insertAfterSplit(pIdx: Int, splitKey: A, left: Node[S, A, E], right: Node[S, A, E])
                         (implicit tx: S#Tx, head: Impl[S, A, E]): Branch[S, A, E] = {
-      val bkeys  = Vector[A](splitKey, null.asInstanceOf[A])
-      val bdowns = Vector[S#Var[Node[S, A, E]]](
+      val bKeys  = Vector[A](splitKey, null.asInstanceOf[A])
+      val bDowns = Vector[S#Var[Node[S, A, E]]](
         tx.newVar(head.id, left),
         tx.newVar(head.id, right)
       )
-      new Branch[S, A, E](bkeys, bdowns) // new parent branch
+      new Branch[S, A, E](bKeys, bDowns) // new parent branch
     }
   }
 
   sealed trait HeadOrBranch[S <: Sys[S], A, E] /* extends Branch */ {
     private[HASkipList] def updateDown(i: Int, n: Node[S, A, E])(implicit tx: S#Tx): Unit
 
-    private[HASkipList] def insertAfterSplit(pidx: Int, splitKey: A, left: Node[S, A, E], right: Node[S, A, E])
+    private[HASkipList] def insertAfterSplit(pIdx: Int, splitKey: A, left: Node[S, A, E], right: Node[S, A, E])
                                             (implicit tx: S#Tx, list: Impl[S, A, E]): Branch[S, A, E]
   }
 
@@ -987,7 +992,7 @@ object HASkipList {
      * identifier is re-used for the merged node.
      * Thus after the merge, the originating sibling
      * should be disposed (when using an ephemeral
-     * datastore). The parent needs to remove the
+     * data store). The parent needs to remove the
      * entry of the originating sibling.
      *
      * (thus the disposal corresponds with the ref
@@ -1010,7 +1015,7 @@ object HASkipList {
      * identifier is re-used for the merged node.
      * Thus after the merge, the left sibling
      * should be disposed (when using an ephemeral
-     * datastore). The parent needs to remove the
+     * data store). The parent needs to remove the
      * entry of the left sibling.
      *
      * (thus the disposal corresponds with the ref
@@ -1034,7 +1039,7 @@ object HASkipList {
     def asBranch: Branch[S, A, E]
   }
 
-  private final class SetLeaf[S <: Sys[S], /* @spec(KeySpec) */ A](private[HASkipList] val entries: Vector[A])
+  private final class SetLeaf[S <: Sys[S], A](private[HASkipList] val entries: Vector[A])
     extends Leaf[S, A, A] {
 
     protected def copy(newEntries: Vector[A]): Leaf[S, A, A] = new SetLeaf(newEntries)
@@ -1042,7 +1047,7 @@ object HASkipList {
     def key(idx: Int): A = entries(idx)
   }
 
-  private final class MapLeaf[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ B](private[HASkipList] val entries: Vector[(A, B)])
+  private final class MapLeaf[S <: Sys[S], A, B](private[HASkipList] val entries: Vector[(A, B)])
     extends Leaf[S, A, (A, B)] {
 
     protected def copy(newEntries: Vector[(A, B)]): Leaf[S, A, (A, B)] = new MapLeaf(newEntries)
@@ -1050,7 +1055,7 @@ object HASkipList {
     def key(idx: Int): A = entries(idx)._1
   }
 
-  sealed trait Leaf[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ E] extends Node[S, A, E] {
+  sealed trait Leaf[S <: Sys[S], A, E] extends Node[S, A, E] {
     override def toString = entries.mkString("Leaf(", ",", ")")
 
     private[HASkipList] def entries: Vector[E]
@@ -1069,10 +1074,10 @@ object HASkipList {
     final private[HASkipList] def leafSizeSum(implicit tx: S#Tx): Int = size
 
     final private[HASkipList] def printNode(isRight: Boolean)(implicit tx: S#Tx): Vec[String] = {
-      val sz    = size
-      val szm   = sz - 1
-      val strs  = Seq.tabulate(sz)(idx => if (!isRight || idx < szm) entry(idx).toString else "M")
-      Vector(strs.mkString("--"))
+      val sz      = size
+      val szm     = sz - 1
+      val strings = Seq.tabulate(sz)(idx => if (!isRight || idx < szm) entry(idx).toString else "M")
+      Vector(strings.mkString("--"))
     }
 
     final private[HASkipList] def mergeRight(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
@@ -1120,8 +1125,8 @@ object HASkipList {
 
       } else {
         // split and add `v` to right leaf
-        val numl  = idx - arrMinSz
-        val ren   = ren0.patch(numl, Vector(entry), 0)
+        val numL  = idx - arrMinSz
+        val ren   = ren0.patch(numL, Vector(entry), 0)
         val left  = copy(len0)
         val right = copy(ren)
 
@@ -1150,10 +1155,10 @@ object HASkipList {
   }
 
   object Branch {
-    private[HASkipList] def read[S <: Sys[S], /* @spec(ialized) */ A, /* @spec(ialized) */ B](in: DataInput, access: S#Acc,
-                                                                                  isRight: Boolean)
-                                                                                 (implicit tx: S#Tx,
-                                                                                  list: Impl[S, A, B]): Branch[S, A, B] = {
+    private[HASkipList] def read[S <: Sys[S], A, B](in: DataInput, access: S#Acc,
+                                                    isRight: Boolean)
+                                                   (implicit tx: S#Tx,
+                                                    list: Impl[S, A, B]): Branch[S, A, B] = {
       import list.keySerializer
       val sz    = in.readByte()
       val szi   = if (isRight) sz - 1 else sz
@@ -1165,8 +1170,8 @@ object HASkipList {
     }
   }
 
-  final class Branch[S <: Sys[S], /* @spec(ialized) */ A, /* @spec(ialized) */ B](private[HASkipList] val keys: Vector[A],
-                                                                      private[HASkipList] val downs: Vector[S#Var[Node[S, A, B]]])
+  final class Branch[S <: Sys[S], A, B](private[HASkipList] val keys : Vector[A],
+                                        private[HASkipList] val downs: Vector[S#Var[Node[S, A, B]]])
     extends HeadOrBranch[S, A, B] with Node[S, A, B] {
 
     override def toString = keys.mkString("Branch(", ",", ")")
@@ -1238,10 +1243,10 @@ object HASkipList {
      private[HASkipList] def split(implicit tx: S#Tx, list: Impl[S, A, B]): (Branch[S, A, B], Branch[S, A, B]) = {
        import list.{size => _, _}
        val lsz = arrMinSz
-       val (lkeys, rkeys) = keys.splitAt(lsz)
-       val (ldowns, rdowns) = downs.splitAt(lsz)
-       val left = new Branch[S, A, B](lkeys, ldowns)
-       val right = new Branch[S, A, B](rkeys, rdowns)
+       val (lKeys , rKeys ) = keys .splitAt(lsz)
+       val (lDowns, rDowns) = downs.splitAt(lsz)
+       val left  = new Branch[S, A, B](lKeys, lDowns)
+       val right = new Branch[S, A, B](rKeys, rDowns)
 
        (left, right)
      }
@@ -1249,7 +1254,7 @@ object HASkipList {
      private[HASkipList] def updateDown(i: Int, n: Node[S, A, B])(implicit tx: S#Tx): Unit = downs(i)() = n
 
      private[HASkipList] def removeColumn(idx: Int)(implicit tx: S#Tx, list: Impl[S, A, B]): Branch[S, A, B] = {
-       val newKeys = keys.patch(idx, Vector.empty, 1)
+       val newKeys  = keys .patch(idx, Vector.empty, 1)
        val newDowns = downs.patch(idx, Vector.empty, 1)
        new Branch[S, A, B](newKeys, newDowns)
      }
@@ -1265,14 +1270,14 @@ object HASkipList {
        // size increased by one. the new key is `splitKey`
        // which gets inserted at the index where we went
        // down, `idx`.
-       val bkeys  = keys.patch (idx, Vector(splitKey), 0)
-       val bdowns = downs.patch(idx, Vector(tx.newVar(list.id, left)), 0)
+       val bKeys  = keys.patch (idx, Vector(splitKey), 0)
+       val bDowns = downs.patch(idx, Vector(tx.newVar(list.id, left)), 0)
 
        // copy entries right to split index
        val rightOff       = idx + 1
-       bdowns(rightOff)() = right
+       bDowns(rightOff)() = right
 
-       new Branch[S, A, B](bkeys, bdowns)
+       new Branch[S, A, B](bKeys, bDowns)
      }
 
      private[HASkipList] def write(out: DataOutput)(implicit list: Impl[S, A, B]): Unit = {
@@ -1318,7 +1323,7 @@ object HASkipList {
       * @param   minGap      the minimum gap-size used for the skip list. This value must be between 1 and 126 inclusive.
       * @param   keyObserver an object which observes key promotions and demotions. Use `NoKeyObserver` (default) if
       *                      key motions do not need to be monitored. The monitoring allows the use of the skip list
-      *                      for synchronized decimations of related data structures, such as the deterministic
+      *                      for synchronized decimation of related data structures, such as the deterministic
       *                      skip quadtree.
       * @param   tx          the transaction in which to initialize the structure
       * @param   ord         the ordering of the keys. This is an instance of `txn.Ordering` to allow
@@ -1362,7 +1367,7 @@ object HASkipList {
 
   }
 
-  sealed trait Set[S <: Sys[S], /* @spec(ialized) */ A] extends SkipList.Set[S, A] {
+  sealed trait Set[S <: Sys[S], A] extends SkipList.Set[S, A] {
     def top(implicit tx: S#Tx): Option[HASkipList.Set.Node[S, A]]
   }
 
@@ -1391,7 +1396,7 @@ object HASkipList {
       * @param   minGap      the minimum gap-size used for the skip list. This value must be between 1 and 126 inclusive.
       * @param   keyObserver an object which observes key promotions and demotions. Use `NoKeyObserver` (default) if
       *                      key motions do not need to be monitored. The monitoring allows the use of the skip list
-      *                      for synchronized decimations of related data structures, such as the deterministic
+      *                      for synchronized decimation of related data structures, such as the deterministic
       *                      skip quadtree.
       * @param   tx          the transaction in which to initialize the structure
       * @param   ord         the ordering of the keys. This is an instance of `txn.Ordering` to allow
