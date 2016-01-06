@@ -118,6 +118,12 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
 
   def iterator(implicit tx: S#Tx): Iterator[Leaf[S, A]]
 
+  /** Returns `true` if not a single element is contained in the collection. */
+  def isEmpty(implicit tx: S#Tx): Boolean
+
+  /** Returns `true` if at least one element is contained in the collection. */
+  def nonEmpty(implicit tx: S#Tx): Boolean
+
   /** Queries all elements intersecting a given point in time.
     * That is, returns an iterator of all elements whose span contains the time point
     * `(span start <= time && span.stop > time)`

@@ -49,11 +49,6 @@ object BiPin extends Obj.Type {
     def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] =
       Impl.readIdentifiedEntry(in, access)
 
-//    implicit def fromTuple[S <: Sys[S], K, V, A <: Elem[S]](tup: (K, V))
-//                                                          (implicit tx: S#Tx,
-//                                                           key  : K => LongObj[S],
-//                                                           value: V => A): Entry[S, A] = apply[S, A](tup._1, tup._2)
-
     implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, Entry[S, A]] =
       Impl.entrySerializer[S, A]
 
@@ -117,6 +112,12 @@ trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]]
 
   def modifiableOption: Option[BiPin.Modifiable[S, A]]
 
+  /** Returns `true` if not a single element is contained in the collection. */
+  def isEmpty(implicit tx: S#Tx): Boolean
+
+  /** Returns `true` if at least one element is contained in the collection. */
+  def nonEmpty(implicit tx: S#Tx): Boolean
+
   /** Queries the element valid for the given point in time.
     * Unlike, `intersect`, if there are multiple elements sharing
     * the same point in time, this returns the most recently added element.
@@ -164,6 +165,14 @@ trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]]
     *             later than the given time
     */
   def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long]
+
+  /** Finds the entry with the greatest time which is less than the query time.
+    *
+    * @param time the query time
+    * @return     the time corresponding to the next entry, or `None` if there is no entry
+    *             earlier than the given time
+    */
+  def eventBefore(time: Long)(implicit tx: S#Tx): Option[Long]
 
   def debugList(implicit tx: S#Tx): List[(Long, A)]
 }

@@ -165,7 +165,7 @@ trait Node[S <: Sys[S]] extends Elem[S] with Mutable[S#ID, S#Tx] /* Obj[S] */ {
   protected def writeData(out: DataOutput): Unit
   protected def disposeData()(implicit tx: S#Tx): Unit
 
-  final private[event] def _targets: Targets[S] = targets
+  private[event] final def _targets: Targets[S] = targets
 
   final def id: S#ID = targets.id
 

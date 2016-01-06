@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
   scalaVersion        := "2.11.7",
-  crossScalaVersions  := Seq("2.11.7", "2.10.5"),
+  crossScalaVersions  := Seq("2.11.7", "2.10.6"),
   scalacOptions      ++= Seq("-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!

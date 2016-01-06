@@ -141,16 +141,16 @@ object MapImpl {
 
     final def modifiableOption: Option[Modifiable[S, K, Repr]] = Some(this)
 
-    final protected def writeData(out: DataOutput): Unit = {
+    protected final def writeData(out: DataOutput): Unit = {
       out.writeInt(keyType.typeID)
       peer.write(out)
     }
 
-    final protected def disposeData()(implicit tx: S#Tx): Unit = peer.dispose()
+    protected final def disposeData()(implicit tx: S#Tx): Unit = peer.dispose()
 
     override def toString = s"Map$id"
     
-    final protected def foreach(fun: Entry[K, V] => Unit)(implicit tx: S#Tx): Unit =
+    protected final def foreach(fun: Entry[K, V] => Unit)(implicit tx: S#Tx): Unit =
       peer.valuesIterator.foreach(_.foreach(fun))
 
     object changed extends Changed
@@ -161,6 +161,9 @@ object MapImpl {
 
     private[this] def fireRemoved(key: K, value: V)(implicit tx: S#Tx): Unit =
       changed.fire(Map.Update(map, Map.Removed[S, K, V](key, value) :: Nil))
+
+    private[this] def fireReplaced(key: K, before: V, now: V)(implicit tx: S#Tx): Unit =
+      changed.fire(Map.Update(map, Map.Replaced[S, K, V](key, before = before, now = now) :: Nil))
 
     final def +=(kv: (K, V))(implicit tx: S#Tx): this.type = {
       put(kv._1, kv._2)
@@ -182,11 +185,10 @@ object MapImpl {
 
       if (found) {
         val oldEntry = oldVec(idx)
-        // unregisterElement(oldEntry)
-        fireRemoved(key, oldEntry.value)
+        fireReplaced(key, before = oldEntry.value, now = value)
+      } else {
+        fireAdded(key, value)
       }
-      // registerElement(entry)
-      fireAdded(key, value)
 
       if (found) Some(oldVec(idx).value) else None
     }

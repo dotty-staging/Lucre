@@ -17,5 +17,5 @@ package impl
 import de.sciss.lucre.stm.Sys
 
 trait SingleEvent[S <: Sys[S], +A] extends Event[S, A] {
-  final private[event] def slot = 0
+  private[event] final def slot = 0
 }

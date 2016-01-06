@@ -25,7 +25,7 @@ object IdentifierMapImpl {
   private final class InMemoryInt[ID, Tx <: TxnLike, A](intView: ID => Int)
     extends IdentifierMap[ID, Tx, A] {
 
-    private val peer = TMap.empty[Int, A]
+    private[this] val peer = TMap.empty[Int, A]
 
     def get(id: ID)(implicit tx: Tx): Option[A] = peer.get(intView(id))(tx.peer)
 

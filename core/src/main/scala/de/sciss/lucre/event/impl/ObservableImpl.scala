@@ -19,18 +19,18 @@ import de.sciss.lucre.stm.{Disposable, Sys}
 import scala.concurrent.stm.Ref
 
 trait ObservableImpl[S <: Sys[S], U] extends Observable[S#Tx, U] {
-  private final class Observation(val fun: S#Tx => U => Unit) extends Disposable[S#Tx] {
+  private[this] final class Observation(val fun: S#Tx => U => Unit) extends Disposable[S#Tx] {
     def dispose()(implicit tx: S#Tx): Unit = removeObservation(this)
   }
 
-  private val obsRef = Ref(Vector.empty[Observation])
+  private[this] val obsRef = Ref(Vector.empty[Observation])
 
-  final protected def fire(update: U)(implicit tx: S#Tx): Unit = {
+  protected final def fire(update: U)(implicit tx: S#Tx): Unit = {
     val obs = obsRef.get(tx.peer)
     obs.foreach(_.fun(tx)(update))
   }
 
-  private def removeObservation(obs: Observation)(implicit tx: S#Tx): Unit =
+  private[this] def removeObservation(obs: Observation)(implicit tx: S#Tx): Unit =
     obsRef.transform(_.filterNot(_ == obs))(tx.peer)
 
   final def react(fun: S#Tx => U => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {

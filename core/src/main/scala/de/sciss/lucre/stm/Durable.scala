@@ -21,12 +21,10 @@ import scala.concurrent.stm.InTxn
 import scala.language.implicitConversions
 
 object Durable {
-  private type S = Durable
-
-  def apply(factory: DataStore.Factory, mainName: String = "data"): S =
+  def apply(factory: DataStore.Factory, mainName: String = "data"): Durable =
     Impl(factory, mainName = mainName)
 
-  def apply(mainStore: DataStore): S = Impl(mainStore = mainStore)
+  def apply(mainStore: DataStore): Durable = Impl(mainStore = mainStore)
 
   trait Txn extends DurableLike.Txn[Durable]
 }

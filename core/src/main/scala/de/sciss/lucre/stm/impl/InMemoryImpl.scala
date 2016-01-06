@@ -27,15 +27,15 @@ object InMemoryImpl {
   def apply(): InMemory = new System
 
   trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] with ReactionMapImpl.Mixin[S] {
-    private final val idCnt = ScalaRef(0)
+    private[this] final val idCnt = ScalaRef(0)
 
-    final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
+    protected final val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
-    final private[lucre] val attrMap: IdentifierMap[S#ID, S#Tx, Obj.AttrMap[S]] =
+    private[lucre] final val attrMap: IdentifierMap[S#ID, S#Tx, Obj.AttrMap[S]] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Obj.AttrMap[S]](_.id)
 
-    final private[lucre] def newIDValue()(implicit tx: S#Tx): Int = {
+    private[lucre] final def newIDValue()(implicit tx: S#Tx): Int = {
       val peer  = tx.peer
       val res   = idCnt.get(peer) + 1
       idCnt.set(res)(peer)
@@ -170,7 +170,7 @@ object InMemoryImpl {
 
     def readID(in: DataInput, acc: S#Acc): S#ID = opNotSupported("readID")
 
-    final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
+    private[lucre] final def reactionMap: ReactionMap[S] = system.reactionMap
 
     // ---- context ----
 

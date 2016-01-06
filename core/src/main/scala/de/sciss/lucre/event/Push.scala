@@ -42,15 +42,16 @@ object Push {
 
   private final class Impl[S <: Sys[S]](origin: Event[S, Any], val update: Any)(implicit tx: S#Tx)
     extends Pull[S] {
-    private var pushMap   = IMap(origin -> NoParents[S])
-    private var pullMap   = IMap.empty[EventLike[S, Any], Option[Any]]
 
-    private var indent    = ""
+    private[this] var pushMap   = IMap(origin -> NoParents[S])
+    private[this] var pullMap   = IMap.empty[EventLike[S, Any], Option[Any]]
 
-    @elidable(CONFIG) private def incIndent(): Unit = indent += "  "
-    @elidable(CONFIG) private def decIndent(): Unit = indent = indent.substring(2)
+    private[this] var indent    = ""
 
-    private def addVisited(child: Event[S, Any], parent: Event[S, Any]): Boolean = {
+    @elidable(CONFIG) private[this] def incIndent(): Unit = indent += "  "
+    @elidable(CONFIG) private[this] def decIndent(): Unit = indent = indent.substring(2)
+
+    private[this] def addVisited(child: Event[S, Any], parent: Event[S, Any]): Boolean = {
       val parents = pushMap.getOrElse(child, NoParents)
       logEvent(s"${indent}visit $child  (new ? ${parents.isEmpty})")
       pushMap += ((child, parents + parent))

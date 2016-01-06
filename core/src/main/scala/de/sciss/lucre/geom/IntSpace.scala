@@ -14,8 +14,9 @@
 package de.sciss.lucre
 package geom
 
-import annotation.tailrec
-import de.sciss.serial.{DataOutput, DataInput, ImmutableSerializer}
+import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+
+import scala.annotation.tailrec
 
 object IntSpace {
   sealed trait TwoDim extends Space[TwoDim] {
@@ -189,15 +190,14 @@ object IntSpace {
     def hyperCubeSerializer = NDim.hyperCubeSerializer
   }
 
-  /**
-   * A helper method which efficiently calculates the unique integer in an interval [a, b] which has
-   * the maximum number of trailing zeros in its binary representation (a and b are integers > 0).
-   * This is used by the `HyperCube` implementations to find the greatest interesting square for
-   * two given children.
-   *
-   * Thanks to Rex Kerr and Daniel Sobral
-   * ( http://stackoverflow.com/questions/6156502/integer-in-an-interval-with-maximized-number-of-trailing-zero-bits )
-   */
+  /** A helper method which efficiently calculates the unique integer in an interval [a, b] which has
+    * the maximum number of trailing zeros in its binary representation (a and b are integers > 0).
+    * This is used by the `HyperCube` implementations to find the greatest interesting square for
+    * two given children.
+    *
+    * Thanks to Rex Kerr and Daniel Sobral
+    * ( http://stackoverflow.com/questions/6156502/integer-in-an-interval-with-maximized-number-of-trailing-zero-bits )
+    */
   def binSplit(a: Int, b: Int): Int = /* if (a <= b) */ binSplitRec(a, b, 0xFFFF0000, 8) // else binSplitRec(b, a, 0xFFFF0000, 8)
 
   @tailrec private def binSplitRec(a: Int, b: Int, mask: Int, shift: Int): Int = {

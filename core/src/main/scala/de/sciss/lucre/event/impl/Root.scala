@@ -20,7 +20,7 @@ import de.sciss.lucre.stm.Sys
   * implementation of `pull` which merely checks if this event has fired or not.
   */
 trait Root[S <: Sys[S], +A] extends Event[S, A] {
-  final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = Some(pull.resolve[A])
+  private[lucre] final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = Some(pull.resolve[A])
 }
 
 /** A generator without further sources. */

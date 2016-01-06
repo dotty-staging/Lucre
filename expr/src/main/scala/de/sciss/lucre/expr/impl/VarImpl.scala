@@ -54,7 +54,7 @@ trait VarImpl[S <: Sys[S], A, Repr <: Expr[S, A]]
     this
   }
 
-  private[this]def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> changed
+  private[this] def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> changed
 
   final def apply()(implicit tx: S#Tx): Repr = ref()
 

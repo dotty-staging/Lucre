@@ -83,7 +83,8 @@ object HASkipList {
     case impl0: Impl[S, A, _] =>
       val h = impl0.height
 
-      @tailrec def stepRight[E](impl: Impl[S, A, E], n: Node[S, A, E], lvl: Int): Int = {
+      @tailrec
+      def stepRight[E](impl: Impl[S, A, E], n: Node[S, A, E], lvl: Int): Int = {
         val idx = impl.indexInNodeR(key, n)
         if (idx < 0) lvl
         else if (n.isLeaf) -1
@@ -93,7 +94,8 @@ object HASkipList {
         }
       }
 
-      @tailrec def stepLeft[E](impl: Impl[S, A, E], n: Node[S, A, E], lvl: Int): Int = {
+      @tailrec
+      def stepLeft[E](impl: Impl[S, A, E], n: Node[S, A, E], lvl: Int): Int = {
         val idx = impl.indexInNodeL(key, n)
         if (idx < 0) lvl else if (n.isLeaf) -1 else stepLeft(impl, n.asBranch.down(idx), lvl - 1)
       }
@@ -184,7 +186,8 @@ object HASkipList {
     }
 
     def get(key: A)(implicit tx: S#Tx): Option[B] = {
-      @tailrec def stepRight(n: Node[S, A, (A, B)]): Option[B] = {
+      @tailrec
+      def stepRight(n: Node[S, A, (A, B)]): Option[B] = {
         val idx   = indexInNodeR(key, n)
         val idxP  = if (idx < 0) -(idx + 1) else idx
         if (n.isLeaf) {
@@ -198,7 +201,8 @@ object HASkipList {
         }
       }
 
-      @tailrec def stepLeft(n: Node[S, A, (A, B)]): Option[B] = {
+      @tailrec
+      def stepLeft(n: Node[S, A, (A, B)]): Option[B] = {
         val idx  = indexInNodeL(key, n)
         val idxP = if (idx < 0) -(idx + 1) else idx
         if (n.isLeaf) {
@@ -262,14 +266,14 @@ object HASkipList {
     protected def newLeaf(entry: E): Leaf[S, A, E]
     protected def readLeaf(in: DataInput, access: S#Acc, isRight: Boolean)(implicit tx: S#Tx): Leaf[S, A, E]
 
-    implicit private def head = this
+    implicit private[this] def head = this
 
-    final def   arrMinSz = minGap + 1
-    private def arrMaxSz = (minGap + 1) << 1 // aka arrMinSz << 1
+    final def         arrMinSz = minGap + 1
+    private[this] def arrMaxSz = (minGap + 1) << 1 // aka arrMinSz << 1
 
-    private val hasObserver = keyObserver != SkipList.NoKeyObserver
+    private[this] val hasObserver = keyObserver != SkipList.NoKeyObserver
 
-    final protected def writeData(out: DataOutput): Unit = {
+    protected final def writeData(out: DataOutput): Unit = {
       out.writeByte(SER_VERSION)
       out.writeByte(minGap)
       downNode.write(out)
@@ -295,7 +299,7 @@ object HASkipList {
       }
     }
 
-    final protected def disposeData()(implicit tx: S#Tx): Unit =
+    protected final def disposeData()(implicit tx: S#Tx): Unit =
       downNode.dispose()
 
     def size(implicit tx: S#Tx): Int = {
@@ -323,7 +327,7 @@ object HASkipList {
 
     final def top(implicit tx: S#Tx): Option[Node[S, A, E]] = Option(topN)
 
-    @inline final protected def topN(implicit tx: S#Tx): Node[S, A, E] = downNode()
+    @inline protected final def topN(implicit tx: S#Tx): Node[S, A, E] = downNode()
 
     final def debugPrint()(implicit tx: S#Tx): String = topN.printNode(isRight = true).mkString("\n")
 
@@ -332,7 +336,7 @@ object HASkipList {
     final def toSeq       (implicit tx: S#Tx): Seq [E]  = fillBuilder(Seq   .newBuilder)
     final def toSet       (implicit tx: S#Tx): ISet[E]  = fillBuilder(ISet  .newBuilder)
 
-    private def fillBuilder[Res](b: mutable.Builder[E, Res])(implicit tx: S#Tx): Res = {
+    private[this] def fillBuilder[Res](b: mutable.Builder[E, Res])(implicit tx: S#Tx): Res = {
       val i = iterator
       while (i.hasNext) {
         b += i.next() // Txn
@@ -359,7 +363,8 @@ object HASkipList {
       // In the worst case, we descend the list twice, still giving O(log n) performance, while
       // saving the effort to horizontally connect the leaves.
 
-      @tailrec def straight(n: Node[S, A, E], idx: Int): E = {
+      @tailrec
+      def straight(n: Node[S, A, E], idx: Int): E = {
         if (n.isLeaf) {
           n.asLeaf.entry(idx)
         } else {
@@ -368,8 +373,8 @@ object HASkipList {
         }
       }
 
-      @tailrec def step(n: Node[S, A, E], _bckNode: Node[S, A, E], _bckIdx: Int,
-                        isRight: Boolean): Option[E] = {
+      @tailrec
+      def step(n: Node[S, A, E], _bckNode: Node[S, A, E], _bckIdx: Int, isRight: Boolean): Option[E] = {
 
         val idx = if (isRight) indexInNodeR(key, n) else indexInNodeL(key, n)
 
@@ -406,7 +411,8 @@ object HASkipList {
       *             if `None`, there is no key greater than or equal to the search key in the list
       */
     final def ceil(key: A)(implicit tx: S#Tx): Option[E] = {
-      @tailrec def step(n: Node[S, A, E], isRight: Boolean): Option[E] = {
+      @tailrec
+      def step(n: Node[S, A, E], isRight: Boolean): Option[E] = {
         val idx = if (isRight) indexInNodeR(key, n) else indexInNodeL(key, n)
         val idxP = if (idx < 0) -(idx + 1) else idx
         val newRight = isRight && idxP == n.size - 1
@@ -433,14 +439,16 @@ object HASkipList {
       }
 
       def isoIndexL(n: Node[S, A, E])(implicit tx: S#Tx): Int = {
-        @tailrec def step(idx: Int): Int = {
+        @tailrec
+        def step(idx: Int): Int = {
           val cmp = ord.compare(n.key(idx))
           if (cmp == 0) -(idx + 1) else if (cmp < 0) idx else step(idx + 1)
         }
         step(0)
       }
 
-      @tailrec def stepRight(n: Node[S, A, E]): (E, Int) = {
+      @tailrec
+      def stepRight(n: Node[S, A, E]): (E, Int) = {
         val idx = isoIndexR(n)
         val found = idx < 0
         val idxP = if (found) -(idx + 1) else idx
@@ -459,7 +467,8 @@ object HASkipList {
         }
       }
 
-      @tailrec def stepLeft(n: Node[S, A, E]): (E, Int) = {
+      @tailrec
+      def stepLeft(n: Node[S, A, E]): (E, Int) = {
         val idx = isoIndexL(n)
         val found = idx < 0
         val idxP = if (found) -(idx + 1) else idx
@@ -482,7 +491,8 @@ object HASkipList {
     // ---- set support ----
 
     final def contains(v: A)(implicit tx: S#Tx): Boolean = {
-      @tailrec def stepRight(n: Node[S, A, E]): Boolean = {
+      @tailrec
+      def stepRight(n: Node[S, A, E]): Boolean = {
         val idx = indexInNodeR(v, n)
         if (idx < 0) true
         else if (n.isLeaf) false
@@ -492,7 +502,8 @@ object HASkipList {
         }
       }
 
-      @tailrec def stepLeft(n: Node[S, A, E]): Boolean = {
+      @tailrec
+      def stepLeft(n: Node[S, A, E]): Boolean = {
         val idx = indexInNodeL(v, n)
         if (idx < 0) true else if (n.isLeaf) false else stepLeft(n.asBranch.down(idx))
       }
@@ -522,14 +533,15 @@ object HASkipList {
     }
 
     final /* protected */ def indexInNodeL(key: A, n: Node[S, A, E])(implicit tx: S#Tx): Int = {
-      @tailrec def step(idx: Int): Int = {
+      @tailrec
+      def step(idx: Int): Int = {
         val cmp = ordering.compare(key, n.key(idx))
         if (cmp == 0) -(idx + 1) else if (cmp < 0) idx else step(idx + 1)
       }
       step(0)
     }
 
-    final protected def addEntry(key: A, entry: E)(implicit tx: S#Tx): Option[E] = {
+    protected final def addEntry(key: A, entry: E)(implicit tx: S#Tx): Option[E] = {
       val c = topN
       if (c eq null) {
         val l = newLeaf(entry)
@@ -542,9 +554,9 @@ object HASkipList {
       }
     }
 
-    private def addToLeaf(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppIdx: Int, p: HeadOrBranch[S, A, E],
-                          pIdx: Int, l: Leaf[S, A, E], isRight: Boolean)
-                         (implicit tx: S#Tx): Option[E] = {
+    private[this] def addToLeaf(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppIdx: Int, p: HeadOrBranch[S, A, E],
+                                pIdx: Int, l: Leaf[S, A, E], isRight: Boolean)
+                               (implicit tx: S#Tx): Option[E] = {
       val idx = if (isRight) indexInNodeR(key, l) else indexInNodeL(key, l)
       if (idx < 0) {
         val idxP = -(idx + 1)
@@ -573,9 +585,10 @@ object HASkipList {
       }
     }
 
-    @tailrec private def addToBranch(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppIdx: Int,
-                                     p: HeadOrBranch[S, A, E], pIdx: Int, b: Branch[S, A, E], isRight: Boolean)
-                                    (implicit tx: S#Tx): Option[E] = {
+    @tailrec
+    private[this] def addToBranch(key: A, entry: E, pp: HeadOrBranch[S, A, E], ppIdx: Int,
+                                  p: HeadOrBranch[S, A, E], pIdx: Int, b: Branch[S, A, E], isRight: Boolean)
+                                 (implicit tx: S#Tx): Option[E] = {
       val idx         = if (isRight) indexInNodeR(key, b) else indexInNodeL(key, b)
       val found       = idx < 0
       val idxP        = if (found) -(idx + 1) else idx
@@ -616,7 +629,7 @@ object HASkipList {
       removeEntry(key); this
     }
 
-    final protected def removeEntry(key: A)(implicit tx: S#Tx): Option[E] = {
+    protected final def removeEntry(key: A)(implicit tx: S#Tx): Option[E] = {
       val c = topN
       if (c eq null) {
         None
@@ -627,8 +640,8 @@ object HASkipList {
       }
     }
 
-    private def removeFromLeaf(key: A, pDown: Sink[S#Tx, Node[S, A, E]], l: Leaf[S, A, E],
-                               isRight: Boolean, lDirty: Boolean)(implicit tx: S#Tx): Option[E] = {
+    private[this] def removeFromLeaf(key: A, pDown: Sink[S#Tx, Node[S, A, E]], l: Leaf[S, A, E],
+                                     isRight: Boolean, lDirty: Boolean)(implicit tx: S#Tx): Option[E] = {
       val idx   = if (isRight) indexInNodeR(key, l) else indexInNodeL(key, l)
       val found = idx < 0
       if (found) {
@@ -644,8 +657,9 @@ object HASkipList {
       }
     }
 
-    @tailrec private def removeFromBranchAndBubble(key: A, pDown: Sink[S#Tx, Node[S, A, E]], b: Branch[S, A, E],
-                                                   leafUpKey: A)(implicit tx: S#Tx): Option[E] = {
+    @tailrec
+    private[this] def removeFromBranchAndBubble(key: A, pDown: Sink[S#Tx, Node[S, A, E]], b: Branch[S, A, E],
+                                                leafUpKey: A)(implicit tx: S#Tx): Option[E] = {
       val bsz       = b.size
       val idxP      = bsz - 1 // that we know
       val mns       = arrMinSz
@@ -716,8 +730,9 @@ object HASkipList {
       }
     }
 
-    @tailrec private def removeFromBranch(key: A, pDown: Sink[S#Tx, Node[S, A, E]], b: Branch[S, A, E],
-                                          isRight: Boolean, bDirty: Boolean)(implicit tx: S#Tx): Option[E] = {
+    @tailrec
+    private[this] def removeFromBranch(key: A, pDown: Sink[S#Tx, Node[S, A, E]], b: Branch[S, A, E],
+                                       isRight: Boolean, bDirty: Boolean)(implicit tx: S#Tx): Option[E] = {
       val idx   = if (isRight) indexInNodeR(key, b) else indexInNodeL(key, b)
       val found = idx < 0
       val idxP  = if (found) -(idx + 1) else idx
@@ -888,24 +903,25 @@ object HASkipList {
       }
     }
 
-    private final class EntryIteratorImpl(implicit tx: S#Tx) extends IteratorImpl[E] {
+    private[this] final class EntryIteratorImpl(implicit tx: S#Tx) extends IteratorImpl[E] {
       protected def getValue(l: Leaf[S, A, E], idx: Int): E = l.entry(idx)
 
       override def toString = "Iterator"
     }
 
     protected sealed abstract class IteratorImpl[C](implicit tx: S#Tx) extends Iterator[C] {
-      private var l: Leaf[S, A, E]  = null
-      private var nextValue: C      = _
-      private var isRight           = true
-      private var idx               = 0
-      private val stack: mutable.Stack[(Branch[S, A, E], Int, Boolean)] = new mutable.Stack
+      private[this] var l: Leaf[S, A, E]  = null
+      private[this] var nextValue: C      = _
+      private[this] var isRight           = true
+      private[this] var idx               = 0
+      private[this] val stack: mutable.Stack[(Branch[S, A, E], Int, Boolean)] = new mutable.Stack
 
       override def toString = s"$impl.iterator"
 
       protected def getValue(l: Leaf[S, A, E], idx: Int): C
 
-      @tailrec private def pushDown(n: Node[S, A, E], idx0: Int, r: Boolean)(implicit tx: S#Tx): Unit =
+      @tailrec
+      private[this] def pushDown(n: Node[S, A, E], idx0: Int, r: Boolean)(implicit tx: S#Tx): Unit =
         if (n.isLeaf) {
           val l2    = n.asLeaf
           l         = l2
@@ -1071,46 +1087,46 @@ object HASkipList {
     final def asLeaf:   Leaf[S, A, E] = this
     final def asBranch: Branch[S, A, E] = opNotSupported
 
-    final private[HASkipList] def leafSizeSum(implicit tx: S#Tx): Int = size
+    private[HASkipList] final def leafSizeSum(implicit tx: S#Tx): Int = size
 
-    final private[HASkipList] def printNode(isRight: Boolean)(implicit tx: S#Tx): Vec[String] = {
+    private[HASkipList] final def printNode(isRight: Boolean)(implicit tx: S#Tx): Vec[String] = {
       val sz      = size
       val szm     = sz - 1
       val strings = Seq.tabulate(sz)(idx => if (!isRight || idx < szm) entry(idx).toString else "M")
       Vector(strings.mkString("--"))
     }
 
-    final private[HASkipList] def mergeRight(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
+    private[HASkipList] final def mergeRight(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
       val lSib = sib.asLeaf
       copy(entries ++ lSib.entries)
     }
 
-    final private[HASkipList] def borrowRight(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
+    private[HASkipList] final def borrowRight(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
       val lSib = sib.asLeaf
       copy(entries :+ lSib.entries.head)
     }
 
-    final private[HASkipList] def mergeLeft(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
+    private[HASkipList] final def mergeLeft(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
       val lSib = sib.asLeaf
       copy(lSib.entries ++ entries)
     }
 
-    final private[HASkipList] def borrowLeft(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
+    private[HASkipList] final def borrowLeft(sib: Node[S, A, E])(implicit tx: S#Tx): Node[S, A, E] = {
       val lSib = sib.asLeaf
       copy(lSib.entries.last +: entries)
     }
 
-    final private[HASkipList] def insert(idx: Int, entry: E)(implicit list: Impl[S, A, E]): Leaf[S, A, E] = {
+    private[HASkipList] final def insert(idx: Int, entry: E)(implicit list: Impl[S, A, E]): Leaf[S, A, E] = {
       val newEntries = entries.patch(idx, Vector(entry), 0)
       copy(newEntries)
     }
 
-    final private[HASkipList] def update(idx: Int, entry: E)(implicit list: Impl[S, A, E]): Leaf[S, A, E] = {
+    private[HASkipList] final def update(idx: Int, entry: E)(implicit list: Impl[S, A, E]): Leaf[S, A, E] = {
       val newEntries = entries.patch(idx, Vector(entry), 1)
       copy(newEntries)
     }
 
-    final private[HASkipList] def splitAndInsert(idx: Int, entry: E)
+    private[HASkipList] final def splitAndInsert(idx: Int, entry: E)
                                                 (implicit list: Impl[S, A, E]): (Leaf[S, A, E], Leaf[S, A, E]) = {
       //         assert( size == arrMaxSz )
       val arrMinSz = list.arrMinSz
@@ -1134,12 +1150,12 @@ object HASkipList {
       }
     }
 
-    final private[HASkipList] def removeColumn(idx: Int)(implicit tx: S#Tx, list: Impl[S, A, E]): Leaf[S, A, E] = {
+    private[HASkipList] final def removeColumn(idx: Int)(implicit tx: S#Tx, list: Impl[S, A, E]): Leaf[S, A, E] = {
       val newEntries = entries.patch(idx, Vector.empty, 1)
       copy(newEntries)
     }
 
-    final private[HASkipList] def write(out: DataOutput)(implicit list: Impl[S, A, E]): Unit = {
+    private[HASkipList] final def write(out: DataOutput)(implicit list: Impl[S, A, E]): Unit = {
       val sz      = size
       val sz1     = sz - 1
       val isRight = entries(sz1) == null // XXX XXX

@@ -71,7 +71,7 @@ trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
 
   final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
 
-  final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = opNotSupported
+  private[lucre] final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = opNotSupported
 }
 
 object Event {

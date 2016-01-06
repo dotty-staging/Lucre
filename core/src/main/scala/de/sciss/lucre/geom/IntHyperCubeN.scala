@@ -128,7 +128,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     val em1     = extent - 1
     var sumSqr  = bigZero
 
-    var i = 0;
+    var i = 0
     while (i < dim) {
       val cc = center(i)
       val ac = point(i)
@@ -171,16 +171,16 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     var res   = 0
 
     var i = 0; while (i < dim) {
-      val bcc = b.center(i)
-      val cc = center(i)
-      val bmin = bcc - be
-      val bmax = bcc + bem1
+      val bcc  = b.center(i)
+      val cc   = center(i)
+      val bMin = bcc - be
+      val bMax = bcc + bem1
       val pos = if (bcc < cc) {
         // not particular elegant to return in an assignment, but well, it's allowed :)
-        if (bmin >= cc - extent && bmax < cc) 0 else return -1
+        if (bMin >= cc - extent && bMax < cc) 0 else return -1
       } else {
         // right?
-        if (bmin >= cc && bmax <= cc + em1) 1 << i else return -1
+        if (bMin >= cc && bMax <= cc + em1) 1 << i else return -1
       }
       res |= pos
       i += 1
@@ -197,7 +197,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     gi(ac, ae << 1, b)
   }
 
-  private def gi(a: Vec[Int], asize: Int, b: NDim#PointLike): NDim#HyperCube = {
+  private[this] def gi(a: Vec[Int], aSize: Int, b: NDim#PointLike): NDim#HyperCube = {
     var mmc = Int.MaxValue
     var mi  = Int.MaxValue
     var i = 0; while (i < dim) {
@@ -207,7 +207,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
       val akc = ac - tlc
       val bkc = b(i) - tlc
       val mc  = if (akc <= bkc) {
-        IntSpace.binSplit(akc + asize, bkc)
+        IntSpace.binSplit(akc + aSize, bkc)
       } else {
         IntSpace.binSplit(bkc + 1, akc)
       }

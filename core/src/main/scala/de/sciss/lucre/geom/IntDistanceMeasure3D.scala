@@ -98,9 +98,9 @@ object IntDistanceMeasure3D {
 
     protected def idx: Int
 
-    private val right  = (idx & 1) != 0
-    private val bottom = (idx & 2) != 0
-    private val back   = (idx & 4) != 0
+    private[this] val right  = (idx & 1) != 0
+    private[this] val bottom = (idx & 2) != 0
+    private[this] val back   = (idx & 4) != 0
 
     override def toString = underlying.toString + ".quadrant(" + idx + ")"
 
@@ -150,9 +150,9 @@ object IntDistanceMeasure3D {
     protected def underlying: DistanceMeasure[M, ThreeDim]
     protected def idx: Int
 
-    private val right   = (idx & 1) != 0
-    private val bottom  = (idx & 2) != 0
-    private val back    = (idx & 4) != 0
+    private[this] val right   = (idx & 1) != 0
+    private[this] val bottom  = (idx & 2) != 0
+    private[this] val back    = (idx & 4) != 0
 
     override def toString = underlying.toString + ".exceptQuadrant(" + idx + ")"
 

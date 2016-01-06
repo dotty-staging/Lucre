@@ -14,15 +14,15 @@
 package de.sciss.lucre
 package geom
 
-import annotation.tailrec
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
-/**
- * Provides spaces in which coordinates are expressed using `Long` values.
- * Note that the current implementation due to performance considerations
- * requires that the coordinates are clipped to 62-bit range. That is,
- * they should be >= -0x2000000000000000L and < 0x2000000000000000L
- */
+import scala.annotation.tailrec
+
+/** Provides spaces in which coordinates are expressed using `Long` values.
+  * Note that the current implementation due to performance considerations
+  * requires that the coordinates are clipped to 62-bit range. That is,
+  * they should be >= -0x2000000000000000L and < 0x2000000000000000L
+  */
 object LongSpace {
   sealed trait TwoDim extends Space[TwoDim] {
     type PointLike      = LongPoint2DLike
@@ -77,18 +77,17 @@ object LongSpace {
     }
   }
 
-  /**
-   * A helper method which efficiently calculates the unique integer in an interval [a, b] which has
-   * the maximum number of trailing zeros in its binary representation (a and b are integers > 0).
-   * This is used by the `HyperCube` implementations to find the greatest interesting square for
-   * two given children.
-   *
-   * Thanks to Rex Kerr and Daniel Sobral
-   * ( http://stackoverflow.com/questions/6156502/integer-in-an-interval-with-maximized-number-of-trailing-zero-bits )
-   */
+  /** A helper method which efficiently calculates the unique integer in an interval [a, b] which has
+    * the maximum number of trailing zeros in its binary representation (a and b are integers > 0).
+    * This is used by the `HyperCube` implementations to find the greatest interesting square for
+    * two given children.
+    *
+    * Thanks to Rex Kerr and Daniel Sobral
+    * ( http://stackoverflow.com/questions/6156502/integer-in-an-interval-with-maximized-number-of-trailing-zero-bits )
+    */
   def binSplit(a: Long, b: Long): Long = binSplitRec(a, b, 0xFFFFFFFF00000000L, 16)
 
-  @tailrec private def binSplitRec(a: Long, b: Long, mask: Long, shift: Int): Long = {
+  @tailrec private[this] def binSplitRec(a: Long, b: Long, mask: Long, shift: Int): Long = {
     val gt = a > (b & mask)
     if (shift == 0) {
       if (gt) mask >> 1 else mask

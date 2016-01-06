@@ -19,20 +19,19 @@ import de.sciss.lucre.stm
 import de.sciss.model.Change
 
 object Expr {
-  object Var {
-    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[Var[S, A]] = {
-      if (expr.isInstanceOf[Var[_, _]]) Some(expr.asInstanceOf[Var[S, A]]) else None
-    }
-  }
+//  object Var {
+//    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[Var[S, A]] = {
+//      if (expr.isInstanceOf[Var[_, _]]) Some(expr.asInstanceOf[Var[S, A]]) else None
+//    }
+//  }
 
   trait Var[S <: Sys[S], A] extends Expr[S, A] with stm.Var[S#Tx, Expr[S, A]]
 
   object Const {
-    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[A] = {
+    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[A] =
       if (expr   .isInstanceOf[Const[_, _]]) {
         Some(expr.asInstanceOf[Const[S, A]].constValue)
       } else None
-    }
   }
 
   /** A constant expression simply acts as a proxy for a constant value of type `A`.

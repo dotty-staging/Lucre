@@ -39,7 +39,7 @@ object DurableImpl {
 
     def store: DataStore
 
-    final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
+    protected final val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
       IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
     @field private[this] val idCntVar = step { implicit tx =>
@@ -143,7 +143,7 @@ object DurableImpl {
   trait TxnMixin[S <: D[S]] extends DurableLike.Txn[S] with BasicTxnImpl[S] {
     _: S#Tx =>
 
-    final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
+    private[lucre] final def reactionMap: ReactionMap[S] = system.reactionMap
 
     final def newID(): S#ID = new IDImpl[S](system.newIDValue()(this))
 

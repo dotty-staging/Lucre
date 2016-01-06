@@ -96,8 +96,8 @@ object IntDistanceMeasure2D {
   }
 
   private final class NextSpanEvent(quad: IntSquare) extends SpanEventLike {
-    private val maxX = quad.right
-    private val maxY = quad.bottom
+    private[this] val maxX = quad.right
+    private[this] val maxY = quad.bottom
 
     override def toString = s"IntDistanceMeasure2D.NextSpanEvent($quad)"
 
@@ -136,8 +136,8 @@ object IntDistanceMeasure2D {
   }
 
   private final class PrevSpanEvent(quad: IntSquare) extends SpanEventLike {
-    private val minX = quad.left
-    private val minY = quad.top // note: we allow this to be used for unbounded span stops, as a special representation of Span.Void
+    private[this] val minX = quad.left
+    private[this] val minY = quad.top // note: we allow this to be used for unbounded span stops, as a special representation of Span.Void
 
     override def toString = s"IntDistanceMeasure2D.PrevSpanEvent($quad)"
 
@@ -329,8 +329,9 @@ object IntDistanceMeasure2D {
 
   private final class Quadrant(underlying: DistanceMeasure[Long, TwoDim], idx: Int)
     extends Impl {
-    private val right = idx == 0 || idx == 3
-    private val bottom = idx >= 2
+
+    private[this] val right = idx == 0 || idx == 3
+    private[this] val bottom = idx >= 2
 
     override def toString = underlying.toString + ".quadrant(" + idx + ")"
 
@@ -367,8 +368,9 @@ object IntDistanceMeasure2D {
 
   private final class ExceptQuadrant( underlying: DistanceMeasure[ Long, TwoDim ], idx: Int )
    extends Impl {
-      private val right    = idx == 0 || idx == 3
-      private val bottom   = idx >= 2
+
+      private[this] val right    = idx == 0 || idx == 3
+      private[this] val bottom   = idx >= 2
 
       override def toString = underlying.toString + ".exceptQuadrant(" + idx + ")"
 

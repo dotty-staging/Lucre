@@ -190,7 +190,7 @@ object ListImpl {
       insert(elem, pred, succ, idx)
     }
 
-    private def insert(elem: A, pred: C, succ: C, idx: Int)(implicit tx: S#Tx): Unit = {
+    private[this] def insert(elem: A, pred: C, succ: C, idx: Int)(implicit tx: S#Tx): Unit = {
       val recPred   = tx.newVar[C](id, pred)
       val recSucc   = tx.newVar[C](id, succ)
       val rec       = new Cell[S, A](elem, recPred, recSucc)
@@ -213,10 +213,10 @@ object ListImpl {
       loop(headRef())
     }
 
-    private def fireAdded(idx: Int, elem: A)(implicit tx: S#Tx): Unit =
+    private[this] def fireAdded(idx: Int, elem: A)(implicit tx: S#Tx): Unit =
       changed.fire(List.Update(list, Vector(List.Added(idx, elem))))
 
-    private def fireRemoved(idx: Int, elem: A)(implicit tx: S#Tx): Unit =
+    private[this] def fireRemoved(idx: Int, elem: A)(implicit tx: S#Tx): Unit =
       changed.fire(List.Update(list, Vector(List.Removed(idx, elem))))
 
     final def remove(elem: A)(implicit tx: S#Tx): Boolean = {
@@ -252,7 +252,7 @@ object ListImpl {
     }
 
     // unlinks a cell and disposes it. does not fire. decrements sizeRef
-    private def removeCell(cell: C)(implicit tx: S#Tx): Unit = {
+    private[this] def removeCell(cell: C)(implicit tx: S#Tx): Unit = {
       val pred = cell.pred()
       val succ = cell.succ()
       if (pred != null) {
@@ -310,7 +310,7 @@ object ListImpl {
       while (nonEmpty) removeLast()
 
     // deregisters element event. disposes cell contents, but does not unlink, nor fire.
-    private def disposeCell(cell: C)(implicit tx: S#Tx): Unit = {
+    private[this] def disposeCell(cell: C)(implicit tx: S#Tx): Unit = {
       // unregisterAent(cell.elem)
       cell.pred.dispose()
       cell.succ.dispose()

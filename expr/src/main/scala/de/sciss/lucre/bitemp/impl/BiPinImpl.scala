@@ -77,7 +77,7 @@ object BiPinImpl {
   private trait EntryImpl[S <: Sys[S], A <: Elem[S]] extends Entry[S, A] {
     final def tpe: Elem.Type = Entry
 
-    final protected def writeData(out: DataOutput): Unit = {
+    protected final def writeData(out: DataOutput): Unit = {
       key  .write(out)
       value.write(out)
     }
@@ -191,6 +191,9 @@ object BiPinImpl {
 
     // ---- impl ----
 
+    final def isEmpty (implicit tx: S#Tx): Boolean = tree.isEmpty
+    final def nonEmpty(implicit tx: S#Tx): Boolean = !isEmpty
+
     protected type PinAux[~ <: Sys[~]] = BiPin[~, E[~]]
 
     protected final def newTree()(implicit tx: S#Tx): Tree[S, A] =
@@ -271,7 +274,8 @@ object BiPinImpl {
       case _ => Vec.empty
     }
 
-    final def eventAfter(time: Long)(implicit tx: S#Tx): Option[Long] = tree.ceil(time + 1).map(_._1)
+    final def eventAfter (time: Long)(implicit tx: S#Tx): Option[Long] = tree.ceil (time + 1).map(_._1)
+    final def eventBefore(time: Long)(implicit tx: S#Tx): Option[Long] = tree.floor(time - 1).map(_._1)
 
     final def at     (time: Long)(implicit tx: S#Tx): Option[Entry[S, A]] = intersect(time).headOption
     final def valueAt(time: Long)(implicit tx: S#Tx): Option[         A ] = intersect(time).headOption.map(_.value)

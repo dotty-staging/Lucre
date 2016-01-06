@@ -334,11 +334,11 @@ object Ancestor {
 
     override def toString = s"Ancestor.Map(tree=$full)"
 
-    final protected def preOrdering: Ordering[S#Tx, M] = new Ordering[S#Tx, M] {
+    protected final def preOrdering: Ordering[S#Tx, M] = new Ordering[S#Tx, M] {
       def compare(a: M, b: M)(implicit tx: S#Tx): Int = a.pre compare b.pre
     }
 
-    final protected def postOrdering: Ordering[S#Tx, M] = new Ordering[S#Tx, M] {
+    protected final def postOrdering: Ordering[S#Tx, M] = new Ordering[S#Tx, M] {
       def compare(a: M, b: M)(implicit tx: S#Tx): Int = a.post compare b.post
     }
 
@@ -425,7 +425,7 @@ object Ancestor {
       this
     }
 
-    private def query(vertex: K)(implicit tx: S#Tx): IsoResult[S, Version, A] = {
+    private[this] def query(vertex: K)(implicit tx: S#Tx): IsoResult[S, Version, A] = {
       val cfPre = vertex.pre
       val (cmPreN, cmPreCmp) = preList.isomorphicQuery(new Ordered[S#Tx, M] {
         def compare(that: M)(implicit tx: S#Tx): Int = {
@@ -496,9 +496,9 @@ object Ancestor {
       nearestWithMetric(vertex, iso, new FilterMetric(p))
     }
 
-    private def nearestWithMetric(vertex: K, iso: IsoResult[S, Version, A],
-                                  metric: DistanceMeasure[Long, ThreeDim])
-                                 (implicit tx: S#Tx): Option[(K, A)] = {
+    private[this] def nearestWithMetric(vertex: K, iso: IsoResult[S, Version, A],
+                                        metric: DistanceMeasure[Long, ThreeDim])
+                                       (implicit tx: S#Tx): Option[(K, A)] = {
       val preTag  = iso.pre .pre .tag
       val postTag = iso.post.post.tag
       val x       = if (iso.preCmp  < 0) preTag  - 1 else preTag

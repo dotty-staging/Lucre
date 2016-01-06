@@ -26,7 +26,7 @@ trait MappingNode[S <: Sys[S], A, B]
   protected def foldUpdate(generated: Option[A], input: B)(implicit tx: S#Tx): Option[A]
 
   trait Mapped extends Generator[S, A] {
-    final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
+    private[lucre] final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
       val gen = if (pull.isOrigin(this)) Some(pull.resolve[A]) else None
       if (pull.contains(inputEvent)) pull(inputEvent) match {
         case Some(e)  => foldUpdate(gen, e)

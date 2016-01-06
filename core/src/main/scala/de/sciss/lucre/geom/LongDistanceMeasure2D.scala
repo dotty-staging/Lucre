@@ -17,7 +17,7 @@ package geom
 object LongDistanceMeasure2D {
 
   import LongSpace.TwoDim
-  import TwoDim._
+  import TwoDim.{HyperCube => Square, _}
   import Space.{bigZero => Zero}
   import DistanceMeasure.Ops
 
@@ -35,12 +35,12 @@ object LongDistanceMeasure2D {
     */
   val euclideanSq: MS = EuclideanSq
 
-  /** A chebychev distance measure, based on the maximum of the absolute
+  /** A Chebychev distance measure, based on the maximum of the absolute
     * distances across all dimensions.
     */
   val chebyshev: ML = Chebyshev
 
-  /**  An 'inverted' chebychev distance measure, based on the *minimum* of the absolute
+  /**  An 'inverted' Chebychev distance measure, based on the *minimum* of the absolute
     * distances across all dimensions. This is, strictly speaking, only a semi metric.
     */
   val vehsybehc: ML = Vehsybehc
@@ -65,8 +65,8 @@ object LongDistanceMeasure2D {
     override def toString = "LongDistanceMeasure2D.euclideanSq"
 
     def distance   (a: PointLike, b: PointLike) = b.distanceSq(a)
-    def minDistance(a: PointLike, b: HyperCube) = b.minDistanceSq(a)
-    def maxDistance(a: PointLike, b: HyperCube) = b.maxDistanceSq(a)
+    def minDistance(a: PointLike, b: Square   ) = b.minDistanceSq(a)
+    def maxDistance(a: PointLike, b: Square   ) = b.maxDistanceSq(a)
   }
 
   /** A 'next event' search when the quadtree is used to store spans (intervals).
@@ -154,12 +154,12 @@ object LongDistanceMeasure2D {
         q.left  >= p.x && q.top >= p.y      OK
      */
 
-    override def minDistance(p: PointLike, q: HyperCube): Long =
+    override def minDistance(p: PointLike, q: Square): Long =
       if ((q.right >= p.x) || (q.bottom >= p.y)) {
         super.minDistance(p, q)
       } else Long.MaxValue
 
-    override def maxDistance(p: PointLike, q: HyperCube): Long =
+    override def maxDistance(p: PointLike, q: Square): Long =
       if ((q.left >= p.x) || (q.top >= p.y)) {
         super.maxDistance(p, q)
       } else Long.MaxValue
@@ -191,12 +191,12 @@ object LongDistanceMeasure2D {
       }
     }
 
-    override def minDistance(p: PointLike, q: HyperCube): Long =
+    override def minDistance(p: PointLike, q: Square): Long =
       if ((q.left <= p.x) || (q.top <= p.y)) {
         super.minDistance(p, q)
       } else Long.MaxValue
 
-    override def maxDistance(p: PointLike, q: HyperCube): Long =
+    override def maxDistance(p: PointLike, q: Square): Long =
       if ((q.right <= p.x) || (q.bottom <= p.y)) {
         super.maxDistance(p, q)
       } else Long.MaxValue
@@ -205,19 +205,19 @@ object LongDistanceMeasure2D {
   private sealed trait ClipLike[M] extends Impl[M] {
     protected def underlying: Impl[M]
 
-    protected def quad: HyperCube
+    protected def quad: Square
 
     override def toString = underlying.toString + ".clip(" + quad + ")"
 
     final def distance   (a: PointLike, b: PointLike) = if (quad.contains(b)) underlying.distance   (a, b) else maxValue
-    final def minDistance(a: PointLike, b: HyperCube) = if (quad.contains(b)) underlying.minDistance(a, b) else maxValue
-    final def maxDistance(a: PointLike, b: HyperCube) = if (quad.contains(b)) underlying.maxDistance(a, b) else maxValue
+    final def minDistance(a: PointLike, b: Square   ) = if (quad.contains(b)) underlying.minDistance(a, b) else maxValue
+    final def maxDistance(a: PointLike, b: Square   ) = if (quad.contains(b)) underlying.maxDistance(a, b) else maxValue
   }
 
-  private final class LongClip(protected val underlying: LongImpl, protected val quad: HyperCube)
+  private final class LongClip(protected val underlying: LongImpl, protected val quad: Square)
     extends ClipLike[Long] with LongImpl
 
-  private final class SqrClip(protected val underlying: SqrImpl, protected val quad: HyperCube)
+  private final class SqrClip(protected val underlying: SqrImpl, protected val quad: Square)
     extends ClipLike[Sqr] with SqrImpl
 
   private sealed trait ApproximateLike[M] extends Impl[M] {
@@ -227,8 +227,8 @@ object LongDistanceMeasure2D {
 
     override def toString = underlying.toString + ".approximate(" + thresh + ")"
 
-    final def minDistance(a: PointLike, b: HyperCube) = underlying.minDistance(a, b)
-    final def maxDistance(a: PointLike, b: HyperCube) = underlying.maxDistance(a, b)
+    final def minDistance(a: PointLike, b: Square) = underlying.minDistance(a, b)
+    final def maxDistance(a: PointLike, b: Square) = underlying.maxDistance(a, b)
 
     def distance(a: PointLike, b: PointLike): M = {
       val res = underlying.distance(a, b)
@@ -259,7 +259,7 @@ object LongDistanceMeasure2D {
         underlying.distance(a, b)
       } else maxValue
 
-    final def minDistance(p: PointLike, q: HyperCube): M = {
+    final def minDistance(p: PointLike, q: Square): M = {
       val qe    = q.extent
       val qem1  = qe - 1
 
@@ -270,7 +270,7 @@ object LongDistanceMeasure2D {
       } else maxValue
     }
 
-    final def maxDistance(p: PointLike, q: HyperCube): M = {
+    final def maxDistance(p: PointLike, q: Square): M = {
       val qe = q.extent
       val qem1 = qe - 1
 
@@ -288,8 +288,8 @@ object LongDistanceMeasure2D {
   private final class SqrQuadrant(protected val underlying: SqrImpl, protected val idx: Int)
     extends QuadrantLike[Sqr] with SqrImpl
 
-  // praktisch werden alle logischen statements, die zum ausschluss fuehren (maxValue)
-  // von Quadrant uebernommen und umgekehrt (a & b --> !a | !b)
+  // basically all logical statements that lead to exclusion (maxValue)
+  // are taken from the orthant and vice versa (a & b --> !a | !b)
   private sealed trait ExceptQuadrantLike[M] extends Impl[M] {
     private val right   = idx == 0 || idx == 3
     private val bottom  = idx >= 2
@@ -307,7 +307,7 @@ object LongDistanceMeasure2D {
         underlying.distance(a, b)
       } else maxValue
 
-    final def minDistance(p: PointLike, q: HyperCube): M = {
+    final def minDistance(p: PointLike, q: Square): M = {
       val qe    = q.extent
       val qem1  = qe - 1
 
@@ -318,7 +318,7 @@ object LongDistanceMeasure2D {
       } else maxValue
     }
 
-    final def maxDistance(p: PointLike, q: HyperCube): M = {
+    final def maxDistance(p: PointLike, q: Square): M = {
       val qe    = q.extent
       val qem1  = qe - 1
 
@@ -347,7 +347,7 @@ object LongDistanceMeasure2D {
       apply(dx, dy)
     }
 
-    def minDistance(a: PointLike, q: HyperCube): Long = {
+    def minDistance(a: PointLike, q: Square): Long = {
       val px  = a.x
       val py  = a.y
       val l   = q.left
@@ -402,7 +402,7 @@ object LongDistanceMeasure2D {
       applyMin(dx, dy)
     }
 
-    def maxDistance(a: PointLike, q: HyperCube): Long = {
+    def maxDistance(a: PointLike, q: Square): Long = {
       val px = a.x
       val py = a.y
       if (px < q.cx) {
@@ -442,8 +442,8 @@ object LongDistanceMeasure2D {
 
     final def compareMeasure(a: Long, b: Long): Int = if (a > b) 1 else if (a < b) -1 else 0
 
-    final def clip       (quad  : HyperCube): ML = new LongClip       (this, quad  )
-    final def approximate(thresh: Long     ): ML = new LongApproximate(this, thresh)
+    final def clip       (quad  : Square): ML = new LongClip       (this, quad  )
+    final def approximate(thresh: Long  ): ML = new LongApproximate(this, thresh)
 
     final def orthant(idx: Int): ML = {
       require(idx >= 0 && idx < 4, "Quadrant index out of range (" + idx + ")")
@@ -467,8 +467,8 @@ object LongDistanceMeasure2D {
 
     final def compareMeasure(a: Sqr, b: Sqr): Int = a.compare(b) // if( a > b ) 1 else if( a < b ) -1 else 0
 
-    final def clip       (quad  : HyperCube): MS = new SqrClip       (this, quad  )
-    final def approximate(thresh: Sqr      ): MS = new SqrApproximate(this, thresh)
+    final def clip       (quad  : Square): MS = new SqrClip       (this, quad  )
+    final def approximate(thresh: Sqr   ): MS = new SqrApproximate(this, thresh)
 
     final def orthant(idx: Int): MS = {
       require(idx >= 0 && idx < 4, "Quadrant index out of range (" + idx + ")")

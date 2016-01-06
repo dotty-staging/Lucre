@@ -23,11 +23,6 @@ import scala.language.higherKinds
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 
-//  def copy[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): Obj[S] = {
-//    // XXX TODO copy attributes as well
-//    obj.copy()
-//  }
-
   /** Copy an object graph with `in` as a leaf.
     * This is short for the following sequence:
     *
@@ -75,6 +70,8 @@ object Obj {
   type AttrAdded  [S <: Sys[S]] = evt.Map.Added  [S, String, Obj[S]]
   val  AttrRemoved              = evt.Map.Removed
   type AttrRemoved[S <: Sys[S]] = evt.Map.Removed[S, String, Obj[S]]
+  val  AttrReplaced             = evt.Map.Replaced
+  type AttrReplaced[S <: Sys[S]]= evt.Map.Replaced[S, String, Obj[S]]
 
   implicit def attrMapSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] =
     anyAttrMapSer.asInstanceOf[Serializer[S#Tx, S#Acc, AttrMap[S]]]
@@ -91,6 +88,4 @@ trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
   override def tpe: Obj.Type
 
   final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
-
-  // override def copy()(implicit tx: S#Tx): Obj[S]
 }

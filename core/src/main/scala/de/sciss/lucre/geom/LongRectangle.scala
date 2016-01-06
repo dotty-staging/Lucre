@@ -16,7 +16,7 @@ package geom
 
 /** A 2D rectangular query shape. */
 trait LongRectangleLike extends QueryShape[BigInt, LongSpace.TwoDim] {
-  import LongSpace.TwoDim._
+  import LongSpace.TwoDim.{HyperCube => Square, _}
   import Space.bigZero
 
   def left  : Long
@@ -33,7 +33,7 @@ trait LongRectangleLike extends QueryShape[BigInt, LongSpace.TwoDim] {
     left <= px && right >= px && top <= py && bottom >= py
   }
 
-  final def overlapArea(q: HyperCube): BigInt = {
+  final def overlapArea(q: Square): BigInt = {
     val l = math.max(q.left , left )
     val r = math.min(q.right, right)
     val w = r - l + 1
@@ -45,7 +45,7 @@ trait LongRectangleLike extends QueryShape[BigInt, LongSpace.TwoDim] {
     BigInt(w) * BigInt(h)
   }
 
-  final def isAreaGreater(a: HyperCube, b: BigInt): Boolean = a.area > b
+  final def isAreaGreater(a: Square, b: BigInt): Boolean = a.area > b
 
   def isAreaNonEmpty(area: BigInt): Boolean = area > bigZero
 }

@@ -241,18 +241,18 @@ object TotalOrder {
       }
     }
 
-    final protected def disposeData()(implicit tx: S#Tx): Unit = {
+    protected final def disposeData()(implicit tx: S#Tx): Unit = {
       root.dispose()
       sizeVal.dispose()
     }
 
-    final protected def writeData(out: DataOutput): Unit = {
+    protected final def writeData(out: DataOutput): Unit = {
       out.writeByte(SER_VERSION)
       sizeVal.write(out)
       root.write(out)
     }
 
-    final private[TotalOrder] def insertMaxAfter(prev: E)(implicit tx: S#Tx): E = {
+    private[TotalOrder] final def insertMaxAfter(prev: E)(implicit tx: S#Tx): E = {
       val next        = prev.next
       val nextTag     = next.tagOr(Int.MinValue)  // Int.MinValue - 1 == Int.MaxValue !
       val prevTag     = prev.tag
@@ -261,7 +261,7 @@ object TotalOrder {
       insert(prev = prev, next = next, nextTag = nextTag, recTag = recTag)
     }
 
-    final private[TotalOrder] def insertAfter(prev: E)(implicit tx: S#Tx): E = {
+    private[TotalOrder] final def insertAfter(prev: E)(implicit tx: S#Tx): E = {
       val next        = prev.next
       val nextTag     = next.tagOr(Int.MaxValue)
       val prevTag     = prev.tag
@@ -269,7 +269,7 @@ object TotalOrder {
       insert(prev = prev, next = next, nextTag = nextTag, recTag = recTag)
     }
 
-    final private[TotalOrder] def insertBefore(next: E)(implicit tx: S#Tx): E = {
+    private[TotalOrder] final def insertBefore(next: E)(implicit tx: S#Tx): E = {
       val prev        = next.prev
       val prevTag     = prev.tagOr(0)
       val nextTag     = next.tag
@@ -291,7 +291,7 @@ object TotalOrder {
       rec
     }
 
-    final private[TotalOrder] def remove(entry: E)(implicit tx: S#Tx): Unit = {
+    private[TotalOrder] final def remove(entry: E)(implicit tx: S#Tx): Unit = {
       val p = entry.prev
       val n = entry.next
       p.updateNext(n)
@@ -699,11 +699,11 @@ object TotalOrder {
     override def toString = s"Map$id"
 
     final type           E    = Map.Entry[S, A]
-    final protected type KOpt = KeyOption[S, A]
+    protected final type KOpt = KeyOption[S, A]
 
-    final private[TotalOrder] val emptyKey: KOpt = new EmptyKey[S, A]
+    private[TotalOrder] final val emptyKey: KOpt = new EmptyKey[S, A]
     final implicit val EntrySerializer: Serializer[S#Tx, S#Acc, E] = new MapEntrySerializer[S, A](this)
-    final private[TotalOrder] implicit val keyOptionSer: Serializer[S#Tx, S#Acc, KOpt] = new KeyOptionSerializer[S, A](this)
+    private[TotalOrder] final implicit val keyOptionSer: Serializer[S#Tx, S#Acc, KOpt] = new KeyOptionSerializer[S, A](this)
 
     protected def sizeVal: S#Var[Int]
 
@@ -717,12 +717,12 @@ object TotalOrder {
 
     final def readEntry(in: DataInput, access: S#Acc)(implicit tx: S#Tx): E = EntrySerializer.read(in, access)
 
-    final protected def disposeData()(implicit tx: S#Tx): Unit = {
+    protected final def disposeData()(implicit tx: S#Tx): Unit = {
       root   .dispose()
       sizeVal.dispose()
     }
 
-    final protected def writeData(out: DataOutput): Unit = {
+    protected final def writeData(out: DataOutput): Unit = {
       out.writeByte(SER_VERSION)
       sizeVal.write(out)
       root   .write(out)
@@ -834,7 +834,7 @@ object TotalOrder {
      * multiplier dynamically to allow it to be as large as possible
      * without producing integer overflows."
      */
-    private def relabel(recK: A, recE: E)(implicit tx: S#Tx): Unit = {
+    private[this] def relabel(recK: A, recE: E)(implicit tx: S#Tx): Unit = {
       var mask    = -1
       var thresh  = 1.0
       var num     = 1

@@ -29,7 +29,7 @@ trait SingleNode[S <: Sys[S], +A] extends Node[S] { self =>
 
   def changed: Event[S, A]
 
-  final private[lucre] def event(slot: Int): Event[S, Any] = {
+  private[lucre] final def event(slot: Int): Event[S, Any] = {
     if (slot != 0) throw new IllegalArgumentException(s"Invalid slot $slot")
     changed
   }

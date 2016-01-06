@@ -49,7 +49,7 @@ import IntSpace.ThreeDim
  * - 7 (binary 111) - right-bottom-back
  */
 trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] {
-  import ThreeDim._
+  import ThreeDim.{HyperCube => Cube3D, _}
   import Space.bigZero
 
   /**
@@ -79,7 +79,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
   final def right : Int = cx + (extent - 1)
   final def back  : Int = cz + (extent - 1)
 
-  final def orthant(idx: Int): HyperCube = {
+  final def orthant(idx: Int): Cube3D = {
     val e   = extent >> 1
     val dx  = if ((idx & 1) == 0) -e else e
     val dy  = if ((idx & 2) == 0) -e else e
@@ -98,7 +98,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     (cz - extent <= pz) && (cz + em1 >= pz)
   }
 
-  final def contains(cube: HyperCube): Boolean = {
+  final def contains(cube: Cube3D): Boolean = {
     val bcx   = cube.cx
     val bcy   = cube.cy
     val bcz   = cube.cz
@@ -118,7 +118,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
 
   // -- QueryShape --
 
-  final def overlapArea(b: HyperCube): BigInt = {
+  final def overlapArea(b: Cube3D): BigInt = {
     val bcx   = b.cx
     val bcy   = b.cy
     val bcz   = b.cz
@@ -126,25 +126,25 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     val bem1  = be - 1
     val em1   = extent - 1
 
-    val xmin = math.max(cx - extent, bcx - be).toLong
-    val xmax = math.min(cx + em1, bcx + bem1).toLong
-    val dx = xmax - xmin + 1
+    val xMin = math.max(cx - extent, bcx - be).toLong
+    val xMax = math.min(cx + em1, bcx + bem1).toLong
+    val dx = xMax - xMin + 1
     if (dx <= 0L) return bigZero
 
-    val ymin = math.max(cy - extent, bcy - be).toLong
-    val ymax = math.min(cy + em1, bcy + bem1).toLong
-    val dy = ymax - ymin + 1
+    val yMin = math.max(cy - extent, bcy - be).toLong
+    val yMax = math.min(cy + em1, bcy + bem1).toLong
+    val dy = yMax - yMin + 1
     if (dy <= 0L) return bigZero
 
-    val zmin = math.max(cz - extent, bcz - be).toLong
-    val zmax = math.min(cz + em1, bcz + bem1).toLong
-    val dz = zmax - zmin + 1
+    val zMin = math.max(cz - extent, bcz - be).toLong
+    val zMax = math.min(cz + em1, bcz + bem1).toLong
+    val dz = zMax - zMin + 1
     if (dz <= 0L) return bigZero
 
     BigInt(dx * dy) * BigInt(dz)
   }
 
-  final def isAreaGreater(a: HyperCube, b: BigInt): Boolean = a.area > b
+  final def isAreaGreater(a: Cube3D, b: BigInt): Boolean = a.area > b
 
   final def isAreaNonEmpty(area: BigInt): Boolean = area > bigZero
 
@@ -168,27 +168,27 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     val em1 = extent - 1
 
     val dx = if (ax < cx) {
-      val xmin = cx - extent
-      if (ax < xmin) xmin - ax else 0
+      val xMin = cx - extent
+      if (ax < xMin) xMin - ax else 0
     } else {
-      val xmax = cx + em1
-      if (ax > xmax) ax - xmax else 0
+      val xMax = cx + em1
+      if (ax > xMax) ax - xMax else 0
     }
 
     val dy = if (ay < cy) {
-      val ymin = cy - extent
-      if (ay < ymin) ymin - ay else 0
+      val yMin = cy - extent
+      if (ay < yMin) yMin - ay else 0
     } else {
-      val ymax = cy + em1
-      if (ay > ymax) ay - ymax else 0
+      val yMax = cy + em1
+      if (ay > yMax) ay - yMax else 0
     }
 
     val dz = if (az < cz) {
-      val zmin = cz - extent
-      if (az < zmin) zmin - az else 0
+      val zMin = cz - extent
+      if (az < zMin) zMin - az else 0
     } else {
-      val zmax = cz + em1
-      if (az > zmax) az - zmax else 0
+      val zMax = cz + em1
+      if (az > zMax) az - zMax else 0
     }
 
     if (dx == 0 && dy == 0 && dz == 0) bigZero
@@ -242,28 +242,28 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     val az  = a.z
     val em1 = extent - 1
 
-    val xpos = if (ax < cx) {
+    val xPos = if (ax < cx) {
       if (ax >= cx - extent) 0 else return -1
     } else {
       if (ax <= cx + em1) 1 else return -1
     }
 
-    val ypos = if (ay < cy) {
+    val yPos = if (ay < cy) {
       if (ay >= cy - extent) 0 else return -1
     } else {
       if (ay <= cy + em1) 2 else return -1
     }
 
-    val zpos = if (az < cz) {
+    val zPos = if (az < cz) {
       if (az >= cz - extent) 0 else return -1
     } else {
       if (az <= cz + em1) 4 else return -1
     }
 
-    xpos | ypos | zpos
+    xPos | yPos | zPos
   }
 
-  final def indexOf(b: HyperCube): Int = {
+  final def indexOf(b: Cube3D): Int = {
     val bcx   = b.cx
     val bcy   = b.cy
     val bcz   = b.cz
@@ -271,54 +271,54 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     val bem1  = be - 1
     val em1   = extent - 1
 
-    val bxmin = bcx - be
-    val bxmax = bcx + bem1
-    val xpos  = if (bcx < cx) {
+    val bxMin = bcx - be
+    val bxMax = bcx + bem1
+    val xPos  = if (bcx < cx) {
       // left?
       // not particular elegant to return in an assignment, but well, it's allowed :)
-      if ((bxmin >= cx - extent) && (bxmax < cx)) 0 else return -1
+      if ((bxMin >= cx - extent) && (bxMax < cx)) 0 else return -1
     } else {
       // right?
-      if ((bxmin >= cx) && (bxmax <= cx + em1)) 1 else return -1
+      if ((bxMin >= cx) && (bxMax <= cx + em1)) 1 else return -1
     }
 
-    val bymin = bcy - be
-    val bymax = bcy + bem1
-    val ypos  = if (bcy < cy) {
+    val byMin = bcy - be
+    val byMax = bcy + bem1
+    val yPos  = if (bcy < cy) {
       // top?
-      if ((bymin >= cy - extent) && (bymax < cy)) 0 else return -1
+      if ((byMin >= cy - extent) && (byMax < cy)) 0 else return -1
     } else {
       // bottom?
-      if ((bymin >= cy) && (bymax <= cy + em1)) 2 else return -1
+      if ((byMin >= cy) && (byMax <= cy + em1)) 2 else return -1
     }
 
-    val bzmin = bcz - be
-    val bzmax = bcz + bem1
-    val zpos = if (bcz < cz) {
+    val bzMin = bcz - be
+    val bzMax = bcz + bem1
+    val zPos = if (bcz < cz) {
       // front?
-      if ((bzmin >= cz - extent) && (bzmax < cz)) 0 else return -1
+      if ((bzMin >= cz - extent) && (bzMax < cz)) 0 else return -1
     } else {
       // back?
-      if ((bzmin >= cz) && (bzmax <= cz + em1)) 4 else return -1
+      if ((bzMin >= cz) && (bzMax <= cz + em1)) 4 else return -1
     }
 
-    xpos | ypos | zpos
+    xPos | yPos | zPos
   }
 
-  final def greatestInteresting(a: PointLike, b: PointLike): HyperCube = gi(a.x, a.y, a.z, 1, b)
+  final def greatestInteresting(a: PointLike, b: PointLike): Cube3D = gi(a.x, a.y, a.z, 1, b)
 
-  final def greatestInteresting(a: HyperCube, b: PointLike): HyperCube = {
+  final def greatestInteresting(a: Cube3D, b: PointLike): Cube3D = {
     val ae = a.extent
     gi(a.cx - ae, a.cy - ae, a.cz - ae, ae << 1, b)
   }
 
-  private def gi(aleft: Int, atop: Int, afront: Int, asize: Int, b: PointLike): HyperCube = {
+  private[this] def gi(aLeft: Int, aTop: Int, aFront: Int, aSize: Int, b: PointLike): Cube3D = {
     val tlx = cx - extent
     val tly = cy - extent
     val tlz = cz - extent
-    val akx = aleft - tlx
-    val aky = atop - tly
-    val akz = afront - tlz
+    val akx = aLeft - tlx
+    val aky = aTop - tly
+    val akz = aFront - tlz
     val bkx = b.x - tlx
     val bky = b.y - tly
     val bkz = b.z - tlz
@@ -328,7 +328,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     var x2 = 0
     if (akx <= bkx) {
       x0 = akx
-      x1 = akx + asize
+      x1 = akx + aSize
       x2 = bkx
     } else {
       x0 = bkx
@@ -342,7 +342,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     var y2 = 0
     if (aky <= bky) {
       y0 = aky
-      y1 = aky + asize
+      y1 = aky + aSize
       y2 = bky
     } else {
       y0 = bky
@@ -356,7 +356,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     var z2 = 0
     if (akz <= bkz) {
       z0 = akz
-      z1 = akz + asize
+      z1 = akz + aSize
       z2 = bkz
     } else {
       z0 = bkz

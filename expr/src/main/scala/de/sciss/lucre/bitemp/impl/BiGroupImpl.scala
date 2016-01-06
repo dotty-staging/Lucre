@@ -274,6 +274,9 @@ object BiGroupImpl {
     // USED AS A MIXIN, E.G. BY TIMELINE
     // final def tpe: Obj.Type = BiGroup
 
+    final def isEmpty (implicit tx: S#Tx): Boolean = tree.isEmpty
+    final def nonEmpty(implicit tx: S#Tx): Boolean = !isEmpty
+
     final def treeHandle = tree
 
     // Note: must be after `EntrySer`
