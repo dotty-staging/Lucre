@@ -24,8 +24,6 @@ import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TxnExecutor}
 import scala.language.higherKinds
 
 object InMemoryImpl {
-  private type S = InMemory
-
   def apply(): InMemory = new System
 
   trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] with ReactionMapImpl.Mixin[S] {
@@ -115,7 +113,7 @@ object InMemoryImpl {
   private final class TxnImpl(val system: InMemory, val peer: InTxn)
     extends TxnMixin[InMemory] {
 
-    implicit def inMemory: S#I#Tx = this
+    implicit def inMemory: InMemory#I#Tx = this
 
     override def toString = s"InMemory.Txn@${hashCode.toHexString}"
   }

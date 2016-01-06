@@ -44,21 +44,21 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
         implicit tx => (map.size, map.isEmpty, map.nonEmpty, map.height)
       }
       Then("they should be (0, true, false, 0)")
-      assert(szTup ==(0, true, false, 0), "found " + szTup)
+      assert(szTup == ((0, true, false, 0)), "found " + szTup)
 
       When("the (floor, ceil, contains) of a number if queried")
       val flcl = atomic {
         implicit tx => (map.floor(42), map.ceil(42), map.contains(42))
       }
       Then("they should be (None, None, false)")
-      assert(flcl ==(None, None, false), "found " + flcl)
+      assert(flcl == ((None, None, false)), "found " + flcl)
 
       When("the iterator and sequence methods are called")
       val colls = atomic {
         implicit tx => (map.iterator.isEmpty, map.toSeq.isEmpty, map.toSet.isEmpty, map.toIndexedSeq.isEmpty)
       }
       Then("they should all return empty collections")
-      assert(colls ==(true, true, true, true), "found " + colls)
+      assert(colls == ((true, true, true, true)), "found " + colls)
     }
 
     scenarioWithTime("empty", "Consistency is verified on an empty map") {
@@ -98,7 +98,7 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
             (if (fl._1 >= v2._1 || v2._1 > v) fl else v2) -> (if (cl._1 <= v2._1 || v2._1 < v) cl else v2)
         }
       }
-      assert(fc == brute, "Differ: " +(fc.take(5), brute.take(5)))
+      assert(fc == brute, s"Differ: ${(fc.take(5), brute.take(5))}")
 
       When("the floor and ceil values for the elements are asked")
       val allHit = atomic { implicit tx =>
@@ -135,7 +135,7 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
       }
       Then("the returned elements should be same as the seq")
       val seqVals = seq.map(_._2)
-      assert(rem == seqVals, "Differ: " +(rem.take(5), seqVals.take(5)))
+      assert(rem == seqVals, s"Differ: ${(rem.take(5), seqVals.take(5))}")
 
       onEmptyList()
     }

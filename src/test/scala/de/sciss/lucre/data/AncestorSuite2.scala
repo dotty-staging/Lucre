@@ -147,7 +147,7 @@ class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
               }
 
               mark.foreach { value =>
-                assert(map.add(fullVertex, value), s"Mark.add says mark existed for $version")
+                assert(map.add(fullVertex -> value), s"Mark.add says mark existed for $version")
               }
 
               (_mapFV, _mapRepr) // , _values

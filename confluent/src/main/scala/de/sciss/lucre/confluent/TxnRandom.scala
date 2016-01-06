@@ -53,22 +53,22 @@ object TxnRandom {
   def apply[S <: stm.Sys[S]](id: S#ID, seed: Long)(implicit tx: S#Tx): TxnRandom[S#Tx] =
     new SysImpl[S#Tx](tx.newLongVar(id, initialScramble(seed)))
 
-  def wrap[Txn](peer: stm.Var[Txn, Long]): TxnRandom[Txn] = new SysImpl[Txn](peer)
+  def wrap[Tx](peer: stm.Var[Tx, Long]): TxnRandom[Tx] = new SysImpl[Tx](peer)
 
-  private sealed trait Impl[Txn] extends TxnRandom[Txn] {
-    protected def refSet(seed: Long)(implicit tx: Txn): Unit
-    protected def refGet(implicit tx: Txn): Long
+  private sealed trait Impl[Tx] extends TxnRandom[Tx] {
+    protected def refSet(seed: Long)(implicit tx: Tx): Unit
+    protected def refGet(implicit tx: Tx): Long
 
-    def nextBoolean()(implicit tx: Txn): Boolean = next(1) != 0
+    def nextBoolean()(implicit tx: Tx): Boolean = next(1) != 0
 
-    def nextDouble()(implicit tx: Txn): Double =
+    def nextDouble()(implicit tx: Tx): Double =
       ((next(26).toLong << 27) + next(27)) / (1L << 53).toDouble
 
-    def nextFloat()(implicit tx: Txn): Float = next(24) / (1 << 24).toFloat
+    def nextFloat()(implicit tx: Tx): Float = next(24) / (1 << 24).toFloat
 
-    def nextInt()(implicit tx: Txn): Int = next(32)
+    def nextInt()(implicit tx: Tx): Int = next(32)
 
-    def nextInt(n: Int)(implicit tx: Txn): Int = {
+    def nextInt(n: Int)(implicit tx: Tx): Int = {
       require(n > 0, "n must be positive")
 
       if ((n & -n) == n) {
@@ -85,11 +85,11 @@ object TxnRandom {
       sys.error("Never here")
     }
 
-    def nextLong()(implicit tx: Txn): Long = (next(32).toLong << 32) + next(32)
+    def nextLong()(implicit tx: Tx): Long = (next(32).toLong << 32) + next(32)
 
-    def setSeed(seed: Long)(implicit tx: Txn): Unit = refSet(initialScramble(seed))
+    def setSeed(seed: Long)(implicit tx: Tx): Unit = refSet(initialScramble(seed))
 
-    private def next(bits: Int)(implicit tx: Txn): Int = {
+    private def next(bits: Int)(implicit tx: Tx): Int = {
       val oldSeed = refGet
       val nextSeed = (oldSeed * multiplier + addend) & mask
       refSet(nextSeed)
@@ -103,15 +103,15 @@ object TxnRandom {
     protected def refGet(implicit tx: InTxn): Long = seedRef()
   }
 
-  private sealed trait SysLike[Txn] extends Impl[Txn] {
-    protected def seedRef: stm.Var[Txn, Long]
+  private sealed trait SysLike[Tx] extends Impl[Tx] {
+    protected def seedRef: stm.Var[Tx, Long]
 
-    protected final def refSet(value: Long)(implicit tx: Txn): Unit = seedRef() = value
+    protected final def refSet(value: Long)(implicit tx: Tx): Unit = seedRef() = value
 
-    protected final def refGet(implicit tx: Txn): Long = seedRef()
+    protected final def refGet(implicit tx: Tx): Long = seedRef()
   }
 
-  private final class SysImpl[Txn](protected val seedRef: stm.Var[Txn, Long]) extends SysLike[Txn]
+  private final class SysImpl[Tx](protected val seedRef: stm.Var[Tx, Long]) extends SysLike[Tx]
 
   private final class PersistentImpl[S <: stm.Sys[S]](val id: S#ID, protected val seedRef: stm.Var[S#Tx, Long])
     extends SysLike[S#Tx] with Persistent[S] {
@@ -160,25 +160,25 @@ object TxnRandom {
 /** A transactional pseudo-random number generator which
   * behaves numerically like `java.util.Random`.
   */
-trait TxnRandom[-Txn] {
+trait TxnRandom[-Tx] {
   /** Generates a random `Boolean` value. */
-  def nextBoolean  ()(implicit tx: Txn): Boolean
+  def nextBoolean  ()(implicit tx: Tx): Boolean
 
   /** Generates a random `Double` value, uniformly distributed
     * between `0.0` (inclusive) and `1.0` (exclusive).
     */
-  def nextDouble   ()(implicit tx: Txn): Double
+  def nextDouble   ()(implicit tx: Tx): Double
 
   /** Generates a random `Float` value, uniformly distributed
     * between `0.0f` (inclusive) and `1.0f` (exclusive).
     */
-  def nextFloat    ()(implicit tx: Txn): Float
+  def nextFloat    ()(implicit tx: Tx): Float
 
   /** Generates a random `Int` value in the range `Int.MinValue` to `Int.MaxValue`. */
-  def nextInt      ()(implicit tx: Txn): Int
+  def nextInt      ()(implicit tx: Tx): Int
 
   /** Generates a random `Int` value in the range of 0 (inclusive) until the specified value `n` (exclusive). */
-  def nextInt(n: Int)(implicit tx: Txn): Int
+  def nextInt(n: Int)(implicit tx: Tx): Int
 
   /** Generates a random `Long` value in the range `Long.MinValue` to `Long.MaxValue`.
     *
@@ -186,8 +186,8 @@ trait TxnRandom[-Txn] {
     * Because it uses the same algorithm as `java.util.Random`, with a seed of only 48 bits,
     * this function will not return all possible long values!
     */
-  def nextLong     ()(implicit tx: Txn): Long
+  def nextLong     ()(implicit tx: Tx): Long
 
   /** Resets the internal seed value to the given argument. */
-  def setSeed(seed: Long)(implicit tx: Txn): Unit
+  def setSeed(seed: Long)(implicit tx: Tx): Unit
 }

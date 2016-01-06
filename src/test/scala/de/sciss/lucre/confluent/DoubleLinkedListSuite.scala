@@ -155,12 +155,12 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
     }
   }
 
-  class Types[S <: Sys[S]](val s: S) {
-    type Sys = S
+  class Types[T <: Sys[T]](val s: T) {
+    type Sys = T
 
     object Node {
-      implicit object ser extends MutableSerializer[S, Node] {
-        def readData(in: DataInput, _id: S#ID)(implicit tx: S#Tx): Node = new Node with Mutable.Impl[S] {
+      implicit object ser extends MutableSerializer[T, Node] {
+        def readData(in: DataInput, _id: T#ID)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
           val id    = _id
           val name  = in.readUTF()
           val value = tx.readIntVar(id, in)
@@ -169,7 +169,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
         }
       }
 
-      def apply(_name: String, init: Int)(implicit tx: S#Tx): Node = new Node with Mutable.Impl[S] {
+      def apply(_name: String, init: Int)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
         val id    = tx.newID()
         val name  = _name
         val value = tx.newIntVar(id, init)
@@ -178,15 +178,15 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
       }
     }
 
-    trait Node extends Mutable[S#ID, S#Tx] {
+    trait Node extends Mutable[T#ID, T#Tx] {
       def name: String
 
-      def value: S#Var[Int]
+      def value: T#Var[Int]
 
-      def prev: S#Var[Option[Node]]
-      def next: S#Var[Option[Node]]
+      def prev: T#Var[Option[Node]]
+      def next: T#Var[Option[Node]]
 
-      protected def disposeData()(implicit tx: S#Tx): Unit = {
+      protected def disposeData()(implicit tx: T#Tx): Unit = {
         value.dispose()
         prev .dispose()
         next .dispose()
@@ -202,7 +202,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
       override def toString = s"Node($name, $id)"
     }
 
-    def toList(next: Option[Node])(implicit tx: S#Tx): List[(String, Int)] = next match {
+    def toList(next: Option[Node])(implicit tx: T#Tx): List[(String, Int)] = next match {
       case Some(n)  => (n.name, n.value()) :: toList(n.next())
       case _        => Nil
     }
