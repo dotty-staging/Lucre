@@ -1,10 +1,10 @@
 /*
  *  BiGroupImpl.scala
- *  (SoundProcesses)
+ *  (Lucre)
  *
- *  Copyright (c) 2010-2015 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2016 Hanns Holger Rutz. All rights reserved.
  *
- *	This software is published under the GNU General Public License v2+
+ *  This software is published under the GNU Lesser General Public License v2.1+
  *
  *
  *  For further information, please contact Hanns Holger Rutz at
@@ -30,7 +30,7 @@ import de.sciss.span.{Span, SpanLike}
 import scala.annotation.elidable
 import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.higherKinds // ... my arse
+import scala.language.higherKinds
 
 object BiGroupImpl {
   import BiGroup.{Entry, Leaf, MaxCoordinate, MaxSide, MaxSquare, MinCoordinate, Modifiable}

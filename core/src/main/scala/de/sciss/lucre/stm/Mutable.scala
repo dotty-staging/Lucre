@@ -2,7 +2,7 @@
  *  Mutable.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2015 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2016 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
