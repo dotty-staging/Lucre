@@ -280,23 +280,27 @@ object HASkipList {
     }
 
     final def clear()(implicit tx: S#Tx): Unit = {
-      def step(n: Node[S, A, E]): Unit = {
-        if (n.isBranch) {
-          val b   = n.asBranch
-          val bsz = b.size
-          var i = 0; while (i < bsz) {
-            step(b.down(i))
-            b.downRef(i).dispose()
-            i += 1
-          }
-        }
-      }
+      // we just replace `downNode`. for confluent,
+      // the updates wouldn't make any difference,
+      // anyway. for durable, perhaps we have GC some day...
 
-      val c = topN
-      if (c ne null) {
-        step(c)
+//      def step(n: Node[S, A, E]): Unit = {
+//        if (n.isBranch) {
+//          val b   = n.asBranch
+//          val bsz = b.size
+//          var i = 0; while (i < bsz) {
+//            step(b.down(i))
+//            b.downRef(i).dispose()
+//            i += 1
+//          }
+//        }
+//      }
+//
+//      val c = topN
+//      if (c ne null) {
+//        step(c)
         downNode() = null
-      }
+//      }
     }
 
     protected final def disposeData()(implicit tx: S#Tx): Unit =
