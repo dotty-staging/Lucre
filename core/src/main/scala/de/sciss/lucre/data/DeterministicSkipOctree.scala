@@ -631,11 +631,11 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
       //  steps by Lemma 5.) Then we go to the same square q
       //  in Qi+1 and insert x."
 
-      /** The reverse process of `findP0`: Finds the lowest
-        * common ancestor interesting node of this node
-        * which is also contained in Qi+1. Returns this node
-        * in Qi+1, or empty if no such node exists.
-        */
+      /* The reverse process of `findP0`: Finds the lowest
+       * common ancestor interesting node of this node
+       * which is also contained in Qi+1. Returns this node
+       * in Qi+1, or empty if no such node exists.
+       */
       @tailrec def findPN(b: BranchLike): NextOption = b match {
         case tb: TopBranch    => tb.next
         case cb: ChildBranch  => cb.next match {

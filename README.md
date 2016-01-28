@@ -11,7 +11,7 @@ generation of the project that in version 2 was split into several sub-projects
 ([LucreSTM](https://github.com/Sciss/LucreSTM), [LucreData](https://github.com/Sciss/LucreData),
 [LucreConfluent](https://github.com/Sciss/LucreConfluent)).
 
-Lucre is (C)opyright 2009&ndash;2015 by Hanns Holger Rutz. All rights reserved. 
+Lucre is (C)opyright 2009&ndash;2016 by Hanns Holger Rutz. All rights reserved. 
 All modules but the BerkeleyDB bindings are released under 
 the [GNU Lesser General Public License](https://raw.github.com/Sciss/LucreSTM/master/licenses/Lucre-License.txt), 
 whereas the `bdb` backend module for Berkeley DB JE 5 (itself governed by the Sleepycat License) is released under 
@@ -52,3 +52,8 @@ Note that the file format of BDB JE v6 is not backward compatible with v5. Also 
 whereas BDB v5 works with Java 1.6.
 
 The current version `v` is `"3.2.2"`.
+
+## contributing
+
+Please see the file [CONTRIBUTING.md](CONTRIBUTING.md)
+
