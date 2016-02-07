@@ -13,6 +13,17 @@
 
 package de.sciss.lucre.stm
 
+object Disposable {
+  private[this] val emptyVal: Disposable[Any] = new Disposable[Any] {
+    def dispose()(implicit tx: Any): Unit = ()
+  }
+
+  def empty[Tx]: Disposable[Tx] = emptyVal
+
+  def seq[Tx](xs: Disposable[Tx]*): Disposable[Tx] = new Disposable[Tx] {
+    def dispose()(implicit tx: Tx): Unit = xs.foreach(_.dispose())
+  }
+}
 trait Disposable[-Tx] {
   def dispose()(implicit tx: Tx): Unit
 }
