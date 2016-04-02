@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.3.1-SNAPSHOT"
+lazy val projectVersion   = "3.3.1"
 
 lazy val sleepyVersion5   = "5.0.104" // = Berkeley DB Java Edition; note: version 6 requires Java 7
 lazy val sleepyVersion6   = "6.2.7"
@@ -17,8 +17,8 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
-  scalaVersion        := "2.11.7",
-  crossScalaVersions  := Seq("2.11.7", "2.10.6"),
+  scalaVersion        := "2.11.8",
+  crossScalaVersions  := Seq("2.11.8", "2.10.6"),
   scalacOptions      ++= Seq("-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
