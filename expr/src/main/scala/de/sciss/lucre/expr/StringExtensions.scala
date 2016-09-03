@@ -44,7 +44,7 @@ object StringExtensions  {
       }
       val _1 = StringObj.read(in, access)
       val _2 = StringObj.read(in, access)
-      new Tuple2(targets, op, _1, _2)
+      new Tuple2[S, String, StringObj, String, StringObj](targets, op, _1, _2)
     }
   }
 
@@ -57,7 +57,7 @@ object StringExtensions  {
     def tpe: Obj.Type = StringObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
   }
 
   // ----- operators -----
@@ -77,7 +77,7 @@ object StringExtensions  {
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => StringObj.newConst(value(ca, cb))
         case _  =>
-          new Tuple2(Targets[S], this, a, b).connect()
+          new Tuple2[S, String, StringObj, String, StringObj](Targets[S], this, a, b).connect()
       }
 
       def value(a: String, b: String): String

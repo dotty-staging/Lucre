@@ -13,11 +13,9 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Elem, Copy, Obj, Sys}
-import de.sciss.lucre.{event => evt}
+import de.sciss.lucre.expr.impl.{Tuple1Op, Tuple2Op}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
@@ -77,7 +75,7 @@ object DoubleExtensions {
         case Tanh       .id => Tanh
       }
       val _1 = DoubleObj.read(in, access)
-      new Tuple1(targets, op, _1)
+      new Tuple1[S, Double, DoubleObj](targets, op, _1)
     }
   }
 
@@ -88,7 +86,7 @@ object DoubleExtensions {
     def tpe: Obj.Type = DoubleObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1(Targets[Out], op, context(_1)).connect()
+      new Tuple1[Out, T1, ReprT1](Targets[Out], op, context(_1)).connect()
   }
 
   private[this] object DoubleTuple2s extends Type.Extension1[DoubleObj] {
@@ -151,7 +149,7 @@ object DoubleExtensions {
       }
       val _1 = DoubleObj.read(in, access)
       val _2 = DoubleObj.read(in, access)
-      new Tuple2(targets, op, _1, _2)
+      new Tuple2[S, Double, DoubleObj, Double, DoubleObj](targets, op, _1, _2)
     }
   }
 
@@ -164,7 +162,7 @@ object DoubleExtensions {
     def tpe: Obj.Type = DoubleObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
   }
 
   // ----- operators -----
@@ -176,7 +174,7 @@ object DoubleExtensions {
       def id: Int
       final def apply[S <: Sys[S]](_1: Ex[S])(implicit tx: S#Tx): Ex[S] = _1 match {
         case Expr.Const(c)  => DoubleObj.newConst(value(c))
-        case _              => new Tuple1(Targets[S], this, _1).connect()
+        case _              => new Tuple1[S, Double, DoubleObj](Targets[S], this, _1).connect()
       }
 
       def toString[S <: Sys[S]](_1: Ex[S]): String = s"${_1}.$name"
@@ -375,7 +373,7 @@ object DoubleExtensions {
       final def apply[S <: Sys[S]](_1: Ex[S], _2: Ex[S])(implicit tx: S#Tx): Ex[S] = (_1, _2) match {
         case (Expr.Const(ca), Expr.Const(cb)) => DoubleObj.newConst(value(ca, cb))
         case _ =>
-          new Tuple2(Targets[S], this, _1, _2).connect()
+          new Tuple2[S, Double, DoubleObj, Double, DoubleObj](Targets[S], this, _1, _2).connect()
       }
 
       def value(a: Double, b: Double): Double

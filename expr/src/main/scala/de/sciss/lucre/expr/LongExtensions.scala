@@ -97,7 +97,7 @@ object LongExtensions {
       }
       val _1 = LongObj.read(in, access)
       val _2 = LongObj.read(in, access)
-      new Tuple2(targets, op, _1, _2)
+      new Tuple2[S, Long, LongObj, Long, LongObj](targets, op, _1, _2)
     }
   }
 
@@ -120,7 +120,7 @@ object LongExtensions {
     def tpe: Obj.Type = LongObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1(Targets[Out], op, context(_1)).connect()
+      new Tuple1[Out, T1, ReprT1](Targets[Out], op, context(_1)).connect()
   }
 
   object UnaryOp {
@@ -132,7 +132,7 @@ object LongExtensions {
 
       def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
         case Expr.Const(c)  => LongObj.newConst(value(c))
-        case _              => new Tuple1(Targets[S], this, a).connect()
+        case _              => new Tuple1[S, T1, ReprT1](Targets[S], this, a).connect()
       }
 
       def name: String = {
@@ -147,7 +147,7 @@ object LongExtensions {
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
-        new Tuple1(targets, this, _1)
+        new Tuple1[S, Long, LongObj](targets, this, _1)
       }
     }
 
@@ -192,7 +192,7 @@ object LongExtensions {
       final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => LongObj.newConst(value(ca, cb))
         case _ =>
-          new Tuple2(Targets[S], this, a, b).connect()
+          new Tuple2[S, Long, LongObj, Long, LongObj](Targets[S], this, a, b).connect()
       }
 
       def value(a: Long, b: Long): Long

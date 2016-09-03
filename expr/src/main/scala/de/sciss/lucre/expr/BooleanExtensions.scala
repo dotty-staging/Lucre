@@ -57,7 +57,7 @@ object BooleanExtensions  {
     def tpe: Obj.Type = BooleanObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1(Targets[Out], op, context(_1)).connect()
+      new Tuple1[Out, T1, ReprT1](Targets[Out], op, context(_1)).connect()
   }
 
   private[this] object BooleanTuple2s extends Type.Extension1[BooleanObj] {
@@ -131,7 +131,7 @@ object BooleanExtensions  {
     def tpe: Obj.Type = BooleanObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
   }
 
   private[this] case object Not extends UnaryOp[Boolean, BooleanObj] {
@@ -154,7 +154,7 @@ object BooleanExtensions  {
     def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Ex[S] = {
       val _1 = BooleanObj.read(in, access)
       val _2 = BooleanObj.read(in, access)
-      new LazyTuple2(targets, op, _1, _2)
+      new LazyTuple2[S](targets, op, _1, _2)
     }
 
     def isLazy: Boolean
@@ -165,7 +165,7 @@ object BooleanExtensions  {
 
     final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanObj.newConst(value(ca, cb))
-      case _ => new LazyTuple2(Targets[S], this, a, b).connect()
+      case _ => new LazyTuple2[S](Targets[S], this, a, b).connect()
     }
   }
 
@@ -173,14 +173,14 @@ object BooleanExtensions  {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Ex[S] = {
       val _1 = IntObj.read(in, access)
       val _2 = IntObj.read(in, access)
-      new Tuple2(targets, op, _1, _2)
+      new Tuple2[S, Int, IntObj, Int, IntObj](targets, op, _1, _2)
     }
 
     // ---- impl ----
 
     final def apply[S <: Sys[S]](a: IntObj[S], b: IntObj[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanObj.newConst(value(ca, cb))
-      case _ => new Tuple2(Targets[S], this, a, b).connect()
+      case _ => new Tuple2[S, Int, IntObj, Int, IntObj](Targets[S], this, a, b).connect()
     }
   }
 

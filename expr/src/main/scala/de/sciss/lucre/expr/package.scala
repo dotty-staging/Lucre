@@ -14,13 +14,10 @@
 package de.sciss.lucre
 
 import de.sciss.lucre.artifact.{Artifact, ArtifactLocation}
-import de.sciss.lucre.bitemp.{BiPin, BiGroup}
-import de.sciss.lucre.event.{Map, Targets}
+import de.sciss.lucre.bitemp.{BiGroup, BiPin}
+import de.sciss.lucre.event.Map
 import de.sciss.lucre.stm.Sys
-import de.sciss.serial.ImmutableSerializer
-import de.sciss.span.{Span, SpanLike}
 
-import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
 package object expr {

@@ -98,7 +98,7 @@ object SpanLikeExtensions {
     def tpe: Obj.Type = SpanLikeObj
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2(Targets[Out], op, context(_1), context(_2)).connect()
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
   }
 
   // ---- operators ----
@@ -130,11 +130,11 @@ object SpanLikeExtensions {
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
-        new Tuple1(targets, this, _1)
+        new Tuple1[S, Long, LongObj](targets, this, _1)
       }
 
       final def apply[S <: Sys[S]](a: LongObj[S])(implicit tx: S#Tx): Ex[S] =
-        new Tuple1(Targets[S], this, a).connect()
+        new Tuple1[S, Long, LongObj](Targets[S], this, a).connect()
     }
 
     case object From extends LongOp {
@@ -178,13 +178,13 @@ object SpanLikeExtensions {
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = SpanLikeObj.read(in, access)
         val _2 = LongObj    .read(in, access)
-        new Tuple2(targets, this, _1, _2)
+        new Tuple2[S, SpanLike, SpanLikeObj, Long, LongObj](targets, this, _1, _2)
       }
 
       final def apply[S <: Sys[S]](a: Ex[S], b: LongObj[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => SpanLikeObj.newConst(value(ca, cb))
         case _  =>
-          new Tuple2(Targets[S], this, a, b).connect()
+          new Tuple2[S, SpanLike, SpanLikeObj, Long, LongObj](Targets[S], this, a, b).connect()
       }
     }
 
@@ -196,11 +196,11 @@ object SpanLikeExtensions {
                                  (implicit tx: S#Tx): Ex[S] = {
         val _1 = LongObj.read(in, access)
         val _2 = LongObj.read(in, access)
-        new Tuple2(targets, this, _1, _2)
+        new Tuple2[S, Long, LongObj, Long, LongObj](targets, this, _1, _2)
       }
 
       final def apply[S <: Sys[S]](a: LongObj[S], b: LongObj[S])(implicit tx: S#Tx): Ex[S] =
-        new Tuple2(Targets[S], this, a, b).connect()
+        new Tuple2[S, Long, LongObj, Long, LongObj](Targets[S], this, a, b).connect()
     }
 
     case object Apply extends LongLongOp {
