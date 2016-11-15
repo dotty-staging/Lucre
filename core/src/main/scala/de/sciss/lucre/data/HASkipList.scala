@@ -252,6 +252,8 @@ object HASkipList {
     extends HeadOrBranch[S, A, E] with Serializer[S#Tx, S#Acc, Node[S, A, E]] with Mutable.Impl[S] {
     impl =>
 
+    // ---- abstract ----
+
     protected def downNode: S#Var[Node[S, A, E]]
     protected def minGap: Int
     protected def ordering: Ordering[S#Tx, A]
@@ -265,6 +267,8 @@ object HASkipList {
 
     protected def newLeaf(entry: E): Leaf[S, A, E]
     protected def readLeaf(in: DataInput, access: S#Acc, isRight: Boolean)(implicit tx: S#Tx): Leaf[S, A, E]
+
+    // ---- impl ----
 
     implicit private[this] def head = this
 
@@ -914,7 +918,7 @@ object HASkipList {
     }
 
     protected sealed abstract class IteratorImpl[C](implicit tx: S#Tx) extends Iterator[C] {
-      private[this] var l: Leaf[S, A, E]  = null
+      private[this] var l: Leaf[S, A, E]  = _
       private[this] var nextValue: C      = _
       private[this] var isRight           = true
       private[this] var idx               = 0
