@@ -1,16 +1,31 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
 lazy val projectVersion   = "3.3.2-SNAPSHOT"
+lazy val mimaVersion      = "3.3.0"
+
+// ---- core dependencies ----
+
+lazy val scalaSTMVersion  = "0.7"
+lazy val serialVersion    = "1.0.2"
+
+// ---- expr dependencies ----
+
+lazy val modelVersion     = "0.3.2"
+lazy val spanVersion      = "1.3.1"
+lazy val numbersVersion   = "0.1.1"
+
+// ---- confluent dependencies ----
+
+lazy val fingerVersion    = "1.5.2"
+
+// ---- bdb(6) dependencies ----
 
 lazy val sleepyVersion5   = "5.0.104" // = Berkeley DB Java Edition; note: version 6 requires Java 7
 lazy val sleepyVersion6   = "6.2.7"
-lazy val serialVersion    = "1.0.2"
-lazy val scalaSTMVersion  = "0.7"
-lazy val scalaTestVersion = "3.0.0"
-lazy val modelVersion     = "0.3.2"
-lazy val fingerVersion    = "1.5.2"
-lazy val spanVersion      = "1.3.1"
-lazy val numbersVersion   = "0.1.1"
+
+// ---- test dependencies ----
+
+lazy val scalaTestVersion = "3.0.1"
 
 lazy val commonSettings = Seq(
   version             := projectVersion,
@@ -61,7 +76,8 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
         case (_, Seq((lic, _))) => "license" -> lic
       }
     ),
-    buildInfoPackage := "de.sciss.lucre"
+    buildInfoPackage := "de.sciss.lucre",
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
 lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
@@ -73,7 +89,8 @@ lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
       "de.sciss" %% "model"   % modelVersion,
       "de.sciss" %% "span"    % spanVersion,
       "de.sciss" %% "numbers" % numbersVersion
-    )
+    ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
 
 lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
@@ -83,7 +100,8 @@ lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluen
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "fingertree" % fingerVersion
-    )
+    ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-confluent" % mimaVersion)
   )
 
 lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
@@ -92,7 +110,8 @@ lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
   .settings(
     licenses := Seq(gpl2),
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven", // required for sleepycat
-    libraryDependencies += "com.sleepycat" % "je" % sleepyVersion5
+    libraryDependencies += "com.sleepycat" % "je" % sleepyVersion5,
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
   )
 
 lazy val bdb6 = Project(id = s"$baseNameL-bdb6", base = file("bdb6"))
@@ -101,7 +120,8 @@ lazy val bdb6 = Project(id = s"$baseNameL-bdb6", base = file("bdb6"))
   .settings(
     licenses := Seq(gpl3),
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven",
-    libraryDependencies += "com.sleepycat" % "je" % sleepyVersion6
+    libraryDependencies += "com.sleepycat" % "je" % sleepyVersion6,
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb6" % mimaVersion)
   )
 
 lazy val loggingEnabled = false  // only effective for snapshot versions
