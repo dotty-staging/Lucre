@@ -1,18 +1,18 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.3.2-SNAPSHOT"
+lazy val projectVersion   = "3.3.2"
 lazy val mimaVersion      = "3.3.0"
 
 // ---- core dependencies ----
 
-lazy val scalaSTMVersion  = "0.7"
-lazy val serialVersion    = "1.0.2"
+lazy val scalaSTMVersion  = "0.8"
+lazy val serialVersion    = "1.0.3"
 
 // ---- expr dependencies ----
 
-lazy val modelVersion     = "0.3.2"
-lazy val spanVersion      = "1.3.1"
-lazy val numbersVersion   = "0.1.1"
+lazy val modelVersion     = "0.3.3"
+lazy val spanVersion      = "1.3.2"
+lazy val numbersVersion   = "0.1.3"
 
 // ---- confluent dependencies ----
 
@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
   scalaVersion        := "2.11.8",
-  crossScalaVersions  := Seq("2.11.8", "2.10.6"),
+  crossScalaVersions  := Seq("2.12.1", "2.11.8", "2.10.6"),
   scalacOptions      ++= Seq("-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
@@ -64,8 +64,14 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
+    libraryDependencies += {
+      val sv = scalaVersion.value
+      if (sv.startsWith("2.10") || sv.startsWith("2.11"))
+        "org.scala-stm" %% "scala-stm" % "0.7"
+      else
+        "org.scala-stm" %% "scala-stm" % scalaSTMVersion
+    },
     libraryDependencies ++= Seq(
-      "org.scala-stm" %% "scala-stm" % scalaSTMVersion,
       "de.sciss"      %% "serial"    % serialVersion
     ),
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,

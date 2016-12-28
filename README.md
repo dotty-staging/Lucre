@@ -11,7 +11,7 @@ generation of the project that in version 2 was split into several sub-projects
 ([LucreSTM](https://github.com/Sciss/LucreSTM), [LucreData](https://github.com/Sciss/LucreData),
 [LucreConfluent](https://github.com/Sciss/LucreConfluent)).
 
-Lucre is (C)opyright 2009&ndash;2016 by Hanns Holger Rutz. All rights reserved. 
+Lucre is (C)opyright 2009&ndash;2017 by Hanns Holger Rutz. All rights reserved. 
 All modules but the BerkeleyDB bindings are released under 
 the [GNU Lesser General Public License](https://raw.github.com/Sciss/LucreSTM/master/licenses/Lucre-License.txt), 
 whereas the `bdb` backend module for Berkeley DB JE 5 (itself governed by the Sleepycat License) is released under 
@@ -26,7 +26,7 @@ Further reading:
 
 ## requirements / installation
 
-Lucre builds with [sbt](http://www.scala-sbt.org/) 0.13 against Scala 2.11, 2.10.
+Lucre builds with [sbt](http://www.scala-sbt.org/) 0.13 against Scala 2.12, 2.11, 2.10.
 
 ## linking to Lucre
 
@@ -51,7 +51,7 @@ Where `{module}` is any of the above names. And for the database backend:
 Note that the file format of BDB JE v6 is not backward compatible with v5. Also BDB JE v6 requires Java 1.7, 
 whereas BDB v5 works with Java 1.6.
 
-The current version `v` is `"3.3.1"`.
+The current version `v` is `"3.3.2"`.
 
 ## contributing
 
