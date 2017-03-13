@@ -22,6 +22,9 @@ import scala.reflect.ClassTag
 object Copy {
   def apply[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx): Copy[In, Out] =
     new CopyImpl[In, Out]
+
+  def apply1[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx): Copy1[In, Out] =
+    new CopyImpl[In, Out]
 }
 trait Copy[In <: Sys[In], Out <: Sys[Out]] {
   /** Makes a deep copy of the input element. Passing in an `Obj`
@@ -47,4 +50,9 @@ trait Copy[In <: Sys[In], Out <: Sys[Out]] {
   def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit
 
   def finish(): Unit
+}
+/** Temporary interface extension until we can break binary compatibility. */
+trait Copy1[In <: Sys[In], Out <: Sys[Out]] extends Copy[In, Out] {
+  /** Copies the object but not its attributes. */
+  def copyPlain[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out]
 }

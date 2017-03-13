@@ -19,7 +19,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx)
-  extends Copy[In, Out] {
+  extends Copy1[In, Out] {
 
   private[this] sealed trait State
   private[this] final case class Done(elem: Elem[Out]) extends State
@@ -48,13 +48,19 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
       d.foreach(_.apply())
     }
 
+  private def copyImpl[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out] = {
+    stateMap.put(in, Busy)
+    val out = in.copy()(txIn, txOut, this)
+    stateMap.put(in, Done(out))
+    out.asInstanceOf[Repr[Out]]
+  }
+
   def apply[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out] =
     stateMap.get(in) match {
       case Some(Done(out)) => out.asInstanceOf[Repr[Out]]
       case Some(Busy) => throw new IllegalStateException(s"Cyclic object graph involving $in")
       case None =>
-        stateMap.put(in, Busy)
-        val out = in.copy()(txIn, txOut, this)
+        val out = copyImpl(in)
         (in, out) match {
           case (inObj: Obj[In], outObj: Obj[Out]) =>      // copy the attributes
             // NOTE: do not use `defer` which should be reserved for the
@@ -65,8 +71,15 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
             deferred += (() => copyAttr(inObj, outObj))
           case _ =>
         }
-        stateMap.put(in, Done(out))
-        out.asInstanceOf[Repr[Out]]
+        out
+    }
+
+  def copyPlain[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out] =
+    stateMap.get(in) match {
+      case Some(Done(out)) => out.asInstanceOf[Repr[Out]]
+      case Some(Busy) => throw new IllegalStateException(s"Cyclic object graph involving $in")
+      case None =>
+        copyImpl(in)
     }
 
   def putHint[A](in: Elem[In], key: String, value: A): Unit = {
