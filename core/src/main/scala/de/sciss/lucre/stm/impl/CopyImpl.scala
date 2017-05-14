@@ -18,14 +18,18 @@ import scala.collection.mutable
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
+object CopyImpl {
+  private sealed trait State[+S]
+  private final case class Done[S <: Sys[S]](elem: Elem[S]) extends State[S]
+  private case object Busy extends State[Nothing]
+
+}
 final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx)
   extends Copy1[In, Out] {
 
-  private[this] sealed trait State
-  private[this] final case class Done(elem: Elem[Out]) extends State
-  private[this] case object Busy extends State
+  import CopyImpl._
 
-  private[this] val stateMap = mutable.Map.empty[Elem[In], State]
+  private[this] val stateMap = mutable.Map.empty[Elem[In], State[Out]]
   private[this] val hintMap  = mutable.Map.empty[Elem[In], mutable.Map[String, Any]]
   private[this] var deferred: mutable.Buffer[() => Unit] = _
 
@@ -37,7 +41,7 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
   def defer[Repr[~ <: Sys[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
     if (stateMap.get(in) != Some(Busy))
       throw new IllegalStateException(s"Copy.defer must be called during copy process: $in")
-    stateMap.put(in, Done(out))
+    stateMap.put(in, Done[Out](out))
     deferred += (() => code)
   }
 
@@ -51,7 +55,7 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
   private def copyImpl[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out] = {
     stateMap.put(in, Busy)
     val out = in.copy()(txIn, txOut, this)
-    stateMap.put(in, Done(out))
+    stateMap.put(in, Done[Out](out))
     out.asInstanceOf[Repr[Out]]
   }
 

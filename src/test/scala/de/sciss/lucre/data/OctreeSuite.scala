@@ -88,7 +88,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
     When("the internals of the structure are checked")
     Then("they should be consistent with the underlying algorithm")
 
-    val res = cursor.step { implicit tx => DeterministicSkipOctree.verifyConsistency(t, reportOnly = true) }
+    val res = cursor.step { implicit tx => t.verifyConsistency(reportOnly = true) }
     assert(res.isEmpty, res.mkString("\n"))
   }
 

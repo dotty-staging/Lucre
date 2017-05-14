@@ -159,7 +159,7 @@ object BiGroupImpl {
     group match {
       case impl: Impl[S, _] => impl.treeHandle match {
         case t: DeterministicSkipOctree[S, _, _] =>
-          DeterministicSkipOctree.verifyConsistency(t, reportOnly)
+          t.verifyConsistency(reportOnly)
         case _ => sys.error("Not a deterministic octree implementation")
       }
     }

@@ -113,7 +113,7 @@ object HASkipList {
                                               val keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Impl[S, A, A] with HASkipList.Set[S, A] {
 
-    protected val downNode = _downNode(this)
+    protected val downNode: S#Var[Node[S, A, A]] = _downNode(this)
 
     override def toString = s"SkipList.Set$id"
 
@@ -151,7 +151,7 @@ object HASkipList {
                                                                 val valueSerializer: Serializer[S#Tx, S#Acc, B])
     extends Impl[S, A, (A, B)] with HASkipList.Map[S, A, B] {
 
-    protected val downNode = _downNode(this)
+    protected val downNode: S#Var[Map.Node[S, A, B]] = _downNode(this)
 
     override def toString = s"SkipList.Map$id"
 
@@ -170,7 +170,7 @@ object HASkipList {
 
     protected def newLeaf(entry: (A, B)): Leaf[S, A, (A, B)] = {
       val en = Vector(entry, null.asInstanceOf[(A, B)])
-      new MapLeaf(en)
+      new MapLeaf[S, A, B](en)
     }
 
     def keysIterator(implicit tx: S#Tx): Iterator[A] = {
@@ -244,7 +244,7 @@ object HASkipList {
           null.asInstanceOf[(A, B)]
         }
       }
-      new MapLeaf(en)
+      new MapLeaf[S, A, B](en)
     }
   }
 
@@ -272,8 +272,8 @@ object HASkipList {
 
     implicit private[this] def head = this
 
-    final def         arrMinSz = minGap + 1
-    private[this] def arrMaxSz = (minGap + 1) << 1 // aka arrMinSz << 1
+    final def         arrMinSz: Int = minGap + 1
+    private[this] def arrMaxSz: Int = (minGap + 1) << 1 // aka arrMinSz << 1
 
     private[this] val hasObserver = keyObserver != SkipList.NoKeyObserver
 
@@ -317,8 +317,8 @@ object HASkipList {
 
     final def maxGap: Int = (minGap << 1) + 1 // aka arrMaxSz - 1
 
-    final def isEmpty (implicit tx: S#Tx) = topN eq null
-    final def nonEmpty(implicit tx: S#Tx) = !isEmpty
+    final def isEmpty (implicit tx: S#Tx): Boolean = topN eq null
+    final def nonEmpty(implicit tx: S#Tx): Boolean = !isEmpty
 
     final def height(implicit tx: S#Tx): Int = {
       var n = topN
@@ -922,7 +922,7 @@ object HASkipList {
       private[this] var nextValue: C      = _
       private[this] var isRight           = true
       private[this] var idx               = 0
-      private[this] val stack: mutable.Stack[(Branch[S, A, E], Int, Boolean)] = new mutable.Stack
+      private[this] var stack             = List.empty[(Branch[S, A, E], Int, Boolean)]
 
       override def toString = s"$impl.iterator"
 
@@ -938,7 +938,7 @@ object HASkipList {
           nextValue = getValue(l2, 0) // l2.key( 0 )
         } else {
           val b     = n.asBranch
-          stack.push((b, idx0 + 1, r))
+          stack ::= ((b, idx0 + 1, r))
           pushDown(b.down(idx0), 0, r && idx0 == b.size - 1)
         }
 
@@ -959,7 +959,8 @@ object HASkipList {
               l = null
               nextValue = null.asInstanceOf[C] // maxKey
             } else {
-              val (b, i, r) = stack.pop()
+              val (b, i, r) :: tail = stack
+              stack = tail
               if (i < b.size) {
                 pushDown(b, i, r)
               } else {
@@ -1080,7 +1081,7 @@ object HASkipList {
   }
 
   sealed trait Leaf[S <: Sys[S], A, E] extends Node[S, A, E] {
-    override def toString = entries.mkString("Leaf(", ",", ")")
+    override def toString: String = entries.mkString("Leaf(", ",", ")")
 
     private[HASkipList] def entries: Vector[E]
     final def entry(idx: Int): E = entries(idx)
@@ -1198,7 +1199,7 @@ object HASkipList {
                                         private[HASkipList] val downs: Vector[S#Var[Node[S, A, B]]])
     extends HeadOrBranch[S, A, B] with Node[S, A, B] {
 
-    override def toString = keys.mkString("Branch(", ",", ")")
+    override def toString: String = keys.mkString("Branch(", ",", ")")
 
     def isLeaf:   Boolean = false
     def isBranch: Boolean = true
@@ -1265,8 +1266,7 @@ object HASkipList {
      def down(i: Int)(implicit tx: S#Tx): Node[S, A, B] = downs(i)()
 
      private[HASkipList] def split(implicit tx: S#Tx, list: Impl[S, A, B]): (Branch[S, A, B], Branch[S, A, B]) = {
-       import list.{size => _, _}
-       val lsz = arrMinSz
+       val lsz = list.arrMinSz
        val (lKeys , rKeys ) = keys .splitAt(lsz)
        val (lDowns, rDowns) = downs.splitAt(lsz)
        val left  = new Branch[S, A, B](lKeys, lDowns)

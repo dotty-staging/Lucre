@@ -20,9 +20,10 @@ object IntDistanceMeasure3D {
   import Space.{bigZero => Zero}
   import DistanceMeasure.Ops
 
-  private type Sqr = BigInt
-  private type ML = DistanceMeasure[Long, ThreeDim] with Ops[Long, ThreeDim]
-  private type MS = DistanceMeasure[Sqr, ThreeDim] with Ops[Sqr, ThreeDim]
+  type Sqr  = BigInt
+  type ML   = DistanceMeasure[Long, ThreeDim] with Ops[Long, ThreeDim]
+  type MS   = DistanceMeasure[Sqr, ThreeDim] with Ops[Sqr, ThreeDim]
+
   private val MaxDistance: Sqr = {
     val n = BigInt(Long.MaxValue)
     n * n
@@ -51,9 +52,9 @@ object IntDistanceMeasure3D {
   private object EuclideanSq extends SqrImpl {
     override def toString = "IntDistanceMeasure3D.euclideanSq"
 
-    def distance   (a: PointLike, b: PointLike) = b.distanceSq   (a)
-    def minDistance(a: PointLike, b: Cube3D) = b.minDistanceSq(a)
-    def maxDistance(a: PointLike, b: Cube3D) = b.maxDistanceSq(a)
+    def distance   (a: PointLike, b: PointLike): Sqr = b.distanceSq   (a)
+    def minDistance(a: PointLike, b: Cube3D   ): Sqr = b.minDistanceSq(a)
+    def maxDistance(a: PointLike, b: Cube3D   ): Sqr = b.maxDistanceSq(a)
   }
 
   private sealed trait ClipLike[M] extends DistanceMeasure[M, ThreeDim] {
@@ -62,8 +63,8 @@ object IntDistanceMeasure3D {
     protected def clipping: Cube3D
 
     def distance   (a: PointLike, b: PointLike): M = if (clipping.contains(b)) underlying.distance   (a, b) else maxValue
-    def minDistance(a: PointLike, b: Cube3D): M = if (clipping.contains(b)) underlying.minDistance(a, b) else maxValue
-    def maxDistance(a: PointLike, b: Cube3D): M = if (clipping.contains(b)) underlying.maxDistance(a, b) else maxValue
+    def minDistance(a: PointLike, b: Cube3D   ): M = if (clipping.contains(b)) underlying.minDistance(a, b) else maxValue
+    def maxDistance(a: PointLike, b: Cube3D   ): M = if (clipping.contains(b)) underlying.maxDistance(a, b) else maxValue
   }
 
   private final class SqrClip(protected val underlying: SqrImpl, protected val clipping: Cube3D)
@@ -102,7 +103,7 @@ object IntDistanceMeasure3D {
     private[this] val bottom = (idx & 2) != 0
     private[this] val back   = (idx & 4) != 0
 
-    override def toString = underlying.toString + ".quadrant(" + idx + ")"
+    override def toString = s"$underlying.quadrant($idx)"
 
     def distance(a: PointLike, b: PointLike): M = {
       if ((if (right ) b.x >= a.x else b.x <= a.x) &&
@@ -154,7 +155,7 @@ object IntDistanceMeasure3D {
     private[this] val bottom  = (idx & 2) != 0
     private[this] val back    = (idx & 4) != 0
 
-    override def toString = underlying.toString + ".exceptQuadrant(" + idx + ")"
+    override def toString = s"$underlying.exceptQuadrant($idx)"
 
     def distance(a: PointLike, b: PointLike): M = {
       if ((if (right ) b.x <= a.x else b.x >= a.x) ||

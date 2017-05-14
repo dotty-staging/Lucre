@@ -3,8 +3,9 @@ package de.sciss.lucre.confluent
 import java.io.File
 
 import de.sciss.lucre.data.{DeterministicSkipOctree, SkipOctree}
+import de.sciss.lucre.geom.IntDistanceMeasure3D.MS
 import de.sciss.lucre.geom.IntSpace.ThreeDim
-import de.sciss.lucre.geom.{QueryShape, DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, Space}
+import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, QueryShape, Space}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.store.BerkeleyDB
 import org.scalatest.{FeatureSpec, GivenWhenThen}
@@ -28,9 +29,9 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
    val DATABASE      = true
 
    val n             = 0x800 // too slow -- 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
-   val n2            = n >> 3    // 0x1000    // range query and nn
+   val n2: Int      = n >> 3    // 0x1000    // range query and nn
 
-   val rnd           = TxnRandom.plain( 2L ) // ( 12L )
+   val rnd: TxnRandom[InTxn] = TxnRandom.plain( 2L ) // ( 12L )
 
    val cube          = IntCube( 0x40000000, 0x40000000, 0x40000000, 0x40000000 )
 
@@ -62,7 +63,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
     val res = Confluent(store)
     //      res.root[ Unit ] { _ => }
     res
-  }, (s, success) => {
+  }, (s, _ /* success */) => {
     //      val sz = bdb.step( bdb.numUserRecords( _ ))
     ////         println( "FINAL DB SIZE = " + sz )
     //      assert( sz == 0, "Final DB user size should be 0, but is " + sz )
@@ -70,7 +71,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
     s.close()
   })
 
-  val pointFun3D = (itx: InTxn) => (mask: Int) => IntPoint3D(
+  val pointFun3D: (InTxn) => (Int) => IntPoint3D = itx => mask => IntPoint3D(
     rnd.nextInt()(itx) & mask,
     rnd.nextInt()(itx) & mask,
     rnd.nextInt()(itx) & mask
@@ -81,7 +82,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
                                            pointFun: InTxn => Int => D#Point)(implicit cursor: stm.Cursor[S]): Unit = {
     Given("a randomly filled structure")
 
-    for (i <- 0 until n) {
+    for (_ <- 0 until n) {
       //         if( i == n - 1 ) {
       //            println( "here" )
       //         }
@@ -98,19 +99,19 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
     When("the internals of the structure are checked")
     Then("they should be consistent with the underlying algorithm")
 
-    type Branch = DeterministicSkipOctree[S, D, D#Point]#Branch
-    //      type Leaf   = DeterministicSkipOctree[ S, D, D#Point ]#Leaf
+    type Branch = DeterministicSkipOctree.Branch[S, D, D#Point]
+    type Leaf   = DeterministicSkipOctree.Leaf  [S, D, D#Point]
 
-      val (t: DeterministicSkipOctree[S, D, D#Point], q, h0, numOrthants) = cursor.step { implicit tx =>
+      val (q, h0, numOrthants) = cursor.step { implicit tx =>
          val _t = access()
-         (_t, _t.hyperCube, _t.lastTreeImpl, _t.numOrthants)
+         (_t.hyperCube, _t.lastTree, _t.numOrthants)
       }
       var currUnlinkedOcs  = Set.empty[ D#HyperCube ]
       var currPoints       = Set.empty[ D#PointLike ]
       var prevs = 0
       var h: Branch = h0
       do {
-         assert( h.hyperCube == q, "Root level quad is " + h.hyperCube + " while it should be " + q + " in level n - " + prevs )
+         assert(h.hyperCube == q, s"Root level quad is ${h.hyperCube} while it should be $q in level n - $prevs")
          val nextUnlinkedOcs  = currUnlinkedOcs
          val nextPoints       = currPoints
          currUnlinkedOcs      = Set.empty
@@ -121,10 +122,10 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
 
             var i = 0; while( i < numOrthants ) {
                n.child( i ) match {
-                  case cb: t.Branch =>
+                  case cb: Branch =>
                      val nq = n.hyperCube.orthant( i )
                      val cq = cb.hyperCube
-                     assert( nq.contains( cq ), "Node has invalid hyper-cube (" + cq + "), expected: " + nq + assertInfo )
+                     assert( nq.contains( cq ), s"Node has invalid hyper-cube ($cq), expected: $nq$assertInfo")
                      assert( n.hyperCube.indexOf( cq ) == i, "Mismatch between index-of and used orthant (" + i + "), with parent " + n.hyperCube + " and " + cq )
                      cb.nextOption match {
                         case Some( next ) =>
@@ -141,7 +142,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
                      }
                      checkChildren( cb, depth + 1 )
 
-                  case l: t.Leaf =>
+                  case l: Leaf =>
                      currPoints += l.value
 
                   case _ =>
@@ -233,13 +234,13 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
       assert( szAfter2 == 0, szAfter2.toString )
    }
 
-   val queryFun3D = (itx: InTxn) => (max: Int, off: Int, ext: Int) =>
+   val queryFun3D: (InTxn) => (Int, Int, Int) => IntCube = (itx: InTxn) => (max, off, ext) =>
       IntCube( rnd.nextInt( max )( itx ) - off,
                rnd.nextInt( max )( itx ) - off,
                rnd.nextInt( max )( itx ) - off,
                rnd.nextInt( ext )( itx ))
 
-   val sortFun3D = (p: ThreeDim#PointLike) => (p.x, p.y, p.z)
+   val sortFun3D: (IntPoint3DLike) => (Int, Int, Int) = p => (p.x, p.y, p.z)
 
   def verifyRangeSearch[S <: Sys[S], A, D <: Space[D], Sort](
       access: stm.Source[S#Tx, SkipOctree[S, D, D#Point]], m: MSet[D#Point],
@@ -264,7 +265,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
       }
    }
 
-   val pointFilter3D = (p: ThreeDim#PointLike) => {
+   val pointFilter3D: (IntPoint3DLike) => Boolean = { p =>
       val dx = if( p.x < cube.cx ) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
       val dy = if( p.y < cube.cy ) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
       val dz = if( p.z < cube.cz ) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
@@ -274,7 +275,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
          dy * dy + dz * dz > 0L
    }
 
-   val euclideanDist3D = IntDistanceMeasure3D.euclideanSq
+   val euclideanDist3D: MS = IntDistanceMeasure3D.euclideanSq
 
   // JUHUUUUU SPECIALIZATION BROKEN ONCE MORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   def verifyNN[S <: Sys[S], M, D <: Space[D]](access: stm.Source[S#Tx, SkipOctree[S, D, D#Point]], m: MSet[D#Point],

@@ -40,14 +40,10 @@ class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
   }
   if (DATABASE) {
     withSys[Durable]("BDB", () => {
-//      val dir = File.createTempFile("ancestor", "_database")
-//      dir.delete()
-//      dir.mkdir()
-//      println(dir.getAbsolutePath)
       val bdb = BerkeleyDB.tmp()
       Durable(bdb)
     }, {
-      case (bdb, success) =>
+      case (bdb, _ /* success */) =>
         //         if( success ) {
         //            val sz = bdb.numUserRecords
         ////            if( sz != 0 ) bdb.step( implicit tx => bdb.debugListUserRecords() ).foreach( println )
@@ -68,8 +64,7 @@ class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
       }
     }
 
-
-    feature(s"Marked ancestor lookup is verified on a dedicated structore in $sysName") {
+    feature(s"Marked ancestor lookup is verified on a dedicated structure in $sysName") {
       scenarioWithTime("Marked-Ancestors", "Verifying marked ancestor lookup") {
         implicit val system = sysCreator()
         var success = false
@@ -147,7 +142,12 @@ class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
               }
 
               mark.foreach { value =>
-                assert(map.add(fullVertex -> value), s"Mark.add says mark existed for $version")
+//                println(s"VALUE $value")
+//                if (value == -368914398) {
+//                  println("AQUI")
+//                }
+                val res = map.add(fullVertex -> value)
+                assert(res, s"Mark.add says mark existed for $version")
               }
 
               (_mapFV, _mapRepr) // , _values

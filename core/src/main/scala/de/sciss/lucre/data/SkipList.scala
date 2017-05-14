@@ -17,6 +17,7 @@ import de.sciss.lucre.stm.{Mutable, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.language.implicitConversions
 
 object SkipList {
   /** A trait for observing the promotion and demotion of a key
@@ -38,8 +39,8 @@ object SkipList {
   // `A` was made contravariant, too. But I guess we would end up in boxing since
   // that wouldn't be specialized any more?
   object NoKeyObserver extends KeyObserver[Any, Any] {
-    def keyUp  (key: Any)(implicit tx: Any) = ()
-    def keyDown(key: Any)(implicit tx: Any) = ()
+    def keyUp  (key: Any)(implicit tx: Any): Unit = ()
+    def keyDown(key: Any)(implicit tx: Any): Unit = ()
   }
 
   object Set {
@@ -57,6 +58,24 @@ object SkipList {
                             (implicit tx: S#Tx, ordering: Ordering[S#Tx, A],
                              keySerializer: Serializer[S#Tx, S#Acc, A]): SkipList.Set[S, A] =
       HASkipList.Set.read[S, A](in, access, keyObserver)
+
+    implicit def serializer[S <: Sys[S], A](keyObserver: SkipList.KeyObserver[S#Tx, A] = SkipList.NoKeyObserver)
+                                           (implicit ordering: Ordering[S#Tx, A],
+                                            keySerializer: Serializer[S#Tx, S#Acc, A]): Serializer[S#Tx, S#Acc, Set[S, A]] =
+      new SetSer[S, A](keyObserver)
+
+    private final class SetSer[S <: Sys[S], A](keyObserver: SkipList.KeyObserver[S#Tx, A])
+                                              (implicit ordering: Ordering[S#Tx, A],
+                                               keySerializer: Serializer[S#Tx, S#Acc, A])
+      extends Serializer[S#Tx, S#Acc, Set[S, A]] {
+
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Set[S, A] =
+        Set.read[S, A](in, access, keyObserver)
+
+      def write(list: Set[S, A], out: DataOutput): Unit = list.write(out)
+
+      override def toString = "SkipList.Set.serializer"
+    }
   }
 
   object Map {
@@ -78,6 +97,24 @@ object SkipList {
                                 valueSerializer: Serializer[S#Tx, S#Acc, B]): SkipList.Map[S, A, B] =
       HASkipList.Map.read[S, A, B](in, access, keyObserver)
 
+    def serializer[S <: Sys[S], A, B](keyObserver: SkipList.KeyObserver[S#Tx, A] = SkipList.NoKeyObserver)
+                                     (implicit ordering: Ordering[S#Tx, A],
+                                      keySerializer: Serializer[S#Tx, S#Acc, A],
+                                      valueSerializer: Serializer[S#Tx, S#Acc, B]): Serializer[S#Tx, S#Acc, Map[S, A, B]] =
+      new MapSer[S, A, B](keyObserver)
+
+    private final class MapSer[S <: Sys[S], A, B](keyObserver: SkipList.KeyObserver[S#Tx, A])
+                                                 (implicit ordering: Ordering[S#Tx, A],
+                                                  keySerializer: Serializer[S#Tx, S#Acc, A],
+                                                  valueSerializer: Serializer[S#Tx, S#Acc, B])
+      extends Serializer[S#Tx, S#Acc, Map[S, A, B]] {
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Map[S, A, B] =
+        Map.read[S, A, B](in, access, keyObserver)
+
+      def write(list: Map[S, A, B], out: DataOutput): Unit = list.write(out)
+
+      override def toString = "SkipList.Map.serializer"
+    }
   }
 
   trait Set[S <: Sys[S], /* @spec(KeySpec) */ A] extends SkipList[S, A, A] {
@@ -184,8 +221,6 @@ sealed trait SkipList[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) *
   def iterator(implicit tx: S#Tx): Iterator[E]
 
   def debugPrint()(implicit tx: S#Tx): String
-
-  def write(out: DataOutput): Unit  // XXX TODO: remove this method, we already implement Writable
 
   def keySerializer: Serializer[S#Tx, S#Acc, A]
 

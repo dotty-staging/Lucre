@@ -13,12 +13,11 @@
 
 package de.sciss.lucre.data
 
+import de.sciss.lucre.data.TotalOrder.Set
 import de.sciss.lucre.geom.IntSpace.ThreeDim
 import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
-
-//import stm.{SpecGroup => ialized}
 
 object Ancestor {
   private final val SER_VERSION = 65
@@ -110,11 +109,11 @@ object Ancestor {
       def write(v: K, out: DataOutput): Unit = v.write(out)
 
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): K = new K {
-        def tree = me
+        def tree: Tree[S, Version] = me
 
-        val version = versionSerializer.read(in, access)
-        val pre     = order.readEntry(in, access)
-        val post    = order.readEntry(in, access)
+        val version : Version       = versionSerializer.read(in, access)
+        val pre     : Set.Entry[S]  = order.readEntry(in, access)
+        val post    : Set.Entry[S]  = order.readEntry(in, access)
       }
     }
 
@@ -132,19 +131,19 @@ object Ancestor {
     final def vertexSerializer: Serializer[S#Tx, S#Acc, K] = VertexSerializer
 
     final def insertChild(parent: K, newChild: Version)(implicit tx: S#Tx): K = new K {
-      def tree = me
+      def tree: Tree[S, Version] = me
 
-      val version = newChild
-      val pre     = parent.pre.append()
-      val post    = pre.append()
+      val version : Version       = newChild
+      val pre     : Set.Entry[S]  = parent.pre.append()
+      val post    : Set.Entry[S]  = pre.append()
     }
 
     final def insertRetroChild(parent: K, newChild: Version)(implicit tx: S#Tx): K = new K {
-      def tree = me
+      def tree: Tree[S, Version] = me
 
-      val version = newChild
-      val pre     = parent.pre .append ()
-      val post    = parent.post.prepend()
+      val version : Version       = newChild
+      val pre     : Set.Entry[S]  = parent.pre .append ()
+      val post    : Set.Entry[S]  = parent.post.prepend()
 
       override def toString = s"${super.toString}@r-ch"
     }
@@ -152,11 +151,11 @@ object Ancestor {
     final def insertRetroParent(child: K, newParent: Version)(implicit tx: S#Tx): K = {
       require(child != root)
       new K {
-        def tree = me
+        def tree: Tree[S, Version] = me
 
-        val version = newParent
-        val pre     = child.pre .prepend()
-        val post    = child.post.append ()
+        val version : Version       = newParent
+        val pre     : Set.Entry[S]  = child.pre .prepend()
+        val post    : Set.Entry[S]  = child.post.append ()
 
         override def toString = s"${super.toString}@r-par"
       }
@@ -168,13 +167,14 @@ object Ancestor {
     extends TreeImpl[S, Version] {
     me =>
 
-    protected val order = TotalOrder.Set.empty[S](0)(tx0)
+    protected val order: TotalOrder.Set[S] = TotalOrder.Set.empty(0)(tx0)
+
     val root: K = new K {
       def tree: Tree[S, Version] = me
 
-      def version = rootVersion
-      val pre     = order.root
-      val post    = pre.appendMax()(tx0)
+      def version : Version       = rootVersion
+      val pre     : Set.Entry[S]  = order.root
+      val post    : Set.Entry[S]  = pre.appendMax()(tx0)
     }
   }
 
@@ -188,8 +188,8 @@ object Ancestor {
         sys.error(s"Incompatible serialized version (found $serVer, required $SER_VERSION).")
     }
 
-    protected val order = TotalOrder.Set.read[S](in, access)(tx0)
-    val root = VertexSerializer.read(in, access)(tx0)
+    protected val order: TotalOrder.Set[S] = TotalOrder.Set.read(in, access)(tx0)
+    val root: K = VertexSerializer.read(in, access)(tx0)
   }
 
   sealed trait Tree[S <: Sys[S], Version] extends Writable with Disposable[S#Tx] {
@@ -290,7 +290,7 @@ object Ancestor {
   }
 
   /*
-   * The result of isomorph search (mapping full tree vertex coordinates to marked tree coordinates).
+   * The result of isomorphic search (mapping full tree vertex coordinates to marked tree coordinates).
    *
    * @param pre     the nearest mark in the pre-order traversal
    * @param preCmp  the relation between the query (full) vertex and the found mark vertex.
@@ -308,7 +308,7 @@ object Ancestor {
                                                                           val post: Mark[S, Version, A],
                                                                           val postCmp: Int) {
 
-    override def toString = {
+    override def toString: String = {
       val preS  = if (preCmp  < 0) "< " else if (preCmp  > 0) "> " else "== "
       val postS = if (postCmp < 0) "< " else if (postCmp > 0) "> " else "== "
       s"Iso(pre $preS$pre,post $postS$post)"
@@ -346,12 +346,12 @@ object Ancestor {
       def write(v: M, out: DataOutput): Unit = v.write(out)
 
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): M = new M {
-        def map         = me
+        def map: MapImpl[S, Version, A] = me
 
-        val fullVertex  = full.vertexSerializer.read(in, access)
-        val pre         = preOrder        .readEntry(in, access)
-        val post        = postOrder       .readEntry(in, access)
-        val value       = valueSerializer      .read(in, access)
+        val fullVertex: Vertex[S, Version]        = full.vertexSerializer.read(in, access)
+        val pre       : MarkOrder[S, Version, A]  = preOrder        .readEntry(in, access)
+        val post      : MarkOrder[S, Version, A]  = postOrder       .readEntry(in, access)
+        val value     : A                         = valueSerializer .read     (in, access)
       }
     }
 
@@ -384,11 +384,11 @@ object Ancestor {
         // the iso's pre and succ pointers,
         // but it's getting nasty, so we'll...
         val old: M = new M {
-          def map         = me
-          val fullVertex  = vertex
-          val value       = entry._2
-          val pre         = iso0.pre.pre
-          val post        = iso0.pre.post
+          def map: MapImpl[S, Version, A] = me
+          val fullVertex: K                         = vertex
+          val value     : A                         = entry._2
+          val pre       : MarkOrder[S, Version, A]  = iso0.pre.pre
+          val post      : MarkOrder[S, Version, A]  = iso0.pre.post
         }
         assert(preList .remove(old))
         assert(postList.remove(old))
@@ -399,11 +399,11 @@ object Ancestor {
         query(vertex)
       }
       val mv: M = new M {
-        def map         = me
-        val fullVertex  = vertex
-        val value       = entry._2
-        val pre         = preOrder .insert()
-        val post        = postOrder.insert()
+        def map         : MapImpl[S, Version, A]    = me
+        val fullVertex  : K                         = vertex
+        val value       : A                         = entry._2
+        val pre         : MarkOrder[S, Version, A]  = preOrder .insert()
+        val post        : MarkOrder[S, Version, A]  = postOrder.insert()
         if (iso.preCmp <= 0) {
           preOrder .placeBefore(iso.pre , this)
         } else {
@@ -418,6 +418,9 @@ object Ancestor {
       preList  += mv
       postList += mv
       skip.add(mv)
+//      val errors = skip.asInstanceOf[DeterministicSkipOctree[S, _, _]].verifyConsistency(reportOnly = true)
+//      require(errors.isEmpty, errors.mkString("==== ERRORS FOUND ====" ,"\n", ""))
+//      res
     }
 
     final def +=(entry: (K, A))(implicit tx: S#Tx): this.type = {
@@ -543,11 +546,11 @@ object Ancestor {
 
     protected val root: M = {
       val res: M = new M {
-        def map         = me
-        val fullVertex  = rootVertex
-        def pre         = preOrder.root
-        def post        = postOrder.root
-        val value       = rootValue
+        def map        : MapImpl[S, Version, A]    = me
+        val fullVertex : K                         = rootVertex
+        def pre        : MarkOrder[S, Version, A]  = preOrder .root
+        def post       : MarkOrder[S, Version, A]  = postOrder.root
+        val value      : A                         = rootValue
 
         override def toString = s"Root($value)"
       }

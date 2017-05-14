@@ -22,9 +22,8 @@ import de.sciss.lucre.stm._
 import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.meta.field
-import scala.collection.JavaConversions
 import scala.concurrent.duration.Duration
-import scala.concurrent.stm.{InTxnEnd, Txn => ScalaTxn, TxnLocal}
+import scala.concurrent.stm.{InTxnEnd, TxnLocal, Txn => ScalaTxn}
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -74,7 +73,7 @@ object BerkeleyDB {
       this.lockTimeout  = config.lockTimeout
     }
 
-    def build: Config = new ConfigImpl(logLevel = logLevel, readOnly = readOnly, allowCreate = allowCreate,
+    def build: Config = ConfigImpl(logLevel = logLevel, readOnly = readOnly, allowCreate = allowCreate,
       sharedCache = sharedCache, txnTimeout = txnTimeout, lockTimeout = lockTimeout)
   }
   private final case class ConfigImpl(logLevel: LogLevel, readOnly: Boolean, allowCreate: Boolean,
@@ -269,11 +268,11 @@ object BerkeleyDB {
   }
 
   private[this] final class TxEnv(val env: Environment, val txnCfg: TransactionConfig)
-    extends Txn.Resource {
+    extends Txn.Resource { self =>
 
-    override def toString = {
-      import JavaConversions.collectionAsScalaIterable
-      s"BerkeleyDB Transaction (${env.getDatabaseNames.mkString(", ")}) @${hashCode().toHexString}"
+    override def toString: String = {
+      import scala.collection.JavaConverters._
+      s"BerkeleyDB Transaction (${env.getDatabaseNames.asScala.mkString(", ")}) @${self.hashCode().toHexString}"
     }
 
     @field private[this] val ioQueue   = new ConcurrentLinkedQueue[IO]
