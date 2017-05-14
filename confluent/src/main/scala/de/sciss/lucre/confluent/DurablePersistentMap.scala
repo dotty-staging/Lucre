@@ -54,8 +54,7 @@ trait DurablePersistentMap[S <: Sys[S], /* @spec(KeySpec) */ K] {
     * @param serializer the serializer used to store the entity's values
     * @tparam A         the type of values stored with the entity
     */
-  def putImmutable[/* @spec(ValueSpec) */ A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx, serializer: ImmutableSerializer[A]): Unit
-  // XXX boom! specialized
+  def putImmutable[A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx, serializer: ImmutableSerializer[A]): Unit
 
   def put[A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx, serializer: Serializer[S#Tx, S#Acc, A]): Unit
 

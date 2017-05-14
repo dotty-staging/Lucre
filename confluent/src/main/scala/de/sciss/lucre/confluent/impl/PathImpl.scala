@@ -26,12 +26,15 @@ private[confluent] object PathImpl {
   private implicit object PathMeasure extends fingertree.Measure[Long, (Int, Long)] {
     override def toString = "PathMeasure"
 
-    val zero = (0, 0L)
+    val zero: (Int, Long) = (0, 0L)
 
-    def apply(c: Long) = (1, c >>> 32)
+    def apply(c: Long): (Int, Long) = (1, c >>> 32)
 
-    def |+|(a: (Int, Long), b: (Int, Long)) = (a._1 + b._1, a._2 + b._2)
-    override def |+|(a: (Int, Long), b: (Int, Long), c: (Int, Long)) = (a._1 + b._1 + c._1, a._2 + b._2 + c._2)
+    def |+|(a: (Int, Long), b: (Int, Long)): (Int, Long) =
+      (a._1 + b._1, a._2 + b._2)
+
+    override def |+|(a: (Int, Long), b: (Int, Long), c: (Int, Long)): (Int, Long) =
+      (a._1 + b._1 + c._1, a._2 + b._2 + c._2)
   }
 
   implicit def serializer[S <: Sys[S], D <: stm.DurableLike[D]]: serial.Serializer[D#Tx, D#Acc, S#Acc] =
@@ -128,9 +131,9 @@ private[confluent] object PathImpl {
     extends Access[S] with FingerTreeLike[(Int, Long), Long, Path[S]] {
     implicit protected def m: fingertree.Measure[Long, (Int, Long)] = PathMeasure
 
-    override def toString = mkString("Path(", ", ", ")")
+    override def toString: String = mkString("Path(", ", ", ")")
 
-    override def hashCode = {
+    override def hashCode: Int = {
       import MurmurHash3._
       val m   = sum
       val h0  = productSeed

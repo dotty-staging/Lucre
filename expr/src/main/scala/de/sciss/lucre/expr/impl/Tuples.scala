@@ -52,7 +52,7 @@ trait Tuple1[S <: Sys[S], A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: S
 
   protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
-  def value(implicit tx: S#Tx) = op.value(_1.value)
+  def value(implicit tx: S#Tx): A = op.value(_1.value)
 
   protected def writeData(out: DataOutput): Unit = {
     out.writeByte(1)  // 'node not var'
@@ -70,7 +70,7 @@ trait Tuple1[S <: Sys[S], A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: S
       }
   }
 
-  override def toString = op.toString(_1)
+  override def toString: String = op.toString(_1)
 }
 
 trait Tuple2Op[A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] <: Expr[~, T1],
@@ -114,7 +114,7 @@ trait Tuple2[S <: Sys[S], A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ 
 
   protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
-  def value(implicit tx: S#Tx) = op.value(_1.value, _2.value)
+  def value(implicit tx: S#Tx): A = op.value(_1.value, _2.value)
 
   protected def writeData(out: DataOutput): Unit = {
     out.writeByte(1)  // 'node not var'
@@ -153,5 +153,5 @@ trait Tuple2[S <: Sys[S], A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ 
     }
   }
 
-  override def toString = op.toString(_1, _2)
+  override def toString: String = op.toString(_1, _2)
 }

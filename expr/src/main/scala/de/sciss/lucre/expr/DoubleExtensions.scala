@@ -33,8 +33,8 @@ object DoubleExtensions {
 
   private[this] object DoubleTuple1s extends Type.Extension1[DoubleObj] {
     // final val arity = 1
-    final val opLo  = UnaryOp.Neg .id
-    final val opHi  = UnaryOp.Tanh.id
+    final val opLo: Int = UnaryOp.Neg .id
+    final val opHi: Int = UnaryOp.Tanh.id
 
     val name = "Double-Double Ops"
 
@@ -91,8 +91,8 @@ object DoubleExtensions {
 
   private[this] object DoubleTuple2s extends Type.Extension1[DoubleObj] {
     // final val arity = 2
-    final val opLo  = BinaryOp.Plus .id
-    final val opHi  = BinaryOp.Wrap2.id
+    final val opLo: Int = BinaryOp.Plus .id
+    final val opHi: Int = BinaryOp.Wrap2.id
 
     val name = "Double-Double Ops"
 

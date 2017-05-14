@@ -27,7 +27,7 @@ object VersionInfo {
   private val df = new SimpleDateFormat("d MMM yyyy, HH:mm''ss.SSS", Locale.US)
 
   private final case class Impl(message: String, timeStamp: Long) extends VersionInfo {
-    override def toString = {
+    override def toString: String = {
       val m = if (message != "") s"$message, " else ""
       s"VersionInfo(${m}date = ${df.format(new Date(timeStamp))})"
     }

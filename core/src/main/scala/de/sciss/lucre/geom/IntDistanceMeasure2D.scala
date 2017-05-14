@@ -101,7 +101,7 @@ object IntDistanceMeasure2D {
 
     override def toString = s"IntDistanceMeasure2D.NextSpanEvent($quad)"
 
-    override def distance(a: PointLike, b: PointLike) = {
+    override def distance(a: PointLike, b: PointLike): Long = {
       val bx = b.x
       val by = b.y
       val ax = a.x
@@ -141,7 +141,7 @@ object IntDistanceMeasure2D {
 
     override def toString = s"IntDistanceMeasure2D.PrevSpanEvent($quad)"
 
-    override def distance(a: PointLike, b: PointLike) = {
+    override def distance(a: PointLike, b: PointLike): Long = {
       val bx = b.x
       val by = b.y
       val ax = a.x
@@ -186,142 +186,26 @@ object IntDistanceMeasure2D {
   private object EuclideanSq extends Impl {
     override def toString = "IntDistanceMeasure2D.euclideanSq"
 
-    def distance   (a: PointLike, b: PointLike) = b.distanceSq(a)
-    def minDistance(a: PointLike, b: IntSquare) = b.minDistanceSq(a)
-    def maxDistance(a: PointLike, b: IntSquare) = b.maxDistanceSq(a)
-
-//    override def isEquipotent(v: PointLike, rmax: Long, parent: IntSquare, child: IntSquare): Boolean = {
-    //      val vx  = v.x
-    //      val vy  = v.y
-    //      val pl  = parent.left
-    //      val pt  = parent.top
-    //      val pr  = parent.right
-    //      val pb  = parent.bottom
-    //
-    //      if (vx < pl) {
-    //        val cl  = child.left
-    //        cl == pl && {
-    //          if (vy < pt) { // v outside of parent, to its left top
-    //            // equipotent if child is in the top left corner of parent
-    //            // and distance between v and child's bottom left or top right corner
-    //            // is greater than or equal to the radius
-    //            val ct  = child.top
-    //            ct == pt && IntPoint2D(child.right, ct).distanceSq(v) >= rmax
-    //
-    //          } else if (vy > pb) {                // v outside of parent, to its left bottom
-    //            // equipotent if child is in the bottom left corner of parent
-    //            // and distance between v and child's bottom right or top left corner
-    //            // is greater than or equal to the radius
-    //            val cb  = child.bottom
-    //            cb == pb && IntPoint2D(child.right, cb).distanceSq(v) >= rmax
-    //
-    //          } else {                      // v is left to parent
-    //            // equipotent if child is on the left side of parent
-    //            // and distance between v and both child's bottom left and top left corner
-    //            // is greater than or equal to the radius
-    //            val ct  = child.top
-    //            val cb  = child.bottom
-    //            // cc is closest left side corner of child wrt v
-    //            val cc  = if (vy <= cb) cb else if (vy >= ct) ct else if (ct - vy < vy - cb) ct else cb
-    //            IntPoint2D(cl, cc).distanceSq(v) >= rmax
-    //          }
-    //        }
-    //
-    //      } else if (vx > pr) {
-    //        val cr = child.right
-    //        cr == pr && {
-    //          if (vy < pt) {
-    //            // v outside of parent, to its right top
-    //            // equipotent if child is in the top right corner of parent
-    //            // and distance between v and child's bottom right or top left corner
-    //            // is greater than or equal to the radius
-    //            val ct = child.top
-    //            ct == pt && IntPoint2D(child.left, ct).distanceSq(v) >= rmax
-    //
-    //          } else if (vy > pb) {
-    //            // v outside of parent, to its right bottom
-    //            // equipotent if child is in the bottom right corner of parent
-    //            // and distance between v and child's bottom left or top right corner
-    //            // is greater than or equal to the radius
-    //            val cb = child.bottom
-    //            cb == pb && IntPoint2D(child.left, cb).distanceSq(v) >= rmax
-    //
-    //          } else {                      // v is right to parent
-    //            // equipotent if child is on the right side of parent
-    //            // and distance between v and both child's bottom right and top right corner
-    //            // is greater than or equal to the radius
-    //            val ct  = child.top
-    //            val cb  = child.bottom
-    //            // cc is closest right side corner of child wrt v
-    //            val cc  = if (vy <= cb) cb else if (vy >= ct) ct else if (ct - vy < vy - cb) ct else cb
-    //            IntPoint2D(cr, cc).distanceSq(v) >= rmax
-    //          }
-    //        }
-    //
-    //      } else {
-    //        if (vy < pt) {
-    //          // v outside of parent, to its top
-    //          // equipotent if child is on the top side of parent
-    //          // and distance between v and both child's top left and top right corner
-    //          // is greater than or equal to the radius
-    //          val ct = child.top
-    //          ct == pt && {
-    //            val cl = child.left
-    //            val cr = child.right
-    //            // cc is closest top side corner of child wrt v
-    //            val cc = if (vx <= cl) cl else if (vx >= cr) cr else if (cr - vx < vx - cl) cr else cl
-    //            IntPoint2D(cc, ct).distanceSq(v) >= rmax
-    //          }
-    //
-    //        } else if (vy > pb) {
-    //          // v outside of parent, to its bottom
-    //          // equipotent if child is on the bottom side of parent
-    //          // and distance between v and both child's bottom left and bottom right corner
-    //          // is greater than or equal to the radius
-    //          val cb = child.bottom
-    //          cb == pb && {
-    //            val cl = child.left
-    //            val cr = child.right
-    //            // cc is closest bottom side corner of child wrt v
-    //            val cc = if (vx <= cl) cl else if (vx >= cr) cr else if (cr - vx < vx - cl) cr else cl
-    //            IntPoint2D(cc, cb).distanceSq(v) >= rmax
-    //          }
-    //
-    //        } else {                      // v is inside parent
-    //          // equipotent if v is inside child
-    //          // and distance between v and each of the child's sides
-    //          // is greater than or equal to the radius
-    //          child.contains(v) && {
-    //            val cl  = child.left
-    //            val ct  = child.top
-    //            val cb  = child.bottom
-    //            val cr  = child.right
-    //            val cx  = if (cr - vx < vx - cl) cr else cl
-    //            val cy  = if (cb - vy < vy - ct) cb else ct
-    //            IntPoint2D(vx, cy).distanceSq(v) >= rmax && IntPoint2D(cx, vy).distanceSq(v) >= rmax
-    //          }
-    //        }
-    //      }
-    //    }
-
-    // override def compareArea(a: IntSquare, b: IntSquare): Int = a.area compare b.area
+    def distance   (a: PointLike, b: PointLike): Long = b.distanceSq(a)
+    def minDistance(a: PointLike, b: IntSquare): Long = b.minDistanceSq(a)
+    def maxDistance(a: PointLike, b: IntSquare): Long = b.maxDistanceSq(a)
   }
 
   private final class Clip(underlying: Impl, quad: IntSquare) extends Impl {
-    override def toString = underlying.toString + ".clip(" + quad + ")"
+    override def toString = s"$underlying.clip($quad)"
 
-    def distance   (a: PointLike, b: PointLike) = if (quad.contains(b)) underlying.distance(a, b) else Long.MaxValue
-    def minDistance(a: PointLike, b: IntSquare) = if (quad.contains(b)) underlying.minDistance(a, b) else Long.MaxValue
-    def maxDistance(a: PointLike, b: IntSquare) = if (quad.contains(b)) underlying.maxDistance(a, b) else Long.MaxValue
+    def distance   (a: PointLike, b: PointLike): Long = if (quad.contains(b)) underlying.distance   (a, b) else Long.MaxValue
+    def minDistance(a: PointLike, b: IntSquare): Long = if (quad.contains(b)) underlying.minDistance(a, b) else Long.MaxValue
+    def maxDistance(a: PointLike, b: IntSquare): Long = if (quad.contains(b)) underlying.maxDistance(a, b) else Long.MaxValue
   }
 
   private final class Approximate(underlying: Impl, thresh: Long) extends Impl {
-    override def toString = underlying.toString + ".approximate(" + thresh + ")"
+    override def toString = s"$underlying.approximate($thresh)"
 
-    def minDistance(a: PointLike, b: IntSquare) = underlying.minDistance(a, b)
-    def maxDistance(a: PointLike, b: IntSquare) = underlying.maxDistance(a, b)
+    def minDistance(a: PointLike, b: IntSquare): Long = underlying.minDistance(a, b)
+    def maxDistance(a: PointLike, b: IntSquare): Long = underlying.maxDistance(a, b)
 
-    def distance(a: PointLike, b: PointLike) = {
+    def distance(a: PointLike, b: PointLike): Long = {
       val res = underlying.distance(a, b) // b.distanceSq( a )
       if (res > thresh) res else 0L
     }
@@ -333,7 +217,7 @@ object IntDistanceMeasure2D {
     private[this] val right = idx == 0 || idx == 3
     private[this] val bottom = idx >= 2
 
-    override def toString = underlying.toString + ".quadrant(" + idx + ")"
+    override def toString = s"$underlying.quadrant($idx)"
 
     def distance(a: PointLike, b: PointLike): Long = {
       if ((if (right ) b.x >= a.x else b.x <= a.x) &&
@@ -372,7 +256,7 @@ object IntDistanceMeasure2D {
       private[this] val right    = idx == 0 || idx == 3
       private[this] val bottom   = idx >= 2
 
-      override def toString = underlying.toString + ".exceptQuadrant(" + idx + ")"
+      override def toString = s"$underlying.exceptQuadrant($idx)"
 
       def distance( a: PointLike, b: PointLike ) : Long = {
          if( (if( right  ) b.x <= a.x else b.x >= a.x) ||
@@ -410,7 +294,7 @@ object IntDistanceMeasure2D {
     protected def applyMin(dx: Long, dy: Long): Long
     protected def applyMax(dx: Long, dy: Long): Long
 
-    def distance(a: PointLike, b: PointLike) = {
+    def distance(a: PointLike, b: PointLike): Long = {
       val dx = math.abs(a.x.toLong - b.x.toLong)
       val dy = math.abs(a.y.toLong - b.y.toLong)
       apply(dx, dy)

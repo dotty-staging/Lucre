@@ -33,7 +33,7 @@ object BiPinImpl {
   type Tree[S <: Sys[S], A] = SkipList.Map[S, Long, Leaf[S, A]]
 
   def newEntry[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
-    if (Expr.isConst(key)) new ConstEntry(            key, value)
+    if (Expr.isConst(key))     ConstEntry(            key, value)
     else                   new NodeEntry (Targets[S], key, value).connect()
 
   def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = {
@@ -43,7 +43,7 @@ object BiPinImpl {
       case 3 =>
         val key     = LongObj.read(in, access)
         val value   = Elem.read(in, access).asInstanceOf[A]
-        new ConstEntry(key, value)
+        ConstEntry(key, value)
 
       case 0 =>
         val targets = Targets.readIdentified[S](in, access)
@@ -89,7 +89,7 @@ object BiPinImpl {
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new ConstEntry(context(key), context(value))
+      ConstEntry(context(key), context(value))
   }
 
   private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
@@ -102,7 +102,7 @@ object BiPinImpl {
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
       new NodeEntry(Targets[Out], context(key), context(value)).connect()
 
-    protected def disposeData()(implicit tx: S#Tx) = disconnect()
+    protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
     def connect()(implicit tx: S#Tx): this.type = {
       key.changed ---> changed

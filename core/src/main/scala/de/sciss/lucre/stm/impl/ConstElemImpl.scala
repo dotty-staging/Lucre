@@ -26,7 +26,7 @@ trait ConstElemImpl[S <: Sys[S]] extends Elem[S] {
     writeData(out)
   }
 
-  final def dispose()(implicit tx: S#Tx) = ()
+  final def dispose()(implicit tx: S#Tx): Unit = ()
 
   protected def writeData(out: DataOutput): Unit
 }

@@ -182,7 +182,7 @@ private final class RootVar[S <: Sys[S], A](id1: Int, name: String)
 
   def setInit(v: A)(implicit tx: S#Tx): Unit = this() = v // XXX could add require( tx.inAccess == Path.root )
 
-  override def toString = name // "Root"
+  override def toString: String = name // "Root"
 
   private def id(implicit tx: S#Tx): S#ID = new ConfluentID[S](id1, tx.inputAccess)
 
@@ -208,7 +208,7 @@ private final class RootVar[S <: Sys[S], A](id1: Int, name: String)
   def write(out: DataOutput): Unit =
     sys.error("Unsupported Operation -- access.write")
 
-  def dispose()(implicit tx: S#Tx) = ()
+  def dispose()(implicit tx: S#Tx): Unit = ()
 }
 
 private[impl] final class BooleanVar[S <: Sys[S]](protected val id: S#ID)

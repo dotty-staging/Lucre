@@ -14,7 +14,6 @@
 package de.sciss.lucre.stm.impl
 
 import de.sciss.lucre.stm.{IdentifierMap, TxnLike}
-import de.sciss.serial.DataOutput
 
 import scala.concurrent.stm.TMap
 

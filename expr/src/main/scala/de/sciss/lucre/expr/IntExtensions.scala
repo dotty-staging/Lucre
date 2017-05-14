@@ -33,8 +33,8 @@ object IntExtensions {
 
   private[this] object IntTuple1s extends Type.Extension1[IntObj] {
     // final val arity = 1
-    final val opLo  = Neg         .id
-    final val opHi  = BooleanToInt.id
+    final val opLo: Int = Neg         .id
+    final val opHi: Int = BooleanToInt.id
 
     val name = "Int-1 Ops"
 
@@ -57,8 +57,8 @@ object IntExtensions {
 
   private[this] object IntTuple2s extends Type.Extension1[IntObj] {
     // final val arity = 2
-    final val opLo  = Plus  .id
-    final val opHi  = Absdif.id
+    final val opLo: Int = Plus  .id
+    final val opHi: Int = Absdif.id
 
     val name = "Int-2 Ops"
 
@@ -121,7 +121,7 @@ object IntExtensions {
     def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
     def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
-      case Expr.Const(c)  => IntObj.newConst(value(c))
+      case Expr.Const(c)  => IntObj.newConst[S](value(c))
       case _              => new Tuple1[S, T1, ReprT1](Targets[S], this, a).connect()
     }
 

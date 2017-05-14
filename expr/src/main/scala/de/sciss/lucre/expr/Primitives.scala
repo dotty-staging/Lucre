@@ -149,7 +149,7 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
   import expr.{SpanLikeObj => Repr}
 
   final val typeID = 9
-  final val valueSerializer = SpanLike.serializer
+  final val valueSerializer: ImmutableSerializer[SpanLike] = SpanLike.serializer
 
   protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -172,7 +172,7 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
   import expr.{SpanObj => Repr}
 
   final val typeID = 10
-  final val valueSerializer = Span.serializer
+  final val valueSerializer: ImmutableSerializer[Span] = Span.serializer
 
   protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -195,7 +195,7 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   import expr.{DoubleVector => Repr}
 
   final val typeID = 0x2005 //  0x2000 | DoubleObj.typeID
-  final val valueSerializer = ImmutableSerializer.indexedSeq[Double]
+  final val valueSerializer: ImmutableSerializer[Vec[Double]] = ImmutableSerializer.indexedSeq
 
   protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)

@@ -21,7 +21,6 @@ import scala.annotation.elidable.CONFIG
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 package object event {
-  // type Reaction = () => () => Unit
 
   private[event] type Children[S <: stm.Sys[S]] = Vec[(Byte, Event[S, Any])]
 

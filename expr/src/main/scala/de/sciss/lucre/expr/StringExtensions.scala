@@ -31,8 +31,8 @@ object StringExtensions  {
 
   private[this] object StringTuple2s extends Type.Extension1[StringObj] {
     // final val arity = 2
-    final val opLo  = BinaryOp.Append.id
-    final val opHi  = BinaryOp.Append.id
+    final val opLo: Int = BinaryOp.Append.id
+    final val opHi: Int = BinaryOp.Append.id
 
     val name = "String-2 Ops"
 

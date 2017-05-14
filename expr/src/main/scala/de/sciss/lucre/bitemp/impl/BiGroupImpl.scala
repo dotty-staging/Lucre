@@ -210,7 +210,7 @@ object BiGroupImpl {
       value.write(out)
     }
 
-    protected def disposeData()(implicit tx: S#Tx) = disconnect()
+    protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 
     def connect()(implicit tx: S#Tx): this.type = {
       log(s"$this.connect()")
@@ -264,7 +264,7 @@ object BiGroupImpl {
 
     // ---- abstract ----
 
-    implicit final def pointView: (Leaf[S, A], S#Tx) => LongPoint2DLike = (tup, tx) => spanToPoint(tup._1)
+    implicit final def pointView: (Leaf[S, A], S#Tx) => LongPoint2DLike = (tup, _ /* tx */) => spanToPoint(tup._1)
 
     protected def tree: TreeImpl[S, E]
 
@@ -277,7 +277,7 @@ object BiGroupImpl {
     final def isEmpty (implicit tx: S#Tx): Boolean = tree.isEmpty
     final def nonEmpty(implicit tx: S#Tx): Boolean = !isEmpty
 
-    final def treeHandle = tree
+    final def treeHandle: TreeImpl[S, E] = tree
 
     // Note: must be after `EntrySer`
     protected final def newTree()(implicit tx: S#Tx): TreeImpl[S, E] =

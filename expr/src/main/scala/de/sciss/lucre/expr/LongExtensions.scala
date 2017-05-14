@@ -33,8 +33,8 @@ object LongExtensions {
 
   private[this] object LongTuple1s extends Type.Extension1[LongObj] {
     // final val arity = 1
-    final val opLo  = UnaryOp.Neg  .id
-    final val opHi  = UnaryOp.Cubed.id
+    final val opLo: Int = UnaryOp.Neg  .id
+    final val opHi: Int = UnaryOp.Cubed.id
 
     val name = "Long-Long Ops"
 
@@ -56,8 +56,8 @@ object LongExtensions {
 
   private[this] object LongTuple2s extends Type.Extension1[LongObj] {
     // final val arity = 2
-    final val opLo  = BinaryOp.Plus  .id
-    final val opHi  = BinaryOp.Absdif.id
+    final val opLo: Int = BinaryOp.Plus  .id
+    final val opHi: Int = BinaryOp.Absdif.id
 
     val name = "Long-Long Ops"
 
@@ -131,7 +131,7 @@ object LongExtensions {
       def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
       def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
-        case Expr.Const(c)  => LongObj.newConst(value(c))
+        case Expr.Const(c)  => LongObj.newConst[S](value(c))
         case _              => new Tuple1[S, T1, ReprT1](Targets[S], this, a).connect()
       }
 

@@ -28,7 +28,6 @@ object DurableConfluentMapImpl {
   private final class WithPrefix[A](val len: Int, val term: Long, val value: A)
 }
 
-// XXX boom! specialized
 sealed trait DurableConfluentMapImpl[S <: Sys[S], K] extends DurablePersistentMap[S, K] {
   import DurableConfluentMapImpl._
 
@@ -51,8 +50,7 @@ sealed trait DurableConfluentMapImpl[S <: Sys[S], K] extends DurablePersistentMa
     } getOrElse false
   }
 
-  // XXX boom! specialized
-  final def putImmutable[ /* @spec(ValueSpec) */ A](key: K, path: S#Acc, value: A)
+  final def putImmutable[A](key: K, path: S#Acc, value: A)
                                           (implicit tx: S#Tx, ser: ImmutableSerializer[A]): Unit = {
     val (index, term) = path.splitIndex
     // first we need to see if anything has already been written to the index of the write path

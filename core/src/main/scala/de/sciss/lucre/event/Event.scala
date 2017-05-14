@@ -66,8 +66,8 @@ object Dummy {
 trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
   import Dummy._
 
-  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx) = ()
-  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx) = ()
+  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = ()
+  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit = ()
 
   final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
 

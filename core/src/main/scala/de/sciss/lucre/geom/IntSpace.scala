@@ -185,9 +185,9 @@ object IntSpace {
     type HyperCube      = IntHyperCubeN
     val maxPoint        = IntPointN(Vector.fill(dim)(Int.MaxValue))
 
-    def lexicalOrder        = NDim.lexicalOrder
-    def pointSerializer     = NDim.pointSerializer
-    def hyperCubeSerializer = NDim.hyperCubeSerializer
+    def lexicalOrder       : Ordering[PointLike]            = NDim.lexicalOrder
+    def pointSerializer    : ImmutableSerializer[Point]     = NDim.pointSerializer
+    def hyperCubeSerializer: ImmutableSerializer[HyperCube] = NDim.hyperCubeSerializer
   }
 
   /** A helper method which efficiently calculates the unique integer in an interval [a, b] which has

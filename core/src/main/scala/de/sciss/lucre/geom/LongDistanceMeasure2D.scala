@@ -64,9 +64,9 @@ object LongDistanceMeasure2D {
   private object EuclideanSq extends SqrImpl {
     override def toString = "LongDistanceMeasure2D.euclideanSq"
 
-    def distance   (a: PointLike, b: PointLike) = b.distanceSq(a)
-    def minDistance(a: PointLike, b: Square   ) = b.minDistanceSq(a)
-    def maxDistance(a: PointLike, b: Square   ) = b.maxDistanceSq(a)
+    def distance   (a: PointLike, b: PointLike): Sqr = b.distanceSq(a)
+    def minDistance(a: PointLike, b: Square   ): Sqr = b.minDistanceSq(a)
+    def maxDistance(a: PointLike, b: Square   ): Sqr = b.maxDistanceSq(a)
   }
 
   /** A 'next event' search when the quadtree is used to store spans (intervals).
@@ -127,7 +127,7 @@ object LongDistanceMeasure2D {
 
     override def toString = s"LongDistanceMeasure2D.NextSpanEvent($quad)"
 
-    override def distance(a: PointLike, b: PointLike) = {
+    override def distance(a: PointLike, b: PointLike): Long = {
       val bx = b.x
       val by = b.y
       val ax = a.x
@@ -171,7 +171,7 @@ object LongDistanceMeasure2D {
 
     override def toString = s"LongDistanceMeasure2D.PrevSpanEvent($quad)"
 
-    override def distance(a: PointLike, b: PointLike) = {
+    override def distance(a: PointLike, b: PointLike): Long = {
       val bx = b.x
       val by = b.y
       val ax = a.x
@@ -207,11 +207,11 @@ object LongDistanceMeasure2D {
 
     protected def quad: Square
 
-    override def toString = underlying.toString + ".clip(" + quad + ")"
+    override def toString = s"$underlying.clip($quad)"
 
-    final def distance   (a: PointLike, b: PointLike) = if (quad.contains(b)) underlying.distance   (a, b) else maxValue
-    final def minDistance(a: PointLike, b: Square   ) = if (quad.contains(b)) underlying.minDistance(a, b) else maxValue
-    final def maxDistance(a: PointLike, b: Square   ) = if (quad.contains(b)) underlying.maxDistance(a, b) else maxValue
+    final def distance   (a: PointLike, b: PointLike): M = if (quad.contains(b)) underlying.distance   (a, b) else maxValue
+    final def minDistance(a: PointLike, b: Square   ): M = if (quad.contains(b)) underlying.minDistance(a, b) else maxValue
+    final def maxDistance(a: PointLike, b: Square   ): M = if (quad.contains(b)) underlying.maxDistance(a, b) else maxValue
   }
 
   private final class LongClip(protected val underlying: LongImpl, protected val quad: Square)
@@ -225,10 +225,10 @@ object LongDistanceMeasure2D {
 
     protected def thresh: M
 
-    override def toString = underlying.toString + ".approximate(" + thresh + ")"
+    override def toString = s"$underlying.approximate($thresh)"
 
-    final def minDistance(a: PointLike, b: Square) = underlying.minDistance(a, b)
-    final def maxDistance(a: PointLike, b: Square) = underlying.maxDistance(a, b)
+    final def minDistance(a: PointLike, b: Square): M = underlying.minDistance(a, b)
+    final def maxDistance(a: PointLike, b: Square): M = underlying.maxDistance(a, b)
 
     def distance(a: PointLike, b: PointLike): M = {
       val res = underlying.distance(a, b)
@@ -250,7 +250,7 @@ object LongDistanceMeasure2D {
 
     protected def idx: Int
 
-    override def toString = underlying.toString + ".quadrant(" + idx + ")"
+    override def toString = s"$underlying.quadrant($idx)"
 
     final def distance(a: PointLike, b: PointLike): M =
       if ((if (right ) b.x >= a.x else b.x <= a.x) &&
@@ -341,7 +341,7 @@ object LongDistanceMeasure2D {
     protected def applyMin(dx: Long, dy: Long): Long
     protected def applyMax(dx: Long, dy: Long): Long
 
-    def distance(a: PointLike, b: PointLike) = {
+    def distance(a: PointLike, b: PointLike): Long = {
       val dx = math.abs(a.x - b.x)
       val dy = math.abs(a.y - b.y)
       apply(dx, dy)

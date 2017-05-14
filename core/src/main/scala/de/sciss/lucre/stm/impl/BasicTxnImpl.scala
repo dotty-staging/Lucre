@@ -28,7 +28,7 @@ trait BasicTxnImpl[S <: Sys[S]] extends Txn[S] {
 
   @field protected var _context: S#Context = _
 
-  final def use[A](context: S#Context)(fun: => A) = {
+  final def use[A](context: S#Context)(fun: => A): A = {
     val old   = _context
     _context  = context
     try {

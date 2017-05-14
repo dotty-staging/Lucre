@@ -14,6 +14,8 @@
 package de.sciss.lucre
 package geom
 
+import de.sciss.serial.ImmutableSerializer
+
 trait LongPoint2DLike {
   def x: Long
   def y: Long
@@ -67,7 +69,7 @@ trait LongPoint2DLike {
 }
 
 object LongPoint2D {
-  implicit def serializer = LongSpace.TwoDim.pointSerializer
+  implicit def serializer: ImmutableSerializer[LongPoint2D] = LongSpace.TwoDim.pointSerializer
 }
 final case class LongPoint2D(x: Long, y: Long) extends LongPoint2DLike {
   def +(p: LongPoint2D) = LongPoint2D(x + p.x, y + p.y)

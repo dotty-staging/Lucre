@@ -15,6 +15,7 @@ package de.sciss.lucre.geom
 
 import collection.immutable.{IndexedSeq => Vec}
 import IntSpace.NDim
+import de.sciss.serial.ImmutableSerializer
 
 sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, NDim] {
   import Space.bigZero
@@ -240,7 +241,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
 }
 
 object IntHyperCubeN {
-  implicit def serializer = IntSpace.NDim.hyperCubeSerializer
+  implicit def serializer: ImmutableSerializer[IntHyperCubeN] = IntSpace.NDim.hyperCubeSerializer
 }
 final case class IntHyperCubeN(components: Vec[Int], extent: Int) extends IntHyperCubeNLike {
   def center(idx: Int): Int = components(idx)

@@ -21,5 +21,5 @@ import de.sciss.model.Change
 trait ConstImpl[S <: Sys[S], A] extends Expr.Const[S, A] with evt.impl.ConstObjImpl[S, Change[A]] {
   final def value(implicit tx: S#Tx): A = constValue
 
-  override def toString = constValue.toString
+  override def toString: String = constValue.toString
 }

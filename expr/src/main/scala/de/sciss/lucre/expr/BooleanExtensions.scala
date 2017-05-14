@@ -35,8 +35,8 @@ object BooleanExtensions  {
 
   private[this] object BooleanTuple1s extends Type.Extension1[BooleanObj] {
     // final val arity = 1
-    final val opLo  = Not.id
-    final val opHi  = Not.id
+    final val opLo: Int = Not.id
+    final val opHi: Int = Not.id
 
     val name = "Boolean-1 Ops"
 
@@ -62,8 +62,8 @@ object BooleanExtensions  {
 
   private[this] object BooleanTuple2s extends Type.Extension1[BooleanObj] {
     // final val arity = 2
-    final val opLo  = And   .id
-    final val opHi  = IntGeq.id
+    final val opLo: Int = And   .id
+    final val opHi: Int = IntGeq.id
 
     val name = "Boolean-2 Ops"
 
@@ -112,7 +112,7 @@ object BooleanExtensions  {
     extends impl.Tuple1Op[Boolean, T1, BooleanObj, ReprT1] {
 
     final def apply[S <: Sys[S]](_1: ReprT1[S])(implicit tx: S#Tx): Ex[S] = _1 match {
-      case Expr.Const(a) => BooleanObj.newConst(value(a))
+      case Expr.Const(a) => BooleanObj.newConst[S](value(a))
       case _ =>
         new Tuple1[S, T1, ReprT1](Targets[S], this, _1).connect()
     }
@@ -247,7 +247,7 @@ object BooleanExtensions  {
       }
     }
 
-    override def toString = op.toString(_1, _2)
+    override def toString: String = op.toString(_1, _2)
   }
 
   // ---- (Boolean, Boolean) => Boolean ----

@@ -20,8 +20,8 @@ object InMemoryConfluentMap {
   def newLongMap[S <: Sys[S]]: InMemoryConfluentMap[S, Long] = new InMemoryConfluentMapImpl[S, Long]
 }
 
-trait InMemoryConfluentMap[S <: Sys[S], /* @spec(KeySpec) */ K] {
-  def put[/* @spec(ValueSpec) */ A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx): Unit
+trait InMemoryConfluentMap[S <: Sys[S], K] {
+  def put[A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx): Unit
 
   /** Finds the most recent value for an entity `id` with respect to version `path`.
     *

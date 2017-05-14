@@ -28,10 +28,10 @@ object ListImpl {
 
   def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
     new Impl1[S, E] {
-      protected val targets = evt.Targets[S]
-      protected val sizeRef = tx.newIntVar(id, 0)
-      protected val headRef = tx.newVar[C](id, null)(CellSer)
-      protected val lastRef = tx.newVar[C](id, null)(CellSer)
+      protected val targets: Targets[S] = evt.Targets[S]
+      protected val sizeRef: S#Var[Int] = tx.newIntVar(id, 0)
+      protected val headRef: S#Var[C]   = tx.newVar[C](id, null)(CellSer)
+      protected val lastRef: S#Var[C]   = tx.newVar[C](id, null)(CellSer)
     }
 
   def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, List[S, A]] =
@@ -60,20 +60,18 @@ object ListImpl {
   private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
                                                (implicit tx: S#Tx): Impl[S, E] =
     new Impl1[S, E] {
-      protected val targets = _targets
-      protected val sizeRef = tx.readIntVar(id, in)
-      protected val headRef = tx.readVar[C](id, in)
-      protected val lastRef = tx.readVar[C](id, in)
+      protected val targets: Targets[S] = _targets
+      protected val sizeRef: S#Var[Int] = tx.readIntVar(id, in)
+      protected val headRef: S#Var[C]   = tx.readVar[C](id, in)
+      protected val lastRef: S#Var[C]   = tx.readVar[C](id, in)
     }
 
   final class Cell[S <: Sys[S], A](val elem: A,
                                    val pred: S#Var[Cell[S, A]],
                                    val succ: S#Var[Cell[S, A]])
 
-  // private final val filterAll = (in: Any) => true
-
   private final class Iter[S <: Sys[S], A](private var cell: Cell[S, A])(implicit tx: S#Tx) extends Iterator[A] {
-    override def toString = if (cell == null) "empty iterator" else "non-empty iterator"
+    override def toString: String = if (cell == null) "empty iterator" else "non-empty iterator"
 
     def hasNext: Boolean = cell != null
 

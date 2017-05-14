@@ -27,10 +27,10 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
 object BiGroup extends Obj.Type {
-  final val MaxSquare     = LongSquare(0, 0, 0x2000000000000000L)
-  final val MaxSide       = MaxSquare.side
-  final val MinCoordinate = MaxSquare.left
-  final val MaxCoordinate = MaxSquare.right
+  final val MaxSquare     : LongSquare  = LongSquare(0, 0, 0x2000000000000000L)
+  final val MaxSide       : Long        = MaxSquare.side
+  final val MinCoordinate : Long        = MaxSquare.left
+  final val MaxCoordinate : Long        = MaxSquare.right
 
   final val typeID = 27
 

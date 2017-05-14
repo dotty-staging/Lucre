@@ -32,12 +32,9 @@ object TxnLike {
   implicit def wrap(implicit peer: InTxn): TxnLike = new Wrapped(peer)
 
   private final class Wrapped(val peer: InTxn) extends TxnLike {
-    override def toString = peer.toString
+    override def toString: String = peer.toString
 
     def afterCommit (code: => Unit): Unit = ScalaTxn.afterCommit(_ => code)(peer)
-
-//    // XXX TODO --- could the InTxn change?
-//    def beforeCommit(fun: TxnLike => Unit): Unit = ScalaTxn.beforeCommit(_ => fun(this))(peer)
   }
 }
 /** This is a minimal trait for any type of transactions that wrap an underlying Scala-STM transaction. */

@@ -14,6 +14,8 @@
 package de.sciss.lucre
 package geom
 
+import de.sciss.serial.ImmutableSerializer
+
 trait IntPoint3DLike {
   import IntSpace.ThreeDim._
 
@@ -30,7 +32,7 @@ trait IntPoint3DLike {
 }
 
 object IntPoint3D {
-  implicit def serializer = IntSpace.ThreeDim.pointSerializer
+  implicit def serializer: ImmutableSerializer[IntPoint3D] = IntSpace.ThreeDim.pointSerializer
 }
 final case class IntPoint3D(x: Int, y: Int, z: Int) extends IntPoint3DLike {
   def +(p: IntPoint3D) = IntPoint3D(x + p.x, y + p.y, z + p.z)

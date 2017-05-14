@@ -93,7 +93,7 @@ object InMemoryImpl {
     override def toString = s"<$id>"
     override def hashCode: Int    = id.##
 
-    override def equals(that: Any) = that match {
+    override def equals(that: Any): Boolean = that match {
       case thatID: InMemoryLike.ID[_] => thatID.id == id
       case _ => false
     }
@@ -121,7 +121,7 @@ object InMemoryImpl {
   trait TxnMixin[S <: InMemoryLike[S]] extends BasicTxnImpl[S] with InMemoryLike.Txn[S] {
     _: S#Tx =>
 
-    final def newID(): S#ID = new IDImpl(system.newIDValue()(this))
+    final def newID(): S#ID = new IDImpl[S](system.newIDValue()(this))
 
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
@@ -138,22 +138,22 @@ object InMemoryImpl {
 
     final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val peer = ScalaRef(init)
-      new VarImpl(peer)
+      new VarImpl[S, A](peer)
     }
 
     final def newIntVar(id: S#ID, init: Int): S#Var[Int] = {
       val peer = ScalaRef(init)
-      new VarImpl(peer)
+      new VarImpl[S, Int](peer)
     }
 
     final def newBooleanVar(id: S#ID, init: Boolean): S#Var[Boolean] = {
       val peer = ScalaRef(init)
-      new VarImpl(peer)
+      new VarImpl[S, Boolean](peer)
     }
 
     final def newLongVar(id: S#ID, init: Long): S#Var[Long] = {
       val peer = ScalaRef(init)
-      new VarImpl(peer)
+      new VarImpl[S, Long](peer)
     }
 
     final def newVarArray[A](size: Int) = new Array[S#Var[A]](size)

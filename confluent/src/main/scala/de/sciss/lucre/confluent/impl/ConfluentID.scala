@@ -39,13 +39,13 @@ private final class ConfluentID[S <: Sys[S]](val base: Int, val path: S#Acc) ext
     path.write(out)
   }
 
-  override def toString = path.mkString(s"<$base @ ", ",", ">")
+  override def toString: String = path.mkString(s"<$base @ ", ",", ">")
 
-  def dispose()(implicit tx: S#Tx) = ()
+  def dispose()(implicit tx: S#Tx): Unit = ()
 }
 
 private final class PartialID[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
-  override def hashCode = {
+  override def hashCode: Int = {
     import MurmurHash3._
     val h0  = productSeed
     if (path.isEmpty) {
@@ -78,7 +78,7 @@ private final class PartialID[S <: Sys[S]](val base: Int, val path: S#Acc) exten
     path.write(out)
   }
 
-  override def toString = {
+  override def toString: String = {
     val tail = if (path.isEmpty) ""
     else {
       val head = path.head
@@ -89,5 +89,5 @@ private final class PartialID[S <: Sys[S]](val base: Int, val path: S#Acc) exten
     s"<$base @ $tail>"
   }
 
-  def dispose()(implicit tx: S#Tx) = ()
+  def dispose()(implicit tx: S#Tx): Unit = ()
 }

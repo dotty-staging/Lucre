@@ -125,7 +125,7 @@ sealed trait CacheMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K, Store]
 object DurableCacheMapImpl {
   import CacheMapImpl.Entry
 
-  private type Store[S <: Sys[S], K] = DurablePersistentMap[S, K]
+  type Store[S <: Sys[S], K] = DurablePersistentMap[S, K]
 
   def newIntCache[S <: Sys[S]](map: Store[S, Int]): CacheMap.Durable[S, Int, Store[S, Int]] =
     new DurableCacheMapImpl[S, Int] {

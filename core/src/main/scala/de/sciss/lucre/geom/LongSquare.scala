@@ -14,6 +14,8 @@
 package de.sciss.lucre
 package geom
 
+import de.sciss.serial.ImmutableSerializer
+
 trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt, LongSpace.TwoDim] {
   import LongSpace.TwoDim.{HyperCube => Square, _}
   import Space.bigZero
@@ -284,6 +286,6 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
 }
 
 object LongSquare {
-  implicit def serializer = LongSpace.TwoDim.hyperCubeSerializer
+  implicit def serializer: ImmutableSerializer[LongSquare] = LongSpace.TwoDim.hyperCubeSerializer
 }
 final case class LongSquare(cx: Long, cy: Long, extent: Long) extends LongSquareLike

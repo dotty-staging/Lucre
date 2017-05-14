@@ -61,7 +61,7 @@ object Map extends Obj.Type {
       serializer[S, K, Repr].read(in, access)
 
     implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
-      Impl.modSerializer
+      Impl.modSerializer[S, K, Repr]
   }
 
   trait Modifiable[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] extends Map[S, K, Repr] {
@@ -95,7 +95,7 @@ object Map extends Obj.Type {
     Impl.readIdentifiedObj(in, access)
 
   implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
-    Impl.serializer
+    Impl.serializer[S, K, Repr]
 
   final case class Update[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](map: Map[S, K, Repr],
                                                                         changes: List[Change[S, K, Repr[S]]])

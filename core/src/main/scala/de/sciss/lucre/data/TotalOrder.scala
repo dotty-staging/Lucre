@@ -168,7 +168,7 @@ object TotalOrder {
   private final class SetRead[S <: Sys[S]](in: DataInput, access: S#Acc, tx0: S#Tx)
     extends Set[S] with Mutable.Impl[S] {
 
-    val id = tx0.readID(in, access)
+    val id: S#ID = tx0.readID(in, access)
 
     {
       val version = in.readByte()
@@ -176,8 +176,9 @@ object TotalOrder {
         sys.error(s"Incompatible serialized version (found $version, required $SER_VERSION).")
     }
 
-    val sizeVal = tx0.readIntVar(id, in)
-    val root    = EntrySerializer.read(in, access)(tx0)
+    val sizeVal: S#Var[Int] = tx0.readIntVar(id, in)
+
+    val root: Set.Entry[S] = EntrySerializer.read(in, access)(tx0)
   }
 
   private final class SetNew[S <: Sys[S]](val id: S#ID, rootTag: Int, protected val sizeVal: S#Var[Int], tx0: S#Tx)
@@ -457,14 +458,14 @@ object TotalOrder {
        * This method is invoked right after relabelling finishes. That is, the items in
        * the `clean` iterator have been relabelled and the tags carry their new values.
        */
-      def afterRelabeling(/* inserted: A, */ clean: Iterator[A])(implicit tx: Tx): Unit
+      def afterRelabeling(clean: Iterator[A])(implicit tx: Tx): Unit
     }
 
-    final class NoRelabelObserver[Tx /* <: Txn[ _ ] */ , A]
+    final class NoRelabelObserver[Tx, A]
       extends RelabelObserver[Tx, A] {
 
-      def beforeRelabeling(/* inserted: A, */ dirty: Iterator[A])(implicit tx: Tx) = ()
-      def afterRelabeling (/* inserted: A, */ clean: Iterator[A])(implicit tx: Tx) = ()
+      def beforeRelabeling(dirty: Iterator[A])(implicit tx: Tx): Unit = ()
+      def afterRelabeling (clean: Iterator[A])(implicit tx: Tx): Unit = ()
 
       override def toString = "NoRelabelObserver"
     }
@@ -574,7 +575,7 @@ object TotalOrder {
       map.keySerializer.write(get, out)
     }
 
-    override def toString = get.toString
+    override def toString: String = get.toString
   }
 
   private final class MapSerializer[S <: Sys[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A],
@@ -596,15 +597,16 @@ object TotalOrder {
                                              (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Map[S, A] with Mutable.Impl[S] {
 
-    val id = tx0.readID(in, access)
+    val id: S#ID = tx0.readID(in, access)
 
     {
       val version = in.readByte()
       require(version == SER_VERSION, s"Incompatible serialized version (found $version, required $SER_VERSION).")
     }
 
-    val sizeVal = tx0.readIntVar(id, in)
-    val root    = EntrySerializer.read(in, access)(tx0)
+    val sizeVal: S#Var[Int] = tx0.readIntVar(id, in)
+
+    val root: Map.Entry[S, A] = EntrySerializer.read(in, access)(tx0)
   }
 
   private final class MapNew[S <: Sys[S], A](val id: S#ID, protected val sizeVal: S#Var[Int],

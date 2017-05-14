@@ -51,7 +51,7 @@ Where `{module}` is any of the above names. And for the database backend:
 Note that the file format of BDB JE v6 is not backward compatible with v5. Also BDB JE v6 requires Java 1.7, 
 whereas BDB v5 works with Java 1.6.
 
-The current version `v` is `"3.3.3"`.
+The current version `v` is `"3.4.0"`.
 
 ## contributing
 

@@ -28,7 +28,7 @@ object MapImpl {
   def apply[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, Repr] = {
     val targets = evt.Targets[S]
     new Impl[S, K, Repr](targets) {
-      val peer = SkipList.Map.empty[S, K, List[Entry[K, V]]](tx, keyOrdering, keyType.serializer,
+      val peer: SkipList.Map[S, K, List[Entry[K, V]]] = SkipList.Map.empty(tx, keyOrdering, keyType.serializer,
         Serializer.list(entrySerializer))
     }
   }
@@ -61,8 +61,9 @@ object MapImpl {
   private def mkRead[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                (implicit tx: S#Tx, keyType: Key[K]): Impl[S, K, Repr] =
     new Impl[S, K, Repr](targets) {
-      val peer = SkipList.Map.read[S, K, List[Entry[K, V]]](in, access)(tx, keyOrdering, keyType.serializer,
-        Serializer.list(entrySerializer))
+      val peer: SkipList.Map[S, K, List[Entry[K, V]]] =
+        SkipList.Map.read[S, K, List[Entry[K, V]]](in, access)(tx, keyOrdering, keyType.serializer,
+          Serializer.list(entrySerializer))
     }
 
   private final class Entry[K, V](val key: K, val value: V)
@@ -157,13 +158,13 @@ object MapImpl {
       with evt.impl.Generator[S, Map.Update[S, K, Repr]] with evt.impl.Root[S, Map.Update[S, K, Repr]]
 
     private[this] def fireAdded(key: K, value: V)(implicit tx: S#Tx): Unit =
-      changed.fire(Map.Update(map, Map.Added[S, K, V](key, value) :: Nil))
+      changed.fire(Map.Update[S, K, Repr](map, Map.Added[S, K, V](key, value) :: Nil))
 
     private[this] def fireRemoved(key: K, value: V)(implicit tx: S#Tx): Unit =
-      changed.fire(Map.Update(map, Map.Removed[S, K, V](key, value) :: Nil))
+      changed.fire(Map.Update[S, K, Repr](map, Map.Removed[S, K, V](key, value) :: Nil))
 
     private[this] def fireReplaced(key: K, before: V, now: V)(implicit tx: S#Tx): Unit =
-      changed.fire(Map.Update(map, Map.Replaced[S, K, V](key, before = before, now = now) :: Nil))
+      changed.fire(Map.Update[S, K, Repr](map, Map.Replaced[S, K, V](key, before = before, now = now) :: Nil))
 
     final def +=(kv: (K, V))(implicit tx: S#Tx): this.type = {
       put(kv._1, kv._2)

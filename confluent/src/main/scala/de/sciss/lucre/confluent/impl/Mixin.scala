@@ -14,18 +14,19 @@
 package de.sciss.lucre.confluent
 package impl
 
+import de.sciss.lucre.confluent.impl.DurableCacheMapImpl.Store
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.data.Ancestor
 import de.sciss.lucre.event.Observer
 import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Txn, IdentifierMap, TxnLike, DataStore}
+import de.sciss.lucre.stm.{DataStore, IdentifierMap, Txn, TxnLike}
 import de.sciss.serial
-import de.sciss.serial.{DataOutput, DataInput, ImmutableSerializer}
+import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.concurrent.stm.{Txn => ScalaTxn, TxnExecutor, InTxn}
+import scala.concurrent.stm.{InTxn, TxnExecutor}
 
 trait Mixin[S <: Sys[S]]
   extends Sys[S] with IndexMapHandler[S] with PartialMapHandler[S] with evt.impl.ReactionMapImpl.Mixin[S] {
@@ -43,9 +44,11 @@ trait Mixin[S <: Sys[S]]
 
   // ---- init ----
 
-  final val store         = storeFactory.open("k-main")
-  private val varMap      = DurablePersistentMap.newConfluentIntMap[S](store, this, isOblivious = false)
-  final val fullCache     = DurableCacheMapImpl.newIntCache(varMap)
+  final val store: DataStore = storeFactory.open("k-main")
+
+  private[this] val varMap = DurablePersistentMap.newConfluentIntMap[S](store, this, isOblivious = false)
+
+  final val fullCache: CacheMap.Durable[S, Int, Store[S, Int]] = DurableCacheMapImpl.newIntCache(varMap)
 
   final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] = {
     val map = InMemoryConfluentMap.newIntMap[S]
@@ -147,12 +150,12 @@ trait Mixin[S <: Sys[S]]
                                   bSer: serial.Serializer[D#Tx, D#Acc, B]): (stm.Source[S#Tx, A], B) =
     executeRoot { implicit tx =>
       implicit val dtx = durableTx(tx)
-      val (_, confV, durV) = initRoot(confInt, { tx =>
+      val (_, confV, durV) = initRoot(confInt, { _ /* tx */ =>
         // read durable
         val did = global.durRootID
         // stm.DurableSurgery.read (durable)(did)(bSer.read(_, ()))
         durable.read(did)(bSer.read(_, ()))
-      }, { tx =>
+      }, { _ /* tx */ =>
         // create durable
         val _durV = durInit(dtx)
         val did = global.durRootID

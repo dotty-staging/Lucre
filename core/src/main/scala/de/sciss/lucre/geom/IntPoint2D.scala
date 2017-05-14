@@ -14,12 +14,14 @@
 package de.sciss.lucre
 package geom
 
+import de.sciss.serial.ImmutableSerializer
+
 trait IntPoint2DLike /* extends PointLike[ Space.IntTwoDim ] */ {
   def x: Int
   def y: Int
 
-  final def left  = x
-  final def top   = y
+  final def left: Int = x
+  final def top : Int = y
 
   //   final override def right   = x
   //   final override def bottom  = y
@@ -79,7 +81,7 @@ trait IntPoint2DLike /* extends PointLike[ Space.IntTwoDim ] */ {
 }
 
 object IntPoint2D {
-  implicit def serializer = IntSpace.TwoDim.pointSerializer
+  implicit def serializer: ImmutableSerializer[IntPoint2D] = IntSpace.TwoDim.pointSerializer
 }
 final case class IntPoint2D(x: Int, y: Int) extends IntPoint2DLike {
   def +(p: IntPoint2D) = IntPoint2D(x + p.x, y + p.y)

@@ -19,12 +19,6 @@ import de.sciss.lucre.stm
 import de.sciss.model.Change
 
 object Expr {
-//  object Var {
-//    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[Var[S, A]] = {
-//      if (expr.isInstanceOf[Var[_, _]]) Some(expr.asInstanceOf[Var[S, A]]) else None
-//    }
-//  }
-
   trait Var[S <: Sys[S], A] extends Expr[S, A] with stm.Var[S#Tx, Expr[S, A]]
 
   object Const {

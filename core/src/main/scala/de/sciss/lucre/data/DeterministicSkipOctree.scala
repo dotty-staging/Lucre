@@ -1161,10 +1161,7 @@ object DeterministicSkipOctree {
             }
 
           } else {
-            // XXX scalac currently complains that this match doesn't account
-            // for LeftChildBranch and RightChildBranch. but both are
-            // captured by Branch, so this seems to be a bug.
-            (in.dequeue(): @unchecked) match {
+            in.dequeue() match {
               case l: Leaf =>
                 current = l.value
                 return

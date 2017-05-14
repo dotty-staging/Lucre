@@ -114,7 +114,7 @@ trait TxnMixin[S <: Sys[S]]
     flushCaches(meld, markNewVersionFlag, dirtyMaps)
   }
 
-  final protected def fullCache     = system.fullCache
+  final protected def fullCache: CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]] = system.fullCache
   // final protected def partialCache  = system.partialCache
 
   final def newID(): S#ID = {
@@ -346,7 +346,7 @@ trait RootTxnMixin[S <: Sys[S], D <: stm.DurableLike[D]]
   extends TxnMixin[S] {
   _: S#Tx =>
 
-  final val inputAccess = Path.root[S]
+  final val inputAccess: S#Acc = Path.root[S]
 
   final def isRetroactive = false
 
@@ -365,7 +365,7 @@ private[impl] final class RegularTxn(val system: Confluent, val durable: Durable
                                val cursorCache: Cache[Confluent#Tx])
   extends RegularTxnMixin[Confluent, Durable] with TxnImpl {
 
-  lazy val peer = durable.peer
+  lazy val peer: InTxn = durable.peer
 }
 
 private[impl] final class RootTxn(val system: Confluent, val peer: InTxn)

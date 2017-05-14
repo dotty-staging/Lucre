@@ -34,8 +34,8 @@ object SpanExtensions  {
 
   private[this] object LongTuple1s extends Type.Extension1[LongObj] {
     // final val arity = 1
-    final val opLo  = UnaryOp.Start .id
-    final val opHi  = UnaryOp.Length.id
+    final val opLo: Int = UnaryOp.Start .id
+    final val opHi: Int = UnaryOp.Length.id
 
     val name = "Span-Long Ops"
 
@@ -54,8 +54,8 @@ object SpanExtensions  {
 
   private[this] object SpanTuple2s extends Type.Extension1[SpanObj] {
     // final val arity = 2
-    final val opLo  = BinaryOp.Apply.id
-    final val opHi  = BinaryOp.Shift.id
+    final val opLo: Int = BinaryOp.Apply.id
+    final val opHi: Int = BinaryOp.Shift.id
 
     val name = "Int-Int Ops"
 

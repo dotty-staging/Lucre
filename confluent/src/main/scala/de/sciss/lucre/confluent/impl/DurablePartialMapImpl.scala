@@ -28,8 +28,7 @@ object DurablePartialMapImpl {
   private final case class EntryMap   [S <: Sys[S], A](m: IndexMap[S, A]) extends Entry[S, A]
 }
 
-// XXX boom! specialized
-sealed trait DurablePartialMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K] extends DurablePersistentMap[S, K] {
+sealed trait DurablePartialMapImpl[S <: Sys[S], K] extends DurablePersistentMap[S, K] {
   import DurablePartialMapImpl._
 
   protected def store: DataStore
@@ -40,8 +39,7 @@ sealed trait DurablePartialMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K] extends 
 
   final def isFresh(key: K, conPath: S#Acc)(implicit tx: S#Tx): Boolean = true // III
 
-  // XXX boom! specialized
-  final def putImmutable[ /* @spec(ValueSpec) */ A](key: K, conPath: S#Acc, value: A)
+  final def putImmutable[A](key: K, conPath: S#Acc, value: A)
                                           (implicit tx: S#Tx, ser: ImmutableSerializer[A]): Unit = {
     //      val path = conPath.partial
     // val (index, term) = conPath.splitIndex
@@ -69,7 +67,7 @@ sealed trait DurablePartialMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K] extends 
       // with the previous entry read, react as follows:
       // if there is a single entry, construct a new ancestor.map with the
       // entry's value taken as root value
-      case Some(EntrySingle(prevTerm, prevValue)) =>
+      case Some(EntrySingle(_ /* prevTerm */, prevValue)) =>
         putFullMap[A](key, /* index, */ term, value, /* prevTerm, */ prevValue)
       // if there is an existing map, simply add the new value to it
       case Some(EntryMap(m)) =>

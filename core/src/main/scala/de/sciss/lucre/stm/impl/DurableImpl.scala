@@ -84,7 +84,7 @@ object DurableImpl {
       val cnt = idCntVar()
       var i   = 1
       while (i <= cnt) {
-        if (exists(i)) b += new IDImpl(i)
+        if (exists(i)) b += new IDImpl[S](i)
         i += 1
       }
       b.result()
@@ -208,12 +208,12 @@ object DurableImpl {
 
     final def readBooleanVar(pid: S#ID, in: DataInput): S#Var[Boolean] = {
       val id = in./* PACKED */ readInt()
-      new BooleanVar(id)
+      new BooleanVar[S](id)
     }
 
     final def readIntVar(pid: S#ID, in: DataInput): S#Var[Int] = {
       val id = in./* PACKED */ readInt()
-      new IntVar(id)
+      new IntVar[S](id)
     }
 
     final def readCachedIntVar(in: DataInput): S#Var[Int] = {
@@ -225,7 +225,7 @@ object DurableImpl {
 
     final def readLongVar(pid: S#ID, in: DataInput): S#Var[Long] = {
       val id = in./* PACKED */ readInt()
-      new LongVar(id)
+      new LongVar[S](id)
     }
 
     final def readCachedLongVar(in: DataInput): S#Var[Long] = {
@@ -237,7 +237,7 @@ object DurableImpl {
 
     final def readID(in: DataInput, acc: S#Acc): S#ID = {
       val base = in./* PACKED */ readInt()
-      new IDImpl(base)
+      new IDImpl[S](base)
     }
 
 //    final def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)

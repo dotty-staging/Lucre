@@ -44,8 +44,8 @@ object SpanLikeExtensions {
 
   private[this] object SpanLikeTuple1s extends Type.Extension1[SpanLikeObj] {
     // final val arity = 1
-    final val opLo  = UnaryOp.From .id
-    final val opHi  = UnaryOp.Until.id
+    final val opLo: Int = UnaryOp.From .id
+    final val opHi: Int = UnaryOp.Until.id
 
     val name = "Long-SpanLike Ops"
 
@@ -63,8 +63,8 @@ object SpanLikeExtensions {
 
   private[this] object SpanLikeTuple2s extends Type.Extension1[SpanLikeObj] {
     // final val arity = 2
-    final val opLo  = BinaryOp.Apply.id
-    final val opHi  = BinaryOp.Shift.id
+    final val opLo: Int = BinaryOp.Apply.id
+    final val opHi: Int = BinaryOp.Shift.id
 
     val name = "Long-SpanLike Ops"
 
