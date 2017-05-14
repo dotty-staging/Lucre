@@ -22,5 +22,5 @@ trait Identifiable[+ID] {
     case _ => super.equals(that)
   }
 
-  override def hashCode = id.hashCode()
+  override def hashCode: Int = id.hashCode()
 }

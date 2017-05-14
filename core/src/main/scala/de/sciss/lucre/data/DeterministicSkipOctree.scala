@@ -114,15 +114,15 @@ object DeterministicSkipOctree {
         s"Incompatible serialized version (found $version, required $SER_VERSION).")
     }
 
-    val id          = tx0.readID(in, access)
-    val hyperCube   = space.hyperCubeSerializer.read(in, access)(tx0)
-    val skipList    = {
+    val id: S#ID = tx0.readID(in, access)
+    val hyperCube: D#HyperCube = space.hyperCubeSerializer.read(in, access)(tx0)
+    val skipList: HASkipList.Set[S, LeafImpl] = {
       implicit val ord  = LeafOrdering
       implicit val r1   = LeafSerializer
       HASkipList.Set.serializer[S, LeafImpl](KeyObserver).read(in, access)(tx0)
     }
-    val head        = LeftTopBranchSerializer.read(in, access)(tx0)
-    val lastTreeRef = {
+    val head: LeftTopBranch = LeftTopBranchSerializer.read(in, access)(tx0)
+    val lastTreeRef: S#Var[TopBranch] = {
       implicit val r4 = TopBranchSerializer
       tx0.readVar[TopBranch](id, in)
     }
@@ -134,8 +134,8 @@ object DeterministicSkipOctree {
                                                              val keySerializer: Serializer[S#Tx, S#Acc, A])
     extends DeterministicSkipOctree[S, D, A] {
 
-    val skipList    = HASkipList.Set.empty[S, LeafImpl](skipGap, KeyObserver)(tx0, LeafOrdering, LeafSerializer)
-    val head = {
+    val skipList: HASkipList.Set[S, LeafImpl] = HASkipList.Set.empty[S, LeafImpl](skipGap, KeyObserver)(tx0, LeafOrdering, LeafSerializer)
+    val head: LeftTopBranch = {
       val sz  = numOrthants
       val ch  = tx0.newVarArray[LeftChildOption](sz)
       val cid = tx0.newID()
@@ -149,7 +149,7 @@ object DeterministicSkipOctree {
       val headRight   = tx0.newVar[NextOption](cid, EmptyValue)
       new LeftTopBranch(cid, children = ch, nextRef = headRight)
     }
-    val lastTreeRef = {
+    val lastTreeRef: S#Var[TopBranch] = {
       implicit val r3 = TopBranchSerializer
       tx0.newVar[TopBranch](id, head)
     }
@@ -387,7 +387,7 @@ object DeterministicSkipOctree {
             }
           }
 
-        case Some((foundParent, foundLevel)) =>
+        case Some((_ /* foundParent */, foundLevel)) =>
           val foundLevelSkip = HASkipList.debugFindLevel(tree.skipList, leaf)
           if (foundLevel != foundLevelSkip) {
             errors :+= s"Severe problem with $leaf - is in skip list level $foundLevelSkip versus octree level $foundLevel"
@@ -839,7 +839,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
     val sz = numOrthants
     @tailrec def step(i: Int): Boolean = if (i == sz) true
     else n.child(i) match {
-      case n: NonEmptyChild => false
+      case _: NonEmptyChild => false
       case _ => step(i + 1)
     }
     step(0)
@@ -1041,7 +1041,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
 
     // NOTE: `sz` must be protected and not private, otherwise
     // scala's specialization blows up
-    protected val sz = numOrthants
+    protected val sz: Int = numOrthants
     private[this] val acceptedChildren = new Array[Branch](sz)
     //      private val acceptedDists     = {
     //         implicit val mf = metric.manifest
@@ -1575,7 +1575,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
       step(p, pMinDist, EmptyValue, mmax, mmax)
     }
 
-    def compare(a: VisitedNode[M], b: VisitedNode[M]) = {
+    def compare(a: VisitedNode[M], b: VisitedNode[M]): Int = {
       val min = metric.compareMeasure(b.minDist, a.minDist)
       min // if (min != 0) min else metric.compareMeasure(b.maxDist, a.maxDist)
     }
@@ -1587,10 +1587,10 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
 
   // note: Iterator is not specialized, hence we can safe use the effort to specialize in A anyway
   private[this] final class RangeQuery[Area](qs: QueryShape[Area, D])(implicit tx: S#Tx) extends Iterator[A] {
-    val sz          = numOrthants
-    val stabbing    = MQueue.empty[(BranchLike, Area)]
+    val sz: Int = numOrthants
+    val stabbing: MQueue[(BranchLike, Area)] = MQueue.empty
     // Tuple2 is specialized for Long, too!
-    val in          = MQueue.empty[NonEmptyChild]
+    val in: MQueue[NonEmptyChild] = MQueue.empty
     var current: A  = _
     // overwritten by initial run of `findNextValue`
     var hasNextVar  = true // eventually set to `false` by `findNextValue`
@@ -1731,14 +1731,14 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
   protected sealed trait NonEmpty extends Identifiable[S#ID] /* extends Down with Child */ {
     protected def shortString: String
 
-    override def toString = shortString + id
+    override def toString: String = s"$shortString$id"
 
     override def equals(that: Any): Boolean = that match {
       case n: Identifiable[_] => id == n.id   // do _not_ match against n: NonEmpty because that's an inner class!!!
       case _                  => super.equals(that)
     }
 
-    override def hashCode = id.hashCode()
+    override def hashCode: Int = id.hashCode()
 
     /** Computes the greatest interesting hyper-cube within
       * a given hyper-cube `mq` so that this (leaf's or node's)
@@ -2168,7 +2168,7 @@ sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
                                       protected val nextRef: S#Var[NextOption])
     extends LeftBranch with TopBranch with Mutable[S#ID, S#Tx] {
     // that's alright, we don't need to do anything special here
-    protected def leafRemoved()(implicit tx: S#Tx) = ()
+    protected def leafRemoved()(implicit tx: S#Tx): Unit = ()
 
     def dispose()(implicit tx: S#Tx): Unit = {
       id.dispose()
