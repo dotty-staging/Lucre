@@ -18,7 +18,6 @@ import de.sciss.lucre.stm.impl.{DurableImpl => Impl}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.InTxn
-import scala.language.implicitConversions
 
 object Durable {
   def apply(factory: DataStore.Factory, mainName: String = "data"): Durable =

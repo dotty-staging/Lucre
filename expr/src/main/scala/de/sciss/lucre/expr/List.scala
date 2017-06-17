@@ -21,7 +21,6 @@ import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
-import scala.language.implicitConversions
 
 object List extends Obj.Type {
   final val typeID  = 23

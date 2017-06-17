@@ -21,13 +21,14 @@ import de.sciss.span.{Span, SpanLike}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
-trait IntObj      [S <: Sys[S]] extends Expr[S, Int     ]
-trait LongObj     [S <: Sys[S]] extends Expr[S, Long    ]
-trait DoubleObj   [S <: Sys[S]] extends Expr[S, Double  ]
-trait BooleanObj  [S <: Sys[S]] extends Expr[S, Boolean ]
-trait StringObj   [S <: Sys[S]] extends Expr[S, String  ]
-trait SpanLikeObj [S <: Sys[S]] extends Expr[S, SpanLike]
-trait SpanObj     [S <: Sys[S]] extends Expr[S, Span    ]
+trait IntObj      [S <: Sys[S]] extends Expr[S, Int        ]
+trait LongObj     [S <: Sys[S]] extends Expr[S, Long       ]
+trait DoubleObj   [S <: Sys[S]] extends Expr[S, Double     ]
+trait BooleanObj  [S <: Sys[S]] extends Expr[S, Boolean    ]
+trait StringObj   [S <: Sys[S]] extends Expr[S, String     ]
+trait SpanLikeObj [S <: Sys[S]] extends Expr[S, SpanLike   ]
+trait SpanObj     [S <: Sys[S]] extends Expr[S, Span       ]
+trait IntVector   [S <: Sys[S]] extends Expr[S, Vec[Int   ]]
 trait DoubleVector[S <: Sys[S]] extends Expr[S, Vec[Double]]
 
 object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
@@ -173,6 +174,29 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
 
   final val typeID = 10
   final val valueSerializer: ImmutableSerializer[Span] = Span.serializer
+
+  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+    new _Const[S](id, value)
+
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+                                  (implicit tx: S#Tx): Var[S] = {
+    val res = new _Var[S](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+    extends ConstImpl[S] with Repr[S]
+
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+    extends VarImpl[S] with Repr[S]
+}
+
+object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
+  import expr.{IntVector => Repr}
+
+  final val typeID = 0x2002 //  0x2000 | IntObj.typeID
+  final val valueSerializer: ImmutableSerializer[Vec[Int]] = ImmutableSerializer.indexedSeq
 
   protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)

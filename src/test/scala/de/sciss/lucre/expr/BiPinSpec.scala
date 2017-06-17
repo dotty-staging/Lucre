@@ -63,7 +63,7 @@ class BiPinSpec extends ConfluentEventSpec {
 
     val tuples: Seq[stm.Source[S#Tx, (LE, IE)]] = system.step { implicit tx =>
       // implicitly[Serializer[S#Tx, S#Acc, BiPin.Entry[S, Expr[S, Int]]]]
-      implicit val entrySer = BiPin.Entry.serializer[S, IE]
+//      implicit val entrySer = BiPin.Entry.serializer[S, IE]
 
       val tup1 = (10000L: LE) -> (1: IE) // : E
       val tup2 = ( 5000L: LE) -> (2: IE) // : E

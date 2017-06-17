@@ -23,7 +23,6 @@ import de.sciss.serial.{DataInput, ImmutableSerializer}
 
 import scala.collection.immutable.{Queue => IQueue, IndexedSeq => Vec}
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
-import scala.language.higherKinds
 
 trait TxnMixin[S <: Sys[S]]
   extends Txn[S] with stm.impl.BasicTxnImpl[S] with VersionInfo.Modifiable {

@@ -22,7 +22,6 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import scala.annotation.elidable
 import scala.annotation.meta.field
 import scala.concurrent.stm.{InTxn, Ref}
-import scala.language.higherKinds
 
 object DurableImpl {
   private type D[S <: DurableLike[S]] = DurableLike[S]

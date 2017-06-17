@@ -17,8 +17,6 @@ import de.sciss.lucre.confluent.impl.{ConfluentImpl => Impl}
 import de.sciss.lucre.{confluent, stm}
 import de.sciss.lucre.stm.DataStore
 
-import scala.language.implicitConversions
-
 object Confluent {
   // var DEBUG_DISABLE_PARTIAL = true
 

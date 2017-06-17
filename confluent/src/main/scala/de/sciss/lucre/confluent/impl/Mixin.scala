@@ -185,7 +185,7 @@ trait Mixin[S <: Sys[S]]
         (aRead, bRead)
 
       case _ =>
-        implicit val dtx = durableTx(tx) // created on demand (now)
+        // implicit val dtx = durableTx(tx) // created on demand (now)
         writeNewTree(rootPath.index, 0)
         writePartialTreeVertex(partialTree.root)
         writeVersionInfo(rootPath.term)

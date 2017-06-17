@@ -385,8 +385,6 @@ object DeterministicSkipOctree {
     final type LeftTopBranch      = DeterministicSkipOctree.LeftTopBranch     [S, D, A]
     final type RightTopBranch     = DeterministicSkipOctree.RightTopBranch    [S, D, A]
 
-    private[this] type Order = TotalOrder.Set.Entry[S]
-
     // ---- abstract types and methods ----
 
     implicit def space: D

@@ -42,6 +42,7 @@ package object expr {
     StringObj         .init()
     SpanLikeObj       .init()
     SpanObj           .init()
+    IntVector         .init()
     DoubleVector      .init()
 
     List              .init()

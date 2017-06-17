@@ -21,7 +21,6 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TxnExecutor}
-import scala.language.higherKinds
 
 object InMemoryImpl {
   def apply(): InMemory = new System

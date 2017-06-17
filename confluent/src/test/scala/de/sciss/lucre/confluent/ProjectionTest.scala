@@ -2,40 +2,32 @@ package de.sciss
 package lucre
 package confluent
 
-import de.sciss.lucre.stm.TxnLike
-import serial.DataOutput
+import de.sciss.serial.DataOutput
 
 trait ProjectionTest {
-//   trait KVar[ -Tx, ~ ] extends Var[ Tx, ~ ]
 
-   object KTx {
-      implicit def downCast( implicit tx: BiTx ) : KTx[ KTemp ] = sys.error( "TODO" )
-   }
-   trait KTx[ S <: KTempLike[ S ]] extends stm.Txn[ S ]
+  object KTx {
+    implicit def downCast(implicit tx: BiTx): KTx[KTemp] = sys.error("TODO")
+  }
 
-   trait KTempLike[ S <: KTempLike[ S ]] extends stm.Sys[ S ] {
-      type Tx <: KTx[ S ]
-//      type Var[ @specialized ~ ] = stm.Var[ S#Tx, ~ ]
-   }
+  trait KTx[S <: KTempLike[S]] extends stm.Txn[S]
 
-   trait KTemp extends KTempLike[ KTemp ] {
-      final type Tx = KTx[ KTemp ]
-      final type Var[ @specialized ~ ] = stm.Var[ KTemp#Tx, ~ ]
-   }
+  trait KTempLike[S <: KTempLike[S]] extends stm.Sys[S] {
+    type Tx <: KTx[S]
+  }
 
-//   trait BiVar[ ~ ] extends stm.Var[ BiTemp#Tx, ~ ]
+  trait KTemp extends KTempLike[KTemp] {
+    final type Tx = KTx[KTemp]
+    final type Var[@specialized ~] = stm.Var[KTemp#Tx, ~]
+  }
 
-//   object BiTx {
-//      implicit def downCast( implicit tx: BiTx ) : KTx[ KTemp ] = sys.error( "TODO" )
-//   }
-   trait BiTx extends KTx[ BiTemp ]
+  trait BiTx extends KTx[BiTemp]
 
-   trait BiTemp extends KTempLike[ BiTemp ] {
-      final type Tx = BiTx
-//      override type Var[ @specialized ~ ] = BiVar[ ~ ]
-   }
+  trait BiTemp extends KTempLike[BiTemp] {
+    final type Tx = BiTx
+  }
 
-  def test(implicit tx: KTemp#Tx) = ()
+  def test (implicit tx: KTemp #Tx): Unit = ()
 
   def test2(implicit tx: BiTemp#Tx): Unit = test
 

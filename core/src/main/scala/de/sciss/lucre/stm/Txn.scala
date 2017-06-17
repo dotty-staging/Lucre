@@ -21,7 +21,6 @@ import de.sciss.serial.{DataInput, Serializer}
 import scala.annotation.tailrec
 import scala.concurrent.stm.Txn.ExternalDecider
 import scala.concurrent.stm.{Txn => ScalaTxn, InTxnEnd, TxnLocal, TxnExecutor, InTxn}
-import scala.language.higherKinds
 import scala.util.control.NonFatal
 
 object TxnLike {

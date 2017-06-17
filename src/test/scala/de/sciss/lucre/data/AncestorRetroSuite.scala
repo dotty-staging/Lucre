@@ -1,10 +1,8 @@
 package de.sciss.lucre.data
 
-import java.io.File
-
 import de.sciss.lucre.geom.{IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}
 import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.lucre.stm.{Durable, Cursor, InMemory, Sys}
+import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Reader, Serializer, Writable}
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
@@ -669,7 +667,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
             val config: Config[S] = randomlyFilledTree(NUM2)
             import config._
             if (DEBUG_LAST) verbose = false
-            type V  = FullVertex[S]
+//            type V  = FullVertex[S]
             val tm  = system.step { implicit tx => MarkTree(t) }
             val rnd = new util.Random(seed)
 
