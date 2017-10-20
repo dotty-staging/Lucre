@@ -1,6 +1,5 @@
 # Lucre
 
-[![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=sciss&url=https%3A%2F%2Fgithub.com%2FSciss%2FLucre&title=Lucre&language=Scala&tags=github&category=software)
 [![Build Status](https://travis-ci.org/Sciss/Lucre.svg?branch=master)](https://travis-ci.org/Sciss/Lucre)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.11)
 
