@@ -161,7 +161,7 @@ object BiPinImpl {
   private class Ser[S <: Sys[S], A <: Elem[S], Repr <: BiPin[S, A]]
     extends ObjSerializer[S, Repr] {
 
-    def tpe = BiPin
+    def tpe: Obj.Type = BiPin
   }
 
   final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](in: Tree[In, E[In]], out: Tree[Out, E[Out]],

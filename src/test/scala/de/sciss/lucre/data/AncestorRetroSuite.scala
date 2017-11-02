@@ -1,5 +1,6 @@
 package de.sciss.lucre.data
 
+import de.sciss.lucre.data.TotalOrder.Map
 import de.sciss.lucre.geom.{IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
@@ -96,48 +97,48 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
   final class FullVertexPreHead[S <: Sys[S]](val source: FullVertex[S])
     extends FullVertexPre[S] {
 
-    def order = source.pre
+    def order: FullPreOrder[S] = source.pre
 
     def id = 0
 
-    override def toString = source.toString + "<pre>"
+    override def toString = s"$source<pre>"
 
-    def debugString(implicit tx: S#Tx) = toString + "@" + source.pre.tag
+    def debugString(implicit tx: S#Tx) = s"$this@${source.pre.tag}"
   }
 
   final class FullVertexPreTail[S <: Sys[S]](val source: FullVertex[S])
     extends FullVertexPre[S] {
 
-    def order = source.preTail
+    def order: FullPreOrder[S] = source.preTail
 
     def id = 1
 
-    override def toString = source.toString + "<pre-tail>"
+    override def toString = s"$source<pre-tail>"
 
-    def debugString(implicit tx: S#Tx) = toString + "@" + source.preTail.tag
+    def debugString(implicit tx: S#Tx) = s"$this@${source.preTail.tag}"
   }
 
   object FullTree {
     def apply[S <: Sys[S]]()(implicit tx: S#Tx): FullTree[S] = {
-      implicit val pointView = (p: FullVertex[S], tx: S#Tx) => p.toPoint(tx)
+      implicit val pointView: (FullVertex[S], S#Tx) => IntPoint3D = (p, tx) => p.toPoint(tx)
       new FullTree[S] {
-        val system = tx.system
+        val system: S = tx.system
         val cube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
-        val t = {
+        val t: SkipOctree[S, IntSpace.ThreeDim, FullVertex[S]] =
           SkipOctree.empty[S, IntSpace.ThreeDim, FullVertex[S]](cube)
-        }
+
         val orderObserver = new RelabelObserver[ S, FullVertex[ S ]]( "full", t )
-        val preOrder      = TotalOrder.Map.empty[S, FullVertexPre[S]](orderObserver, _.order, 0)
-        val postOrder     = TotalOrder.Map.empty[S, FullVertex[S]](orderObserver, _.post, Int.MaxValue /* - 1 */)
+        val preOrder : TotalOrder.Map[S, FullVertexPre[S]] = TotalOrder.Map.empty(orderObserver, _.order, 0)
+        val postOrder: TotalOrder.Map[S, FullVertex   [S]] = TotalOrder.Map.empty(orderObserver, _.post, Int.MaxValue /* - 1 */)
         implicit lazy val vertexSer: Serializer[S#Tx, S#Acc, FullVertex[S]] = new Serializer[S#Tx, S#Acc, FullVertex[S]] {
           def write(v: FullVertex[S], out: DataOutput): Unit = v.write(out)
 
           def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): FullVertex[S] = {
             new FullVertex[S] {
-              val version = in.readInt()
-              val pre = preOrder.readEntry(in, access)
-              val post = postOrder.readEntry(in, access)
-              val preTail = preOrder.readEntry(in, access)
+              val version: Int = in.readInt()
+              val pre     : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.readEntry(in, access)
+              val post    : TotalOrder.Map.Entry[S, FullVertex   [S]] = postOrder.readEntry(in, access)
+              val preTail : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.readEntry(in, access)
             }
           }
         }
@@ -145,7 +146,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
           //               val pre: FullPreOrder[ S ]       = preOrder.root
           //               val post: FullPostOrder[ S ]     = postOrder.root // insertAfter( this, this )
           //               val preTail: FullPreOrder[ S ]   = preOrder.insertAfter( preHeadKey, preTailKey )
-          val pre    : FullPreOrder [S] = preOrder.root
+          val pre    : FullPreOrder [S] = preOrder .root
           val post   : FullPostOrder[S] = postOrder.root
           // insertAfter( this, this )
           val preTail: FullPreOrder [S] = preOrder.insert()
@@ -192,10 +193,10 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
         //            val pre     = preOrder.insertBefore( parent.preTailKey, preHeadKey )
         //            val preTail = preOrder.insertAfter( preHeadKey, preTailKey )
         //            val post    = postOrder.insertBefore( parent, this )
-        val pre     = preOrder.insert()
-        val preTail = preOrder.insert()
-        val post    = postOrder.insert()
-        val version = nextVersion()
+        val pre    : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.insert()
+        val preTail: TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.insert()
+        val post   : TotalOrder.Map.Entry[S, FullVertex   [S]] = postOrder.insert()
+        val version: Int = nextVersion()
         //if( version == 411 ) {
         //   println( "AHAAAA" )
         //}
@@ -217,16 +218,16 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
         //            val pre     = preOrder.insertAfter( parent.preHeadKey, preHeadKey )
         //            val preTail = preOrder.insertBefore( parent.preTailKey, preTailKey )
         //            val post    = postOrder.insertBefore( parent, this )
-        val pre     = preOrder .insert()
-        val preTail = preOrder .insert()
-        val post    = postOrder.insert()
-        val version = nextVersion()
+        val pre    : TotalOrder.Map.Entry[S, FullVertexPre[S]]  = preOrder .insert()
+        val preTail: TotalOrder.Map.Entry[S, FullVertexPre[S]]  = preOrder .insert()
+        val post   : TotalOrder.Map.Entry[S, FullVertex   [S]]  = postOrder.insert()
+        val version: Int = nextVersion()
         preOrder .placeAfter (parent.preHeadKey, preHeadKey)
         postOrder.placeBefore(parent, this)
         preOrder .placeBefore(parent.preTailKey, preTailKey)
 
         // preTailKey must come last
-        override def toString = super.toString + "@r-ch"
+        override def toString = s"${super.toString}@r-ch"
       }
 
       t.add(v)
@@ -239,16 +240,16 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
         //            val pre     = preOrder.insertBefore( child.preHeadKey, preHeadKey )
         //            val preTail = preOrder.insertAfter( child.preTailKey, preTailKey )
         //            val post    = postOrder.insertAfter( child, this )
-        val pre     = preOrder .insert()
-        val preTail = preOrder .insert()
-        val post    = postOrder.insert()
-        val version = nextVersion()
+        val pre    : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder .insert()
+        val preTail: TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder .insert()
+        val post   : TotalOrder.Map.Entry[S, FullVertex   [S]] = postOrder.insert()
+        val version: Int = nextVersion()
         preOrder .placeBefore(child.preHeadKey, preHeadKey)
         postOrder.placeAfter (child, this)
         preOrder .placeAfter (child.preTailKey, preTailKey)
 
         // preTailKey must come last
-        override def toString = super.toString + "@r-par"
+        override def toString = s"${super.toString}@r-par"
       }
 
       t.add(v)
@@ -282,7 +283,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
   }
 
   sealed trait FullVertex[S <: Sys[S]] extends VertexLike[S, FullVertex[S]] {
-    def source = this
+    def source: FullVertex[S] = this
 
     final val preHeadKey = new FullVertexPreHead[S](this)
     final val preTailKey = new FullVertexPreTail[S](this)
@@ -332,7 +333,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
           val str = try {
             vs.debugString
           } catch {
-            case np: NullPointerException => "<null>"
+            case _: NullPointerException => "<null>"
           }
           println(s"RELABEL $name - $str")
         }
@@ -344,7 +345,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
         t -= v
         //            }
       }
-      if (verbose) println("RELABEL " + name + " - end")
+      if (verbose) println(s"RELABEL $name - end")
     }
 
     def afterRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[S, V]])
@@ -358,7 +359,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
           val str = try {
             vs.debugString
           } catch {
-            case np: NullPointerException => "<null>"
+            case _: NullPointerException => "<null>"
           }
           println(s"RELABEL $name + $str")
         }
@@ -386,7 +387,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
   //      }
   //   }
   sealed trait MarkVertex[S <: Sys[S]] extends VertexLike[S, MarkVertex[S]] {
-    final def source = this
+    final def source: MarkVertex[S] = this
 
     def full: FullVertex[S]
     def pre : MarkOrder [S]
@@ -408,7 +409,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
 
     override def toString = s"Mark($version)"
 
-    def debugString(implicit tx: S#Tx) = toString
+    def debugString(implicit tx: S#Tx): String = toString
 
     override def equals(that: Any): Boolean =
       that.isInstanceOf[MarkVertex[_]] && (that.asInstanceOf[MarkVertex[_]].version == version)
@@ -423,55 +424,55 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
 
   object MarkTree {
     def apply[S <: Sys[S]](ft: FullTree[S])(implicit tx: S#Tx, system: S): MarkTree[S] = {
-      implicit val pointView = (p: MarkVertex[S], tx: S#Tx) => p.toPoint(tx)
+      implicit val pointView: (MarkVertex[S], S#Tx) => IntPoint3D = (p, tx) => p.toPoint(tx)
       lazy val orderObserver = new RelabelObserver[S, MarkVertex[S]]("mark", t)
       lazy val _vertexSer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = new Serializer[S#Tx, S#Acc, MarkVertex[S]] {
         def write(v: MarkVertex[S], out: DataOutput): Unit = v.write(out)
 
         def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): MarkVertex[S] = {
           new MarkVertex[S] {
-            val full = ft.vertexSer  .read     (in, access)
-            val pre  = root.preOrder .readEntry(in, access)
-            val post = root.postOrder.readEntry(in, access)
+            val full: FullVertex[S] = ft.vertexSer.read(in, access)
+            val pre : TotalOrder.Map.Entry[S, MarkVertex[S]] = root.preOrder .readEntry(in, access)
+            val post: TotalOrder.Map.Entry[S, MarkVertex[S]] = root.postOrder.readEntry(in, access)
           }
         }
       }
       lazy val root: MarkRootVertex[S] = new MarkRootVertex[S] {
-        implicit val vertexSer = _vertexSer
+        implicit val vertexSer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
 
-        def full = ft.root
+        def full: FullVertex[S] = ft.root
 
-        lazy val preOrder  = TotalOrder.Map.empty[S, MarkVertex[S]](orderObserver, _.pre)
-        lazy val postOrder = TotalOrder.Map.empty[S, MarkVertex[S]](orderObserver, _.post, rootTag = Int.MaxValue)
+        lazy val preOrder : TotalOrder.Map[S, MarkVertex[S]] = TotalOrder.Map.empty(orderObserver, _.pre)
+        lazy val postOrder: TotalOrder.Map[S, MarkVertex[S]] = TotalOrder.Map.empty(orderObserver, _.post, rootTag = Int.MaxValue)
         //            lazy val pre: MarkOrder[ S ]  = preOrder.root
         //            lazy val post: MarkOrder[ S ] = postOrder.root.append( this )
         lazy val pre : MarkOrder[S] = preOrder.root
         lazy val post: MarkOrder[S] = postOrder.root // postOrder.insertAfter( root, this )
       }
       lazy val t = {
-        implicit val keySer = _vertexSer
+        implicit val keySer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
         SkipOctree.empty[S, IntSpace.ThreeDim, MarkVertex[S]](ft.t.hyperCube)
       }
       t += root
-      implicit val orderSer: Serializer[S#Tx, S#Acc, TotalOrder.Map.Entry[S, MarkVertex[S]]] =
-        root.preOrder.EntrySerializer
-      //            Serializer.fromMutableReader( root.preOrder.EntrySerializer, system )
+
+//      implicit val orderSer: Serializer[S#Tx, S#Acc, TotalOrder.Map.Entry[S, MarkVertex[S]]] =
+//        root.preOrder.EntrySerializer
 
       lazy val preList = {
-        implicit val ord = new Ordering[S#Tx, MarkVertex[S]] {
+        implicit val ord: Ordering[S#Tx, MarkVertex[S]] = new Ordering[S#Tx, MarkVertex[S]] {
           def compare(a: MarkVertex[S], b: MarkVertex[S])(implicit tx: S#Tx): Int = a.pre.compare(b.pre)
         }
-        implicit val keySer = _vertexSer
+        implicit val keySer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
         val res = SkipList.Set.empty[S, MarkVertex[S]]
         res.add(root)
         res
       }
 
       lazy val postList = {
-        implicit val ord = new Ordering[S#Tx, MarkVertex[S]] {
+        implicit val ord: Ordering[S#Tx, MarkVertex[S]] = new Ordering[S#Tx, MarkVertex[S]] {
           def compare(a: MarkVertex[S], b: MarkVertex[S])(implicit tx: S#Tx): Int = a.post.compare(b.post)
         }
-        implicit val keySer = _vertexSer
+        implicit val keySer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
         val res = SkipList.Set.empty[S, MarkVertex[S]]
         res.add(root)
         res
@@ -488,7 +489,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
                                             val postList: SkipList.Set[S, MarkVertex[S]]) {
     type V = MarkVertex[S]
 
-    def system = ft.system
+    def system: S = ft.system
 
     def printInsertion(vm: V)(implicit cursor: Cursor[S]): Unit = {
       val (mStr, fStr) = cursor.step {
@@ -499,7 +500,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
   }
 
   class Config[S <: Sys[S]](val t: FullTree[S], val treeSeq: Vec[FullVertex[S]],
-                            val parents: Map[FullVertex[S], FullVertex[S]])
+                            val parents: scala.collection.immutable.Map[FullVertex[S], FullVertex[S]])
 
   def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S,
                                           sysCleanUp: (S, Boolean) => Unit): Unit = {
@@ -509,8 +510,8 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
         val tr        = FullTree[S]()
         val rnd       = new util.Random(seed)
         var treeSeq   = Vec[FullVertex[S]](tr.root)
-        var parents   = Map.empty[FullVertex[S], FullVertex[S]]
-        var children  = Map.empty[FullVertex[S], Set[FullVertex[S]]]
+        var parents   = scala.collection.immutable.Map.empty[FullVertex[S], FullVertex[S]]
+        var children  = scala.collection.immutable.Map.empty[FullVertex[S], Set[FullVertex[S]]]
 
         for (i <- 1 to n) {
           if (DEBUG_LAST && i == n) {
@@ -521,7 +522,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
           val ref = treeSeq(refIdx)
           val retro = if (refIdx > 0) rnd.nextDouble() else 1.1 // no retro stuff with root!
           if (retro <= RETRO_CHILD_PERCENTAGE) {
-            if (verbose) println("v" + i + " is retro child to " + refIdx)
+            if (verbose) println(s"v$i is retro child to $refIdx")
             val child = tr.insertRetroChild(ref /*, i */)
             treeSeq :+= child
             parents += child -> ref
@@ -532,7 +533,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
             } // update parent for old children
             children += child -> oldChildren
           } else if (retro <= (RETRO_CHILD_PERCENTAGE + RETRO_PARENT_PERCENTAGE)) {
-            if (verbose) println("v" + i + " is retro parent to " + refIdx)
+            if (verbose) println(s"v$i is retro parent to $refIdx")
             val parent = tr.insertRetroParent(ref /*, i */)
             treeSeq :+= parent
             val oldParentO = parents.get(ref)
@@ -545,7 +546,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
             }
           } else {
             // regular child
-            if (verbose) println("v" + i + " is child to " + refIdx)
+            if (verbose) println(s"v$i is child to $refIdx")
             val child = tr.insertChild(ref /*, i */)
             treeSeq :+= child
             parents += child -> ref
@@ -588,14 +589,14 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
       }
 
     if (PARENT_LOOKUP) {
-      feature("Tree parent node lookup should be possible in a " + sysName + " octree representing pre-order, post-order and version") {
+      feature(s"Tree parent node lookup should be possible in a $sysName octree representing pre-order, post-order and version") {
         info("The vertices of a tree are represented by their positions")
         info("in the tree's pre- and post-order traversals (as total orders), plus an incremental version.")
         info("NN search is possible with these orders representing")
         info("the x, y and z coordinates of an octree.")
 
         scenarioWithTime("Parent-Lookup", "Verifying parent node lookup") {
-          implicit val system = sysCreator()
+          implicit val system: S = sysCreator()
           var success = false
           try {
             val config = randomlyFilledTree(NUM1)
@@ -651,14 +652,14 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
     }
 
     if (MARKED_ANCESTOR) {
-      feature("Marked ancestor lookup should be possible through isomorphic mapping between two " + sysName + " octrees") {
+      feature(s"Marked ancestor lookup should be possible through isomorphic mapping between two $sysName octrees") {
         info("Two trees are now maintained (as quadtrees with pre/post order coordinates).")
         info("One tree represents the full version tree, the other a subtree representing markers.")
         info("Marked ancestor lookup is performed by translating a coordinate from the")
         info("full tree into the marker tree, followed by NN search.")
 
         scenarioWithTime("Marked-Ancestors", "Verifying marked ancestor lookup") {
-          implicit val system = sysCreator()
+          implicit val system: S = sysCreator()
           var success = false
           try {
             Given("a randomly filled tree, corresponding node orders and their octree")
@@ -671,13 +672,13 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
             val tm  = system.step { implicit tx => MarkTree(t) }
             val rnd = new util.Random(seed)
 
-            implicit val ord: Ordering[S#Tx, MarkOrder[S]] = new Ordering[S#Tx, MarkOrder[S]] {
-              def compare(a: MarkOrder[S], b: MarkOrder[S])(implicit tx: S#Tx): Int = {
-                val ta = a.tag
-                val tb = b.tag
-                if (ta < tb) -1 else if (ta > tb) 1 else 0
-              }
-            }
+//            implicit val ord: Ordering[S#Tx, MarkOrder[S]] = new Ordering[S#Tx, MarkOrder[S]] {
+//              def compare(a: MarkOrder[S], b: MarkOrder[S])(implicit tx: S#Tx): Int = {
+//                val ta = a.tag
+//                val tb = b.tag
+//                if (ta < tb) -1 else if (ta > tb) 1 else 0
+//              }
+//            }
 
             //         val mPreList   = {
             //            import tm.orderSer
@@ -729,9 +730,9 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
                     if (verbose) println(":: mark insert pre " + (if (cmPreCmp <= 0) "before" else "after") + " " + cmPreN.toPoint)
                     if (verbose) println(":: mark insert post " + (if (cmPostCmp <= 0) "before" else "after") + " " + cmPostN.toPoint)
                     val vm: MarkVertex[S] = new MarkVertex[S] {
-                      val pre  = tm.root.preOrder.insert()
-                      val post = tm.root.postOrder.insert()
-                      val full = child
+                      val pre : Map.Entry[S, MarkVertex[S]] = tm.root.preOrder .insert()
+                      val post: Map.Entry[S, MarkVertex[S]] = tm.root.postOrder.insert()
+                      val full: FullVertex[S] = child
                       if (cmPreCmp <= 0) {
                         tm.root.preOrder.placeBefore(cmPreN, this) // cmPreN.prepend(  this )
                       } else {

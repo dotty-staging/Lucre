@@ -29,15 +29,15 @@ object Map extends Obj.Type {
   object Key {
     implicit object Int extends Key[Int] {
       final val typeID  = 2 // IntObj.typeID
-      def serializer    = ImmutableSerializer.Int // IntObj.valueSerializer
+      def serializer: ImmutableSerializer[scala.Int] = ImmutableSerializer.Int // IntObj.valueSerializer
     }
     implicit object Long extends Key[Long] {
       final val typeID  = 3 // LongObj.typeID
-      def serializer    = ImmutableSerializer.Long // LongObj.valueSerializer
+      def serializer: ImmutableSerializer[scala.Long] = ImmutableSerializer.Long // LongObj.valueSerializer
     }
     implicit object String extends Key[String] {
       final val typeID  = 8 // StringObj.typeID
-      def serializer    = ImmutableSerializer.String // StringObj.valueSerializer
+      def serializer: ImmutableSerializer[java.lang.String] = ImmutableSerializer.String // StringObj.valueSerializer
     }
     
     def apply(typeID: Int): Key[_] = (typeID: @switch) match {

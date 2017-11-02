@@ -42,13 +42,13 @@ object MapImpl {
   private class Ser[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjSerializer[S, Map[S, K, Repr]] {
 
-    def tpe = Map
+    def tpe: Obj.Type = Map
   }
 
   private class ModSer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjSerializer[S, Modifiable[S, K, Repr]] {
 
-    def tpe = Map
+    def tpe: Obj.Type = Map
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {

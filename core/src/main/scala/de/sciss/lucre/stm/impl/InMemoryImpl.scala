@@ -178,7 +178,7 @@ object InMemoryImpl {
     // ---- attributes ----
 
     def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
-      implicit val tx = this
+      implicit val tx: S#Tx = this
       val am  = system.attrMap
       val id  = obj.id
       am.getOrElse(id, {
@@ -217,7 +217,7 @@ object InMemoryImpl {
   }
 
   private final class System extends Mixin[InMemory] with InMemory {
-    private type S = InMemory
+    private type S = InMemory     // scalac bug -- it _is_ used
 
     def inMemory: I = this
     def inMemoryTx(tx: Tx): Tx = tx

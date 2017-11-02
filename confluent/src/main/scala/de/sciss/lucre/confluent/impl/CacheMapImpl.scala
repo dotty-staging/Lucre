@@ -17,7 +17,7 @@ package impl
 import de.sciss.serial
 import de.sciss.serial.ImmutableSerializer
 
-import scala.concurrent.stm.TxnLocal
+import scala.concurrent.stm.{InTxn, TxnLocal}
 
 object CacheMapImpl {
    /** Instances of `Entry` are stored for each variable write in a transaction. They
@@ -75,7 +75,7 @@ sealed trait CacheMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K, Store]
     * @param tx         the current transaction
     */
   final def removeCacheOnly(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean = {
-    implicit val itx = tx.peer
+    implicit val itx: InTxn = tx.peer
     //      cache.transform( _ - key )( tx.peer )
     val m = cache.get
     val km = m.getOrElse(key, Map.empty)
@@ -95,7 +95,7 @@ sealed trait CacheMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K, Store]
   }
 
   final protected def putCacheOnly(key: K, e: Entry[S, K, Store])(implicit tx: S#Tx): Unit = {
-    implicit val itx = tx.peer
+    implicit val itx: InTxn = tx.peer
     cache.transform { mapMap =>
       val mapOld = mapMap.getOrElse(key, Map.empty[Long, Entry[S, K, Store]])
       val mapNew = mapOld + (e.path.sum -> e)

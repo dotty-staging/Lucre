@@ -270,7 +270,7 @@ object HASkipList {
 
     // ---- impl ----
 
-    implicit private[this] def head = this
+    implicit private[this] def head: Impl[S, A, E] = this
 
     final def         arrMinSz: Int = minGap + 1
     private[this] def arrMaxSz: Int = (minGap + 1) << 1 // aka arrMinSz << 1

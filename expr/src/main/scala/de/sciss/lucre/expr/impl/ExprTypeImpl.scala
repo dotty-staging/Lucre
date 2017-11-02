@@ -26,6 +26,8 @@ import scala.language.implicitConversions
 trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, Repr] with TypeImpl1[Repr] { self =>
   // ---- public ----
 
+  implicit final def tpe: Type.Expr[A1, Repr] = this
+
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
     (in.readByte(): @switch) match {
       case 3 => readIdentifiedConst[S](in, access)

@@ -53,7 +53,7 @@ object DeterministicSkipOctree {
     stat_pq_rem = 0
   }
 
-  @elidable(elidable.CONFIG) private def stat_report() = ()
+  @elidable(elidable.CONFIG) private def stat_report(): Unit = ()
 
   @elidable(elidable.CONFIG) private def stat_rounds1(obj: Any): Unit = {
     stat_rounds += 1
@@ -113,13 +113,13 @@ object DeterministicSkipOctree {
     val id: S#ID = tx0.readID(in, access)
     val hyperCube: D#HyperCube = space.hyperCubeSerializer.read(in, access)(tx0)
     val skipList: HASkipList.Set[S, Leaf] = {
-      implicit val ord  = LeafOrdering
-      implicit val r1   = LeafSerializer
+      implicit val ord: Ordering[S#Tx, Leaf] = LeafOrdering
+      implicit val r1: Serializer[S#Tx, S#Acc, Leaf] = LeafSerializer
       HASkipList.Set.serializer[S, Leaf](KeyObserver).read(in, access)(tx0)
     }
     val headTree: LeftTopBranch = LeftTopBranchSerializer.read(in, access)(tx0)
     val lastTreeRef: S#Var[TopBranch] = {
-      implicit val r4 = TopBranchSerializer
+      implicit val r4: Serializer[S#Tx, S#Acc, TopBranch] = TopBranchSerializer
       tx0.readVar[TopBranch](id, in)
     }
   }
@@ -137,18 +137,18 @@ object DeterministicSkipOctree {
       val sz  = numOrthants
       val ch  = tx0.newVarArray[LeftChild](sz)
       val cid = tx0.newID()
-      implicit val r1 = LeftChildSerializer
+      implicit val r1: Serializer[S#Tx, S#Acc, LeftChild] = LeftChildSerializer
       var i = 0
       while (i < sz) {
         ch(i) = tx0.newVar[LeftChild](cid, Empty)
         i += 1
       }
-      implicit val r2 = RightOptionReader
+      implicit val r2: Serializer[S#Tx, S#Acc, Next] = RightOptionReader
       val headRight   = tx0.newVar[Next](cid, Empty)
       new LeftTopBranchImpl(cid, children = ch, nextRef = headRight)
     }
     val lastTreeRef: S#Var[TopBranch] = {
-      implicit val r3 = TopBranchSerializer
+      implicit val r3: Serializer[S#Tx, S#Acc, TopBranch] = TopBranchSerializer
       tx0.newVar[TopBranch](id, headTree)
     }
   }

@@ -45,11 +45,11 @@ object ListImpl {
   private val anyModSer = new ModSer[NoSys, Obj[NoSys]]
 
   private class Ser[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, List[S, A]] {
-    def tpe = List
+    def tpe: Obj.Type = List
   }
 
   private class ModSer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, Modifiable[S, A]] {
-    def tpe = List
+    def tpe: Obj.Type = List
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {

@@ -184,11 +184,11 @@ object BiGroupImpl {
   }
 
   private class Ser[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, BiGroup[S, A]] {
-    def tpe = BiGroup
+    def tpe: Obj.Type = BiGroup
   }
 
   private class ModSer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, BiGroup.Modifiable[S, A]] {
-    def tpe = BiGroup
+    def tpe: Obj.Type = BiGroup
   }
 
   private[lucre] final class EntryImpl[S <: Sys[S], A <: Elem[S]](val targets : evt.Targets[S],
@@ -237,7 +237,7 @@ object BiGroupImpl {
   }
 
   private final class EntrySer[S <: Sys[S], A <: Elem[S]] extends ObjSerializer[S, Entry[S, A]] {
-    def tpe = Entry
+    def tpe: Obj.Type = Entry
   }
 
   final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](

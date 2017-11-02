@@ -260,7 +260,7 @@ object DurableImpl {
 
     def attrMap(obj: Obj[S]): Obj.AttrMap[S] = {
       val mId = obj.id.id.toLong << 32
-      implicit val tx = this
+      implicit val tx: S#Tx = this
       val mapOpt: Option[Obj.AttrMap[S]] = system.tryRead(mId)(evt.Map.Modifiable.read[S, String, Obj](_, ()))
       mapOpt.getOrElse {
         val map = evt.Map.Modifiable[S, String, Obj]
@@ -518,7 +518,7 @@ object DurableImpl {
                              /*, @field protected val eventStore: DataStore */)
     extends Mixin[Durable, InMemory] with Durable {
 
-    private type S = Durable
+    private type S = Durable    // scalac bug -- it _is_ used
 
     @field val inMemory: InMemory = InMemory()
 

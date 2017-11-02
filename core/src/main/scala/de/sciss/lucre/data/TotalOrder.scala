@@ -71,8 +71,8 @@ object TotalOrder {
     }
 
     final class EmptyEntry[S <: Sys[S]] private[TotalOrder]() extends EntryOption[S] /* with EmptyMutable */ {
-      private[Set] def updatePrev(e: EOpt)(implicit tx: S#Tx) = ()
-      private[Set] def updateNext(e: EOpt)(implicit tx: S#Tx) = ()
+      private[Set] def updatePrev(e: EOpt)(implicit tx: S#Tx): Unit = ()
+      private[Set] def updateNext(e: EOpt)(implicit tx: S#Tx): Unit = ()
 
       def orNull: E = null
 
@@ -476,7 +476,7 @@ object TotalOrder {
                                                           nextRef: S#Var[KeyOption[S, A]])
       extends Mutable.Impl[S] with Ordered[S#Tx, Entry[S, A]] {
 
-      private type E    = Entry[S, A]
+      private type E    = Entry[S, A]       // scalac bug -- this _is_ used
       private type KOpt = KeyOption[S, A]
 
       def tag(implicit tx: S#Tx): Int = tagVal()
@@ -553,7 +553,7 @@ object TotalOrder {
 
     def get: A = throw new NoSuchElementException("EmptyKey.get")
 
-    def tag(implicit tx: S#Tx) = Int.MaxValue
+    def tag(implicit tx: S#Tx): Int = Int.MaxValue
 
     def orNull: Map.Entry[S, A] = null
 

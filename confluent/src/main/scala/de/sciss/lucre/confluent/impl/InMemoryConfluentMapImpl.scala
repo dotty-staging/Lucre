@@ -15,7 +15,7 @@ package de.sciss.lucre.confluent
 package impl
 
 import scala.collection.immutable.LongMap
-import scala.concurrent.stm.TMap
+import scala.concurrent.stm.{InTxn, TMap}
 
 object InMemoryConfluentMapImpl {
   private trait Entry[+A]
@@ -31,7 +31,7 @@ final class InMemoryConfluentMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K] extend
   override def toString = s"InMemoryConfluentMap($store)"
 
   def put[/* @spec(ValueSpec) */ A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx): Unit = {
-    implicit val itx = tx.peer
+    implicit val itx: InTxn = tx.peer
     val (index, term) = path.splitIndex
 
     var entries = store.get(key).getOrElse(LongMap.empty)
@@ -45,7 +45,7 @@ final class InMemoryConfluentMapImpl[S <: Sys[S], /* @spec(KeySpec) */ K] extend
   }
 
   def remove(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean = {
-    implicit val itx = tx.peer
+    implicit val itx: InTxn = tx.peer
     store.get(key) match {
       case Some(entries) =>
         val index       = path.index

@@ -80,7 +80,7 @@ trait Mixin[S <: Sys[S]]
   @inline private def partialTree: Ancestor.Tree[D, Long] = global.partialTree
 
   final def newVersionID(implicit tx: S#Tx): Long = {
-    implicit val dtx = durableTx(tx)
+    implicit val dtx: D#Tx = durableTx(tx)
     val lin = global.versionLinear() + 1
     global.versionLinear() = lin
     var rnd = 0
@@ -91,7 +91,7 @@ trait Mixin[S <: Sys[S]]
   }
 
   final def newIDValue()(implicit tx: S#Tx): Int = {
-    implicit val dtx = durableTx(tx)
+    implicit val dtx: D#Tx = durableTx(tx)
     val res = global.idCnt() + 1
     global.idCnt() = res
     res
@@ -127,7 +127,7 @@ trait Mixin[S <: Sys[S]]
                        (implicit itx: TxnLike, serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
     log("::::::: rootJoin :::::::")
     TxnExecutor.defaultAtomic { itx =>
-      implicit val tx = wrapRoot(itx)
+      implicit val tx: S#Tx = wrapRoot(itx)
       rootBody(init)
     }
   }
@@ -149,7 +149,7 @@ trait Mixin[S <: Sys[S]]
                                  (implicit aSer: serial.Serializer[S#Tx, S#Acc, A],
                                   bSer: serial.Serializer[D#Tx, D#Acc, B]): (stm.Source[S#Tx, A], B) =
     executeRoot { implicit tx =>
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val (_, confV, durV) = initRoot(confInt, { _ /* tx */ =>
         // read durable
         val did = global.durRootID
@@ -302,7 +302,7 @@ trait Mixin[S <: Sys[S]]
     caches.foreach(_.flushCache(outTerm))
 
   private def flushOldTree()(implicit tx: S#Tx): Long = {
-    implicit val dtx        = durableTx(tx)
+    implicit val dtx: D#Tx  = durableTx(tx)
     val childTerm           = newVersionID(tx)
     val (index, parentTerm) = tx.inputAccess.splitIndex
     val tree                = readIndexTree(index.term)
@@ -333,9 +333,9 @@ trait Mixin[S <: Sys[S]]
   }
 
   private def flushNewTree(level: Int)(implicit tx: S#Tx): Long = {
-    implicit val dtx  = durableTx(tx)
-    val term          = newVersionID(tx)
-    val oldPath       = tx.inputAccess
+    implicit val dtx: D#Tx  = durableTx(tx)
+    val term                = newVersionID(tx)
+    val oldPath             = tx.inputAccess
 
     // ---- full ----
     writeNewTree(oldPath :+ term, level)
@@ -368,7 +368,7 @@ trait Mixin[S <: Sys[S]]
     def debugPrint(implicit tx: S#Tx): String = map.debugPrint(durableTx(tx))
 
     def nearest(term: Long)(implicit tx: S#Tx): (Long, A) = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readTreeVertex(map.full, term)._1
       val (v2, value) = map.nearest(v)
       (v2.version, value)
@@ -376,7 +376,7 @@ trait Mixin[S <: Sys[S]]
 
     // XXX TODO: DRY
     def nearestOption(term: Long)(implicit tx: S#Tx): Option[(Long, A)] = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readTreeVertex(map.full, term)._1
       map.nearestOption(v) map {
         case (v2, value) => (v2.version, value)
@@ -385,7 +385,7 @@ trait Mixin[S <: Sys[S]]
 
     // XXX TODO: DRY
     def nearestUntil(timeStamp: Long, term: Long)(implicit tx: S#Tx): Option[(Long, A)] = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readTreeVertex(map.full, /* index, */ term)._1
       // timeStamp lies somewhere between the time stamp for the tree's root vertex and
       // the exit vertex given by the `term` argument (it may indeed be greater than
@@ -414,7 +414,7 @@ trait Mixin[S <: Sys[S]]
     }
 
     def add(term: Long, value: A)(implicit tx: S#Tx): Unit = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readTreeVertex(map.full, term)._1
       map.add((v, value))
     }
@@ -529,10 +529,10 @@ trait Mixin[S <: Sys[S]]
   // anywhere.
   final def newIndexMap[A](index: S#Acc, rootTerm: Long, rootValue: A)
                           (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx  = durableTx(tx)
-    val tree          = readIndexTree(index.term)
-    val full          = tree.tree
-    val rootVertex    = if (rootTerm == tree.term) {
+    implicit val dtx: D#Tx  = durableTx(tx)
+    val tree                = readIndexTree(index.term)
+    val full                = tree.tree
+    val rootVertex          = if (rootTerm == tree.term) {
       full.root
     } else {
       readTreeVertex(full, rootTerm)._1
@@ -543,16 +543,16 @@ trait Mixin[S <: Sys[S]]
 
   final def readIndexMap[A](in: DataInput, index: S#Acc)
                            (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx  = durableTx(tx)
-    val term          = index.term
-    val tree          = readIndexTree(term)
-    val map           = Ancestor.readMap[D, Long, A](in, (), tree.tree)
+    implicit val dtx: D#Tx  = durableTx(tx)
+    val term                = index.term
+    val tree                = readIndexTree(term)
+    val map                 = Ancestor.readMap[D, Long, A](in, (), tree.tree)
     new IndexMapImpl[A](map)
   }
 
   // true is term1 is ancestor of term2
   def isAncestor(term1: Long, term2: Long)(implicit tx: S#Tx): Boolean = {
-    implicit val dtx = durableTx(tx)
+    implicit val dtx: D#Tx = durableTx(tx)
     if (term1 == term2) return true // same vertex
     if (term1.toInt > term2.toInt) return false // can't be an ancestor if newer
 
@@ -574,7 +574,7 @@ trait Mixin[S <: Sys[S]]
     def debugPrint(implicit tx: S#Tx): String = map.debugPrint(durableTx(tx))
 
     def nearest(term: Long)(implicit tx: S#Tx): (Long, A) = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readPartialTreeVertex(term)
       val (v2, value) = map.nearest(v)
       (v2.version, value)
@@ -582,7 +582,7 @@ trait Mixin[S <: Sys[S]]
 
     // XXX TODO: DRY
     def nearestOption(term: Long)(implicit tx: S#Tx): Option[(Long, A)] = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readPartialTreeVertex(term)
       map.nearestOption(v).map {
         case (v2, value) => (v2.version, value)
@@ -592,7 +592,7 @@ trait Mixin[S <: Sys[S]]
     def nearestUntil(timeStamp: Long, term: Long)(implicit tx: S#Tx): Option[(Long, A)] = ???
 
     def add(term: Long, value: A)(implicit tx: S#Tx): Unit = {
-      implicit val dtx = durableTx(tx)
+      implicit val dtx: D#Tx = durableTx(tx)
       val v = readPartialTreeVertex(term)
       map.add((v, value))
     }
@@ -613,20 +613,20 @@ trait Mixin[S <: Sys[S]]
   // ---- PartialMapHandler ----
 
   final def getIndexTreeTerm(term: Long)(implicit tx: S#Tx): Long = {
-    implicit val dtx = durableTx(tx)
+    implicit val dtx: D#Tx = durableTx(tx)
     readIndexTree(term).term
   }
 
   final def newPartialMap[A](rootValue: A)
                             (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx = durableTx(tx)
+    implicit val dtx: D#Tx = durableTx(tx)
     val map   = Ancestor.newMap[D, Long, A](partialTree, partialTree.root, rootValue)
     new PartialMapImpl[A](map)
   }
 
   final def readPartialMap[A](in: DataInput)
                              (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx = durableTx(tx)
+    implicit val dtx: D#Tx = durableTx(tx)
     val map   = Ancestor.readMap[D, Long, A](in, (), partialTree)
     new PartialMapImpl[A](map)
   }

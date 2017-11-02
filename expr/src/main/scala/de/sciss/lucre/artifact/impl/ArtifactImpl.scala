@@ -62,11 +62,11 @@ object ArtifactImpl {
   private val anyModSer = new ModSer[NoSys]
 
   private final class Ser[S <: Sys[S]] extends ObjSerializer[S, Artifact[S]] {
-    def tpe = Artifact
+    def tpe: Obj.Type = Artifact
   }
 
   private final class ModSer[S <: Sys[S]] extends ObjSerializer[S, Artifact.Modifiable[S]] {
-    def tpe = Artifact
+    def tpe: Obj.Type = Artifact
   }
 
 //  // ---- location ----
