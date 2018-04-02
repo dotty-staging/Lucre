@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.6.0-SNAPSHOT"
-lazy val mimaVersion      = "3.6.0"
+lazy val projectVersion   = "4.0.0-SNAPSHOT"
+lazy val mimaVersion      = "4.0.0"
 
 lazy val deps = new {
   val core = new {
@@ -46,9 +46,9 @@ lazy val gpl2 = "GPL v2+"    -> url("http://www.gnu.org/licenses/gpl-2.0.txt" )
 lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
-lazy val root: Project = Project(id = baseNameL, base = file("."))
-  .aggregate(core, expr, confluent, bdb, bdb6)
-  .dependsOn(core, expr, confluent, bdb /* , bdb6 */)
+lazy val root = project.withId(baseNameL).in(file("."))
+  .aggregate(base, core, expr, confluent, bdb, bdb6)
+  .dependsOn(base, core, expr, confluent, bdb /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -57,7 +57,18 @@ lazy val root: Project = Project(id = baseNameL, base = file("."))
     publishArtifact in (Compile, packageSrc) := false  // there are no sources
   )
 
-lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
+lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
+  .settings(commonSettings)
+  .settings(
+    licenses := Seq(lgpl),
+    libraryDependencies ++= Seq(
+      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM,
+      "de.sciss"      %% "serial"    % deps.core.serial
+    ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-base" % mimaVersion)
+  )
+
+lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .settings(
@@ -78,7 +89,7 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
-lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
+lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
@@ -91,7 +102,7 @@ lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
 
-lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluent"))
+lazy val confluent = project.withId(s"$baseNameL-confluent").in(file("confluent"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
@@ -102,7 +113,7 @@ lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluen
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-confluent" % mimaVersion)
   )
 
-lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
+lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
@@ -112,7 +123,7 @@ lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
   )
 
-lazy val bdb6 = Project(id = s"$baseNameL-bdb6", base = file("bdb6"))
+lazy val bdb6 = project.withId(s"$baseNameL-bdb6").in(file("bdb6"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
