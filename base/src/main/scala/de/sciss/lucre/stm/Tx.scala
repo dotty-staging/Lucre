@@ -52,7 +52,7 @@ trait TxnLike {
   // def beforeCommit(fun: TxnLike => Unit): Unit
 }
 
-object Txn {
+object Tx {
   trait Resource extends Closeable with ExternalDecider
 
   private[this] final class Decider(var instances: List[Resource])
@@ -110,9 +110,9 @@ object Txn {
     TxnExecutor.defaultAtomic(fun)
   }
 }
-trait Txn extends TxnLike {
-  type Self <: Txn
-  
+
+trait Tx[T <: Tx[T]] extends TxnLike {
+
 //  /** Back link to the underlying system. */
 //  val system: S
 //
@@ -126,7 +126,7 @@ trait Txn extends TxnLike {
 
   // ---- variables ----
 
-  def newVar[A]    (id: Id, init: A)(implicit serializer: Serializer[this.type, A]): Var[A]
+  def newVar[A]    (id: Id, init: A)(implicit serializer: Serializer[T, A]): Var[A]
   def newBooleanVar(id: Id, init: Boolean): Var[Boolean]
   def newIntVar    (id: Id, init: Int    ): Var[Int]
   def newLongVar   (id: Id, init: Long   ): Var[Long]
@@ -144,7 +144,7 @@ trait Txn extends TxnLike {
 //    */
 //  def newInMemoryIDMap[A]: IdentifierMap[Id, Self, A]
 
-  def readVar[A]    (id: Id, in: DataInput)(implicit serializer: Serializer[this.type, A]): Var[A]
+  def readVar[A]    (id: Id, in: DataInput)(implicit serializer: Serializer[T, A]): Var[A]
   def readBooleanVar(id: Id, in: DataInput): Var[Boolean]
   def readIntVar    (id: Id, in: DataInput): Var[Int]
   def readLongVar   (id: Id, in: DataInput): Var[Long]
@@ -160,12 +160,12 @@ trait Txn extends TxnLike {
     * @param serializer    used to write and freshly read the object
     * @return              the handle
     */
-  def newHandle[A](value: A)(implicit serializer: Serializer[Self, A]): Source[Self, A]
+  def newHandle[A](value: A)(implicit serializer: Serializer[T, A]): Source[T, A]
 
   // ---- completion ----
 
-  def beforeCommit(fun: Self => Unit): Unit
-  def afterCommit (fun:      => Unit): Unit
+  def beforeCommit(fun: T => Unit): Unit
+  def afterCommit (fun:   => Unit): Unit
 
 //  // ---- context ----
 //

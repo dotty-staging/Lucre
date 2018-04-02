@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.{Mutable, Sink, Txn, Var}
+import de.sciss.lucre.stm.{Mutable, Sink, Tx, Var}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.{switch, tailrec}
@@ -53,9 +53,9 @@ object HASkipList {
 
   private final val SER_VERSION = 76
 
-  private final class SetSer[T <: Txn, A](keyObserver: SkipList.KeyObserver[T, A])
-                                            (implicit ordering: Ordering[T, A],
-                                             keySerializer: Serializer[T, A])
+  private final class SetSer[T <: Tx[T], A](keyObserver: SkipList.KeyObserver[T, A])
+                                           (implicit ordering: Ordering[T, A],
+                                            keySerializer: Serializer[T, A])
     extends Serializer[T, HASkipList.Set[T, A]] {
 
     def read(in: DataInput, tx: T)(implicit access: tx.Acc): HASkipList.Set[T, A] =
@@ -66,10 +66,10 @@ object HASkipList {
     override def toString = "HASkipList.Set.serializer"
   }
 
-  private final class MapSer[T <: Txn, A, B](keyObserver: SkipList.KeyObserver[T, A])
-                                               (implicit ordering: Ordering[T, A],
-                                                keySerializer: Serializer[T, A],
-                                                valueSerializer: Serializer[T, B])
+  private final class MapSer[T <: Tx[T], A, B](keyObserver: SkipList.KeyObserver[T, A])
+                                              (implicit ordering: Ordering[T, A],
+                                               keySerializer: Serializer[T, A],
+                                               valueSerializer: Serializer[T, B])
     extends Serializer[T, HASkipList.Map[T, A, B]] {
     def read(in: DataInput, tx: T)(implicit access: tx.Acc): HASkipList.Map[T, A, B] =
       HASkipList.Map.read[T, A, B](in, tx, keyObserver)
@@ -79,7 +79,7 @@ object HASkipList {
     override def toString = "HASkipList.Map.serializer"
   }
 
-  def debugFindLevel[T <: Txn, A](list: SkipList[T, A, _], key: A)(implicit tx: T): Int = list match {
+  def debugFindLevel[T <: Tx[T], A](list: SkipList[T, A, _], key: A)(implicit tx: T): Int = list match {
     case impl0: Impl[T, A, _] =>
       val h = impl0.height
 
@@ -106,10 +106,10 @@ object HASkipList {
     case _ => sys.error(s"Not a HA Skip List: $list")
   }
 
-  private final class ReadSet[T <: Txn, Acc0, A](in: DataInput, tx0: T { type Acc = Acc0 },
-                                                 protected val keyObserver: SkipList.KeyObserver[T, A])
-                                          (implicit access: Acc0, val ordering: Ordering[T, A],
-                                           val keySerializer: Serializer[T, A])
+  private final class ReadSet[T <: Tx[T], Acc0, A](in: DataInput, tx0: T { type Acc = Acc0 },
+                                                   protected val keyObserver: SkipList.KeyObserver[T, A])
+                                                  (implicit access: Acc0, val ordering: Ordering[T, A],
+                                                   val keySerializer: Serializer[T, A])
     extends SetImpl[T, A] {
 
     private[this] val _id: tx0.Id = tx0.readId(in)
@@ -128,7 +128,7 @@ object HASkipList {
 
   }
 
-  private abstract class SetImpl[T <: Txn, A]
+  private abstract class SetImpl[T <: Tx[T], A]
 //  (val id: S#ID, val minGap: Int,
 //                                              protected val keyObserver: SkipList.KeyObserver[T, A],
 //                                              _downNode: SetImpl[T, A] => Var[T, Node[T, A, A]])
@@ -166,7 +166,7 @@ object HASkipList {
     }
   }
 
-  private abstract class MapImpl[T <: Txn, A, B]
+  private abstract class MapImpl[T <: Tx[T], A, B]
 //  (val id: S#ID, val minGap: Int,
 //                                              protected val keyObserver: SkipList.KeyObserver[T, A],
 //                                              _downNode: MapImpl[T, A, B] => Var[T, Map.Node[T, A, B]])
@@ -274,7 +274,7 @@ object HASkipList {
     }
   }
 
-  private sealed trait Impl[T <: Txn, A, E]
+  private sealed trait Impl[T <: Tx[T], A, E]
     extends HeadOrBranch[T, A, E] with Serializer[T, Node[T, A, E]] with Mutable.Impl[T] {
     impl =>
 
@@ -1021,14 +1021,14 @@ object HASkipList {
     }
   }
 
-  sealed trait HeadOrBranch[T <: Txn, A, E] /* extends Branch */ {
+  sealed trait HeadOrBranch[T <: Tx[T], A, E] /* extends Branch */ {
     private[HASkipList] def updateDown(i: Int, n: Node[T, A, E])(implicit tx: T): Unit
 
     private[HASkipList] def insertAfterSplit(pIdx: Int, splitKey: A, left: Node[T, A, E], right: Node[T, A, E])
                                             (implicit tx: T, list: Impl[T, A, E]): Branch[T, A, E]
   }
 
-  sealed trait Node[T <: Txn, A, E] {
+  sealed trait Node[T <: Tx[T], A, E] {
     private[HASkipList] def removeColumn(idx: Int)(implicit tx: T, list: Impl[T, A, E]): Node[T, A, E]
 
     def size: Int
@@ -1092,7 +1092,7 @@ object HASkipList {
     def asBranch: Branch[T, A, E]
   }
 
-  private final class SetLeaf[T <: Txn, A](private[HASkipList] val entries: Vector[A])
+  private final class SetLeaf[T <: Tx[T], A](private[HASkipList] val entries: Vector[A])
     extends Leaf[T, A, A] {
 
     protected def copy(newEntries: Vector[A]): Leaf[T, A, A] = new SetLeaf(newEntries)
@@ -1100,7 +1100,7 @@ object HASkipList {
     def key(idx: Int): A = entries(idx)
   }
 
-  private final class MapLeaf[T <: Txn, A, B](private[HASkipList] val entries: Vector[(A, B)])
+  private final class MapLeaf[T <: Tx[T], A, B](private[HASkipList] val entries: Vector[(A, B)])
     extends Leaf[T, A, (A, B)] {
 
     protected def copy(newEntries: Vector[(A, B)]): Leaf[T, A, (A, B)] = new MapLeaf(newEntries)
@@ -1108,7 +1108,7 @@ object HASkipList {
     def key(idx: Int): A = entries(idx)._1
   }
 
-  sealed trait Leaf[T <: Txn, A, E] extends Node[T, A, E] {
+  sealed trait Leaf[T <: Tx[T], A, E] extends Node[T, A, E] {
     override def toString: String = entries.mkString("Leaf(", ",", ")")
 
     private[HASkipList] def entries: Vector[E]
@@ -1208,8 +1208,8 @@ object HASkipList {
   }
 
   object Branch {
-    private[HASkipList] def read[T <: Txn, A, B](in: DataInput, tx: T, isRight: Boolean)
-                                                (implicit access: tx.Acc, list: Impl[T, A, B]): Branch[T, A, B] = {
+    private[HASkipList] def read[T <: Tx[T], A, B](in: DataInput, tx: T, isRight: Boolean)
+                                               (implicit access: tx.Acc, list: Impl[T, A, B]): Branch[T, A, B] = {
       import list.keySerializer
       val sz    = in.readByte()
       val szi   = if (isRight) sz - 1 else sz
@@ -1221,8 +1221,8 @@ object HASkipList {
     }
   }
 
-  final class Branch[T <: Txn, A, B](private[HASkipList] val keys : Vector[A],
-                                        private[HASkipList] val downs: Vector[Var[T, Node[T, A, B]]])
+  final class Branch[T <: Tx[T], A, B](private[HASkipList] val keys : Vector[A],
+                                    private[HASkipList] val downs: Vector[Var[T, Node[T, A, B]]])
     extends HeadOrBranch[T, A, B] with Node[T, A, B] {
 
     override def toString: String = keys.mkString("Branch(", ",", ")")
@@ -1350,9 +1350,9 @@ object HASkipList {
   }
 
   object Set {
-    type Node  [T <: Txn, A] = HASkipList.Node  [T, A, A]
-    type Branch[T <: Txn, A] = HASkipList.Branch[T, A, A]
-    type Leaf  [T <: Txn, A] = HASkipList.Leaf  [T, A, A]
+    type Node  [T <: Tx[T], A] = HASkipList.Node  [T, A, A]
+    type Branch[T <: Tx[T], A] = HASkipList.Branch[T, A, A]
+    type Leaf  [T <: Tx[T], A] = HASkipList.Leaf  [T, A, A]
 
     /** Creates a new empty skip list with default minimum gap parameter of `2` and no key observer.
       * Type parameter `S` specifies the STM system to use. Type parameter `A`
@@ -1363,8 +1363,8 @@ object HASkipList {
       *                      for specialized versions and transactional restrictions.
       * @param   keySerializer      the serializer for the elements, in case a persistent STM is used.
       */
-    def empty[T <: Txn, A](implicit tx: T, ord: Ordering[T, A],
-                              keySerializer: Serializer[T, A]): HASkipList.Set[T, A] =
+    def empty[T <: Tx[T], A](implicit tx: T, ord: Ordering[T, A],
+                          keySerializer: Serializer[T, A]): HASkipList.Set[T, A] =
       empty()
 
     /** Creates a new empty skip list. Type parameter `S` specifies the STM system to use. Type parameter `A`
@@ -1380,8 +1380,8 @@ object HASkipList {
       *                      for specialized versions and transactional restrictions.
       * @param   keySerializer  the serializer for the elements, in case a persistent STM is used.
       */
-    def empty[T <: Txn, A](minGap: Int = 2, keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
-                          (implicit tx: T, ord: Ordering[T, A],
+    def empty[T <: Tx[T], A](minGap: Int = 2, keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+                         (implicit tx: T, ord: Ordering[T, A],
                            keySerializer: Serializer[T, A]): HASkipList.Set[T, A] = {
 
       // 255 <= arrMaxSz = (minGap + 1) << 1
@@ -1396,27 +1396,27 @@ object HASkipList {
       ???
     }
 
-    def read[T <: Txn, A](in: DataInput, tx: T,
-                             keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
-                            (implicit access: tx.Acc, ordering: Ordering[T, A],
+    def read[T <: Tx[T], A](in: DataInput, tx: T,
+                         keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+                        (implicit access: tx.Acc, ordering: Ordering[T, A],
                              keySerializer: Serializer[T, A]): HASkipList.Set[T, A] =
       new ReadSet[T, tx.Acc, A](in, tx, keyObserver)
 
-    def serializer[T <: Txn, A](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
-                                  (implicit ordering: Ordering[T, A],
+    def serializer[T <: Tx[T], A](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+                              (implicit ordering: Ordering[T, A],
                                    keySerializer: Serializer[T, A]): Serializer[T, HASkipList.Set[T, A]] =
       new SetSer[T, A](keyObserver)
 
   }
 
-  sealed trait Set[T <: Txn, A] extends SkipList.Set[T, A] {
+  sealed trait Set[T <: Tx[T], A] extends SkipList.Set[T, A] {
     def top(implicit tx: T): Option[HASkipList.Set.Node[T, A]]
   }
 
   object Map {
-    type Node  [T <: Txn, A, B] = HASkipList.Node  [T, A, (A, B)]
-    type Branch[T <: Txn, A, B] = HASkipList.Branch[T, A, (A, B)]
-    type Leaf  [T <: Txn, A, B] = HASkipList.Leaf  [T, A, (A, B)]
+    type Node  [T <: Tx[T], A, B] = HASkipList.Node  [T, A, (A, B)]
+    type Branch[T <: Tx[T], A, B] = HASkipList.Branch[T, A, (A, B)]
+    type Leaf  [T <: Tx[T], A, B] = HASkipList.Leaf  [T, A, (A, B)]
 
     /** Creates a new empty skip list with default minimum gap parameter of `2` and no key observer.
       * Type parameter `S` specifies the STM system to use. Type parameter `A`
@@ -1427,9 +1427,9 @@ object HASkipList {
       *                      for specialized versions and transactional restrictions.
       * @param   keySerializer      the serializer for the elements, in case a persistent STM is used.
       */
-    def empty[T <: Txn, A, B](implicit tx: T, ord: Ordering[T, A],
-                                 keySerializer: Serializer[T, A],
-                                 valueSerializer: Serializer[T, B]): HASkipList.Map[T, A, B] =
+    def empty[T <: Tx[T], A, B](implicit tx: T, ord: Ordering[T, A],
+                             keySerializer: Serializer[T, A],
+                             valueSerializer: Serializer[T, B]): HASkipList.Map[T, A, B] =
       empty()
 
     /** Creates a new empty skip list. Type parameter `S` specifies the STM system to use. Type parameter `A`
@@ -1445,9 +1445,9 @@ object HASkipList {
       *                      for specialized versions and transactional restrictions.
       * @param   keySerializer  the serializer for the elements, in case a persistent STM is used.
       */
-    def empty[T <: Txn, A, B](minGap: Int = 2,
-                                 keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
-                                (implicit tx: T, ord: Ordering[T, A],
+    def empty[T <: Tx[T], A, B](minGap: Int = 2,
+                             keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+                            (implicit tx: T, ord: Ordering[T, A],
                                  keySerializer: Serializer[T, A],
                                  valueSerializer: Serializer[T, B]): HASkipList.Map[T, A, B] = {
 
@@ -1463,9 +1463,9 @@ object HASkipList {
       ???
     }
 
-    def read[T <: Txn, A, B](in: DataInput, tx: T,
-                                keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
-                               (implicit access: tx.Acc, ordering: Ordering[T, A],
+    def read[T <: Tx[T], A, B](in: DataInput, tx: T,
+                            keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+                           (implicit access: tx.Acc, ordering: Ordering[T, A],
                                 keySerializer: Serializer[T, A],
                                 valueSerializer: Serializer[T, B]): HASkipList.Map[T, A, B] = {
 
@@ -1478,14 +1478,14 @@ object HASkipList {
       ???
     }
 
-    def serializer[T <: Txn, A, B](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
-                                     (implicit ordering: Ordering[T, A],
+    def serializer[T <: Tx[T], A, B](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+                                 (implicit ordering: Ordering[T, A],
                                       keySerializer: Serializer[T, A],
                                       valueSerializer: Serializer[T, B]): Serializer[T, HASkipList.Map[T, A, B]] =
       new MapSer[T, A, B](keyObserver)
   }
 
-  sealed trait Map[T <: Txn, A, B] extends SkipList.Map[T, A, B] {
+  sealed trait Map[T <: Tx[T], A, B] extends SkipList.Map[T, A, B] {
     def top(implicit tx: T): Option[HASkipList.Node[T, A, (A, B)]]
   }
 }

@@ -14,10 +14,10 @@
 package de.sciss
 package serial
 
-import de.sciss.lucre.stm.Txn
+import de.sciss.lucre.stm.Tx
 
-trait ImmutableReader[+A] extends Reader[Txn, A] {
+trait ImmutableReader[+A] extends Reader[NoTx, A] {
   def read(in: DataInput): A
 
-  final def read(in: DataInput, tx: Txn)(implicit access: tx.Acc): A = read(in)
+  final def read(in: DataInput, tx: NoTx)(implicit access: tx.Acc): A = read(in)
 }

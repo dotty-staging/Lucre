@@ -16,7 +16,7 @@ package serial
 
 import java.lang.{String => JString}
 
-import de.sciss.lucre.stm.Txn
+import de.sciss.lucre.stm.Tx
 
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -32,15 +32,16 @@ object Serializer {
   implicit final val Double : ImmutableSerializer[scala.Double  ] = ImmutableSerializer.Double
   implicit final val String : ImmutableSerializer[JString       ] = ImmutableSerializer.String
 
-  implicit def immutable[A](implicit peer: ImmutableSerializer[A]): Serializer[Txn, A] = peer
+  implicit def immutable[T <: Tx[T], A](implicit peer: ImmutableSerializer[A]): Serializer[T, A] =
+    peer.asInstanceOf[Serializer[T, A]] // XXX TODO: horrible
 
   // ---- higher-kinded ----
 
   // Option is not specialized at the moment
-  implicit def option[T <: Txn, A](implicit peer: Serializer[T, A]): Serializer[T, Option[A]] =
+  implicit def option[T <: Tx[T], A](implicit peer: Serializer[T, A]): Serializer[T, Option[A]] =
     new OptionWrapper[T, A](peer)
 
-  private final class OptionWrapper[T <: Txn, A](peer: Serializer[T, A])
+  private final class OptionWrapper[T <: Tx[T], A](peer: Serializer[T, A])
     extends Serializer[T, Option[A]] {
 
     def write(opt: Option[A], out: DataOutput): Unit =
@@ -56,11 +57,11 @@ object Serializer {
   }
 
   // Either is not specialized at the moment
-  implicit def either[T <: Txn, A, B](implicit peer1: Serializer[T, A],
-                                      peer2: Serializer[T, B]): Serializer[T, Either[A, B]] =
+  implicit def either[T <: Tx[T], A, B](implicit peer1: Serializer[T, A],
+                                     peer2: Serializer[T, B]): Serializer[T, Either[A, B]] =
     new EitherWrapper[T, A, B](peer1, peer2)
 
-  private final class EitherWrapper[T <: Txn, A, B](peer1: Serializer[T, A], peer2: Serializer[T, B])
+  private final class EitherWrapper[T <: Tx[T], A, B](peer1: Serializer[T, A], peer2: Serializer[T, B])
     extends Serializer[T, Either[A, B]] {
 
     def write(either: Either[A, B], out: DataOutput): Unit =
@@ -75,11 +76,11 @@ object Serializer {
     }
   }
 
-  implicit def tuple2[T <: Txn, A1, A2]
+  implicit def tuple2[T <: Tx[T], A1, A2]
   (implicit peer1: Serializer[T, A1], peer2: Serializer[T, A2]): Serializer[T, (A1, A2) ] =
     new Tuple2Wrapper[T, A1, A2](peer1, peer2)
 
-  private final class Tuple2Wrapper[T <: Txn, A1, A2]
+  private final class Tuple2Wrapper[T <: Tx[T], A1, A2]
   (peer1: Serializer[T, A1], peer2: Serializer[T, A2])
     extends Serializer[T, (A1, A2)] {
 
@@ -95,12 +96,12 @@ object Serializer {
     }
   }
 
-  implicit def tuple3[T <: Txn, A1, A2, A3](implicit peer1: Serializer[T, A1],
+  implicit def tuple3[T <: Tx[T], A1, A2, A3](implicit peer1: Serializer[T, A1],
                                            peer2: Serializer[T, A2],
                                            peer3: Serializer[T, A3]): Serializer[T, (A1, A2, A3)] =
     new Tuple3Wrapper[T, A1, A2, A3](peer1, peer2, peer3)
 
-  private final class Tuple3Wrapper[T <: Txn, A1, A2, A3](peer1: Serializer[T, A1],
+  private final class Tuple3Wrapper[T <: Tx[T], A1, A2, A3](peer1: Serializer[T, A1],
                                                          peer2: Serializer[T, A2],
                                                          peer3: Serializer[T, A3])
     extends Serializer[T, (A1, A2, A3)] {
@@ -119,20 +120,20 @@ object Serializer {
     }
   }
 
-  implicit def list[T <: Txn, A](implicit peer: Serializer[T, A]): Serializer[T, List[A]] =
+  implicit def list[T <: Tx[T], A](implicit peer: Serializer[T, A]): Serializer[T, List[A]] =
     new ListSerializer[T, A](peer)
 
-  implicit def set[T <: Txn, A](implicit peer: Serializer[T, A]): Serializer[T, Set[A]] =
+  implicit def set[T <: Tx[T], A](implicit peer: Serializer[T, A]): Serializer[T, Set[A]] =
     new SetSerializer[T, A](peer)
 
-  implicit def indexedSeq[T <: Txn, A](implicit peer: Serializer[T, A]): Serializer[T, Vec[A]] =
+  implicit def indexedSeq[T <: Tx[T], A](implicit peer: Serializer[T, A]): Serializer[T, Vec[A]] =
     new IndexedSeqSerializer[T, A](peer)
 
-  implicit def map[T <: Txn, A, B](implicit peer: Serializer[T, (A, B)]): Serializer[T, Map[A, B]] =
+  implicit def map[T <: Tx[T], A, B](implicit peer: Serializer[T, (A, B)]): Serializer[T, Map[A, B]] =
     new MapSerializer[T, A, B](peer)
 
   // XXX size might be a slow operation on That...
-  private abstract class CollectionSerializer[T <: Txn, A, That <: Traversable[A]] extends Serializer[T, That] {
+  private abstract class CollectionSerializer[T <: Tx[T], A, That <: Traversable[A]] extends Serializer[T, That] {
     def newBuilder: mutable.Builder[A, That]
 
     def peer: Serializer[T, A]
@@ -155,25 +156,25 @@ object Serializer {
     }
   }
 
-  private final class ListSerializer[T <: Txn, A](val peer: Serializer[T, A])
+  private final class ListSerializer[T <: Tx[T], A](val peer: Serializer[T, A])
     extends CollectionSerializer[T, A, List[A]] {
     def newBuilder: mutable.Builder[A, List[A]] = List.newBuilder[A]
   }
 
-  private final class SetSerializer[T <: Txn, A](val peer: Serializer[T, A])
+  private final class SetSerializer[T <: Tx[T], A](val peer: Serializer[T, A])
     extends CollectionSerializer[T, A, Set[A]] {
     def newBuilder: mutable.Builder[A, Set[A]] = Set.newBuilder[A]
   }
 
-  private final class IndexedSeqSerializer[T <: Txn, A](val peer: Serializer[T, A])
+  private final class IndexedSeqSerializer[T <: Tx[T], A](val peer: Serializer[T, A])
     extends CollectionSerializer[T, A, Vec[A]] {
     def newBuilder: mutable.Builder[A, Vec[A]] = Vec.newBuilder[A]
   }
 
-  private final class MapSerializer[T <: Txn, A, B](val peer: Serializer[T, (A, B)])
+  private final class MapSerializer[T <: Tx[T], A, B](val peer: Serializer[T, (A, B)])
     extends CollectionSerializer[T, (A, B), Map[A, B]] {
     def newBuilder: mutable.Builder[(A, B), Map[A, B]] = Map.newBuilder[A, B]
   }
 }
 
-trait Serializer[-T <: Txn, A] extends Reader[T, A] with Writer[A]
+trait Serializer[T <: Tx[T], A] extends Reader[T, A] with Writer[A]

@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.{Disposable, Txn}
+import de.sciss.lucre.stm.{Disposable, Tx}
 import de.sciss.serial.Writable
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -117,7 +117,7 @@ object SkipList {
 //    }
   }
 
-  trait Set[T <: Txn, A] extends SkipList[T, A, A] {
+  trait Set[T <: Tx[T], A] extends SkipList[T, A, A] {
     /** Inserts a new key into the set.
       *
       * @param   key  the key to insert
@@ -134,7 +134,7 @@ object SkipList {
     def remove(key: A)(implicit tx: T): Boolean
   }
 
-  trait Map[T <: Txn, A, B] extends SkipList[T, A, (A, B)] {
+  trait Map[T <: Tx[T], A, B] extends SkipList[T, A, (A, B)] {
 
     def keysIterator  (implicit tx: T): Iterator[A]
     def valuesIterator(implicit tx: T): Iterator[B]
@@ -162,7 +162,7 @@ object SkipList {
   }
 }
 
-sealed trait SkipList[T <: Txn, A, E] extends Writable with Disposable[T] {
+sealed trait SkipList[T <: Tx[T], A, E] extends Writable with Disposable[T] {
   /** Searches for the Branch of a given key.
     *
     * @param   key   the key to search for
