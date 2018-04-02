@@ -47,8 +47,8 @@ lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
-  .aggregate(base, core, expr, confluent, bdb, bdb6)
-  .dependsOn(base, core, expr, confluent, bdb /* , bdb6 */)
+  .aggregate(/* base, */ core, expr, confluent, bdb, bdb6)
+  .dependsOn(/* base, */ core, expr, confluent, bdb /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
