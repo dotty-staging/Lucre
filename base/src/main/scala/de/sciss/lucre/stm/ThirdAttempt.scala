@@ -1,5 +1,6 @@
 package de.sciss.lucre.stm
 
+import scala.concurrent.stm.InTxn
 import scala.language.higherKinds
 
 object ThirdAttempt {
@@ -28,8 +29,9 @@ object ThirdAttempt {
     def update(v: A)(implicit tx: T): Unit
   }
 
-  trait Sys {
-    type Tx <: ThirdAttempt.Tx
+  /** Not necessarily transactional */
+  trait Base {
+    type Tx
     type Var[A] <: ThirdAttempt.Var[Tx, A]
     type Acc
     type Id
@@ -39,7 +41,17 @@ object ThirdAttempt {
     def newVar[A](id: Id, init: A)(implicit tx: Tx, reader: Reader[Tx, Acc, A]): Var[A]
   }
 
-  trait Tx
+  /** Transactional */
+  trait Sys extends Base {
+    type Tx <: ThirdAttempt.Tx
+    type Id <: ThirdAttempt.Identifier
+  }
+
+  trait Identifier
+
+  trait Tx {
+    def peer: InTxn
+  }
 
   trait Comp[S0 <: Sys] {
 //      @elidable(elidable.ALL)
