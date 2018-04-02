@@ -1,46 +1,44 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.5.0"
-lazy val mimaVersion      = "3.5.0"
+lazy val projectVersion   = "3.6.0-SNAPSHOT"
+lazy val mimaVersion      = "3.6.0"
 
-// ---- core dependencies ----
-
-lazy val scalaSTMVersion  = "0.8"
-lazy val serialVersion    = "1.0.3"
-
-// ---- expr dependencies ----
-
-lazy val modelVersion     = "0.3.4"
-lazy val spanVersion      = "1.3.3"
-lazy val numbersVersion   = "0.1.3"
-
-// ---- confluent dependencies ----
-
-lazy val fingerVersion    = "1.5.2"
-
-// ---- bdb(6) dependencies ----
-
-lazy val sleepyVersion5   = "5.0.104" // = Berkeley DB Java Edition; note: version 6 requires Java 7
-lazy val sleepyVersion6   = "6.2.7"
-
-// ---- test dependencies ----
-
-lazy val scalaTestVersion = "3.0.4"
+lazy val deps = new {
+  val core = new {
+    val scalaSTM  = "0.8"
+    val serial    = "1.0.3"
+  }
+  val expr = new {
+    val model     = "0.3.4"
+    val numbers   = "0.1.5"
+    val span      = "1.3.3"
+  }
+  val confluent = new {
+    val finger    = "1.5.2"
+  }
+  val bdb = new {
+    val sleepy5   = "5.0.104" // = Berkeley DB Java Edition; note: version 6 requires Java 7
+    val sleepy6   = "6.2.7"
+  }
+  val test = new {
+    val scalaTest = "3.0.5"
+  }
+}
 
 lazy val commonSettings = Seq(
   version             := projectVersion,
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
-  scalaVersion        := "2.12.4",
-  crossScalaVersions  := Seq("2.12.4", "2.11.11"),
+  scalaVersion        := "2.12.5",
+  crossScalaVersions  := Seq("2.12.5", "2.11.12"),
   scalacOptions      ++= Seq("-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
-  libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+  libraryDependencies += "org.scalatest" %% "scalatest" % deps.test.scalaTest % "test"
 ) ++ publishSettings
 
 lazy val lgpl = "LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")
@@ -64,15 +62,9 @@ lazy val core = Project(id = s"$baseNameL-core", base = file("core"))
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
-    libraryDependencies += {
-      val sv = scalaVersion.value
-      if (sv.startsWith("2.10") || sv.startsWith("2.11"))
-        "org.scala-stm" %% "scala-stm" % "0.7"
-      else
-        "org.scala-stm" %% "scala-stm" % scalaSTMVersion
-    },
     libraryDependencies ++= Seq(
-      "de.sciss"      %% "serial"    % serialVersion
+      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM,
+      "de.sciss"      %% "serial"    % deps.core.serial
     ),
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
       BuildInfoKey.map(homepage) {
@@ -92,9 +84,9 @@ lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr"))
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "de.sciss" %% "model"   % modelVersion,
-      "de.sciss" %% "span"    % spanVersion,
-      "de.sciss" %% "numbers" % numbersVersion
+      "de.sciss" %% "model"   % deps.expr.model,
+      "de.sciss" %% "span"    % deps.expr.span,
+      "de.sciss" %% "numbers" % deps.expr.numbers
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
@@ -105,7 +97,7 @@ lazy val confluent = Project(id = s"$baseNameL-confluent", base = file("confluen
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "de.sciss" %% "fingertree" % fingerVersion
+      "de.sciss" %% "fingertree" % deps.confluent.finger
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-confluent" % mimaVersion)
   )
@@ -116,7 +108,7 @@ lazy val bdb = Project(id = s"$baseNameL-bdb", base = file("bdb"))
   .settings(
     licenses := Seq(gpl2),
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven", // required for sleepycat
-    libraryDependencies += "com.sleepycat" % "je" % sleepyVersion5,
+    libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy5,
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
   )
 
@@ -126,7 +118,7 @@ lazy val bdb6 = Project(id = s"$baseNameL-bdb6", base = file("bdb6"))
   .settings(
     licenses := Seq(gpl3),
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven",
-    libraryDependencies += "com.sleepycat" % "je" % sleepyVersion6,
+    libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy6,
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb6" % mimaVersion)
   )
 

@@ -10,7 +10,7 @@ generation of the project that in version 2 was split into several sub-projects
 ([LucreSTM](https://github.com/Sciss/LucreSTM), [LucreData](https://github.com/Sciss/LucreData),
 [LucreConfluent](https://github.com/Sciss/LucreConfluent)).
 
-Lucre is (C)opyright 2009&ndash;2017 by Hanns Holger Rutz. All rights reserved. 
+Lucre is (C)opyright 2009&ndash;2018 by Hanns Holger Rutz. All rights reserved. 
 All modules but the BerkeleyDB bindings are released under 
 the [GNU Lesser General Public License](https://raw.github.com/Sciss/LucreSTM/master/licenses/Lucre-License.txt), 
 whereas the `bdb` backend module for Berkeley DB JE 5 (itself governed by the Sleepycat License) is released under 
@@ -25,7 +25,7 @@ Further reading:
 
 ## requirements / installation
 
-Lucre builds with [sbt](http://www.scala-sbt.org/) 0.13 against Scala 2.12, 2.11.
+Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.12, 2.11.
 
 ## linking to Lucre
 
