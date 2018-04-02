@@ -230,6 +230,8 @@ object ImmutableSerializer {
   }
 }
 
-trait NoTx extends Tx[NoTx]
+trait NoTx extends Tx {
+  final type Self = NoTx
+}
 
-trait ImmutableSerializer[A] extends ImmutableReader[A] with Serializer[NoTx, A]
+trait ImmutableSerializer[A] extends ImmutableReader[A] with Serializer[Tx, A]

@@ -5,19 +5,19 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.concurrent.stm.InTxn
 
-//trait Tx[T <: Tx[T]] extends Tx {
+//trait Tx[T <: Tx] extends Tx {
 //  final type Self = T
 //}
 
 object Sys {
   @inline
-  def newVar[A, T <: Tx[T]](tx: T)(id: tx.Id, init: A)
+  def newVar[A, T <: Tx](tx: T)(id: tx.Id, init: A)
                                  (implicit serializer: Serializer[T, A]): tx.Var[A] =
-    tx.newVar[A](id, init)(serializer)
+    ??? // tx.newVar[A](id, init)(serializer)
 }
 
-trait TestTx extends Tx[TestTx] {
-  type Self   = TestTx
+trait TestTx extends Tx {
+  final type Self   = TestTx
   type Id     = TestId
   type Acc    = Unit
   type Var[A] = TestVar[A]
