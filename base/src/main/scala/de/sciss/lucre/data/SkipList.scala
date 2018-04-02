@@ -13,26 +13,25 @@
 
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.{Disposable, Tx}
+import de.sciss.lucre.stm.{Base, Comp}
 import de.sciss.serial.Writable
 
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.implicitConversions
 
 object SkipList {
   /** A trait for observing the promotion and demotion of a key
     * in the skip list's level hierarchy
     */
-  trait KeyObserver[-T, /* @spec(KeySpec) */ -A] {
+  trait KeyObserver[-Tx, /* @spec(KeySpec) */ -A] {
     /** Notifies the observer that a given key
       * is promoted to a higher (more sparse) level
       */
-    def keyUp(key: A)(implicit tx: T): Unit
+    def keyUp(key: A)(implicit tx: Tx): Unit
 
     /** Notifies the observer that a given key
       * is demoted to a lower (more dense) level
       */
-    def keyDown(key: A)(implicit tx: T): Unit
+    def keyDown(key: A)(implicit tx: Tx): Unit
   }
 
   // Note: We could also have `object NoKeyObserver extends KeyObserver[ Any, Any ]` if
@@ -117,58 +116,58 @@ object SkipList {
 //    }
   }
 
-  trait Set[T <: Tx, A] extends SkipList[T, A, A] {
+  trait Set[S <: Base, A] extends SkipList[S, A, A] {
     /** Inserts a new key into the set.
       *
       * @param   key  the key to insert
       * @return  `true` if the key was new to the set,
       *          `false` if a node with the given key already existed
       */
-    def add(key: A)(implicit tx: T): Boolean
+    def add(key: A)(implicit tx: S.Tx): Boolean
 
     /** Removes a key from the set.
       *
       * @param key  the key to remove
       * @return     `true` if the key was found and removed, `false` if it was not found
       */
-    def remove(key: A)(implicit tx: T): Boolean
+    def remove(key: A)(implicit tx: S.Tx): Boolean
   }
 
-  trait Map[T <: Tx, A, B] extends SkipList[T, A, (A, B)] {
+  trait Map[S <: Base, A, B] extends SkipList[S, A, (A, B)] {
 
-    def keysIterator  (implicit tx: T): Iterator[A]
-    def valuesIterator(implicit tx: T): Iterator[B]
+    def keysIterator  (implicit tx: S.Tx): Iterator[A]
+    def valuesIterator(implicit tx: S.Tx): Iterator[B]
 
     /** Inserts a new entry into the map.
       *
       * @param   entry  the key-value pair to insert
       * @return  the previous value stored at the key, or `None` if the key was not in the map
       */
-    def add(entry: (A, B))(implicit tx: T): Option[B]
+    def add(entry: (A, B))(implicit tx: S.Tx): Option[B]
 
     /** Removes an entry from the map.
       *
       * @param   key  the key to remove
       * @return  the removed value which had been stored at the key, or `None` if the key was not in the map
       */
-    def remove(key: A)(implicit tx: T): Option[B]
+    def remove(key: A)(implicit tx: S.Tx): Option[B]
 
     /** Queries the value for a given key.
       *
       * @param key  the key to look for
       * @return     the value if it was found at the key, otherwise `None`
       */
-    def get(key: A)(implicit tx: T): Option[B]
+    def get(key: A)(implicit tx: S.Tx): Option[B]
   }
 }
 
-sealed trait SkipList[T <: Tx, A, E] extends Writable with Disposable[T] {
+sealed trait SkipList[S <: Base, A, E] extends Comp[S] with Writable /* with Disposable[S] */ {
   /** Searches for the Branch of a given key.
     *
     * @param   key   the key to search for
     * @return  `true` if the key is in the list, `false` otherwise
     */
-  def contains(key: A)(implicit tx: T): Boolean
+  def contains(key: A)(implicit tx: S.Tx): Boolean
 
   /** Finds the entry with the largest key which is smaller than or equal to the search key.
     *
@@ -176,7 +175,7 @@ sealed trait SkipList[T <: Tx, A, E] extends Writable with Disposable[T] {
     * @return     the found entry, or `None` if there is no key smaller than or equal
     *             to the search key (e.g. the list is empty)
     */
-  def floor(key: A)(implicit tx: T): Option[E]
+  def floor(key: A)(implicit tx: S.Tx): Option[E]
 
   /** Finds the entry with the smallest key which is greater than or equal to the search key.
     *
@@ -184,14 +183,14 @@ sealed trait SkipList[T <: Tx, A, E] extends Writable with Disposable[T] {
     * @return     the found entry, or `None` if there is no key greater than or equal
     *             to the search key (e.g. the list is empty)
     */
-  def ceil(key: A)(implicit tx: T): Option[E]
+  def ceil(key: A)(implicit tx: S.Tx): Option[E]
 
-  def toIndexedSeq(implicit tx: T): Vec[E]
-  def toList      (implicit tx: T): List[E]
-  def toSeq       (implicit tx: T): Seq[E]
-  def toSet       (implicit tx: T): Set[E]
+  def toIndexedSeq(implicit tx: S.Tx): Vec[E]
+  def toList      (implicit tx: S.Tx): List[E]
+  def toSeq       (implicit tx: S.Tx): Seq[E]
+  def toSet       (implicit tx: S.Tx): Set[E]
 
-  def clear()(implicit tx: T): Unit
+  def clear()(implicit tx: S.Tx): Unit
 
   /** Finds the nearest item equal or greater
     * than an unknown item from an isomorphic
@@ -208,32 +207,32 @@ sealed trait SkipList[T <: Tx, A, E] extends Writable with Disposable[T] {
     *
     * @return  the nearest item, or the maximum item
     */
-  def isomorphicQuery(ord: Ordered[T, A])(implicit tx: T): (E, Int)
+  def isomorphicQuery(ord: Ordered[S, A])(implicit tx: S.Tx): (E, Int)
 
   // ---- stuff lost from collection.mutable.Set ----
 
-  def +=(entry: E)(implicit tx: T): this.type
-  def -=(key: A)  (implicit tx: T): this.type
+  def +=(entry: E)(implicit tx: S.Tx): this.type
+  def -=(key: A)  (implicit tx: S.Tx): this.type
 
-  def isEmpty (implicit tx: T): Boolean
-  def nonEmpty(implicit tx: T): Boolean
+  def isEmpty (implicit tx: S.Tx): Boolean
+  def nonEmpty(implicit tx: S.Tx): Boolean
 
-  def iterator(implicit tx: T): Iterator[E]
+  def iterator(implicit tx: S.Tx): Iterator[E]
 
-  def debugPrint()(implicit tx: T): String
+  def debugPrint()(implicit tx: S.Tx): String
 
 //  def keySerializer: Serializer[T, S#Acc, A]
 
   /** The number of levels in the skip list. */
-  def height(implicit tx: T): Int
+  def height(implicit tx: S.Tx): Int
 
   /** Reports the number of keys in the skip list (size of the bottom level).
     * This operation may take up to O(n) time, depending on the implementation.
     */
-  def size(implicit tx: T): Int
+  def size(implicit tx: S.Tx): Int
 
   /** The ordering used for the keys of this list. */
-  implicit def ordering: Ordering[T, A]
+  implicit def ordering: Ordering[S, A]
 
   /** The minimum gap within elements of each skip level. */
   def minGap: Int

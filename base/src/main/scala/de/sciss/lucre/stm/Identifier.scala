@@ -14,7 +14,6 @@
 package de.sciss.lucre.stm
 
 import de.sciss.serial
-import de.sciss.serial.Serializer
 
 object Identifier {
 //  implicit def serializer[Tx <: Txn]: Serializer[S#Tx, S#Acc, S#ID] =

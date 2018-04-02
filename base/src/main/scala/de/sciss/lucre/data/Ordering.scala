@@ -65,25 +65,25 @@ object Ordering {
   implicit def fromMath[A](implicit underlying: math.Ordering[A]): Ordering[Any, A] =
     new MathWrapper[A](underlying)
 
-  implicit def fromOrdered[T, A <: Ordered[T, A]]: Ordering[T, A] = new OrderedWrapper[T, A]
+  implicit def fromOrdered[Tx, A <: Ordered[Tx, A]]: Ordering[Tx, A] = new OrderedWrapper[Tx, A]
 
   private final class MathWrapper[A](underlying: math.Ordering[A]) extends Ordering[Any, A] {
     def compare(a: A, b: A)(implicit tx: Any): Int = underlying.compare(a, b)
   }
 
-  private final class OrderedWrapper[T, A <: Ordered[T, A]] extends Ordering[T, A] {
-    def compare(a: A, b: A)(implicit tx: T): Int = a.compare(b)
+  private final class OrderedWrapper[Tx, A <: Ordered[Tx, A]] extends Ordering[Tx, A] {
+    def compare(a: A, b: A)(implicit tx: Tx): Int = a.compare(b)
   }
 }
 
-trait Ordering[-T, A] {
-  def compare(a: A, b: A)(implicit tx: T): Int
-  def lt     (a: A, b: A)(implicit tx: T): Boolean  = compare(a, b)  < 0
-  def lteq   (a: A, b: A)(implicit tx: T): Boolean  = compare(a, b) <= 0
-  def gt     (a: A, b: A)(implicit tx: T): Boolean  = compare(a, b)  > 0
-  def gteq   (a: A, b: A)(implicit tx: T): Boolean  = compare(a, b) >= 0
-  def equiv  (a: A, b: A)(implicit tx: T): Boolean  = compare(a, b) == 0
-  def nequiv (a: A, b: A)(implicit tx: T): Boolean  = compare(a, b) != 0
-  def max    (a: A, b: A)(implicit tx: T): A        = if (compare(a, b) >= 0) a else b
-  def min    (a: A, b: A)(implicit tx: T): A        = if (compare(a, b)  < 0) a else b
+trait Ordering[-Tx, A] {
+  def compare(a: A, b: A)(implicit tx: Tx): Int
+  def lt     (a: A, b: A)(implicit tx: Tx): Boolean  = compare(a, b)  < 0
+  def lteq   (a: A, b: A)(implicit tx: Tx): Boolean  = compare(a, b) <= 0
+  def gt     (a: A, b: A)(implicit tx: Tx): Boolean  = compare(a, b)  > 0
+  def gteq   (a: A, b: A)(implicit tx: Tx): Boolean  = compare(a, b) >= 0
+  def equiv  (a: A, b: A)(implicit tx: Tx): Boolean  = compare(a, b) == 0
+  def nequiv (a: A, b: A)(implicit tx: Tx): Boolean  = compare(a, b) != 0
+  def max    (a: A, b: A)(implicit tx: Tx): A        = if (compare(a, b) >= 0) a else b
+  def min    (a: A, b: A)(implicit tx: Tx): A        = if (compare(a, b)  < 0) a else b
 }

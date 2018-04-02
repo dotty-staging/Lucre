@@ -13,17 +13,26 @@
 
 package de.sciss.lucre.stm
 
+//import scala.language.implicitConversions
+
 object Disposable {
+//  implicit def FromComp[S <: Base](c: Comp[S]): Disposable[c.S.Tx] = new Disposable[c.S.Tx] {
+//    def dispose()(implicit tx: c.S.Tx): Unit = c.dispose()
+//  }
+
   private[this] val emptyVal: Disposable[Any] = new Disposable[Any] {
     def dispose()(implicit tx: Any): Unit = ()
   }
 
-  def empty[T]: Disposable[T] = emptyVal
+  def empty[Tx]: Disposable[Tx] = emptyVal
 
-  def seq[T](xs: Disposable[T]*): Disposable[T] = new Disposable[T] {
-    def dispose()(implicit tx: T): Unit = xs.foreach(_.dispose())
+  def seq[Tx](xs: Disposable[Tx]*): Disposable[Tx] = new Disposable[Tx] {
+    def dispose()(implicit tx: Tx): Unit = xs.foreach(_.dispose())
   }
 }
-trait Disposable[-T] {
-  def dispose()(implicit tx: T): Unit
+trait Disposable[-Tx] extends Any {
+  def dispose()(implicit tx: Tx): Unit
 }
+
+//abstract class DispComp[S <: Base](val S: S) extends {
+//} with Disposable[S.Tx]

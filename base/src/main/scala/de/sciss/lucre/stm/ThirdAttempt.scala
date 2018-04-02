@@ -55,6 +55,7 @@ object ThirdAttempt {
 
   trait Comp[S0 <: Sys] {
 //      @elidable(elidable.ALL)
+
     val S: S0
 
     type $ = S.type

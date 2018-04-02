@@ -13,6 +13,6 @@
 
 package de.sciss.lucre.data
 
-trait Ordered[-T, -A] {
-  def compare(that: A)(implicit tx: T): Int
+trait Ordered[-Tx, -A] {
+  def compare(that: A)(implicit tx: Tx): Int
 }

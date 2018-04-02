@@ -14,8 +14,6 @@
 package de.sciss
 package serial
 
-import de.sciss.lucre.stm.Tx
-
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.mutable
@@ -230,8 +228,8 @@ object ImmutableSerializer {
   }
 }
 
-trait NoTx extends Tx {
-  final type Self = NoTx
-}
+//trait NoTx extends Txn {
+//  final type Self = NoTx
+//}
 
-trait ImmutableSerializer[A] extends ImmutableReader[A] with Serializer[Tx, A]
+trait ImmutableSerializer[A] extends ImmutableReader[A] with Serializer[Any, Any, A]

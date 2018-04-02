@@ -14,12 +14,10 @@
 package de.sciss
 package serial
 
-import de.sciss.lucre.stm.Tx
-
 //trait Reader[-Tx, -Acc, +A] {
 //  def read(in: DataInput, access: Acc)(implicit tx: Tx): A
 //}
 
-trait Reader[-T <: Tx, +A] {
-  def read(in: DataInput, tx: T)(implicit access: tx.Acc): A
+trait Reader[-Tx, -Acc, +A] {
+  def read(in: DataInput, acc: Acc)(implicit tx: Tx): A
 }

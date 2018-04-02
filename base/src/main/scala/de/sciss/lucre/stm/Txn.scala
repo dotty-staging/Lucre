@@ -15,9 +15,6 @@ package de.sciss.lucre.stm
 
 import java.io.Closeable
 
-import de.sciss.lucre.stm.{Var => _Var}
-import de.sciss.serial.{DataInput, Serializer}
-
 import scala.annotation.tailrec
 import scala.concurrent.stm.Txn.ExternalDecider
 import scala.concurrent.stm.{InTxn, InTxnEnd, TxnExecutor, TxnLocal, Txn => ScalaTxn}
@@ -52,7 +49,7 @@ trait TxnLike {
   // def beforeCommit(fun: TxnLike => Unit): Unit
 }
 
-object Tx {
+object Txn {
   trait Resource extends Closeable with ExternalDecider
 
   private[this] final class Decider(var instances: List[Resource])
@@ -111,75 +108,11 @@ object Tx {
   }
 }
 
-trait Tx extends TxnLike {
+trait Txn extends TxnLike {
 
 //  /** Back link to the underlying system. */
 //  val system: S
 //
 //  def inMemory: S#I#Tx
-  
-  type Id <: Identifier[this.type]
-  type Acc
-  type Var[A] <: _Var[this.type, A]
 
-  def newId(): Id
-
-  type Self <: Tx
-
-  def self: Self
-
-  // ---- variables ----
-
-  def newVar[A]    (id: Id, init: A)(implicit serializer: Serializer[Self, A]): Var[A]
-  def newBooleanVar(id: Id, init: Boolean): Var[Boolean]
-  def newIntVar    (id: Id, init: Int    ): Var[Int]
-  def newLongVar   (id: Id, init: Long   ): Var[Long]
-
-  def newVarArray[A](size: Int): Array[Var[A]]
-
-//  /** Creates a new in-memory transactional map for storing and retrieving values based on a mutable's identifier
-//    * as key. If a system is confluently persistent, the `get` operation will find the most recent key that
-//    * matches the search key. Objects are not serialized but kept live in memory.
-//    *
-//    * ID maps can be used by observing views to look up associated view meta data even though they may be
-//    * presented with a more recent access path of the model peer (e.g. when a recent event is fired and observed).
-//    *
-//    * @tparam A         the value type in the map
-//    */
-//  def newInMemoryIDMap[A]: IdentifierMap[Id, Self, A]
-
-  def readVar[A]    (id: Id, in: DataInput)(implicit serializer: Serializer[Self, A]): Var[A]
-  def readBooleanVar(id: Id, in: DataInput): Var[Boolean]
-  def readIntVar    (id: Id, in: DataInput): Var[Int]
-  def readLongVar   (id: Id, in: DataInput): Var[Long]
-
-  def readId(in: DataInput)(implicit acc: Acc): Id
-
-  /** Creates a handle (in-memory) to refresh a stale version of an object, assuming that the future transaction is issued
-    * from the same cursor that is used to create the handle, except for potentially having advanced.
-    * This is a mechanism that can be used in live views to gain valid access to a referenced object
-    * (e.g. self access).
-    *
-    * @param value         the object which will be refreshed when calling `get` on the returned handle
-    * @param serializer    used to write and freshly read the object
-    * @return              the handle
-    */
-  def newHandle[A](value: A)(implicit serializer: Serializer[Self, A]): Source[Self, A]
-
-  // ---- completion ----
-
-  def beforeCommit(fun: Self  => Unit): Unit
-  def afterCommit (fun:       => Unit): Unit
-
-//  // ---- context ----
-//
-//  def use[A](context: S#Context)(fun: => A): A
-//
-//  // ---- events ----
-//
-//  private[lucre] def reactionMap: ReactionMap[S]
-//
-//  // ---- attributes ----
-//
-//  def attrMap(obj: Obj[S]): Obj.AttrMap[S]
 }
