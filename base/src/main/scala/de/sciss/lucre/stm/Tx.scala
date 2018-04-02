@@ -126,6 +126,8 @@ trait Tx extends TxnLike {
 
   type Self <: Tx
 
+  def self: Self
+
   // ---- variables ----
 
   def newVar[A]    (id: Id, init: A)(implicit serializer: Serializer[Self, A]): Var[A]

@@ -12,8 +12,8 @@ import scala.concurrent.stm.InTxn
 object Sys {
   @inline
   def newVar[A, T <: Tx](tx: T)(id: tx.Id, init: A)
-                                 (implicit serializer: Serializer[T, A]): tx.Var[A] =
-    ??? // tx.newVar[A](id, init)(serializer)
+                                 (implicit serializer: Serializer[tx.Self, A]): tx.Var[A] =
+    tx.newVar[A](id, init)(serializer)
 }
 
 trait TestTx extends Tx {
@@ -33,6 +33,8 @@ trait TestTx extends Tx {
 }
 
 class TestTxImpl extends TestTx {
+  def self: Self = this
+
   def newBooleanVar(id: TestId, init: Boolean): TestVar[Boolean] = ???
 
   def newIntVar(id: TestId, init: Int): TestVar[Int] = ???
