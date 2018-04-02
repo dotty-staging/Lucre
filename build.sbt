@@ -62,8 +62,7 @@ lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM,
-      "de.sciss"      %% "serial"    % deps.core.serial
+      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-base" % mimaVersion)
   )
