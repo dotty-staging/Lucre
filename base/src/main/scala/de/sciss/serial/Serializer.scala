@@ -33,7 +33,7 @@ object Serializer {
   implicit final val String : ImmutableSerializer[JString       ] = ImmutableSerializer.String
 
   implicit def immutable[T <: Tx[T], A](implicit peer: ImmutableSerializer[A]): Serializer[T, A] =
-    peer.asInstanceOf[Serializer[T, A]] // XXX TODO: horrible
+    ??? // peer.asInstanceOf[Serializer[T, A]] // XXX TODO: would create class-cast-exception
 
   // ---- higher-kinded ----
 

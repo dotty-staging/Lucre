@@ -3,6 +3,8 @@ package de.sciss.lucre.stm
 import de.sciss.lucre.stm
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
+import scala.concurrent.stm.InTxn
+
 //trait Tx[T <: Tx[T]] extends Tx {
 //  final type Self = T
 //}
@@ -30,6 +32,30 @@ trait TestTx extends Tx[TestTx] {
   def readId(in: DataInput)(implicit acc: Acc): Id = ???
 }
 
+class TestTxImpl extends TestTx {
+  def newBooleanVar(id: TestId, init: Boolean): TestVar[Boolean] = ???
+
+  def newIntVar(id: TestId, init: Int): TestVar[Int] = ???
+
+  def newLongVar(id: TestId, init: Long): TestVar[Long] = ???
+
+  def newVarArray[A](size: Int): Array[TestVar[A]] = ???
+
+  def readBooleanVar(id: TestId, in: DataInput): TestVar[Boolean] = ???
+
+  def readIntVar(id: TestId, in: DataInput): TestVar[Int] = ???
+
+  def readLongVar(id: TestId, in: DataInput): TestVar[Long] = ???
+
+  def newHandle[A](value: A)(implicit serializer: Serializer[Self, A]): Source[Self, A] = ???
+
+  def beforeCommit(fun: Self => Unit): Unit = ???
+
+  def afterCommit(fun: => Unit): Unit = ???
+
+  def peer: InTxn = ???
+}
+
 class TestId extends Identifier[TestTx] {
   def write(out: DataOutput): Unit = ???
 
@@ -53,4 +79,17 @@ class TestVar[A](id: TestId, init: A)(implicit serializer: Serializer[TestTx, A]
   }
 
   def dispose()(implicit tx: TestTx): Unit = ()
+}
+
+object TestSafety {
+  def main(args: Array[String]): Unit = {
+    val ser: Serializer[TestTx, Int] = implicitly[Serializer[TestTx, Int]]
+    val dOut = DataOutput()
+    val input = 33
+    ser.write(input, dOut)
+    val arr = dOut.toByteArray
+    val dIn = DataInput(arr)
+    val output = ser.read(dIn, new TestTxImpl)(())
+    assert(input == output)
+  }
 }
