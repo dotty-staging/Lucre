@@ -58,7 +58,7 @@ object ThirdAttempt {
     def peer: InTxn
   }
 
-  trait Comp[S0 <: Sys] {
+  trait Comp[S0 <: Base] {
 //      @elidable(elidable.ALL)
 
     val S: S0
@@ -79,7 +79,7 @@ object ThirdAttempt {
     }
   }
 
-  trait Foo[S <: Sys] extends Comp[S] {
+  trait Foo[S <: Base] extends Comp[S] {
     def vr: S.Var[Int]
 
     def bar()(implicit tx: S.Tx): Int = vr()
