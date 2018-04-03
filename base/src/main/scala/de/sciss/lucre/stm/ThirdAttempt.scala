@@ -29,6 +29,11 @@ object ThirdAttempt {
     def update(v: A)(implicit tx: T): Unit
   }
 
+  object Base {
+    type T [_Tx]        = Base { type Tx = _Tx }
+    type TA[_Tx, _Acc]  = Base { type Tx = _Tx; type Acc = _Acc }
+  }
+
   /** Not necessarily transactional */
   trait Base {
     type Tx
@@ -95,11 +100,29 @@ object ThirdAttempt {
     def okTryThis(that: Foo[$])(implicit tx: S.Tx): Int = that.bar()
   }
 
-  trait Bar[S <: Sys] extends Comp[S] {
+  def attempt[S <: Sys](S: S)(b: Bar[S.type])(implicit tx: S.Tx): Int = b match {
+    case baz: Baz[S.type] => baz.hello()
+  }
+
+  def attempt2[S <: Base.T[T], T](b: Bar[S])(implicit tx: T): Int = b match {
+    case baz: Baz[S] => baz.hello()
+  }
+
+  abstract class Bar[S <: Base](final val S: S) extends Comp[S] {
     def foo1: Foo[$] // Foo[S]
     def foo2: Foo[$] // Foo[S]
+
+    def hello()(implicit tx: S.Tx): Int
+
+//    def test2()(implicit tx: S.Tx): Int =
+//      attempt(this.S)(this)
+
+    def test3()(implicit tx: S.Tx): Int =
+      ??? // attempt2[$, S.Tx](this)
 
     def test()(implicit x: S.Tx): Unit =
       foo1.okTryThis(foo2)
   }
+
+  trait Baz[S <: Sys] extends Bar[S]
 }
