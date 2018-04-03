@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-final class IdentifierSerializer[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, S#Id] {
+final class IdentifierSerializer[S <: Base[S]] extends Serializer[S#Tx, S#Acc, S#Id] {
   def write(id: S#Id, out: DataOutput): Unit = id.write(out)
 
   def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): S#Id = tx.readId(in, access)

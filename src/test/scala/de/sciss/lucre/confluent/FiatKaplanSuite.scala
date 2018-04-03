@@ -164,7 +164,7 @@ class FiatKaplanSuite extends FunSpec with GivenWhenThen with TestHasLinkedList 
         val (_, res4) = cursor.step { implicit tx =>
           val node = access()
 
-          def loop(opt: Option[Node]): List[S#ID] = opt match {
+          def loop(opt: Option[Node]): List[S#Id] = opt match {
             case None => Nil
             case Some(n) => n.id :: loop(n.next())
           }

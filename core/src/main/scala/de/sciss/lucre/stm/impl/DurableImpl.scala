@@ -38,8 +38,8 @@ object DurableImpl {
 
     def store: DataStore
 
-    protected final val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
+    protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
     @field private[this] val idCntVar = step { implicit tx =>
       val _id = store.get(_.writeInt(0))(_.readInt()).getOrElse(1)
@@ -57,13 +57,13 @@ object DurableImpl {
 
     private[this] def rootBody[A](init: S#Tx => A)
                                  (implicit tx: S#Tx, serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] = {
-      val rootID = 2 // 1 == reaction map!!!
-      if (exists(rootID)) {
-        new VarImpl[S, A](rootID, serializer)
+      val rootId = 2 // 1 == reaction map!!!
+      if (exists(rootId)) {
+        new VarImpl[S, A](rootId, serializer)
       } else {
-        val id = newIDValue()
-        require(id == rootID,
-          s"Root can only be initialized on an empty database (expected id count is $rootID but found $id)")
+        val id = newIdValue()
+        require(id == rootId,
+          s"Root can only be initialized on an empty database (expected id count is $rootId but found $id)")
         val res = new VarImpl[S, A](id, serializer)
         res.setInit(init(tx))
         res
@@ -78,12 +78,12 @@ object DurableImpl {
 
     def position(implicit tx: S#Tx): S#Acc = ()
 
-    def debugListUserRecords()(implicit tx: S#Tx): Seq[ID] = {
-      val b   = Seq.newBuilder[ID]
+    def debugListUserRecords()(implicit tx: S#Tx): Seq[Id] = {
+      val b   = Seq.newBuilder[Id]
       val cnt = idCntVar()
       var i   = 1
       while (i <= cnt) {
-        if (exists(i)) b += new IDImpl[S](i)
+        if (exists(i)) b += new IdImpl[S](i)
         i += 1
       }
       b.result()
@@ -96,7 +96,7 @@ object DurableImpl {
     def numUserRecords(implicit tx: S#Tx): Int = math.max(0, numRecords - 1)
 
     // this increases a durable variable, thus ensures markDirty() already
-    def newIDValue()(implicit tx: S#Tx): Int = {
+    def newIdValue()(implicit tx: S#Tx): Int = {
       val id = idCntVar() + 1
       log(s"new   <$id>")
       idCntVar() = id
@@ -144,56 +144,56 @@ object DurableImpl {
 
     private[lucre] final def reactionMap: ReactionMap[S] = system.reactionMap
 
-    final def newID(): S#ID = new IDImpl[S](system.newIDValue()(this))
+    final def newId(): S#Id = new IdImpl[S](system.newIdValue()(this))
 
-    final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
-      val res = new VarImpl[S, A](system.newIDValue()(this), ser)
+    final def newVar[A](id: S#Id, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+      val res = new VarImpl[S, A](system.newIdValue()(this), ser)
       res.setInit(init)(this)
       res
     }
 
     final def newCachedVar[A](init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
-      val res = new CachedVarImpl[S, A](system.newIDValue()(this), Ref(init), ser)
+      val res = new CachedVarImpl[S, A](system.newIdValue()(this), Ref(init), ser)
       res.writeInit()(this)
       res
     }
 
-    final def newBooleanVar(id: S#ID, init: Boolean): S#Var[Boolean] = {
-      val res = new BooleanVar[S](system.newIDValue()(this))
+    final def newBooleanVar(id: S#Id, init: Boolean): S#Var[Boolean] = {
+      val res = new BooleanVar[S](system.newIdValue()(this))
       res.setInit(init)(this)
       res
     }
 
-    final def newIntVar(id: S#ID, init: Int): S#Var[Int] = {
-      val res = new IntVar[S](system.newIDValue()(this))
+    final def newIntVar(id: S#Id, init: Int): S#Var[Int] = {
+      val res = new IntVar[S](system.newIdValue()(this))
       res.setInit(init)(this)
       res
     }
 
     final def newCachedIntVar(init: Int): S#Var[Int] = {
-      val res = new CachedIntVar[S](system.newIDValue()(this), Ref(init))
+      val res = new CachedIntVar[S](system.newIdValue()(this), Ref(init))
       res.writeInit()(this)
       res
     }
 
-    final def newLongVar(id: S#ID, init: Long): S#Var[Long] = {
-      val res = new LongVar[S](system.newIDValue()(this))
+    final def newLongVar(id: S#Id, init: Long): S#Var[Long] = {
+      val res = new LongVar[S](system.newIdValue()(this))
       res.setInit(init)(this)
       res
     }
 
     final def newCachedLongVar(init: Long): S#Var[Long] = {
-      val res = new CachedLongVar[S](system.newIDValue()(this), Ref(init))
+      val res = new CachedLongVar[S](system.newIdValue()(this), Ref(init))
       res.writeInit()(this)
       res
     }
 
     final def newVarArray[A](size: Int): Array[S#Var[A]] = new Array[Var[S#Tx, A]](size)
 
-    final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, A](_.id)
+    final def newInMemoryIdMap[A]: IdentifierMap[S#Id, S#Tx, A] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, A](_.id)
 
-    final def readVar[A](pid: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+    final def readVar[A](pid: S#Id, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val id = in./* PACKED */ readInt()
       new VarImpl[S, A](id, ser)
     }
@@ -205,12 +205,12 @@ object DurableImpl {
       res
     }
 
-    final def readBooleanVar(pid: S#ID, in: DataInput): S#Var[Boolean] = {
+    final def readBooleanVar(pid: S#Id, in: DataInput): S#Var[Boolean] = {
       val id = in./* PACKED */ readInt()
       new BooleanVar[S](id)
     }
 
-    final def readIntVar(pid: S#ID, in: DataInput): S#Var[Int] = {
+    final def readIntVar(pid: S#Id, in: DataInput): S#Var[Int] = {
       val id = in./* PACKED */ readInt()
       new IntVar[S](id)
     }
@@ -222,7 +222,7 @@ object DurableImpl {
       res
     }
 
-    final def readLongVar(pid: S#ID, in: DataInput): S#Var[Long] = {
+    final def readLongVar(pid: S#Id, in: DataInput): S#Var[Long] = {
       val id = in./* PACKED */ readInt()
       new LongVar[S](id)
     }
@@ -234,17 +234,17 @@ object DurableImpl {
       res
     }
 
-    final def readID(in: DataInput, acc: S#Acc): S#ID = {
+    final def readId(in: DataInput, acc: S#Acc): S#Id = {
       val base = in./* PACKED */ readInt()
-      new IDImpl[S](base)
+      new IdImpl[S](base)
     }
 
-//    final def readPartialID(in: DataInput, acc: S#Acc): S#ID = readID(in, acc)
+//    final def readPartialId(in: DataInput, acc: S#Acc): S#Id = readId(in, acc)
 
-//    final def readDurableIDMap[A](in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#ID, S#Tx, A] = {
+//    final def readDurableIdMap[A](in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): IdentifierMap[S#Id, S#Tx, A] = {
 //      val base  = in./* PACKED */ readInt()
-//      val mapID = new IDImpl[S](base)
-//      new IDMapImpl[S, A](mapID)
+//      val mapId = new IdImpl[S](base)
+//      new IdMapImpl[S, A](mapId)
 //    }
 
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
@@ -305,13 +305,13 @@ object DurableImpl {
 //    }
   }
 
-  private final class IDImpl[S <: D[S]](@field val id: Int) extends DurableLike.ID[S] {
+  private final class IdImpl[S <: D[S]](@field val id: Int) extends DurableLike.Id[S] {
     def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id)
 
     override def hashCode: Int = id
 
     override def equals(that: Any): Boolean = that match {
-      case b: IDImpl[_] => id == b.id
+      case b: IdImpl[_] => id == b.id
       case _ => false
     }
 
@@ -320,25 +320,25 @@ object DurableImpl {
     override def toString = s"<$id>"
   }
 
-//  private final class IDMapImpl[S <: D[S], A](@field val id: S#ID)(implicit serializer: Serializer[S#Tx, S#Acc, A])
-//    extends IdentifierMap[S#ID, S#Tx, A] {
+//  private final class IdMapImpl[S <: D[S], A](@field val id: S#Id)(implicit serializer: Serializer[S#Tx, S#Acc, A])
+//    extends IdentifierMap[S#Id, S#Tx, A] {
 //    map =>
 //
 //    @field private[this] val idn = id.id.toLong << 32
 //
-//    def get(id: S#ID)(implicit tx: S#Tx): Option[A] = {
+//    def get(id: S#Id)(implicit tx: S#Tx): Option[A] = {
 //      tx.system.tryRead(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.read(_, ()))
 //    }
 //
-//    def getOrElse(id: S#ID, default: => A)(implicit tx: S#Tx): A = get(id).getOrElse(default)
+//    def getOrElse(id: S#Id, default: => A)(implicit tx: S#Tx): A = get(id).getOrElse(default)
 //
-//    def put(id: S#ID, value: A)(implicit tx: S#Tx): Unit =
+//    def put(id: S#Id, value: A)(implicit tx: S#Tx): Unit =
 //      tx.system.write(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.write(value, _))
 //
-//    def contains(id: S#ID)(implicit tx: S#Tx): Boolean =
+//    def contains(id: S#Id)(implicit tx: S#Tx): Boolean =
 //      tx.system.exists(idn | (id.id.toLong & 0xFFFFFFFFL))
 //
-//    def remove(id: S#ID)(implicit tx: S#Tx): Unit =
+//    def remove(id: S#Id)(implicit tx: S#Tx): Unit =
 //      tx.system.remove(idn | (id.id.toLong & 0xFFFFFFFFL))
 //
 //    def write(out: DataOutput): Unit = id.write(out)

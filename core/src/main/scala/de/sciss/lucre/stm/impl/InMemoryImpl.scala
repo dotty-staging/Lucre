@@ -28,13 +28,13 @@ object InMemoryImpl {
   trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] with ReactionMapImpl.Mixin[S] {
     private[this] final val idCnt = ScalaRef(0)
 
-    protected final val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
+    protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
-    private[lucre] final val attrMap: IdentifierMap[S#ID, S#Tx, Obj.AttrMap[S]] =
-      IdentifierMap.newInMemoryIntMap[S#ID, S#Tx, Obj.AttrMap[S]](_.id)
+    private[lucre] final val attrMap: IdentifierMap[S#Id, S#Tx, Obj.AttrMap[S]] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Obj.AttrMap[S]](_.id)
 
-    private[lucre] final def newIDValue()(implicit tx: S#Tx): Int = {
+    private[lucre] final def newIdValue()(implicit tx: S#Tx): Int = {
       val peer  = tx.peer
       val res   = idCnt.get(peer) + 1
       idCnt.set(res)(peer)
@@ -43,7 +43,7 @@ object InMemoryImpl {
 
     final def root[A](init: S#Tx => A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       step { implicit tx =>
-        tx.newVar[A](tx.newID(), init(tx))
+        tx.newVar[A](tx.newId(), init(tx))
       }
 
     // may nest
@@ -85,7 +85,7 @@ object InMemoryImpl {
     }
   }
 
-  private final class IDImpl[S <: InMemoryLike[S]](val id: Int) extends InMemoryLike.ID[S] {
+  private final class IdImpl[S <: InMemoryLike[S]](val id: Int) extends InMemoryLike.Id[S] {
     def write(out: DataOutput): Unit = ()
     def dispose()(implicit tx: S#Tx): Unit = ()
 
@@ -93,7 +93,7 @@ object InMemoryImpl {
     override def hashCode: Int    = id.##
 
     override def equals(that: Any): Boolean = that match {
-      case thatID: InMemoryLike.ID[_] => thatID.id == id
+      case thatId: InMemoryLike.Id[_] => thatId.id == id
       case _ => false
     }
   }
@@ -120,54 +120,58 @@ object InMemoryImpl {
   trait TxnMixin[S <: InMemoryLike[S]] extends BasicTxnImpl[S] with InMemoryLike.Txn[S] {
     _: S#Tx =>
 
-    final def newID(): S#ID = new IDImpl[S](system.newIDValue()(this))
+    final def newId(): S#Id = new IdImpl[S](system.newIdValue()(this))
 
     final def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A] =
       new EphemeralHandle(value)
 
     private[stm] def getVar[A](vr: Var[S, A]): A = {
-      if (_context == null) vr.peer.get(peer)
-      else _context.get(vr)(this)
+//      if (_context == null)
+        vr.peer.get(peer)
+//      else
+//        _context.get(vr)(this)
     }
 
     private[stm] def putVar[A](vr: Var[S, A], value: A): Unit = {
-      if (_context == null) vr.peer.set(value)(peer)
-      else _context.put(vr, value)(this)
+//      if (_context == null)
+        vr.peer.set(value)(peer)
+//      else
+//        _context.put(vr, value)(this)
     }
 
-    final def newVar[A](id: S#ID, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+    final def newVar[A](id: S#Id, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val peer = ScalaRef(init)
       new VarImpl[S, A](peer)
     }
 
-    final def newIntVar(id: S#ID, init: Int): S#Var[Int] = {
+    final def newIntVar(id: S#Id, init: Int): S#Var[Int] = {
       val peer = ScalaRef(init)
       new VarImpl[S, Int](peer)
     }
 
-    final def newBooleanVar(id: S#ID, init: Boolean): S#Var[Boolean] = {
+    final def newBooleanVar(id: S#Id, init: Boolean): S#Var[Boolean] = {
       val peer = ScalaRef(init)
       new VarImpl[S, Boolean](peer)
     }
 
-    final def newLongVar(id: S#ID, init: Long): S#Var[Long] = {
+    final def newLongVar(id: S#Id, init: Long): S#Var[Long] = {
       val peer = ScalaRef(init)
       new VarImpl[S, Long](peer)
     }
 
     final def newVarArray[A](size: Int) = new Array[S#Var[A]](size)
 
-    final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] =
-      IdentifierMapImpl.newInMemoryIntMap[S#ID, S#Tx, A](_.id)
+    final def newInMemoryIdMap[A]: IdentifierMap[S#Id, S#Tx, A] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, A](_.id)
 
-    def readVar[A](id: S#ID, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
+    def readVar[A](id: S#Id, in: DataInput)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] =
       opNotSupported("readVar")
 
-    def readBooleanVar(id: S#ID, in: DataInput): S#Var[Boolean] = opNotSupported("readBooleanVar")
-    def readIntVar    (id: S#ID, in: DataInput): S#Var[Int    ] = opNotSupported("readIntVar"    )
-    def readLongVar   (id: S#ID, in: DataInput): S#Var[Long   ] = opNotSupported("readLongVar"   )
+    def readBooleanVar(id: S#Id, in: DataInput): S#Var[Boolean] = opNotSupported("readBooleanVar")
+    def readIntVar    (id: S#Id, in: DataInput): S#Var[Int    ] = opNotSupported("readIntVar"    )
+    def readLongVar   (id: S#Id, in: DataInput): S#Var[Long   ] = opNotSupported("readLongVar"   )
 
-    def readID(in: DataInput, acc: S#Acc): S#ID = opNotSupported("readID")
+    def readId(in: DataInput, acc: S#Acc): S#Id = opNotSupported("readId")
 
     private[lucre] final def reactionMap: ReactionMap[S] = system.reactionMap
 

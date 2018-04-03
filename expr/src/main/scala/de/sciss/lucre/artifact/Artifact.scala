@@ -23,7 +23,7 @@ import de.sciss.serial.{DataInput, Serializer}
 import scala.annotation.tailrec
 
 object Artifact extends Obj.Type {
-  final val typeID = 0x10008
+  final val typeId = 0x10008
 
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] =
     serializer[S].read(in, access)

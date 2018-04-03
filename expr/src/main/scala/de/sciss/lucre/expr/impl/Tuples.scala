@@ -56,7 +56,7 @@ trait Tuple1[S <: Sys[S], A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: S
 
   protected def writeData(out: DataOutput): Unit = {
     out.writeByte(1)  // 'node not var'
-    // out.writeInt(typeID)
+    // out.writeInt(typeId)
     out.writeInt(op.id)
     _1.write(out)
   }
@@ -119,7 +119,7 @@ trait Tuple2[S <: Sys[S], A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ 
   protected def writeData(out: DataOutput): Unit = {
     out.writeByte(1)  // 'node not var'
 //    out.writeByte(2)
-//    out.writeInt(typeID)
+//    out.writeInt(typeId)
     out.writeInt(op.id)
     _1.write(out)
     _2.write(out)

@@ -1,12 +1,14 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.0.0-SNAPSHOT"
-lazy val mimaVersion      = "4.0.0"
+lazy val projectVersion   = "3.6.0-SNAPSHOT"
+lazy val mimaVersion      = "3.6.0"
 
 lazy val deps = new {
+  val base = new {
+    val serial    = "1.0.3"
+  }
   val core = new {
     val scalaSTM  = "0.8"
-    val serial    = "1.0.3"
   }
   val expr = new {
     val model     = "0.3.4"
@@ -62,20 +64,19 @@ lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM,
-      "de.sciss"      %% "serial"    % deps.core.serial
+      "de.sciss" %% "serial" % deps.base.serial
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-base" % mimaVersion)
   )
 
 lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
+  .dependsOn(base)
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM,
-      "de.sciss"      %% "serial"    % deps.core.serial
+      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM
     ),
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
       BuildInfoKey.map(homepage) {

@@ -22,33 +22,33 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object Map extends Obj.Type {
-  final val typeID = 24
+  final val typeId = 24
 
   override def init(): Unit = ()  // this type is known in advance.
 
   object Key {
     implicit object Int extends Key[Int] {
-      final val typeID  = 2 // IntObj.typeID
+      final val typeId  = 2 // IntObj.typeId
       def serializer: ImmutableSerializer[scala.Int] = ImmutableSerializer.Int // IntObj.valueSerializer
     }
     implicit object Long extends Key[Long] {
-      final val typeID  = 3 // LongObj.typeID
+      final val typeId  = 3 // LongObj.typeId
       def serializer: ImmutableSerializer[scala.Long] = ImmutableSerializer.Long // LongObj.valueSerializer
     }
     implicit object String extends Key[String] {
-      final val typeID  = 8 // StringObj.typeID
+      final val typeId  = 8 // StringObj.typeId
       def serializer: ImmutableSerializer[java.lang.String] = ImmutableSerializer.String // StringObj.valueSerializer
     }
     
-    def apply(typeID: Int): Key[_] = (typeID: @switch) match {
-      case Int   .typeID => Int
-      case Long  .typeID => Long
-      case String.typeID => String
+    def apply(typeId: Int): Key[_] = (typeId: @switch) match {
+      case Int   .`typeId` => Int
+      case Long  .`typeId` => Long
+      case String.`typeId` => String
     }
   }
   /** Cheesy little type class for supported immutable keys. */ 
   sealed trait Key[K] {
-    def typeID: Int
+    def typeId: Int
     def serializer: ImmutableSerializer[K]
   }
 

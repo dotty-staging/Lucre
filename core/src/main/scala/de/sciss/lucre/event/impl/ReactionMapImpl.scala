@@ -19,16 +19,16 @@ import de.sciss.lucre.stm.{IdentifierMap, Sys}
 import scala.collection.immutable.{Map => IMap}
 
 object ReactionMapImpl {
-  def apply[S <: Sys[S]](implicit tx: S#Tx): ReactionMap[S] = new Impl[S](tx.newInMemoryIDMap)
+  def apply[S <: Sys[S]](implicit tx: S#Tx): ReactionMap[S] = new Impl[S](tx.newInMemoryIdMap)
 
-  private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#ID, S#Tx, IMap[Int, List[Observer[S, _]]]])
+  private final class Impl[S <: Sys[S]](protected val eventMap: IdentifierMap[S#Id, S#Tx, IMap[Int, List[Observer[S, _]]]])
     extends Mixin[S] {
 
     override def toString = s"ReactionMap@${hashCode.toHexString}"
   }
 
   trait Mixin[S <: Sys[S]] extends ReactionMap[S] {
-    protected def eventMap: IdentifierMap[S#ID, S#Tx, IMap[Int, List[Observer[S, _]]]]
+    protected def eventMap: IdentifierMap[S#Id, S#Tx, IMap[Int, List[Observer[S, _]]]]
 
     // self-reference useful when Mixin is added to an event.Sys
     def reactionMap: ReactionMap[S] = this

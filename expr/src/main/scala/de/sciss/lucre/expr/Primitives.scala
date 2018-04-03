@@ -34,10 +34,10 @@ trait DoubleVector[S <: Sys[S]] extends Expr[S, Vec[Double]]
 object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
   import expr.{IntObj => Repr}
 
-  final val typeID = 2
+  final val typeId = 2
   final val valueSerializer = ImmutableSerializer.Int
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -47,7 +47,7 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -57,10 +57,10 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
 object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
   import expr.{LongObj => Repr}
 
-  final val typeID = 3
+  final val typeId = 3
   final val valueSerializer = ImmutableSerializer.Long
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -70,7 +70,7 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -80,10 +80,10 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
 object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
   import expr.{DoubleObj => Repr}
 
-  final val typeID = 5
+  final val typeId = 5
   final val valueSerializer = ImmutableSerializer.Double
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -93,7 +93,7 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -103,10 +103,10 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
 object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
   import expr.{BooleanObj => Repr}
 
-  final val typeID = 6
+  final val typeId = 6
   final val valueSerializer = ImmutableSerializer.Boolean
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -116,7 +116,7 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -126,10 +126,10 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
 object StringObj extends impl.ExprTypeImpl[String, StringObj] {
   import expr.{StringObj => Repr}
 
-  final val typeID = 8
+  final val typeId = 8
   final val valueSerializer = ImmutableSerializer.String
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -139,7 +139,7 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -149,10 +149,10 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
 object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
   import expr.{SpanLikeObj => Repr}
 
-  final val typeID = 9
+  final val typeId = 9
   final val valueSerializer: ImmutableSerializer[SpanLike] = SpanLike.serializer
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -162,7 +162,7 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -172,10 +172,10 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
 object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
   import expr.{SpanObj => Repr}
 
-  final val typeID = 10
+  final val typeId = 10
   final val valueSerializer: ImmutableSerializer[Span] = Span.serializer
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -185,7 +185,7 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -195,10 +195,10 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
 object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
   import expr.{IntVector => Repr}
 
-  final val typeID = 0x2002 //  0x2000 | IntObj.typeID
+  final val typeId = 0x2002 //  0x2000 | IntObj.typeId
   final val valueSerializer: ImmutableSerializer[Vec[Int]] = ImmutableSerializer.indexedSeq
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -208,7 +208,7 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
@@ -218,10 +218,10 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
 object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   import expr.{DoubleVector => Repr}
 
-  final val typeID = 0x2005 //  0x2000 | DoubleObj.typeID
+  final val typeId = 0x2005 //  0x2000 | DoubleObj.typeId
   final val valueSerializer: ImmutableSerializer[Vec[Double]] = ImmutableSerializer.indexedSeq
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -231,7 +231,7 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])

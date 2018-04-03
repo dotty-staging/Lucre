@@ -32,19 +32,19 @@ trait Txn[S <: Sys[S]] extends stm.Txn[S] {
   private[confluent] def readTreeVertexLevel(term: Long): Int
   private[confluent] def addInputVersion(path: S#Acc): Unit
 
-  private[confluent] def putTxn[A]   (id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit
-  private[confluent] def putNonTxn[A](id: S#ID, value: A)(implicit ser: ImmutableSerializer[A]): Unit
+  private[confluent] def putTxn[A](id: S#Id, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit
+  private[confluent] def putNonTxn[A](id: S#Id, value: A)(implicit ser: ImmutableSerializer[A]): Unit
 
-  private[confluent] def getTxn[A]   (id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
-  private[confluent] def getNonTxn[A](id: S#ID)(implicit ser: ImmutableSerializer[A]): A
+  private[confluent] def getTxn[A](id: S#Id)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
+  private[confluent] def getNonTxn[A](id: S#Id)(implicit ser: ImmutableSerializer[A]): A
 
-//  private[confluent] def putPartial[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit
-//  private[confluent] def getPartial[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
+//  private[confluent] def putPartial[A](id: S#Id, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit
+//  private[confluent] def getPartial[A](id: S#Id)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A
 
-  private[confluent] def removeFromCache(id: S#ID): Unit
+  private[confluent] def removeFromCache(id: S#Id): Unit
 
   private[confluent] def addDirtyCache     (cache: Cache[S#Tx]): Unit
   private[confluent] def addDirtyLocalCache(cache: Cache[S#Tx]): Unit
 
-  // private[confluent] def removeDurableIDMap[A](map: stm.IdentifierMap[S#ID, S#Tx, A]): Unit
+  // private[confluent] def removeDurableIdMap[A](map: stm.IdentifierMap[S#Id, S#Tx, A]): Unit
 }

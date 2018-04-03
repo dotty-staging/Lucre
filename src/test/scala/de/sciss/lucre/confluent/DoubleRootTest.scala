@@ -19,7 +19,7 @@ object DoubleRootTest extends App {
   println("Second iteration")
   iter()
 
-  class Data(val id: S#ID, val vr: S#Var[Int])
+  class Data(val id: S#Id, val vr: S#Var[Int])
 
   implicit object DataSer extends serial.Serializer[S#Tx, S#Acc, Data] {
     def write(v: Data, out: DataOutput): Unit = {
@@ -28,7 +28,7 @@ object DoubleRootTest extends App {
     }
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Data = {
-      val id = tx.readID(in, access)
+      val id = tx.readId(in, access)
       val vr = tx.readIntVar(id, in)
       new Data(id, vr)
     }
@@ -49,7 +49,7 @@ object DoubleRootTest extends App {
     implicit val screwYou = Cursor.Data.serializer[S, D] // "lovely" Scala type inference at its best
     val (varAcc, csrData) = confluent.rootWithDurable { implicit tx =>
       println("Init confluent")
-      val id = tx.newID()
+      val id = tx.newId()
       val vr = tx.newIntVar(id, 33)
       new Data(id, vr)
     } { implicit tx =>

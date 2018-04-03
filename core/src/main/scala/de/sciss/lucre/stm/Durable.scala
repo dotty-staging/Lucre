@@ -29,7 +29,7 @@ object Durable {
 }
 
 object DurableLike {
-  trait ID[S <: DurableLike[S]] extends Identifier[S#Tx] {
+  trait Id[S <: DurableLike[S]] extends Identifier[S#Tx] {
     private[stm] def id: Int
   }
 
@@ -44,7 +44,7 @@ object DurableLike {
 }
 trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]      = stm.Var[S#Tx, A]
-  final type ID          = DurableLike.ID[S]
+  final type Id          = DurableLike.Id[S]
   final type Acc         = Unit
   // final type Entry[A]    = _Var[S#Tx, A]
   type Tx               <: DurableLike.Txn[S]
@@ -59,7 +59,7 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
     */
   def numUserRecords(implicit tx: S#Tx): Int
 
-  def debugListUserRecords()(implicit tx: S#Tx): Seq[S#ID]
+  def debugListUserRecords()(implicit tx: S#Tx): Seq[S#Id]
 
   private[lucre] def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): A
 
@@ -76,7 +76,7 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   private[stm] def store: DataStore
 
-  private[lucre] def newIDValue()(implicit tx: S#Tx): Int
+  private[lucre] def newIdValue()(implicit tx: S#Tx): Int
 
   def wrap(peer: InTxn): S#Tx  // XXX TODO this might go in Cursor?
 

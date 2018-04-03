@@ -46,7 +46,7 @@ object Targets {
   }
 
   def apply[S <: Sys[S]](implicit tx: S#Tx): Targets[S] = {
-    val id        = tx.newID()
+    val id        = tx.newId()
     val children  = tx.newVar /* newEventVar */[Children[S]](id, NoChildren)
     new Impl[S](0, id, children)
   }
@@ -59,12 +59,12 @@ object Targets {
   }
 
   /* private[lucre] */ def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
-    val id = tx.readID(in, access)
+    val id = tx.readId(in, access)
     val children = tx.readVar /* readEventVar */[Children[S]](id, in)
     new Impl[S](0, id, children)
   }
 
-  private final class Impl[S <: Sys[S]](cookie: Int, val id: S#ID, childrenVar: /* event. */ S#Var[Children[S]])
+  private final class Impl[S <: Sys[S]](cookie: Int, val id: S#Id, childrenVar: /* event. */ S#Var[Children[S]])
     extends Targets[S] {
 
     def write(out: DataOutput): Unit = {
@@ -120,7 +120,7 @@ object Targets {
   * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
   * `propagate` a fired event.
   */
-sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Reactor[S] */ {
+sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#Id, S#Tx] /* extends Reactor[S] */ {
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   /** Adds a dependant to this node target.
@@ -158,7 +158,7 @@ sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#ID, S#Tx] /* extends Rea
   * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
   * targets.
   */
-trait Node[S <: Sys[S]] extends Elem[S] with Mutable[S#ID, S#Tx] /* Obj[S] */ {
+trait Node[S <: Sys[S]] extends Elem[S] with Mutable[S#Id, S#Tx] /* Obj[S] */ {
   override def toString = s"Node$id"
 
   protected def targets: Targets[S]
@@ -167,10 +167,10 @@ trait Node[S <: Sys[S]] extends Elem[S] with Mutable[S#ID, S#Tx] /* Obj[S] */ {
 
   private[event] final def _targets: Targets[S] = targets
 
-  final def id: S#ID = targets.id
+  final def id: S#Id = targets.id
 
   final def write(out: DataOutput): Unit = {
-    out.writeInt(tpe.typeID)
+    out.writeInt(tpe.typeId)
     targets.write(out)
     writeData(out)
   }

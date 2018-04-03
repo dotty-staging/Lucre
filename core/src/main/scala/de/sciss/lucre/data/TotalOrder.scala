@@ -43,7 +43,7 @@ object TotalOrder {
     def empty[S <: Sys[S]](implicit tx: S#Tx): Set[S] = empty()
 
     def empty[S <: Sys[S]](rootTag: Int = 0)(implicit tx: S#Tx): Set[S] = {
-      val id = tx.newID()
+      val id = tx.newId()
       new SetNew[S](id, rootTag, tx.newIntVar(id, 1), tx)
     }
 
@@ -87,7 +87,7 @@ object TotalOrder {
       override def toString = "<empty>"
     }
 
-    final class Entry[S <: Sys[S]] private[TotalOrder](val id: S#ID, set: Set[S], tagVal: S#Var[Int],
+    final class Entry[S <: Sys[S]] private[TotalOrder](val id: S#Id, set: Set[S], tagVal: S#Var[Int],
                                                        prevRef: S#Var[EntryOption[S] /* with MutableOption[ S ] */ ],
                                                        nextRef: S#Var[EntryOption[S] /* with MutableOption[ S ] */ ])
       extends EntryOption[S] with Mutable.Impl[S] with Ordered[S#Tx, Entry[S]] {
@@ -168,7 +168,7 @@ object TotalOrder {
   private final class SetRead[S <: Sys[S]](in: DataInput, access: S#Acc, tx0: S#Tx)
     extends Set[S] with Mutable.Impl[S] {
 
-    val id: S#ID = tx0.readID(in, access)
+    val id: S#Id = tx0.readId(in, access)
 
     {
       val version = in.readByte()
@@ -181,16 +181,16 @@ object TotalOrder {
     val root: Set.Entry[S] = EntrySerializer.read(in, access)(tx0)
   }
 
-  private final class SetNew[S <: Sys[S]](val id: S#ID, rootTag: Int, protected val sizeVal: S#Var[Int], tx0: S#Tx)
+  private final class SetNew[S <: Sys[S]](val id: S#Id, rootTag: Int, protected val sizeVal: S#Var[Int], tx0: S#Tx)
     extends Set[S] with Mutable.Impl[S] {
     me =>
 
     val root: E = {
-      val rootID  = tx0.newID()
-      val tagVal  = tx0.newIntVar(rootID, rootTag)
+      val rootId  = tx0.newId()
+      val tagVal  = tx0.newIntVar(rootId, rootTag)
       val prevRef = tx0.newVar[EOpt](id, empty)(EntryOptionSerializer)
       val nextRef = tx0.newVar[EOpt](id, empty)(EntryOptionSerializer)
-      new Set.Entry[S](rootID, me, tagVal, prevRef, nextRef)
+      new Set.Entry[S](rootId, me, tagVal, prevRef, nextRef)
     }
   }
 
@@ -212,7 +212,7 @@ object TotalOrder {
 
     protected implicit object EntrySerializer extends Serializer[S#Tx, S#Acc, E] {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): E = {
-        val id      = tx.readID(in, access)
+        val id      = tx.readId(in, access)
         val tagVal  = tx.readIntVar(id, in)
         val prevRef = tx.readVar[EOpt](id, in)(EntryOptionSerializer)
         val nextRef = tx.readVar[EOpt](id, in)(EntryOptionSerializer)
@@ -279,11 +279,11 @@ object TotalOrder {
     }
 
     private def insert(prev: EOpt, next: EOpt, nextTag: Int, recTag: Int)(implicit tx: S#Tx): E = {
-      val recID       = tx.newID()
-      val recPrevRef  = tx.newVar[EOpt](recID, prev)
-      val recNextRef  = tx.newVar[EOpt](recID, next)
-      val recTagVal   = tx.newIntVar(recID, recTag)
-      val rec         = new E(recID, this, recTagVal, prevRef = recPrevRef, nextRef = recNextRef)
+      val recId       = tx.newId()
+      val recPrevRef  = tx.newVar[EOpt](recId, prev)
+      val recNextRef  = tx.newVar[EOpt](recId, next)
+      val recTagVal   = tx.newIntVar(recId, recTag)
+      val rec         = new E(recId, this, recTagVal, prevRef = recPrevRef, nextRef = recNextRef)
       prev.updateNext(rec)
       next.updatePrev(rec)
       // sizeVal.transform(_ + 1)
@@ -409,7 +409,7 @@ object TotalOrder {
     def empty[S <: Sys[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A], entryView: A => Map.Entry[S, A],
                               rootTag: Int = 0)
                              (implicit tx: S#Tx, keySerializer: Serializer[S#Tx, S#Acc, A]): Map[S, A] = {
-      val id = tx.newID()
+      val id = tx.newId()
       new MapNew[S, A](id, tx.newIntVar(id, 1), relabelObserver, entryView, rootTag, tx)
     }
 
@@ -470,7 +470,7 @@ object TotalOrder {
       override def toString = "NoRelabelObserver"
     }
 
-    final class Entry[S <: Sys[S], A] private[TotalOrder](map: Map[S, A], val id: S#ID,
+    final class Entry[S <: Sys[S], A] private[TotalOrder](map: Map[S, A], val id: S#Id,
                                                           tagVal:  S#Var[Int],
                                                           prevRef: S#Var[KeyOption[S, A]],
                                                           nextRef: S#Var[KeyOption[S, A]])
@@ -597,7 +597,7 @@ object TotalOrder {
                                              (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Map[S, A] with Mutable.Impl[S] {
 
-    val id: S#ID = tx0.readID(in, access)
+    val id: S#Id = tx0.readId(in, access)
 
     {
       val version = in.readByte()
@@ -609,18 +609,18 @@ object TotalOrder {
     val root: Map.Entry[S, A] = EntrySerializer.read(in, access)(tx0)
   }
 
-  private final class MapNew[S <: Sys[S], A](val id: S#ID, protected val sizeVal: S#Var[Int],
+  private final class MapNew[S <: Sys[S], A](val id: S#Id, protected val sizeVal: S#Var[Int],
                                              protected val observer: Map.RelabelObserver[S#Tx, A],
                                              val entryView: A => Map.Entry[S, A], rootTag: Int, tx0: S#Tx)
                                             (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Map[S, A] with Mutable.Impl[S] {
 
     val root: E = {
-      val rootID  = tx0.newID()
-      val tagVal  = tx0.newIntVar(rootID, rootTag)
-      val prevRef = tx0.newVar[KOpt](rootID, emptyKey)
-      val nextRef = tx0.newVar[KOpt](rootID, emptyKey)
-      new Map.Entry[S, A](this, rootID, tagVal, prevRef, nextRef)
+      val rootId  = tx0.newId()
+      val tagVal  = tx0.newIntVar(rootId, rootTag)
+      val prevRef = tx0.newVar[KOpt](rootId, emptyKey)
+      val nextRef = tx0.newVar[KOpt](rootId, emptyKey)
+      new Map.Entry[S, A](this, rootId, tagVal, prevRef, nextRef)
     }
   }
 
@@ -632,7 +632,7 @@ object TotalOrder {
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): E = {
       import map.keyOptionSer
-      val id      = tx.readID(in, access)
+      val id      = tx.readId(in, access)
       val tagVal  = tx.readIntVar(id, in)
       val prevRef = tx.readVar[KOpt](id, in)(keyOptionSer)
       val nextRef = tx.readVar[KOpt](id, in)(keyOptionSer)
@@ -734,7 +734,7 @@ object TotalOrder {
       * must be done with a successive call to either `placeAfter` or `placeBefore`!
       */
     def insert()(implicit tx: S#Tx): E = {
-      val id          = tx.newID()
+      val id          = tx.newId()
       val recTagVal   = tx.newIntVar(id, -1)
       val recPrevRef  = tx.newVar[KOpt](id, emptyKey)
       val recNextRef  = tx.newVar[KOpt](id, emptyKey)
@@ -925,7 +925,7 @@ object TotalOrder {
     }
   }
 }
-sealed trait TotalOrder[S <: Sys[S]] extends Mutable[S#ID, S#Tx] {
+sealed trait TotalOrder[S <: Sys[S]] extends Mutable[S#Id, S#Tx] {
   type E
 
   /**

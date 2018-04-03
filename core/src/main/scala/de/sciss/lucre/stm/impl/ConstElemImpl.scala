@@ -21,7 +21,7 @@ trait ConstElemImpl[S <: Sys[S]] extends Elem[S] {
   private[lucre] def event(slot: Int): Event[S, Any] = throw new UnsupportedOperationException
 
   final def write(out: DataOutput): Unit = {
-    out.writeInt(tpe.typeID)
+    out.writeInt(tpe.typeId)
     out.writeByte(3)
     writeData(out)
   }

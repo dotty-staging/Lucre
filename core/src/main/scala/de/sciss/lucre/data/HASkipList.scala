@@ -106,7 +106,7 @@ object HASkipList {
     case _ => sys.error(s"Not a HA Skip List: $list")
   }
 
-  private final class SetImpl[S <: Sys[S], A](val id: S#ID, val minGap: Int,
+  private final class SetImpl[S <: Sys[S], A](val id: S#Id, val minGap: Int,
                                               protected val keyObserver: SkipList.KeyObserver[S#Tx, A],
                                               _downNode: SetImpl[S, A] => S#Var[Node[S, A, A]])
                                              (implicit val ordering: Ordering[S#Tx, A],
@@ -143,9 +143,9 @@ object HASkipList {
     }
   }
 
-  private final class MapImpl[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ B](val id: S#ID, val minGap: Int,
-                                                                protected val keyObserver: SkipList.KeyObserver[S#Tx, A],
-                                                                _downNode: MapImpl[S, A, B] => S#Var[Map.Node[S, A, B]])
+  private final class MapImpl[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ B](val id: S#Id, val minGap: Int,
+                                                                                             protected val keyObserver: SkipList.KeyObserver[S#Tx, A],
+                                                                                             _downNode: MapImpl[S, A, B] => S#Var[Map.Node[S, A, B]])
                                                                (implicit val ordering: Ordering[S#Tx, A],
                                                                 val keySerializer:   Serializer[S#Tx, S#Acc, A],
                                                                 val valueSerializer: Serializer[S#Tx, S#Acc, B])
@@ -261,7 +261,7 @@ object HASkipList {
 
     def keySerializer: Serializer[S#Tx, S#Acc, A]
 
-    def id: S#ID
+    def id: S#Id
 
     def writeEntry(entry: E, out: DataOutput): Unit
 
@@ -1364,9 +1364,9 @@ object HASkipList {
       // no reasonable app would use a node size > 255
       if (minGap < 1 || minGap > 126) sys.error(s"Minimum gap ($minGap) cannot be less than 1 or greater than 126")
 
-      val implID = tx.newID()
-      new SetImpl[S, A](implID, minGap, keyObserver, list => {
-        tx.newVar[Node[S, A]](implID, null)(list)
+      val implId = tx.newId()
+      new SetImpl[S, A](implId, minGap, keyObserver, list => {
+        tx.newVar[Node[S, A]](implId, null)(list)
       })
     }
 
@@ -1375,7 +1375,7 @@ object HASkipList {
                             (implicit tx: S#Tx, ordering: Ordering[S#Tx, A],
                              keySerializer: Serializer[S#Tx, S#Acc, A]): HASkipList.Set[S, A] = {
 
-      val id      = tx.readID(in, access)
+      val id      = tx.readId(in, access)
       val version = in.readByte()
       if (version != SER_VERSION)
         sys.error(s"Incompatible serialized version (found $version, required $SER_VERSION).")
@@ -1438,9 +1438,9 @@ object HASkipList {
       // no reasonable app would use a node size > 255
       if (minGap < 1 || minGap > 126) sys.error(s"Minimum gap ($minGap) cannot be less than 1 or greater than 126")
 
-      val implID = tx.newID()
-      new MapImpl[S, A, B](implID, minGap, keyObserver, list => {
-        tx.newVar[Node[S, A, B]](implID, null)(list)
+      val implId = tx.newId()
+      new MapImpl[S, A, B](implId, minGap, keyObserver, list => {
+        tx.newVar[Node[S, A, B]](implId, null)(list)
       })
     }
 
@@ -1450,7 +1450,7 @@ object HASkipList {
                                 keySerializer: Serializer[S#Tx, S#Acc, A],
                                 valueSerializer: Serializer[S#Tx, S#Acc, B]): HASkipList.Map[S, A, B] = {
 
-      val id      = tx.readID(in, access)
+      val id      = tx.readId(in, access)
       val version = in.readByte()
       if (version != SER_VERSION) sys.error(s"Incompatible serialized version (found $version, required $SER_VERSION).")
 

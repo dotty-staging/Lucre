@@ -10,7 +10,7 @@ import de.sciss.serial.{DataInput, DataOutput}
 class Nodes[S <: stm.Sys[S]] {
   object Node {
     implicit object ser extends MutableSerializer[S, Node] {
-      def readData(in: DataInput, _id: S#ID)(implicit tx: S#Tx) = new Node with Mutable.Impl[ S ] {
+      def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx) = new Node with Mutable.Impl[ S ] {
         val id    = _id
         val value = tx.readVar[Int](id, in)
         val next  = tx.readVar[Option[Node]](id, in)
@@ -18,12 +18,12 @@ class Nodes[S <: stm.Sys[S]] {
     }
 
     def apply(init: Int)(implicit tx: S#Tx): Node = new Node with Mutable.Impl[ S ] {
-      val id    = tx.newID()
+      val id    = tx.newId()
       val value = tx.newVar(id, init)
       val next  = tx.newVar(id, Option.empty[Node])
     }
   }
-  trait Node extends Mutable[S#ID, S#Tx] {
+  trait Node extends Mutable[S#Id, S#Tx] {
     def value: S#Var[Int]
     def next: S#Var[Option[Node]]
 

@@ -38,10 +38,10 @@ object LongExtensions {
 
     val name = "Long-Long Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import UnaryOp._
-      val op /* : Op[_, _] */ = (opID: @switch) match {
+      val op /* : Op[_, _] */ = (opId: @switch) match {
         // ---- Long ----
         case Neg    .id => Neg
         case BitNot .id => BitNot
@@ -61,10 +61,10 @@ object LongExtensions {
 
     val name = "Long-Long Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
-      val op: Op = (opID: @switch) match {
+      val op: Op = (opId: @switch) match {
         // ---- Long ----
         case Plus   .id => Plus
         case Minus  .id => Minus

@@ -162,7 +162,7 @@ object SkipList {
   }
 }
 
-sealed trait SkipList[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ E] extends Mutable[S#ID, S#Tx] {
+sealed trait SkipList[S <: Sys[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ E] extends Mutable[S#Id, S#Tx] {
   /** Searches for the Branch of a given key.
     *
     * @param   key   the key to search for

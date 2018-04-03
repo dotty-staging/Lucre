@@ -26,7 +26,7 @@ trait ElemSerializer[S <: Sys[S], Repr <: Elem[S]]
 
   final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
     val tpe0 = in.readInt()
-    if (tpe0 != tpe.typeID) sys.error(s"Type mismatch, expected ${tpe.typeID}, found $tpe0")
+    if (tpe0 != tpe.typeId) sys.error(s"Type mismatch, expected ${tpe.typeId}, found $tpe0")
     tpe.readIdentifiedObj(in, access).asInstanceOf[Repr]
   }
 }

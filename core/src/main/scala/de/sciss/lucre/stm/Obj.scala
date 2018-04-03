@@ -52,7 +52,7 @@ object Obj {
 
     final override def readObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
       val tpe = in.readInt()
-      if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
+      if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in, access)
     }
 
@@ -79,10 +79,10 @@ object Obj {
   private[this] val anyAttrMapSer = evt.Map.Modifiable.serializer[NoSys, String, Obj]
 }
 
-/** An `Obj` is a type of element that has an `S#ID` identifier and
+/** An `Obj` is a type of element that has an `S#Id` identifier and
   * an attribute map. It can be the origin of event dispatch.
   */
-trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#ID, S#Tx] {
+trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#Id, S#Tx] {
   override def toString = s"Obj$id"
 
   override def tpe: Obj.Type

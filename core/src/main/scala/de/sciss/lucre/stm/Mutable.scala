@@ -16,7 +16,7 @@ package de.sciss.lucre.stm
 import de.sciss.serial.{DataOutput, Writable}
 
 object Mutable {
-  trait Impl[S <: Sys[S]] extends Mutable[S#ID, S#Tx] {
+  trait Impl[S <: Sys[S]] extends Mutable[S#Id, S#Tx] {
     final def dispose()(implicit tx: S#Tx): Unit = {
       id.dispose()
       disposeData()
@@ -33,4 +33,4 @@ object Mutable {
     override def toString = s"${super.toString}$id"
   }
 }
-trait Mutable[+ID, -Tx] extends Identifiable[ID] with Writable with Disposable[Tx]
+trait Mutable[+Id, -Tx] extends Identifiable[Id] with Writable with Disposable[Tx]

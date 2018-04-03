@@ -23,7 +23,7 @@ trait ConstObjImpl[S <: Sys[S], A] extends Obj[S] with Publisher[S, A] {
   final def changed: EventLike[S, A] = Dummy[S, A]
 
   final def write(out: DataOutput): Unit = {
-    out.writeInt(tpe.typeID)
+    out.writeInt(tpe.typeId)
     out.writeByte(3)
     id.write(out)
     writeData(out)

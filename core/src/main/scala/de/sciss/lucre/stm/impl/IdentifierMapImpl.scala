@@ -18,24 +18,24 @@ import de.sciss.lucre.stm.{IdentifierMap, TxnLike}
 import scala.concurrent.stm.TMap
 
 object IdentifierMapImpl {
-  def newInMemoryIntMap[ID, Tx <: TxnLike, A](implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
-    new InMemoryInt[ID, Tx, A](intView)
+  def newInMemoryIntMap[Id, Tx <: TxnLike, A](implicit intView: Id => Int): IdentifierMap[Id, Tx, A] =
+    new InMemoryInt[Id, Tx, A](intView)
 
-  private final class InMemoryInt[ID, Tx <: TxnLike, A](intView: ID => Int)
-    extends IdentifierMap[ID, Tx, A] {
+  private final class InMemoryInt[Id, Tx <: TxnLike, A](intView: Id => Int)
+    extends IdentifierMap[Id, Tx, A] {
 
     private[this] val peer = TMap.empty[Int, A]
 
-    def get(id: ID)(implicit tx: Tx): Option[A] = peer.get(intView(id))(tx.peer)
+    def get(id: Id)(implicit tx: Tx): Option[A] = peer.get(intView(id))(tx.peer)
 
-    def getOrElse(id: ID, default: => A)(implicit tx: Tx): A = get(id).getOrElse(default)
+    def getOrElse(id: Id, default: => A)(implicit tx: Tx): A = get(id).getOrElse(default)
 
-    def put(id: ID, value: A)(implicit tx: Tx): Unit =
+    def put(id: Id, value: A)(implicit tx: Tx): Unit =
       peer.put(intView(id), value)(tx.peer)
 
-    def contains(id: ID)(implicit tx: Tx): Boolean = peer.contains(intView(id))(tx.peer)
+    def contains(id: Id)(implicit tx: Tx): Boolean = peer.contains(intView(id))(tx.peer)
 
-    def remove(id: ID)(implicit tx: Tx): Unit =
+    def remove(id: Id)(implicit tx: Tx): Unit =
       peer.remove(intView(id))(tx.peer)
 
     override def toString = s"IdentifierMap@${hashCode.toHexString}"

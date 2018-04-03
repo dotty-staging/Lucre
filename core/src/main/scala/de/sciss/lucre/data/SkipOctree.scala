@@ -53,7 +53,7 @@ object SkipOctree {
   * of Scala's mutable `Map` and adds further operations such
   * as range requires and nearest neighbour search.
   */
-trait SkipOctree[S <: Sys[S], D <: Space[D], A] extends Mutable[S#ID, S#Tx] {
+trait SkipOctree[S <: Sys[S], D <: Space[D], A] extends Mutable[S#Id, S#Tx] {
   /** The space (i.e., resolution and dimensionality) underlying the tree. */
   def space: D
 

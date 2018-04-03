@@ -38,9 +38,9 @@ object IntExtensions {
 
     val name = "Int-1 Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
-      val op /* : UnaryOp[_, _] */ = (opID: @switch) match {
+      val op /* : UnaryOp[_, _] */ = (opId: @switch) match {
         // ---- Int => Int ----
         case Neg    .id => Neg
         case BitNot .id => BitNot
@@ -62,9 +62,9 @@ object IntExtensions {
 
     val name = "Int-2 Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
-      val op: BinaryOp = (opID: @switch) match {
+      val op: BinaryOp = (opId: @switch) match {
         case Plus               .id => Plus
         case Minus              .id => Minus
         case Times              .id => Times

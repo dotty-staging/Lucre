@@ -423,7 +423,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
   }
 
   object MarkTree {
-    def apply[S <: Sys[S]](ft: FullTree[S])(implicit tx: S#Tx, system: S): MarkTree[S] = {
+    def apply[S <: Sys[S]](ft: FullTree[S])(implicit tx: S#Tx): MarkTree[S] = {
       implicit val pointView: (MarkVertex[S], S#Tx) => IntPoint3D = (p, tx) => p.toPoint(tx)
       lazy val orderObserver = new RelabelObserver[S, MarkVertex[S]]("mark", t)
       lazy val _vertexSer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = new Serializer[S#Tx, S#Acc, MarkVertex[S]] {

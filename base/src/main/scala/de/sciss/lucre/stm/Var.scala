@@ -49,11 +49,7 @@ trait Source[-Tx, +A] {
   def apply()(implicit tx: Tx): A
 }
 
-//trait LocalVar[-Tx, A] extends Sink[Tx, A] with Source[Tx, A] {
-//  def isInitialized(implicit tx: Tx): Boolean
-//}
+trait Ref[-Tx, A] extends Sink[Tx, A] with Source[Tx, A]
 
 /** A transactional variable is an identifiable cell allowing the reading and writing of values */
-trait Var[-Tx, A] extends Sink[Tx, A] with Source[Tx, A] with Writable with Disposable[Tx] {
-  // def transform(f: A => A)(implicit tx: Tx): Unit
-}
+trait Var[-Tx, A] extends Ref[Tx, A] with Writable with Disposable[Tx]

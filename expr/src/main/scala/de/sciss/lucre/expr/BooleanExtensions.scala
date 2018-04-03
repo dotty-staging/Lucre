@@ -40,9 +40,9 @@ object BooleanExtensions  {
 
     val name = "Boolean-1 Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
-      val op: UnaryOp[Boolean, BooleanObj] = opID /* : @switch */ match {
+      val op: UnaryOp[Boolean, BooleanObj] = opId /* : @switch */ match {
         case Not.id => Not
       }
       val _1 = BooleanObj.read(in, access)
@@ -67,9 +67,9 @@ object BooleanExtensions  {
 
     val name = "Boolean-2 Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
-      val op /* : BinaryOp[_, _] */ = (opID: @switch) match {
+      val op /* : BinaryOp[_, _] */ = (opId: @switch) match {
         case And   .id => And
         case Or    .id => Or
         case Xor   .id => Xor
@@ -210,7 +210,7 @@ object BooleanExtensions  {
 
     protected def writeData(out: DataOutput): Unit = {
       out.writeByte(1)  // 'node not var'
-      // out.writeInt(BooleanObj.typeID)
+      // out.writeInt(BooleanObj.typeId)
       out.writeInt(op.id)
       _1.write(out)
       _2.write(out)

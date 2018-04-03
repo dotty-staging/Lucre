@@ -38,7 +38,7 @@ object BiPinImpl {
 
   def readEntry[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entry[S, A] = {
     val tpe = in.readInt()
-    if (tpe != Entry.typeID) sys.error(s"Type mismatch. Found $tpe, expected ${Entry.typeID}")
+    if (tpe != Entry.typeId) sys.error(s"Type mismatch. Found $tpe, expected ${Entry.typeId}")
     in.readByte() match {
       case 3 =>
         val key     = LongObj.read(in, access)

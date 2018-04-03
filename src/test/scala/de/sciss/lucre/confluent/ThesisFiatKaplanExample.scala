@@ -13,7 +13,7 @@ object ThesisFiatKaplanExample extends App {
     private class ListSer[S <: Sys[S], A](implicit _peerSer: serial.Serializer[S#Tx, S#Acc, A])
       extends stm.MutableSerializer[S, LinkedList[S, A]] {
 
-      protected def readData(in: DataInput, _id: S#ID)(implicit tx: S#Tx): LinkedList[S, A] =
+      protected def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx): LinkedList[S, A] =
         new Impl[S, A] {
           val peerSer = _peerSer
           val id = _id
@@ -24,7 +24,7 @@ object ThesisFiatKaplanExample extends App {
     def apply[S <: Sys[S], A]()(implicit tx: S#Tx, _peerSer: serial.Serializer[S#Tx, S#Acc, A]): LinkedList[S, A] =
       new Impl[S, A] {
         val peerSer = _peerSer
-        val id = tx.newID()
+        val id = tx.newId()
         val head = tx.newVar(id, Option.empty[Cell])(serial.Serializer.option(CellSer))
     }
 
@@ -53,7 +53,7 @@ object ThesisFiatKaplanExample extends App {
       def writeData(out: DataOutput): Unit = head.write(out)
     }
   }
-  trait LinkedList[S <: Sys[S], A] extends stm.Mutable[S#ID, S#Tx] {
+  trait LinkedList[S <: Sys[S], A] extends stm.Mutable[S#Id, S#Tx] {
     list =>
     override def toString = "LinkedList"
     def head: S#Var[Option[Cell]]

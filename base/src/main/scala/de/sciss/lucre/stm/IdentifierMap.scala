@@ -13,13 +13,6 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.stm.impl.IdentifierMapImpl
-
-object IdentifierMap {
-  def newInMemoryIntMap[ID, Tx <: TxnLike, A](implicit intView: ID => Int): IdentifierMap[ID, Tx, A] =
-    IdentifierMapImpl.newInMemoryIntMap[ID, Tx, A]
-}
-
 /** An identifier map is basically a transactional map whose keys are system identifiers.
   * However, there are two important aspects: First, the map is always ephemeral
   * (but might be still durable!), even for a confluently persistent system. Second,
@@ -30,15 +23,15 @@ object IdentifierMap {
   * tool to map system entities to ephemeral live views.
   *
   * @tparam Tx  the underlying system's transaction type
-  * @tparam ID  the underlying system's identifier type
+  * @tparam Id  the underlying system's identifier type
   * @tparam A   the values stored at the keys. `Unit` can be used if only set
   *             functionality is needed.
   */
-trait IdentifierMap[ID, -Tx, A] extends Disposable[Tx] /* Mutable[ID, Tx] */ {
-  def put      (id: ID, value: A)     (implicit tx: Tx): Unit
-  def get      (id: ID)               (implicit tx: Tx): Option[A]
-  def getOrElse(id: ID, default: => A)(implicit tx: Tx): A
+trait IdentifierMap[Id, -Tx, A] extends Disposable[Tx] /* Mutable[Id, Tx] */ {
+  def put      (id: Id, value: A)     (implicit tx: Tx): Unit
+  def get      (id: Id)               (implicit tx: Tx): Option[A]
+  def getOrElse(id: Id, default: => A)(implicit tx: Tx): A
 
-  def contains (id: ID)(implicit tx: Tx): Boolean
-  def remove   (id: ID)(implicit tx: Tx): Unit
+  def contains (id: Id)(implicit tx: Tx): Boolean
+  def remove   (id: Id)(implicit tx: Tx): Unit
 }

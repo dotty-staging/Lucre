@@ -30,7 +30,7 @@ trait Sys[S <: Sys[S]] extends stm.Sys[S] {
   type I <: stm.InMemoryLike[I]
 
   type Tx               <: confluent.Txn[S]
-  final type ID         = confluent.Identifier[S]
+  final type Id         = confluent.Identifier[S]
   final type Acc        = confluent.Access[S]
   final type Var[A]     = confluent.Var[S, A]
   // final type Entry[A]   = Sys.Entry[S, A]
@@ -44,8 +44,8 @@ trait Sys[S <: Sys[S]] extends stm.Sys[S] {
   private[confluent] def fullCache:    CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]]
   // private[confluent] def partialCache: CacheMap.Partial[S, Int, DurablePersistentMap[S, Int]]
 
-  private[confluent] def newIDValue()(implicit tx: S#Tx): Int
-  private[confluent] def newVersionID(implicit tx: S#Tx): Long
+  private[confluent] def newIdValue()(implicit tx: S#Tx): Int
+  private[confluent] def newVersionId(implicit tx: S#Tx): Long
 
   private[confluent] def store: DataStore
 

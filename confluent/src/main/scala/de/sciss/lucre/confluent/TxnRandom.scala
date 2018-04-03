@@ -47,10 +47,10 @@ object TxnRandom {
   def plain():           TxnRandom[InTxn] = plain(calcSeedUniquifier() ^ System.nanoTime())
   def plain(seed: Long): TxnRandom[InTxn] = new PlainImpl(Ref(initialScramble(seed)))
 
-  def apply[S <: stm.Sys[S]](id: S#ID)(implicit tx: S#Tx): TxnRandom[S#Tx] =
+  def apply[S <: stm.Sys[S]](id: S#Id)(implicit tx: S#Tx): TxnRandom[S#Tx] =
     apply(id, calcSeedUniquifier() ^ System.nanoTime())
 
-  def apply[S <: stm.Sys[S]](id: S#ID, seed: Long)(implicit tx: S#Tx): TxnRandom[S#Tx] =
+  def apply[S <: stm.Sys[S]](id: S#Id, seed: Long)(implicit tx: S#Tx): TxnRandom[S#Tx] =
     new SysImpl[S#Tx](tx.newLongVar(id, initialScramble(seed)))
 
   def wrap[Tx](peer: stm.Var[Tx, Long]): TxnRandom[Tx] = new SysImpl[Tx](peer)
@@ -113,7 +113,7 @@ object TxnRandom {
 
   private final class SysImpl[Tx](protected val seedRef: stm.Var[Tx, Long]) extends SysLike[Tx]
 
-  private final class PersistentImpl[S <: stm.Sys[S]](val id: S#ID, protected val seedRef: stm.Var[S#Tx, Long])
+  private final class PersistentImpl[S <: stm.Sys[S]](val id: S#Id, protected val seedRef: stm.Var[S#Tx, Long])
     extends SysLike[S#Tx] with Persistent[S] {
 
     def write(out: DataOutput): Unit = {
@@ -132,7 +132,7 @@ object TxnRandom {
       apply(calcSeedUniquifier() ^ System.nanoTime())
 
     def apply[S <: stm.Sys[S]](seed: Long)(implicit tx: S#Tx): Persistent[S] = {
-      val id = tx.newID()
+      val id = tx.newId()
       new PersistentImpl[S](id, tx.newLongVar(id, initialScramble(seed)))
     }
 
@@ -147,14 +147,14 @@ object TxnRandom {
       def write(p: Persistent[S], out: DataOutput): Unit = p.write(out)
 
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Persistent[S] = {
-        val id      = tx.readID(in, access)
+        val id      = tx.readId(in, access)
         val seedRef = tx.readVar[Long](id, in)
         new PersistentImpl(id, seedRef)
       }
     }
   }
   /** A random number generator that can be persisted (written and read). */
-  sealed trait Persistent[S <: stm.Sys[S]] extends TxnRandom[S#Tx] with stm.Mutable[S#ID, S#Tx]
+  sealed trait Persistent[S <: stm.Sys[S]] extends TxnRandom[S#Tx] with stm.Mutable[S#Id, S#Tx]
 }
 
 /** A transactional pseudo-random number generator which

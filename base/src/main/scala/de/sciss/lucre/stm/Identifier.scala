@@ -18,9 +18,9 @@ import de.sciss.serial
 import de.sciss.serial.Serializer
 
 object Identifier {
-  implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, S#ID] =
+  implicit def serializer[S <: Base[S]]: Serializer[S#Tx, S#Acc, S#Id] =
     anySer.asInstanceOf[IdentifierSerializer[S]]
 
-  private val anySer = new IdentifierSerializer[NoSys]
+  private val anySer = new IdentifierSerializer[NoBase]
 }
 trait Identifier[-Tx] extends Disposable[Tx] with serial.Writable

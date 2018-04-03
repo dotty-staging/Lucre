@@ -21,8 +21,8 @@ import scala.annotation.meta.field
 
 object ObjImpl {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
-    val typeID  = in.readInt()
-    val tpe     = getType(typeID)
+    val typeId  = in.readInt()
+    val tpe     = getType(typeId)
     tpe.readIdentifiedObj(in, access)
   }
 
@@ -31,14 +31,14 @@ object ObjImpl {
   @field private[this] final val sync   = new AnyRef
   @field private[this] final val anySer = new Ser[NoSys]
 
-  @volatile private var map = Map[Int, Obj.Type](evt.Map.typeID -> evt.Map)
+  @volatile private var map = Map[Int, Obj.Type](evt.Map.typeId -> evt.Map)
 
   def addType(tpe: Obj.Type): Unit = sync.synchronized {
-    val typeID = tpe.typeID
-    if (map.contains(typeID))
-      throw new IllegalArgumentException(s"Object type $typeID was already registered ($tpe overrides ${map(typeID)})")
+    val typeId = tpe.typeId
+    if (map.contains(typeId))
+      throw new IllegalArgumentException(s"Object type $typeId was already registered ($tpe overrides ${map(typeId)})")
 
-    map += typeID -> tpe
+    map += typeId -> tpe
   }
 
   @inline

@@ -16,11 +16,10 @@ package de.sciss.lucre.stm
 import java.io.Closeable
 
 import de.sciss.lucre.event.ReactionMap
-import de.sciss.serial.{DataInput, Serializer}
 
 import scala.annotation.tailrec
 import scala.concurrent.stm.Txn.ExternalDecider
-import scala.concurrent.stm.{Txn => ScalaTxn, InTxnEnd, TxnLocal, TxnExecutor, InTxn}
+import scala.concurrent.stm.{InTxn, InTxnEnd, TxnExecutor, TxnLocal, Txn => ScalaTxn}
 import scala.util.control.NonFatal
 
 object TxnLike {
@@ -127,62 +126,8 @@ object Txn {
     }
   }
 }
-trait Txn[S <: Sys[S]] extends TxnLike {
-  /** Back link to the underlying system. */
-  val system: S
-
+trait Txn[S <: Sys[S]] extends Executor[S] with TxnLike {
   def inMemory: S#I#Tx
-
-  def newID(): S#ID
-
-  // ---- variables ----
-
-  def newVar[A]    (id: S#ID, init: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
-  def newBooleanVar(id: S#ID, init: Boolean): S#Var[Boolean]
-  def newIntVar    (id: S#ID, init: Int    ): S#Var[Int]
-  def newLongVar   (id: S#ID, init: Long   ): S#Var[Long]
-
-  def newVarArray[A](size: Int): Array[S#Var[A]]
-
-  /** Creates a new in-memory transactional map for storing and retrieving values based on a mutable's identifier
-    * as key. If a system is confluently persistent, the `get` operation will find the most recent key that
-    * matches the search key. Objects are not serialized but kept live in memory.
-    *
-    * ID maps can be used by observing views to look up associated view meta data even though they may be
-    * presented with a more recent access path of the model peer (e.g. when a recent event is fired and observed).
-    *
-    * @tparam A         the value type in the map
-    */
-  def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A]
-
-  def readVar[A]    (id: S#ID, in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
-  def readBooleanVar(id: S#ID, in: DataInput): S#Var[Boolean]
-  def readIntVar    (id: S#ID, in: DataInput): S#Var[Int]
-  def readLongVar   (id: S#ID, in: DataInput): S#Var[Long]
-
-  def readID(in: DataInput, acc: S#Acc): S#ID
-
-  /** Creates a handle (in-memory) to refresh a stale version of an object, assuming that the future transaction is issued
-    * from the same cursor that is used to create the handle, except for potentially having advanced.
-    * This is a mechanism that can be used in live views to gain valid access to a referenced object
-    * (e.g. self access).
-    *
-    * @param value         the object which will be refreshed when calling `get` on the returned handle
-    * @param serializer    used to write and freshly read the object
-    * @return              the handle
-    */
-  def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A]
-
-  // ---- completion ----
-
-  def beforeCommit(fun: S#Tx => Unit): Unit
-  def afterCommit (fun:      => Unit): Unit
-
-  // ---- context ----
-
-  // def newContext(): S#Context
-
-  def use[A](context: S#Context)(fun: => A): A
 
   // ---- events ----
 
@@ -191,12 +136,4 @@ trait Txn[S <: Sys[S]] extends TxnLike {
   // ---- attributes ----
 
   def attrMap(obj: Obj[S]): Obj.AttrMap[S]
-
-  //  def attrPut   (obj: Obj[S], key: String, value: Obj[S]): Unit
-  //  def attrGet   (obj: Obj[S], key: String): Option[Obj[S]]
-  //  def attrRemove(obj: Obj[S], key: String): Unit
-  //
-  //  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])]
-
-  // def attrChanged: EventLike[S, AttrUpdate[S]]
 }

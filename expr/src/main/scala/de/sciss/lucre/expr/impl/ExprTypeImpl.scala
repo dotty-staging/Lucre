@@ -45,8 +45,8 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     */
   protected def readNode[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                      (implicit tx: S#Tx): Ex[S] = {
-    val opID = in.readInt()
-    readExtension(op = opID, in = in, access = access, targets = targets)
+    val opId = in.readInt()
+    readExtension(op = opId, in = in, access = access, targets = targets)
   }
 
   /** Reads an identified object whose cookie is neither `3` (constant) nor `0` (node).
@@ -64,7 +64,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
   // repeat `implicit` here because IntelliJ IDEA will not recognise it otherwise (SCL-9076)
   implicit final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
-    mkConst[S](tx.newID(), value)
+    mkConst[S](tx.newId(), value)
 
   final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Var[S] = {
     val targets = Targets[S]
@@ -72,7 +72,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     mkVar[S](targets, ref, connect = true)
   }
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S]
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S]
   protected def mkVar  [S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)(implicit tx: S#Tx): Var[S]
 
   final def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
@@ -80,7 +80,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
   final def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Const[S] = {
     val tpe = in.readInt()
-    if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
+    if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
     val cookie = in.readByte()
     if (cookie != 3) sys.error(s"Unexpected cookie $cookie")
     readIdentifiedConst(in, access)
@@ -88,14 +88,14 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
   @inline
   private[this] def readIdentifiedConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Const[S] = {
-    val id      = tx.readID(in, access)
+    val id      = tx.readId(in, access)
     val value   = valueSerializer.read(in)
     mkConst[S](id, value)
   }
 
   final def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Var[S] = {
     val tpe = in.readInt()
-    if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
+    if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
     val targets = Targets.read[S](in, access)
     val cookie = in.readByte()
     if (cookie != 0) sys.error(s"Unexpected cookie $cookie")
@@ -111,7 +111,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
   // ---- private ----
 
-  protected trait ConstImpl[S <: Sys[S]] // (val id: S#ID, val constValue: A)
+  protected trait ConstImpl[S <: Sys[S]] // (val id: S#Id, val constValue: A)
     extends expr.impl.ConstImpl[S, A] {
 
     final def tpe: Obj.Type = self
@@ -119,7 +119,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     final protected def writeData(out: DataOutput): Unit = valueSerializer.write(constValue, out)
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      mkConst[Out](txOut.newID(), constValue)
+      mkConst[Out](txOut.newId(), constValue)
   }
 
   protected trait VarImpl[S <: Sys[S]]
@@ -148,7 +148,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] = {
       val tpe = in.readInt()
-      if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
+      if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in, access)
     }
   }

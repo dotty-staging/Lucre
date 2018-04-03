@@ -25,7 +25,7 @@ import de.sciss.serial.ImmutableSerializer
 object ArtifactLocation extends expr.impl.ExprTypeImpl[File, ArtifactLocation] {
   import artifact.{ArtifactLocation => Repr}
 
-  final val typeID = 0x10003
+  final val typeId = 0x10003
 
   def tmp[S <: Sys[S]]()(implicit tx: S#Tx): Const[S] = {
     val dir   = File.createTempFile("artifacts", "tmp")
@@ -37,7 +37,7 @@ object ArtifactLocation extends expr.impl.ExprTypeImpl[File, ArtifactLocation] {
   
   implicit def valueSerializer: ImmutableSerializer[File] = ImmutableSerializer.File
 
-  protected def mkConst[S <: Sys[S]](id: S#ID, value: A)(implicit tx: S#Tx): Const[S] =
+  protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
   protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
@@ -47,7 +47,7 @@ object ArtifactLocation extends expr.impl.ExprTypeImpl[File, ArtifactLocation] {
     res
   }
 
-  private[this] final class _Const[S <: Sys[S]](val id: S#ID, val constValue: A)
+  private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
   private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])

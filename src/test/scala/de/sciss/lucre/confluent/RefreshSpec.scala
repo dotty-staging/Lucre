@@ -21,20 +21,20 @@ class RefreshSpec extends fixture.FlatSpec with Matchers {
 
   object Entity {
     implicit object Ser extends MutableSerializer[S, Entity] {
-      protected def readData(in: DataInput, id: S#ID)(implicit tx: S#Tx) = {
+      protected def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx) = {
         val field = tx.readIntVar(id, in)
         new Entity(id, field)
       }
     }
 
     def apply(init: Int)(implicit tx: S#Tx): Entity = {
-      val id = tx.newID()
+      val id = tx.newId()
       val field = tx.newIntVar(id, init)
       new Entity(id, field)
     }
   }
 
-  class Entity(val id: S#ID, val field: S#Var[Int]) extends stm.Mutable.Impl[S] {
+  class Entity(val id: S#Id, val field: S#Var[Int]) extends stm.Mutable.Impl[S] {
     protected def disposeData()(implicit tx: S#Tx): Unit = field.dispose()
 
     protected def writeData(out: DataOutput): Unit = field.write(out)

@@ -24,7 +24,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
 object BiPin extends Obj.Type {
-  final val typeID = 25
+  final val typeId = 25
 
   override def init(): Unit = {
     super.init()
@@ -34,7 +34,7 @@ object BiPin extends Obj.Type {
   final case class Update[S <: Sys[S], A](pin: BiPin[S, A], changes: List[Change[S, A]])
 
   object Entry extends Elem.Type {
-    final val typeID = 26
+    final val typeId = 26
 
 //    def apply[S <: Sys[S], A <: Elem[S]](key: LongObj[S], value: A)(implicit tx: S#Tx): Entry[S, A] =
 //      Impl.newEntry(key, value)

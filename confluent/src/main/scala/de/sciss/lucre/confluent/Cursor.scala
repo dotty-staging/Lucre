@@ -46,7 +46,7 @@ object Cursor {
       Impl.dataSerializer[S, D]
   }
   trait Data[S <: Sys[S], D <: stm.Sys[D]] extends Disposable[D#Tx] with Writable {
-    def id  : D#ID
+    def id  : D#Id
     def path: D#Var[S#Acc]
   }
 }

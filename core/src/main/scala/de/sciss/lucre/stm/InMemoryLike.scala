@@ -15,10 +15,10 @@ package de.sciss.lucre.stm
 
 import de.sciss.lucre.stm
 
-import scala.concurrent.stm.{Ref, InTxn}
+import scala.concurrent.stm.{Ref => STMRef, InTxn}
 
 object InMemoryLike {
-  trait ID[S <: InMemoryLike[S]] extends Identifier[S#Tx] {
+  trait Id[S <: InMemoryLike[S]] extends Identifier[S#Tx] {
     private[stm] def id: Int
   }
 
@@ -28,7 +28,7 @@ object InMemoryLike {
   }
 
   trait Var[S <: InMemoryLike[S], A] extends stm.Var[S#Tx, A] {
-    private[stm] def peer: Ref[A]
+    private[stm] def peer: STMRef[A]
   }
 
   trait Context[S <: InMemoryLike[S]] {
@@ -38,16 +38,16 @@ object InMemoryLike {
 }
 trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]   = InMemoryLike.Var[S, A]
-  final type ID       = InMemoryLike.ID[S]
+  final type Id       = InMemoryLike.Id[S]
   final type Acc      = Unit
   final type Context  = InMemoryLike.Context[S]
 
   type Tx <: InMemoryLike.Txn[S]
 
-  // private[lucre] def attrMap: IdentifierMap[S#ID, S#Tx, Map[String, Obj[S]]]
-  private[lucre] def attrMap: IdentifierMap[S#ID, S#Tx, Obj.AttrMap[S]]
+  // private[lucre] def attrMap: IdentifierMap[S#Id, S#Tx, Map[String, Obj[S]]]
+  private[lucre] def attrMap: IdentifierMap[S#Id, S#Tx, Obj.AttrMap[S]]
 
-  private[lucre] def newIDValue()(implicit tx: S#Tx): Int
+  private[lucre] def newIdValue()(implicit tx: S#Tx): Int
 
   def wrap(peer: InTxn) : S#Tx
 }

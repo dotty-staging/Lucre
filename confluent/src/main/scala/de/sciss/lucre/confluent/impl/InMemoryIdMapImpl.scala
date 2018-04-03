@@ -1,5 +1,5 @@
 /*
- *  InMemoryIDMapImpl.scala
+ *  InMemoryIdMapImpl.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
@@ -18,8 +18,8 @@ import de.sciss.lucre.stm.IdentifierMap
 
 import scala.concurrent.stm.TxnLocal
 
-private[impl] final class InMemoryIDMapImpl[S <: Sys[S], A](val store: InMemoryConfluentMap[S, Int])
-  extends IdentifierMap[S#ID, S#Tx, A] with InMemoryCacheMapImpl[S, Int] {
+private[impl] final class InMemoryIdMapImpl[S <: Sys[S], A](val store: InMemoryConfluentMap[S, Int])
+  extends IdentifierMap[S#Id, S#Tx, A] with InMemoryCacheMapImpl[S, Int] {
 
   private val markDirtyFlag = TxnLocal(false)
 
@@ -28,21 +28,21 @@ private[impl] final class InMemoryIDMapImpl[S <: Sys[S], A](val store: InMemoryC
       tx.addDirtyLocalCache(this)
     }
 
-  def get(id: S#ID)(implicit tx: S#Tx): Option[A] =
+  def get(id: S#Id)(implicit tx: S#Tx): Option[A] =
     getCache[A](id.base, id.path)
 
-  def getOrElse(id: S#ID, default: => A)(implicit tx: S#Tx): A =
+  def getOrElse(id: S#Id, default: => A)(implicit tx: S#Tx): A =
     get(id).getOrElse(default)
 
-  def put(id: S#ID, value: A)(implicit tx: S#Tx): Unit = {
+  def put(id: S#Id, value: A)(implicit tx: S#Tx): Unit = {
     putCache[A](id.base, id.path, value)
     markDirty()
   }
 
-  def contains(id: S#ID)(implicit tx: S#Tx): Boolean =
+  def contains(id: S#Id)(implicit tx: S#Tx): Boolean =
     get(id).isDefined // XXX TODO more efficient implementation
 
-  def remove(id: S#ID)(implicit tx: S#Tx): Unit =
+  def remove(id: S#Id)(implicit tx: S#Tx): Unit =
     if (removeCache(id.base, id.path)) markDirty()
 
   def dispose()(implicit tx: S#Tx): Unit = ()

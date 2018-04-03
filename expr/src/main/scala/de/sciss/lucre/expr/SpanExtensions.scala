@@ -39,10 +39,10 @@ object SpanExtensions  {
 
     val name = "Span-Long Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): LongObj[S] = {
       import UnaryOp._
-      val op: LongOp = (opID: @switch) match {
+      val op: LongOp = (opId: @switch) match {
         // ---- Span ----
         case Start  .id => Start
         case Stop   .id => Stop
@@ -59,10 +59,10 @@ object SpanExtensions  {
 
     val name = "Int-Int Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
-      val op /* : Op[_, _, _, _] */ = opID /* : @switch */ match {
+      val op /* : Op[_, _, _, _] */ = opId /* : @switch */ match {
         case Apply.id => Apply
         case Shift.id => Shift
       }

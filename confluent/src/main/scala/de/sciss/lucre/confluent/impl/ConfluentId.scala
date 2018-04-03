@@ -1,5 +1,5 @@
 /*
- *  ConfluentID.scala
+ *  ConfluentId.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
@@ -18,7 +18,7 @@ import de.sciss.serial.DataOutput
 
 import scala.util.hashing.MurmurHash3
 
-private final class ConfluentID[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
+private final class ConfluentId[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
   override def hashCode: Int = {
     import MurmurHash3._
     val h0  = productSeed
@@ -27,7 +27,7 @@ private final class ConfluentID[S <: Sys[S]](val base: Int, val path: S#Acc) ext
     finalizeHash(h2, 2)
   }
 
-  def copy(newPath: S#Acc): Identifier[S] = new ConfluentID(base = base, path = newPath)
+  def copy(newPath: S#Acc): Identifier[S] = new ConfluentId(base = base, path = newPath)
 
   override def equals(that: Any): Boolean = that match {
     case b: Identifier[_] => base == b.base && path == b.path
@@ -44,7 +44,7 @@ private final class ConfluentID[S <: Sys[S]](val base: Int, val path: S#Acc) ext
   def dispose()(implicit tx: S#Tx): Unit = ()
 }
 
-private final class PartialID[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
+private final class PartialId[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
   override def hashCode: Int = {
     import MurmurHash3._
     val h0  = productSeed
@@ -59,10 +59,10 @@ private final class PartialID[S <: Sys[S]](val base: Int, val path: S#Acc) exten
     }
   }
 
-  def copy(newPath: S#Acc): Identifier[S] = new PartialID(base = base, path = newPath)
+  def copy(newPath: S#Acc): Identifier[S] = new PartialId(base = base, path = newPath)
 
   override def equals(that: Any): Boolean = that match {
-    case b: PartialID[_] =>
+    case b: PartialId[_] =>
       val bp = b.path
       if (path.isEmpty) {
         base == b.base && bp.isEmpty

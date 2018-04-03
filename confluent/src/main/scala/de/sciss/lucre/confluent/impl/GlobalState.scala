@@ -31,7 +31,7 @@ private[impl] object GlobalState {
     def write(v: GlobalState[S, D], out: DataOutput): Unit = {
       import v._
       out.writeLong(SER_VERSION)
-      out.writeInt(durRootID) // writeInt(durRootID)
+      out.writeInt(durRootId) // writeInt(durRootId)
       idCnt        .write(out)
       versionLinear.write(out)
       versionRandom.write(out)
@@ -42,18 +42,17 @@ private[impl] object GlobalState {
       val serVer = in.readLong()
       if (serVer != SER_VERSION)
         throw new IllegalStateException(s"Incompatible serialized version. Found $serVer but require $SER_VERSION")
-      val durRootID     = in.readInt() // readInt()
+      val durRootId     = in.readInt() // readInt()
       val idCnt         = tx.readCachedIntVar(in)
       val versionLinear = tx.readCachedIntVar(in)
       val versionRandom = tx.readCachedLongVar(in)
       val partialTree   = Ancestor.readTree[D, Long](in, acc)(tx, ImmutableSerializer.Long, _.toInt)
-      GlobalState[S, D](durRootID = durRootID, idCnt = idCnt, versionLinear = versionLinear,
+      GlobalState[S, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
         versionRandom = versionRandom, partialTree = partialTree)
     }
   }
 }
 
 private[impl] final case class GlobalState[S <: Sys[S], D <: stm.DurableLike[D]](
-    durRootID: Int, idCnt: D#Var[Int], versionLinear: D#Var[Int], versionRandom: D#Var[Long],
+    durRootId: Int, idCnt: D#Var[Int], versionLinear: D#Var[Int], versionRandom: D#Var[Long],
     partialTree: Ancestor.Tree[D, Long])
-

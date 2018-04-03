@@ -28,11 +28,11 @@ class CursorsSpec extends ConfluentSpec {
     implicit object Ser extends Serializer[S#Tx, S#Acc, Entity] {
       def write(e: Entity, out: DataOutput): Unit = e.write(out)
 
-      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx) = {
-        val id    = tx.readID(in, access)
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Entity = {
+        val id    = tx.readId(in, access)
         val field = tx.readIntVar(id, in)
         //            val dtx: D#Tx  = tx.durable
-        //            val did        = dtx.readID( in, () )
+        //            val did        = dtx.readId( in, () )
         //            val cursors    = dtx.readVar[ Vec[ Cursor[ S ]]]( did, in )
         val cursors = tx.readVar[Vec[Cursor[S, D]]](id, in)
         new Entity(id, field, cursors)
@@ -40,10 +40,10 @@ class CursorsSpec extends ConfluentSpec {
     }
 
     def apply(init: Int)(implicit tx: S#Tx): Entity = {
-      val id = tx.newID()
+      val id = tx.newId()
       val field = tx.newIntVar(id, init)
       //         val dtx: D#Tx  = tx.durable
-      //         val did        = dtx.newID()
+      //         val did        = dtx.newId()
       val initCsr = Vec(tx.system.newCursor(tx.inputAccess), tx.system.newCursor(tx.inputAccess))
       //         val cursors    = dtx.newVar[ Vec[ Cursor[ S ]]]( did, initCsr )
       val cursors = tx.newVar[Vec[Cursor[S, D]]](id, initCsr)
@@ -51,7 +51,7 @@ class CursorsSpec extends ConfluentSpec {
     }
   }
 
-  class Entity(val id: S#ID, val field: S#Var[Int], cursorsVar: S#Var[Vec[Cursor[S, D]]])
+  class Entity(val id: S#Id, val field: S#Var[Int], cursorsVar: S#Var[Vec[Cursor[S, D]]])
     extends stm.Mutable.Impl[S] {
     protected def disposeData()(implicit tx: S#Tx): Unit = {
       //         implicit val dtx: D#Tx  = tx.durable

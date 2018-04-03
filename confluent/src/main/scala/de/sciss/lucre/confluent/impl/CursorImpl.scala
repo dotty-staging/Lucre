@@ -51,7 +51,7 @@ object CursorImpl {
   }
 
   def newData[S <: Sys[S], D <: stm.Sys[D]](init: S#Acc = Access.root[S])(implicit tx: D#Tx): Data[S, D] = {
-    val id    = tx.newID()
+    val id    = tx.newId()
     val path  = tx.newVar(id, init)(pathSerializer[S, D])
     new DataImpl[S, D](id, path)
   }
@@ -72,12 +72,12 @@ object CursorImpl {
   def readData[S <: Sys[S], D <: stm.Sys[D]](in: DataInput, access: D#Acc)(implicit tx: D#Tx): Data[S, D] = {
     val cookie  = in.readShort()
     if (cookie != COOKIE) throw new IllegalStateException(s"Unexpected cookie $cookie (should be $COOKIE)")
-    val id      = tx.readID(in, access) // implicitly[Serializer[D#Tx, D#Acc, D#ID]].read(in)
+    val id      = tx.readId(in, access) // implicitly[Serializer[D#Tx, D#Acc, D#Id]].read(in)
     val path    = tx.readVar[S#Acc](id, in)(pathSerializer[S, D])
     new DataImpl[S, D](id, path)
   }
 
-  private final class DataImpl[S <: Sys[S], D <: stm.Sys[D]](val id: D#ID, val path: D#Var[S#Acc])
+  private final class DataImpl[S <: Sys[S], D <: stm.Sys[D]](val id: D#Id, val path: D#Var[S#Acc])
     extends Data[S, D] {
 
     def write(out: DataOutput): Unit = {

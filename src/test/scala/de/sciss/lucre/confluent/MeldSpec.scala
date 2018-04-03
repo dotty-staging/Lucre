@@ -198,7 +198,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
     iterate(i1 = 0, j1 = 1, split1 = 1, i2 = 0, j2 = 1, split2 = 2)
     // [ a e f ], [ d b c ], [ a b f ], [ d e c ]
     val res1 = cursor.step { implicit tx =>
-      access().map(a => toListID(Some(a)))
+      access().map(a => toListId(Some(a)))
     }
     val exp1 = List(
       List(("a",1,"Path(1, 2, 4, 4)"), ("e",5,"Path(1, 2, 4, 4)"), ("f",6,"Path(1, 2, 4, 4)")),
@@ -213,7 +213,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
     // iterate(i1 = 3, j1 = 1, split1 = 1, i2 = 2, j2 = 0, split2 = 1)
     // [ a e f ], [ a b f ], [ a e f ], [ a b f ]
     val res2 = cursor.step { implicit tx =>
-      access().map(a => toListID(Some(a)))
+      access().map(a => toListId(Some(a)))
     }
     val exp2 = List(
       List(("a",1,"Path(1, 3, 4, 5, 7, 7)"), ("e",5,"Path(1, 2, 4, 5, 7, 7)"), ("f",6,"Path(1, 2, 4, 5, 7, 7)")),

@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.stm
 
-trait Identifiable[+ID] {
-  def id: ID
+trait Identifiable[+Id] {
+  def id: Id
 
   override def equals(that: Any): Boolean = that match {
     case m: Identifiable[_] =>

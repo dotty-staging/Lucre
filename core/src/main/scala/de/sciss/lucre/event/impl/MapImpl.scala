@@ -53,8 +53,8 @@ object MapImpl {
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val targets   = evt.Targets.read(in, access)
-    val keyTypeID = in.readInt()
-    val keyType   = Key(keyTypeID) // Obj.getType(keyTypeID).asInstanceOf[Key[_]]
+    val keyTypeId = in.readInt()
+    val keyType   = Key(keyTypeId) // Obj.getType(keyTypeId).asInstanceOf[Key[_]]
     mkRead(in, access, targets)(tx, keyType)
   }
 
@@ -143,7 +143,7 @@ object MapImpl {
     final def modifiableOption: Option[Modifiable[S, K, Repr]] = Some(this)
 
     protected final def writeData(out: DataOutput): Unit = {
-      out.writeInt(keyType.typeID)
+      out.writeInt(keyType.typeId)
       peer.write(out)
     }
 

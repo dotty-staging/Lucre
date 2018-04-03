@@ -53,7 +53,7 @@ trait TxnMixin[S <: Sys[S]]
    * To avoid that, durable maps are maintained by their id's in a transaction local map. That way,
    * only one instance per id is available in a single transaction.
    */
-  // private var durableIDMaps     = IntMap.empty[DurableIDMapImpl[_, _]]
+  // private var durableIdMaps     = IntMap.empty[DurableIdMapImpl[_, _]]
   private var meld              = MeldInfo.empty[S]
   private var dirtyMaps         = Vector.empty[Cache[S#Tx]]
   private var beforeCommitFuns  = IQueue.empty[S#Tx => Unit]
@@ -116,9 +116,9 @@ trait TxnMixin[S <: Sys[S]]
   final protected def fullCache: CacheMap.Durable[S, Int, DurablePersistentMap[S, Int]] = system.fullCache
   // final protected def partialCache  = system.partialCache
 
-  final def newID(): S#ID = {
-    val res = new ConfluentID[S](system.newIDValue()(this), Path.empty[S])
-    log(s"txn newID $res")
+  final def newId(): S#Id = {
+    val res = new ConfluentId[S](system.newIdValue()(this), Path.empty[S])
+    log(s"txn newId $res")
     res
   }
 
@@ -186,41 +186,41 @@ trait TxnMixin[S <: Sys[S]]
   final def newHandleM[A](value: A)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Source[S, A] =
     newHandle(value)
 
-  final def getNonTxn[A](id: S#ID)(implicit ser: ImmutableSerializer[A]): A = {
+  final def getNonTxn[A](id: S#Id)(implicit ser: ImmutableSerializer[A]): A = {
     log(s"txn get $id")
     fullCache.getCacheNonTxn[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
   }
 
-  final def getTxn[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A = {
+  final def getTxn[A](id: S#Id)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A = {
     log(s"txn get' $id")
     fullCache.getCacheTxn[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
   }
 
-  final def putTxn[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {
+  final def putTxn[A](id: S#Id, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {
     fullCache.putCacheTxn[A](id.base, id.path, value)(this, ser)
     markDirty()
   }
 
-  final def putNonTxn[A](id: S#ID, value: A)(implicit ser: ImmutableSerializer[A]): Unit = {
+  final def putNonTxn[A](id: S#Id, value: A)(implicit ser: ImmutableSerializer[A]): Unit = {
     fullCache.putCacheNonTxn[A](id.base, id.path, value)(this, ser)
     markDirty()
   }
 
-//  final def putPartial[A](id: S#ID, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {
+//  final def putPartial[A](id: S#Id, value: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): Unit = {
 //    partialCache.putPartial(id.base, id.path, value)(this, ser)
 //    markDirty()
 //  }
 //
-//  final def getPartial[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A =
+//  final def getPartial[A](id: S#Id)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): A =
 //    partialCache.getPartial[A](id.base, id.path)(this, ser).getOrElse(sys.error(s"No value for $id"))
 
-  final def removeFromCache(id: S#ID): Unit =
+  final def removeFromCache(id: S#Id): Unit =
     fullCache.removeCacheOnly(id.base, id.path)(this)
 
-  @inline final protected def alloc       (pid: S#ID): S#ID = new ConfluentID(system.newIDValue()(this), pid.path)
-  @inline final protected def allocPartial(pid: S#ID): S#ID = new PartialID  (system.newIDValue()(this), pid.path)
+  @inline final protected def alloc       (pid: S#Id): S#Id = new ConfluentId(system.newIdValue()(this), pid.path)
+  @inline final protected def allocPartial(pid: S#Id): S#Id = new PartialId  (system.newIdValue()(this), pid.path)
 
-  final def newVar[A](pid: S#ID, init: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+  final def newVar[A](pid: S#Id, init: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
     val res = makeVar[A](alloc(pid))
     log(s"txn newVar $res")
     res.setInit(init)(this)
@@ -229,7 +229,7 @@ trait TxnMixin[S <: Sys[S]]
 
 //  final def newLocalVar[A](init: S#Tx => A): stm.LocalVar[S#Tx, A] = new stm.impl.LocalVarImpl[S, A](init)
 //
-//  final def newPartialVar[A](pid: S#ID, init: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+//  final def newPartialVar[A](pid: S#Id, init: A)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
 //    if (Confluent.DEBUG_DISABLE_PARTIAL) return newVar(pid, init)
 //
 //    val res = new PartialVarTxImpl[S, A](allocPartial(pid))
@@ -238,7 +238,7 @@ trait TxnMixin[S <: Sys[S]]
 //    res
 //  }
 
-  final def newBooleanVar(pid: S#ID, init: Boolean): S#Var[Boolean] = {
+  final def newBooleanVar(pid: S#Id, init: Boolean): S#Var[Boolean] = {
     val id  = alloc(pid)
     val res = new BooleanVar(id)
     log(s"txn newVar $res")
@@ -246,7 +246,7 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-  final def newIntVar(pid: S#ID, init: Int): S#Var[Int] = {
+  final def newIntVar(pid: S#Id, init: Int): S#Var[Int] = {
     val id  = alloc(pid)
     val res = new IntVar(id)
     log(s"txn newVar $res")
@@ -254,7 +254,7 @@ trait TxnMixin[S <: Sys[S]]
     res
   }
 
-  final def newLongVar(pid: S#ID, init: Long): S#Var[Long] = {
+  final def newLongVar(pid: S#Id, init: Long): S#Var[Long] = {
     val id  = alloc(pid)
     val res = new LongVar(id)
     log(s"txn newVar $res")
@@ -264,22 +264,22 @@ trait TxnMixin[S <: Sys[S]]
 
   final def newVarArray[A](size: Int): Array[S#Var[A]] = new Array[S#Var[A]](size)
 
-  final def newInMemoryIDMap[A]: IdentifierMap[S#ID, S#Tx, A] = {
+  final def newInMemoryIdMap[A]: IdentifierMap[S#Id, S#Tx, A] = {
     val map = InMemoryConfluentMap.newIntMap[S]
-    new InMemoryIDMapImpl[S, A](map)
+    new InMemoryIdMapImpl[S, A](map)
   }
 
-  final protected def readSource(in: DataInput, pid: S#ID): S#ID = {
+  final protected def readSource(in: DataInput, pid: S#Id): S#Id = {
     val base = in./* PACKED */ readInt()
-    new ConfluentID(base, pid.path)
+    new ConfluentId(base, pid.path)
   }
 
-  final protected def readPartialSource(in: DataInput, pid: S#ID): S#ID = {
+  final protected def readPartialSource(in: DataInput, pid: S#Id): S#Id = {
     val base = in./* PACKED */ readInt()
-    new PartialID(base, pid.path)
+    new PartialId(base, pid.path)
   }
 
-  private def makeVar[A](id: S#ID)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] /* BasicVar[ S, A ] */ = {
+  private def makeVar[A](id: S#Id)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] /* BasicVar[ S, A ] */ = {
     ser match {
       case plain: ImmutableSerializer[_] =>
         new VarImpl[S, A](id, plain.asInstanceOf[ImmutableSerializer[A]])
@@ -288,13 +288,13 @@ trait TxnMixin[S <: Sys[S]]
     }
   }
 
-  final def readVar[A](pid: S#ID, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+  final def readVar[A](pid: S#Id, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
     val res = makeVar[A](readSource(in, pid))
     log(s"txn read $res")
     res
   }
 
-//  final def readPartialVar[A](pid: S#ID, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+//  final def readPartialVar[A](pid: S#Id, in: DataInput)(implicit ser: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
 //    if (Confluent.DEBUG_DISABLE_PARTIAL) return readVar(pid, in)
 //
 //    val res = new PartialVarTxImpl[S, A](readPartialSource(in, pid))
@@ -302,28 +302,28 @@ trait TxnMixin[S <: Sys[S]]
 //    res
 //  }
 
-  final def readBooleanVar(pid: S#ID, in: DataInput): S#Var[Boolean] = {
+  final def readBooleanVar(pid: S#Id, in: DataInput): S#Var[Boolean] = {
     val res = new BooleanVar(readSource(in, pid))
     log(s"txn read $res")
     res
   }
 
-  final def readIntVar(pid: S#ID, in: DataInput): S#Var[Int] = {
+  final def readIntVar(pid: S#Id, in: DataInput): S#Var[Int] = {
     val res = new IntVar(readSource(in, pid))
     log(s"txn read $res")
     res
   }
 
-  final def readLongVar(pid: S#ID, in: DataInput): S#Var[Long] = {
+  final def readLongVar(pid: S#Id, in: DataInput): S#Var[Long] = {
     val res = new LongVar(readSource(in, pid))
     log(s"txn read $res")
     res
   }
 
-  final def readID(in: DataInput, acc: S#Acc): S#ID = {
+  final def readId(in: DataInput, acc: S#Acc): S#Id = {
     val base  = in./* PACKED */ readInt()
-    val res   = new ConfluentID(base, Path.readAndAppend[S](in, acc)(this))
-    log(s"txn readID $res")
+    val res   = new ConfluentId(base, Path.readAndAppend[S](in, acc)(this))
+    log(s"txn readId $res")
     res
   }
 

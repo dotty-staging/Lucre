@@ -24,7 +24,7 @@ object Elem {
   implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Elem[S]] = Impl.serializer
 
   trait Type {
-    def typeID: Int
+    def typeId: Int
 
     private[this] lazy val _init: Unit = Elem.addType(this)
 
@@ -32,7 +32,7 @@ object Elem {
 
     def readObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = {
       val tpe = in.readInt()
-      if (tpe != typeID) sys.error(s"Type mismatch, expected $typeID but found $tpe")
+      if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in, access)
     }
 

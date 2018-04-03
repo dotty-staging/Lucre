@@ -23,7 +23,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
 object List extends Obj.Type {
-  final val typeID  = 23
+  final val typeId  = 23
 
   //  val Type: Type3[List] = Impl.TypeImpl
   //

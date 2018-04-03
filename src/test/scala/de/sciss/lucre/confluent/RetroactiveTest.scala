@@ -12,11 +12,11 @@ object RetroactiveTest extends App {
   //  showCursorLog = true
 
   implicit object Ser extends stm.MutableSerializer[S, Foo] {
-    def readData(in: DataInput, id: S#ID)(implicit tx: S#Tx) =
+    def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx) =
       new Foo(id, tx.readIntVar(id, in), tx.readVar[String](id, in))
   }
 
-  final class Foo(val id: S#ID, val a: S#Var[Int], val b: S#Var[String]) extends stm.Mutable.Impl[S] {
+  final class Foo(val id: S#Id, val a: S#Var[Int], val b: S#Var[String]) extends stm.Mutable.Impl[S] {
     def writeData(out: DataOutput): Unit = {
       a.write(out)
       b.write(out)
@@ -33,7 +33,7 @@ object RetroactiveTest extends App {
   println("\nINIT\n")
 
   val (access, (cursor0, cursor1)) = system.cursorRoot { implicit tx =>
-    val id = tx.newID()
+    val id = tx.newId()
     new Foo(id, tx.newIntVar(id, 0), tx.newVar(id, "foo"))
   } { implicit tx => _ =>
     system.newCursor() -> system.newCursor()
@@ -70,7 +70,7 @@ object RetroactiveTest extends App {
   println(s"(B) In cursor 2: ${cursor2.step { implicit tx => tx.inputAccess -> access().print }}")
 
   cursor2.step { implicit tx =>
-    val id = tx.newID()
+    val id = tx.newId()
     tx.newIntVar(id, 666)   // enforce write version
   }
 

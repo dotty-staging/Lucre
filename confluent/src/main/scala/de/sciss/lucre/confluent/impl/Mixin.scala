@@ -50,20 +50,20 @@ trait Mixin[S <: Sys[S]]
 
   final val fullCache: CacheMap.Durable[S, Int, Store[S, Int]] = DurableCacheMapImpl.newIntCache(varMap)
 
-  final protected val eventMap: IdentifierMap[S#ID, S#Tx, Map[Int, List[Observer[S, _]]]] = {
+  final protected val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] = {
     val map = InMemoryConfluentMap.newIntMap[S]
-    new InMemoryIDMapImpl(map)
+    new InMemoryIdMapImpl(map)
   }
 
   private val global: GlobalState[S, D] = 
     durable.step { implicit tx =>
       val root = durable.rootJoin { implicit tx =>
-        val durRootID     = durable.newIDValue() // stm.DurableSurgery.newIDValue(durable)
+        val durRootId     = durable.newIdValue() // stm.DurableSurgery.newIdValue(durable)
         val idCnt         = tx.newCachedIntVar(0)
         val versionLinear = tx.newCachedIntVar(0)
         val versionRandom = tx.newCachedLongVar(TxnRandom.initialScramble(0L)) // scramble !!!
         val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, ImmutableSerializer.Long, _.toInt)
-        GlobalState[S, D](durRootID = durRootID, idCnt = idCnt, versionLinear = versionLinear,
+        GlobalState[S, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
           versionRandom = versionRandom, partialTree = partialTree)
       }
       root()
@@ -79,7 +79,7 @@ trait Mixin[S <: Sys[S]]
 
   @inline private def partialTree: Ancestor.Tree[D, Long] = global.partialTree
 
-  final def newVersionID(implicit tx: S#Tx): Long = {
+  final def newVersionId(implicit tx: S#Tx): Long = {
     implicit val dtx: D#Tx = durableTx(tx)
     val lin = global.versionLinear() + 1
     global.versionLinear() = lin
@@ -90,7 +90,7 @@ trait Mixin[S <: Sys[S]]
     (rnd.toLong << 32) | (lin.toLong & 0xFFFFFFFFL)
   }
 
-  final def newIDValue()(implicit tx: S#Tx): Int = {
+  final def newIdValue()(implicit tx: S#Tx): Int = {
     implicit val dtx: D#Tx = durableTx(tx)
     val res = global.idCnt() + 1
     global.idCnt() = res
@@ -152,13 +152,13 @@ trait Mixin[S <: Sys[S]]
       implicit val dtx: D#Tx = durableTx(tx)
       val (_, confV, durV) = initRoot(confInt, { _ /* tx */ =>
         // read durable
-        val did = global.durRootID
+        val did = global.durRootId
         // stm.DurableSurgery.read (durable)(did)(bSer.read(_, ()))
         durable.read(did)(bSer.read(_, ()))
       }, { _ /* tx */ =>
         // create durable
         val _durV = durInit(dtx)
-        val did = global.durRootID
+        val did = global.durRootId
         // stm.DurableSurgery.write(durable)(did)(bSer.write(_durV, _))
         durable.write(did)(bSer.write(_durV, _))
         _durV
@@ -303,7 +303,7 @@ trait Mixin[S <: Sys[S]]
 
   private def flushOldTree()(implicit tx: S#Tx): Long = {
     implicit val dtx: D#Tx  = durableTx(tx)
-    val childTerm           = newVersionID(tx)
+    val childTerm           = newVersionId(tx)
     val (index, parentTerm) = tx.inputAccess.splitIndex
     val tree                = readIndexTree(index.term)
     val parent              = readTreeVertex(tree.tree, parentTerm)._1
@@ -334,7 +334,7 @@ trait Mixin[S <: Sys[S]]
 
   private def flushNewTree(level: Int)(implicit tx: S#Tx): Long = {
     implicit val dtx: D#Tx  = durableTx(tx)
-    val term                = newVersionID(tx)
+    val term                = newVersionId(tx)
     val oldPath             = tx.inputAccess
 
     // ---- full ----

@@ -160,7 +160,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
 
     object Node {
       implicit object ser extends MutableSerializer[T, Node] {
-        def readData(in: DataInput, _id: T#ID)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
+        def readData(in: DataInput, _id: T#Id)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
           val id    = _id
           val name  = in.readUTF()
           val value = tx.readIntVar(id, in)
@@ -170,7 +170,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
       }
 
       def apply(_name: String, init: Int)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
-        val id    = tx.newID()
+        val id    = tx.newId()
         val name  = _name
         val value = tx.newIntVar(id, init)
         val prev  = tx.newVar[Option[Node]](id, None)
@@ -178,7 +178,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
       }
     }
 
-    trait Node extends Mutable[T#ID, T#Tx] {
+    trait Node extends Mutable[T#Id, T#Tx] {
       def name: String
 
       def value: T#Var[Int]

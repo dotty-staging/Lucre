@@ -73,7 +73,7 @@ object DeterministicSkipOctree {
   def empty[S <: Sys[S], D <: Space[D], A](hyperCube: D#HyperCube, skipGap: Int = 2)
                                           (implicit view: (A, S#Tx) => D#PointLike, tx: S#Tx, space: D,
                                            keySerializer: Serializer[S#Tx, S#Acc, A]): DeterministicSkipOctree[S, D, A] =
-    new ImplNew[S, D, A](skipGap, tx.newID(), hyperCube, view, tx)
+    new ImplNew[S, D, A](skipGap, tx.newId(), hyperCube, view, tx)
 
   def read[S <: Sys[S], D <: Space[D], A](in: DataInput, access: S#Acc)(
       implicit tx: S#Tx, view: (A, S#Tx) => D#PointLike, space: D,
@@ -110,7 +110,7 @@ object DeterministicSkipOctree {
         s"Incompatible serialized version (found $version, required $SER_VERSION).")
     }
 
-    val id: S#ID = tx0.readID(in, access)
+    val id: S#Id = tx0.readId(in, access)
     val hyperCube: D#HyperCube = space.hyperCubeSerializer.read(in, access)(tx0)
     val skipList: HASkipList.Set[S, Leaf] = {
       implicit val ord: Ordering[S#Tx, Leaf] = LeafOrdering
@@ -124,7 +124,7 @@ object DeterministicSkipOctree {
     }
   }
 
-  private final class ImplNew[S <: Sys[S], D <: Space[D], A](skipGap: Int, val id: S#ID, val hyperCube: D#HyperCube,
+  private final class ImplNew[S <: Sys[S], D <: Space[D], A](skipGap: Int, val id: S#Id, val hyperCube: D#HyperCube,
                                                              val pointView: (A, S#Tx) => D#PointLike, tx0: S#Tx)
                                                             (implicit val space: D,
                                                              val keySerializer: Serializer[S#Tx, S#Acc, A])
@@ -136,7 +136,7 @@ object DeterministicSkipOctree {
     val headTree: LeftTopBranch = {
       val sz  = numOrthants
       val ch  = tx0.newVarArray[LeftChild](sz)
-      val cid = tx0.newID()
+      val cid = tx0.newId()
       implicit val r1: Serializer[S#Tx, S#Acc, LeftChild] = LeftChildSerializer
       var i = 0
       while (i < sz) {
@@ -166,7 +166,7 @@ object DeterministicSkipOctree {
 
   /** A node is an object that can be stored in a orthant of a branch. */
   sealed trait NonEmpty[S <: Sys[S], D <: Space[D]]
-    extends Identifiable[S#ID] /* extends Down with Child */ {
+    extends Identifiable[S#Id] /* extends Down with Child */ {
 
     protected def shortString: String
 
@@ -414,7 +414,7 @@ object DeterministicSkipOctree {
     implicit protected object RightBranchSerializer extends Serializer[S#Tx, S#Acc, RightBranch] {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): RightBranch = {
         val cookie = in.readByte()
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 4 => readRightTopBranch  (in, access, id)
           case 5 => readRightChildBranch(in, access, id)
@@ -428,7 +428,7 @@ object DeterministicSkipOctree {
     implicit protected object BranchSerializer extends Serializer[S#Tx, S#Acc, Branch] {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Branch = {
         val cookie = in.readByte()
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 2 => readLeftTopBranch   (in, access, id)
           case 3 => readLeftChildBranch (in, access, id)
@@ -444,7 +444,7 @@ object DeterministicSkipOctree {
     protected object TopBranchSerializer extends Serializer[S#Tx, S#Acc, TopBranch] {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): TopBranch = {
         val cookie = in.readByte()
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 2 => readLeftTopBranch (in, access, id)
           case 4 => readRightTopBranch(in, access, id)
@@ -459,7 +459,7 @@ object DeterministicSkipOctree {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): LeftChild = {
         val cookie = in.readByte()
         if (cookie == 0) return Empty
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 1 => readLeaf(in, access, id)
           case 3 => readLeftChildBranch(in, access, id)
@@ -473,7 +473,7 @@ object DeterministicSkipOctree {
     implicit protected object LeftBranchSerializer extends Serializer[S#Tx, S#Acc, LeftBranch] {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): LeftBranch = {
         val cookie = in.readByte()
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 2 => readLeftTopBranch  (in, access, id)
           case 3 => readLeftChildBranch(in, access, id)
@@ -488,7 +488,7 @@ object DeterministicSkipOctree {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): RightChild = {
         val cookie = in.readByte()
         if (cookie == 0) return Empty
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 1 => readLeaf(in, access, id)
           case 5 => readRightChildBranch(in, access, id)
@@ -503,7 +503,7 @@ object DeterministicSkipOctree {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): LeftTopBranch = {
         val cookie = in.readByte()
         if (cookie != 2) sys.error(s"Unexpected cookie $cookie")
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         readLeftTopBranch(in, access, id)
       }
 
@@ -514,7 +514,7 @@ object DeterministicSkipOctree {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Next = {
         val cookie = in.readByte()
         if (cookie == 0) return Empty
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         (cookie: @switch) match {
           case 4 => readRightTopBranch(in, access, id)
           case 5 => readRightChildBranch(in, access, id)
@@ -529,7 +529,7 @@ object DeterministicSkipOctree {
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Leaf = {
         val cookie = in.readByte()
         if (cookie != 1) sys.error(s"Unexpected cookie $cookie")
-        val id = tx.readID(in, access)
+        val id = tx.readId(in, access)
         readLeaf(in, access, id)
       }
 
@@ -564,7 +564,7 @@ object DeterministicSkipOctree {
           case Empty => // create new level
             val sz  = numOrthants
             val ch  = tx.newVarArray[RightChild](sz)
-            val cid = tx.newID()
+            val cid = tx.newId()
             var i   = 0
             while (i < sz) {
               ch(i) = tx.newVar[RightChild](cid, Empty)
@@ -1181,7 +1181,7 @@ object DeterministicSkipOctree {
     /*
      * Serialization-id: 1
      */
-    private[this] def readLeaf(in: DataInput, access: S#Acc, id: S#ID)(implicit tx: S#Tx): Leaf = {
+    private[this] def readLeaf(in: DataInput, access: S#Acc, id: S#Id)(implicit tx: S#Tx): Leaf = {
       val value     = keySerializer.read(in, access)
       val parentRef = tx.readVar[Branch](id, in)
       new LeafImpl(id, value, parentRef)
@@ -1261,9 +1261,9 @@ object DeterministicSkipOctree {
         *          at index `qIdx`
         */
       private[DeterministicSkipOctree] def newLeaf(qIdx: Int, value: A)(implicit tx: S#Tx): Leaf = {
-        val leafID    = tx.newID()
-        val parentRef = tx.newVar[Branch](leafID, this)
-        val l         = new LeafImpl(leafID, value, parentRef)
+        val leafId    = tx.newId()
+        val parentRef = tx.newVar[Branch](leafId, this)
+        val l         = new LeafImpl(leafId, value, parentRef)
         updateChild(qIdx, l)
         l
       }
@@ -1282,7 +1282,7 @@ object DeterministicSkipOctree {
       private[this] def newNode(qIdx: Int, iq: D#HyperCube)(implicit tx: S#Tx): LeftChildBranch = {
         val sz  = children.length
         val ch  = tx.newVarArray[LeftChild](sz)
-        val cid = tx.newID()
+        val cid = tx.newId()
         var i = 0
         while (i < sz) {
           ch(i) = tx.newVar[LeftChild](cid, Empty)(LeftChildSerializer)
@@ -1384,7 +1384,7 @@ object DeterministicSkipOctree {
                                        (implicit tx: S#Tx): RightChildBranch = {
         val sz  = children.length
         val ch  = tx.newVarArray[RightChild](sz)
-        val cid = tx.newID()
+        val cid = tx.newId()
         var i = 0
         while (i < sz) {
           ch(i) = tx.newVar[RightChild](cid, Empty)
@@ -1424,7 +1424,7 @@ object DeterministicSkipOctree {
       * points into the highest level octree that
       * the leaf resides in, according to the skiplist.
       */
-    protected final class LeafImpl(val id: S#ID, val value: A, parentRef: S#Var[Branch])
+    protected final class LeafImpl(val id: S#Id, val value: A, parentRef: S#Var[Branch])
       extends LeftNonEmptyChild with RightNonEmptyChild with LeafOrEmpty with Leaf {
 
       def updateParentLeft (p: LeftBranch )(implicit tx: S#Tx): Unit = parent_=(p)
@@ -1503,7 +1503,7 @@ object DeterministicSkipOctree {
     /*
      * Serialization-id: 2
      */
-    private[this] def readLeftTopBranch(in: DataInput, access: S#Acc, id: S#ID)(implicit tx: S#Tx): LeftTopBranch = {
+    private[this] def readLeftTopBranch(in: DataInput, access: S#Acc, id: S#Id)(implicit tx: S#Tx): LeftTopBranch = {
       val sz  = numOrthants
       val ch  = tx.newVarArray[LeftChild](sz)
       var i = 0
@@ -1515,10 +1515,10 @@ object DeterministicSkipOctree {
       new LeftTopBranchImpl(id, children = ch, nextRef = nextRef)
     }
 
-    protected final class LeftTopBranchImpl(val id: S#ID,
-                                        protected val children: Array[S#Var[LeftChild]],
-                                        protected val nextRef: S#Var[Next])
-      extends LeftTopBranch with LeftBranchImpl with TopBranchImpl with Mutable[S#ID, S#Tx] {
+    protected final class LeftTopBranchImpl(val id: S#Id,
+                                            protected val children: Array[S#Var[LeftChild]],
+                                            protected val nextRef: S#Var[Next])
+      extends LeftTopBranch with LeftBranchImpl with TopBranchImpl with Mutable[S#Id, S#Tx] {
       // that's alright, we don't need to do anything special here
       protected def leafRemoved()(implicit tx: S#Tx): Unit = ()
 
@@ -1552,7 +1552,7 @@ object DeterministicSkipOctree {
     /*
      * Serialization-id: 3
      */
-    private[this] def readLeftChildBranch(in: DataInput, access: S#Acc, id: S#ID)(implicit tx: S#Tx): LeftChildBranch = {
+    private[this] def readLeftChildBranch(in: DataInput, access: S#Acc, id: S#Id)(implicit tx: S#Tx): LeftChildBranch = {
       val parentRef   = tx.readVar[LeftBranch](id, in)
       val hc          = space.hyperCubeSerializer.read(in)
       val sz          = numOrthants
@@ -1566,9 +1566,9 @@ object DeterministicSkipOctree {
       new LeftChildBranchImpl(id, parentRef, hc, children = ch, nextRef = nextRef)
     }
 
-    protected final class LeftChildBranchImpl(val id: S#ID, parentRef: S#Var[LeftBranch], val hyperCube: D#HyperCube,
-                                          protected val children: Array[S#Var[LeftChild]],
-                                          protected val nextRef: S#Var[Next])
+    protected final class LeftChildBranchImpl(val id: S#Id, parentRef: S#Var[LeftBranch], val hyperCube: D#HyperCube,
+                                              protected val children: Array[S#Var[LeftChild]],
+                                              protected val nextRef: S#Var[Next])
       extends LeftBranchImpl with LeftChildBranch {
 
       thisBranch =>
@@ -1639,7 +1639,7 @@ object DeterministicSkipOctree {
     /*
       * Serialization-id: 4
       */
-    private[this] def readRightTopBranch(in: DataInput, access: S#Acc, id: S#ID)(implicit tx: S#Tx): RightTopBranch = {
+    private[this] def readRightTopBranch(in: DataInput, access: S#Acc, id: S#Id)(implicit tx: S#Tx): RightTopBranch = {
       val prev  = TopBranchSerializer.read(in, access)
       val sz    = numOrthants
       val ch    = tx.newVarArray[RightChild](sz)
@@ -1652,9 +1652,9 @@ object DeterministicSkipOctree {
       new RightTopBranchImpl(id, prev, ch, nextRef)
     }
 
-    protected final class RightTopBranchImpl(val id: S#ID, val prev: TopBranch,
-                                         protected val children: Array[S#Var[RightChild]],
-                                         protected val nextRef: S#Var[Next])
+    protected final class RightTopBranchImpl(val id: S#Id, val prev: TopBranch,
+                                             protected val children: Array[S#Var[RightChild]],
+                                             protected val nextRef: S#Var[Next])
       extends RightTopBranch with RightBranchImpl with TopBranchImpl {
 
       protected def nodeName = "RightTop"
@@ -1718,7 +1718,7 @@ object DeterministicSkipOctree {
     /*
       * Serialization-id: 5
       */
-    private[this] def readRightChildBranch(in: DataInput, access: S#Acc, id: S#ID)(implicit tx: S#Tx): RightChildBranch = {
+    private[this] def readRightChildBranch(in: DataInput, access: S#Acc, id: S#Id)(implicit tx: S#Tx): RightChildBranch = {
       val parentRef = tx.readVar[RightBranch](id, in)
       val prev      = BranchSerializer.read(in, access)
       val hc        = space.hyperCubeSerializer.read(in)
@@ -1733,10 +1733,10 @@ object DeterministicSkipOctree {
       new RightChildBranchImpl(id, parentRef, prev, hc, ch, nextRef)
     }
 
-    private final class RightChildBranchImpl(val id: S#ID, parentRef: S#Var[RightBranch],
-                                         val prev: Branch, val hyperCube: D#HyperCube,
-                                         protected val children: Array[S#Var[RightChild]],
-                                         protected val nextRef: S#Var[Next])
+    private final class RightChildBranchImpl(val id: S#Id, parentRef: S#Var[RightBranch],
+                                             val prev: Branch, val hyperCube: D#HyperCube,
+                                             protected val children: Array[S#Var[RightChild]],
+                                             protected val nextRef: S#Var[Next])
       extends RightChildBranch with RightBranchImpl {
 
       thisBranch =>
@@ -1956,7 +1956,7 @@ object DeterministicSkipOctree {
             def newNode(b: LeftBranch, qidx: Int, iq: D#HyperCube)(implicit tx: S#Tx): LeftChildBranch = {
               val sz  = numOrthants // b.children.length
               val ch  = tx.newVarArray[LeftChild](sz)
-              val cid = tx.newID()
+              val cid = tx.newId()
               var i = 0
               while (i < sz) {
                 ch(i) = tx.newVar[LeftChild](cid, Empty)(LeftChildSerializer)

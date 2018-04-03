@@ -49,13 +49,13 @@ object SpanLikeExtensions {
 
     val name = "Long-SpanLike Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import UnaryOp._
-      val op /* : Op[_, _] */ = (opID: @switch) match {
+      val op /* : Op[_, _] */ = (opId: @switch) match {
         case From .id => From
         case Until.id => Until
-        case _ => sys.error(s"Invalid operation id $opID")
+        case _ => sys.error(s"Invalid operation id $opId")
       }
       op.read(in, access, targets)
     }
@@ -68,10 +68,10 @@ object SpanLikeExtensions {
 
     val name = "Long-SpanLike Ops"
 
-    def readExtension[S <: Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                   (implicit tx: S#Tx): Ex[S] = {
       import BinaryOp._
-      val op /* : Op[_, _, _, _] */ = opID /* : @switch */ match {
+      val op /* : Op[_, _, _, _] */ = opId /* : @switch */ match {
         case Apply.id => Apply
         case Shift.id => Shift
       }

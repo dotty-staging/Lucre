@@ -15,15 +15,15 @@ package de.sciss.lucre.stm
 
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-trait MutableSerializer[S <: Sys[S], M <: Mutable[S#ID, S#Tx]]
+trait MutableSerializer[S <: Sys[S], M <: Mutable[S#Id, S#Tx]]
   extends Serializer[S#Tx, S#Acc, M] {
 
   final def write(m: M, out: DataOutput): Unit = m.write(out)
 
   final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): M = {
-    val id = tx.readID(in, access)
+    val id = tx.readId(in, access)
     readData(in, id)
   }
 
-  protected def readData(in: DataInput, id: S#ID)(implicit tx: S#Tx): M
+  protected def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx): M
 }

@@ -32,7 +32,7 @@ object BiGroup extends Obj.Type {
   final val MinCoordinate : Long        = MaxSquare.left
   final val MaxCoordinate : Long        = MaxSquare.right
 
-  final val typeID = 27
+  final val typeId = 27
 
   override def init(): Unit = {
     super.init()
@@ -62,7 +62,7 @@ object BiGroup extends Obj.Type {
 
   // XXX TODO --- eventually we might drop Obj in favour of Elem
   object Entry extends Obj.Type {
-    final val typeID = 28
+    final val typeId = 28
 
     def unapply[S <: Sys[S], A](entry: Entry[S, A]): Entry[S, A] = entry
 
