@@ -1,5 +1,5 @@
 /*
- *  Cursor.scala
+ *  EphemeralHandle.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
@@ -11,11 +11,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
-package stm
+package de.sciss.lucre.stm
+package impl
 
-trait Cursor[S <: Sys[S]] {
-  def step[A](fun: S#Tx => A): A
+final class EphemeralHandle[Tx, A](value: A) extends Source[Tx, A] {
+  override def toString = s"handle: $value"
 
-  def position(implicit tx: S#Tx): S#Acc
+  def apply()(implicit tx: Tx): A = value
 }

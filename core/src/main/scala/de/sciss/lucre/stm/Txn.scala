@@ -129,6 +129,10 @@ object Txn {
 trait Txn[S <: Sys[S]] extends Executor[S] with TxnLike {
   def inMemory: S#I#Tx
 
+  // ---- completion ----
+
+  def beforeCommit(fun: S#Tx => Unit): Unit
+
   // ---- events ----
 
   private[lucre] def reactionMap: ReactionMap[S]

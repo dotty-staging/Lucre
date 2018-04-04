@@ -1,5 +1,5 @@
 /*
- *  Sys.scala
+ *  Base.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
