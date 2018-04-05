@@ -71,6 +71,12 @@ trait VarImpl[S <: Sys[S], A, Repr <: Expr[S, A]]
     }
   }
 
+  final def swap(expr: Repr)(implicit tx: S#Tx): Repr = {
+    val res = apply()
+    update(expr)
+    res
+  }
+
   final def value(implicit tx: S#Tx): A = ref().value
 
   override def toString = s"Expr.Var$id"

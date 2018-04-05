@@ -41,6 +41,12 @@ object PlainImpl {
     def apply()(implicit tx: Plain): A = value
 
     def update(v: A)(implicit tx: Plain): Unit = value = v
+
+    def swap(v: A)(implicit tx: Plain): A = {
+      val res = value
+      value = v
+      res
+    }
   }
 
   private final class BooleanVarImpl(private[this] var value: Boolean)
@@ -49,6 +55,12 @@ object PlainImpl {
     def apply()(implicit tx: Plain): Boolean = value
 
     def update(v: Boolean)(implicit tx: Plain): Unit = value = v
+
+    def swap(v: Boolean)(implicit tx: Plain): Boolean = {
+      val res = value
+      value = v
+      res
+    }
   }
 
   private final class IntVarImpl(private[this] var value: Int)
@@ -57,6 +69,12 @@ object PlainImpl {
     def apply()(implicit tx: Plain): Int = value
 
     def update(v: Int)(implicit tx: Plain): Unit = value = v
+
+    def swap(v: Int)(implicit tx: Plain): Int = {
+      val res = value
+      value = v
+      res
+    }
   }
 
   private final class LongVarImpl(private[this] var value: Long) 
@@ -65,6 +83,12 @@ object PlainImpl {
     def apply()(implicit tx: Plain): Long = value
 
     def update(v: Long)(implicit tx: Plain): Unit = value = v
+
+    def swap(v: Long)(implicit tx: Plain): Long = {
+      val res = value
+      value = v
+      res
+    }
   }
 
   private final class SysImpl extends Plain {
@@ -99,7 +123,7 @@ object PlainImpl {
 
     def newVarArray[A](size: Int): Array[Var[A]] = new Array[S#Var[A]](size)
 
-    def newInMemoryIdMap[A]: IdentifierMap[Id, Tx, A] = ???
+    def newInMemoryIdMap[A]: IdentifierMap[Id, Tx, A] = new PlainIdentifierMap[A]
 
     def readVar[A](id: Id, in: DataInput)(implicit serializer: Serializer[Tx, Acc, A]): Var[A] =
       opNotSupported("readVar")

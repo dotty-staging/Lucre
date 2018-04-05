@@ -52,4 +52,9 @@ trait Source[-Tx, +A] {
 trait Ref[-Tx, A] extends Sink[Tx, A] with Source[Tx, A]
 
 /** A transactional variable is an identifiable cell allowing the reading and writing of values */
-trait Var[-Tx, A] extends Ref[Tx, A] with Writable with Disposable[Tx]
+trait Var[-Tx, A] extends Ref[Tx, A] with Writable with Disposable[Tx] {
+  def swap(v: A)(implicit tx: Tx): A
+
+//  def transformAndGet(f: A => A)(implicit tx: Tx): A
+//  def getAndTransform(f: A => A)(implicit tx: Tx): A
+}

@@ -348,12 +348,12 @@ object DurableImpl {
 //    override def toString = s"IdentifierMap$id"
 //  }
 
-  private sealed trait BasicSource[S <: D[S], A] extends Var[S#Tx, A] {
+  private abstract class BasicSource[S <: D[S], A] extends Var[S#Tx, A] {
     protected def id: Int
 
     final def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id)
 
-    def dispose()(implicit tx: S#Tx): Unit = tx.system.remove(id)
+    final def dispose()(implicit tx: S#Tx): Unit = tx.system.remove(id)
 
     @elidable(elidable.CONFIG) protected final def assertExists()(implicit tx: S#Tx): Unit =
       require(tx.system.exists(id), s"trying to write disposed ref $id")
@@ -363,7 +363,8 @@ object DurableImpl {
                                             @field protected val ser: Serializer[S#Tx, S#Acc, A])
     extends BasicSource[S, A] {
 
-    def apply()(implicit tx: S#Tx): A = tx.system.read[A](id)(ser.read(_, ()))
+    def apply()(implicit tx: S#Tx): A =
+      tx.system.read[A](id)(ser.read(_, ()))
 
     def setInit(v: A)(implicit tx: S#Tx): Unit =
       tx.system.write(id)(ser.write(v, _))
@@ -373,7 +374,11 @@ object DurableImpl {
       tx.system.write(id)(ser.write(v, _))
     }
 
-//    def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: A)(implicit tx: S#Tx): A = {
+      val res = this()
+      this() = v
+      res
+    }
 
     override def toString = s"Var($id)"
   }
@@ -397,7 +402,11 @@ object DurableImpl {
     def readInit()(implicit tx: S#Tx): Unit =
       peer.set(tx.system.read(id)(ser.read(_, ())))(tx.peer)
 
-//    def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: A)(implicit tx: S#Tx): A = {
+      val res = peer.swap(v)(tx.peer)
+      tx.system.write(id)(ser.write(v, _))
+      res
+    }
 
     override def toString = s"Var($id)"
   }
@@ -416,7 +425,11 @@ object DurableImpl {
       tx.system.write(id)(_.writeBoolean(v))
     }
 
-//    def transform(f: Boolean => Boolean)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: Boolean)(implicit tx: S#Tx): Boolean = {
+      val res = this()
+      this() = v
+      res
+    }
 
     override def toString = s"Var[Boolean]($id)"
   }
@@ -435,7 +448,11 @@ object DurableImpl {
       tx.system.write(id)(_.writeInt(v))
     }
 
-//    def transform(f: Int => Int)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: Int)(implicit tx: S#Tx): Int = {
+      val res = this()
+      this() = v
+      res
+    }
 
     override def toString = s"Var[Int]($id)"
   }
@@ -458,7 +475,11 @@ object DurableImpl {
     def readInit()(implicit tx: S#Tx): Unit =
       peer.set(tx.system.read(id)(_.readInt()))(tx.peer)
 
-//    def transform(f: Int => Int)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: Int)(implicit tx: S#Tx): Int = {
+      val res = peer.swap(v)(tx.peer)
+      tx.system.write(id)(_.writeInt(v))
+      res
+    }
 
     override def toString = s"Var[Int]($id)"
   }
@@ -477,7 +498,11 @@ object DurableImpl {
       tx.system.write(id)(_.writeLong(v))
     }
 
-//    def transform(f: Long => Long)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: Long)(implicit tx: S#Tx): Long = {
+      val res = this()
+      this() = v
+      res
+    }
 
     override def toString = s"Var[Long]($id)"
   }
@@ -500,7 +525,11 @@ object DurableImpl {
     def readInit()(implicit tx: S#Tx): Unit =
       peer.set(tx.system.read(id)(_.readLong()))(tx.peer)
 
-//    def transform(f: Long => Long)(implicit tx: S#Tx): Unit = this() = f(this())
+    def swap(v: Long)(implicit tx: S#Tx): Long = {
+      val res = peer.swap(v)(tx.peer)
+      tx.system.write(id)(_.writeLong(v))
+      res
+    }
 
     override def toString = s"Var[Long]($id)"
   }

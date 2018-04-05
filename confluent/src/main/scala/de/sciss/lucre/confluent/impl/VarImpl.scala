@@ -80,10 +80,16 @@ private[impl] final class HandleImpl[S <: Sys[S], A](stale: A, writeIndex: S#Acc
   }
 }
 
-private[impl] sealed trait BasicVar[S <: Sys[S], A] extends Var[S, A] {
+private[impl] abstract class BasicVar[S <: Sys[S], A] extends Var[S, A] {
   protected def id: S#Id
 
   final def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id.base)
+
+  final def swap(v: A)(implicit tx: S#Tx): A = {
+    val res = apply()
+    update(v)
+    res
+  }
 
   final def dispose()(implicit tx: S#Tx): Unit = {
     tx.removeFromCache(id)
@@ -203,7 +209,11 @@ private final class RootVar[S <: Sys[S], A](id1: Int, name: String)
     tx.getTxn(id)
   }
 
-//  def transform(f: A => A)(implicit tx: S#Tx): Unit = this() = f(this())
+  def swap(v: A)(implicit tx: S#Tx): A = {
+    val res = apply()
+    update(v)
+    res
+  }
 
   def write(out: DataOutput): Unit =
     sys.error("Unsupported Operation -- access.write")

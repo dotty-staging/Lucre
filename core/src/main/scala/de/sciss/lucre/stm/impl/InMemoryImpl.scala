@@ -70,11 +70,9 @@ object InMemoryImpl {
 
     override def toString = s"Var<${hashCode().toHexString}>"
 
-//    def apply()     (implicit tx: S#Tx): A    = tx.getVar(this)
-//    def update(v: A)(implicit tx: S#Tx): Unit = tx.putVar(this, v)
-
-    def apply()     (implicit tx: S#Tx): A    = peer.get   (tx.peer)
-    def update(v: A)(implicit tx: S#Tx): Unit = peer.set(v)(tx.peer)
+    def apply()     (implicit tx: S#Tx): A    = peer.get    (tx.peer)
+    def update(v: A)(implicit tx: S#Tx): Unit = peer.set (v)(tx.peer)
+    def swap  (v: A)(implicit tx: S#Tx): A    = peer.swap(v)(tx.peer)
 
     def write(out: DataOutput): Unit = ()
 

@@ -18,10 +18,12 @@ import de.sciss.lucre.stm
 object Plain {
 //  def apply(): Plain = impl.PlainImpl()
   implicit val instance: Plain = impl.PlainImpl()
+
+  type Id = stm.Identifier[Plain]
 }
 trait Plain extends Base[Plain] with Cursor[Plain] with Executor[Plain] {
   type Tx     = Plain
   type Acc    = Unit
   type Var[A] = stm.Var[Tx, A]
-  type Id     = stm.Identifier[Plain]
+  type Id     = Plain.Id
 }

@@ -40,7 +40,7 @@ trait ProjectionTest {
   //   }
 
   def test3[S <: stm.Sys[S], Time](dynVar: stm.Var[Time, Int])(implicit tx: S#Tx, dynView: S#Tx => Time): Unit = {
-    implicit val dtx = dynView(tx)
+    implicit val dtx: Time = dynView(tx)
     // dynVar.transform(_ + 33)(tx)
     dynVar() = dynVar() + 33
   }
@@ -60,11 +60,17 @@ trait ProjectionTest {
 
     def update(v: A)(implicit tx: PCursor[Tx]): Unit = setAt(tx.time, v)(tx.peer)
 
+    def swap(v: A)(implicit tx: PCursor[Tx]): A = {
+      val res = apply()
+      update(v)
+      res
+    }
+
     def setAt(time: Double, v: A)(implicit tx: Tx): Unit = notImplemented()
 
-    def dispose()( implicit tx: PCursor[ Tx ]) = ()
+    def dispose()(implicit tx: PCursor[Tx]): Unit = ()
 
-    def write(out: DataOutput) = ()
+    def write(out: DataOutput): Unit = ()
 
     def isFresh(implicit tx: PCursor[Tx]): Boolean = notImplemented()
 
