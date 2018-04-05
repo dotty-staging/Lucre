@@ -3,6 +3,7 @@ package de.sciss.lucre.confluent
 import java.io.File
 
 import de.sciss.lucre.data.TotalOrder
+import de.sciss.lucre.stm.TxnRandom
 import de.sciss.lucre.stm.store.BerkeleyDB
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
@@ -75,7 +76,7 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
             implicit tx => _ => system.newCursor()
           }
           //               val rnd   = new util.Random( RND_SEED )
-          val rnd = TxnRandom.plain(RND_SEED)
+          val rnd = TxnRandom.peer(RND_SEED)
           // would be nice to test maximum possible number of labels
           // but we're running out of heap space ...
           val n = NUM // 113042 // 3041

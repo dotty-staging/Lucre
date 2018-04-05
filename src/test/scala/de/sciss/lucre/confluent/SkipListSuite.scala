@@ -4,6 +4,7 @@ import java.io.File
 
 import de.sciss.lucre.data.{HASkipList, SkipList}
 import de.sciss.lucre.stm
+import de.sciss.lucre.stm.{Random, TxnRandom}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
@@ -36,7 +37,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
    val SEED          = 0L
 
 //   val rnd           = new util.Random( SEED )
-   val rnd           = TxnRandom.plain( SEED )
+   val rnd: Random[InTxn] = TxnRandom.peer(SEED)
 
    // make sure we don't look tens of thousands of actions
    showLog = false

@@ -20,7 +20,8 @@ import de.sciss.lucre.data.Ancestor
 import de.sciss.lucre.event.Observer
 import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{DataStore, IdentifierMap, Txn, TxnLike}
+import de.sciss.lucre.stm.impl.RandomImpl
+import de.sciss.lucre.stm.{DataStore, IdentifierMap, Random, Txn, TxnLike}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
@@ -61,7 +62,7 @@ trait Mixin[S <: Sys[S]]
         val durRootId     = durable.newIdValue() // stm.DurableSurgery.newIdValue(durable)
         val idCnt         = tx.newCachedIntVar(0)
         val versionLinear = tx.newCachedIntVar(0)
-        val versionRandom = tx.newCachedLongVar(TxnRandom.initialScramble(0L)) // scramble !!!
+        val versionRandom = tx.newCachedLongVar(RandomImpl.initialScramble(0L)) // scramble !!!
         val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, ImmutableSerializer.Long, _.toInt)
         GlobalState[S, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
           versionRandom = versionRandom, partialTree = partialTree)
@@ -69,7 +70,7 @@ trait Mixin[S <: Sys[S]]
       root()
     }
 
-  private val versionRandom = TxnRandom.wrap(global.versionRandom)
+  private val versionRandom = Random.wrap(global.versionRandom)
 
   override def toString = "Confluent"
 
