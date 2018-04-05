@@ -1,7 +1,7 @@
 package de.sciss.lucre.confluent
 
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.MutableSerializer
+import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataInput, DataOutput}
 import org.scalatest.{Matchers, Outcome, fixture}
@@ -34,7 +34,7 @@ class RefreshSpec extends fixture.FlatSpec with Matchers {
     }
   }
 
-  class Entity(val id: S#Id, val field: S#Var[Int]) extends stm.Mutable.Impl[S] {
+  class Entity(val id: S#Id, val field: S#Var[Int]) extends MutableImpl[S] {
     protected def disposeData()(implicit tx: S#Tx): Unit = field.dispose()
 
     protected def writeData(out: DataOutput): Unit = field.write(out)

@@ -1,8 +1,8 @@
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm
+import de.sciss.lucre.stm.impl.MutableImpl
 import de.sciss.serial
-import de.sciss.serial.{Serializer, DataInput, DataOutput}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
@@ -52,7 +52,7 @@ class CursorsSpec extends ConfluentSpec {
   }
 
   class Entity(val id: S#Id, val field: S#Var[Int], cursorsVar: S#Var[Vec[Cursor[S, D]]])
-    extends stm.Mutable.Impl[S] {
+    extends MutableImpl[S] {
     protected def disposeData()(implicit tx: S#Tx): Unit = {
       //         implicit val dtx: D#Tx  = tx.durable
       field     .dispose()

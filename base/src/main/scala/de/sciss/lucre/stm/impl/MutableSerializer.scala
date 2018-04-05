@@ -12,10 +12,11 @@
  */
 
 package de.sciss.lucre.stm
+package impl
 
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-trait MutableSerializer[S <: Sys[S], M <: Mutable[S#Id, S#Tx]]
+trait MutableSerializer[S <: Base[S], M <: Mutable[S#Id, S#Tx]]
   extends Serializer[S#Tx, S#Acc, M] {
 
   final def write(m: M, out: DataOutput): Unit = m.write(out)

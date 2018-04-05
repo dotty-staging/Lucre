@@ -1,6 +1,7 @@
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm.{MutableSerializer, Mutable}
+import de.sciss.lucre.stm.Mutable
+import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.serial.{DataInput, DataOutput}
 
 trait TestHasLinkedList {
@@ -9,7 +10,7 @@ trait TestHasLinkedList {
 
     object Node {
       implicit object ser extends MutableSerializer[S, Node] {
-        def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx): Node = new Node with Mutable.Impl[S] {
+        def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx): Node = new Node with MutableImpl[S] {
           val id    = _id
           val name  = in.readUTF()
           val value = tx.readIntVar(id, in)
@@ -17,7 +18,7 @@ trait TestHasLinkedList {
         }
       }
 
-      def apply(_name: String, init: Int)(implicit tx: S#Tx): Node = new Node with Mutable.Impl[S] {
+      def apply(_name: String, init: Int)(implicit tx: S#Tx): Node = new Node with MutableImpl[S] {
         val id    = tx.newId()
         val name  = _name
         val value = tx.newIntVar(id, init)

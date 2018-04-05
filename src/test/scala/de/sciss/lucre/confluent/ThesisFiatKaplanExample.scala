@@ -1,6 +1,7 @@
 package de.sciss.lucre.confluent
 
 import de.sciss.lucre.stm
+import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput}
@@ -11,7 +12,7 @@ object ThesisFiatKaplanExample extends App {
     implicit def listSer[S <: Sys[S], A](implicit peerSer: serial.Serializer[S#Tx, S#Acc, A]): serial.Serializer[S#Tx, S#Acc, LinkedList[S, A]] = new ListSer[S, A]
 
     private class ListSer[S <: Sys[S], A](implicit _peerSer: serial.Serializer[S#Tx, S#Acc, A])
-      extends stm.MutableSerializer[S, LinkedList[S, A]] {
+      extends MutableSerializer[S, LinkedList[S, A]] {
 
       protected def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx): LinkedList[S, A] =
         new Impl[S, A] {
@@ -28,7 +29,7 @@ object ThesisFiatKaplanExample extends App {
         val head = tx.newVar(id, Option.empty[Cell])(serial.Serializer.option(CellSer))
     }
 
-    private abstract class Impl[S <: Sys[S], A] extends LinkedList[S, A] with stm.Mutable.Impl[S] {
+    private abstract class Impl[S <: Sys[S], A] extends LinkedList[S, A] with MutableImpl[S] {
       implicit def peerSer: serial.Serializer[S#Tx, S#Acc, A]
 
       def cell(init: A)(implicit tx: S#Tx): Cell = new Cell {

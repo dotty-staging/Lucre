@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.data
 
+import de.sciss.lucre.stm.impl.MutableImpl
 import de.sciss.lucre.stm.{Mutable, Sink, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -249,7 +250,7 @@ object HASkipList {
   }
 
   private sealed trait Impl[S <: Sys[S], /* @spec(KeySpec) */ A, E]
-    extends HeadOrBranch[S, A, E] with Serializer[S#Tx, S#Acc, Node[S, A, E]] with Mutable.Impl[S] {
+    extends HeadOrBranch[S, A, E] with Serializer[S#Tx, S#Acc, Node[S, A, E]] with MutableImpl[S] {
     impl =>
 
     // ---- abstract ----

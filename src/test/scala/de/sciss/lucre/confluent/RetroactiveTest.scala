@@ -1,6 +1,6 @@
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm
+import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataInput, DataOutput}
 
@@ -11,12 +11,12 @@ object RetroactiveTest extends App {
   //  showLog       = true
   //  showCursorLog = true
 
-  implicit object Ser extends stm.MutableSerializer[S, Foo] {
+  implicit object Ser extends MutableSerializer[S, Foo] {
     def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx) =
       new Foo(id, tx.readIntVar(id, in), tx.readVar[String](id, in))
   }
 
-  final class Foo(val id: S#Id, val a: S#Var[Int], val b: S#Var[String]) extends stm.Mutable.Impl[S] {
+  final class Foo(val id: S#Id, val a: S#Var[Int], val b: S#Var[String]) extends MutableImpl[S] {
     def writeData(out: DataOutput): Unit = {
       a.write(out)
       b.write(out)

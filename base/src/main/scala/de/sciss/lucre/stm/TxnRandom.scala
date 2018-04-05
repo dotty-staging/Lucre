@@ -14,22 +14,11 @@
 package de.sciss.lucre.stm
 
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.impl.RandomImpl.{SysLike, calcSeedUniquifier, initialScramble, BaseImpl}
+import de.sciss.lucre.stm.impl.RandomImpl.{SysLike, calcSeedUniquifier, initialScramble}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.concurrent.stm.{InTxn, Ref => STMRef}
-
 object TxnRandom {
-  def peer():           Random[InTxn] = peer(calcSeedUniquifier() ^ System.nanoTime())
-  def peer(seed: Long): Random[InTxn] = new PlainImpl(STMRef(initialScramble(seed)))
-
-  private final class PlainImpl(seedRef: STMRef[Long]) extends BaseImpl[InTxn] {
-    protected def refSet(value: Long)(implicit tx: InTxn): Unit = seedRef() = value
-
-    protected def refGet(implicit tx: InTxn): Long = seedRef()
-  }
-
-  private final class Impl[S <: stm.Sys[S]](val id: S#Id, protected val seedRef: stm.Var[S#Tx, Long])
+   private final class Impl[S <: Base[S]](val id: S#Id, protected val seedRef: stm.Var[S#Tx, Long])
     extends SysLike[S#Tx] with TxnRandom[S] {
 
     def write(out: DataOutput): Unit = {
@@ -43,22 +32,22 @@ object TxnRandom {
     }
   }
 
-  def apply[S <: stm.Sys[S]]()(implicit tx: S#Tx): TxnRandom[S] =
+  def apply[S <: Base[S]]()(implicit tx: S#Tx): TxnRandom[S] =
     apply(calcSeedUniquifier() ^ System.nanoTime())
 
-  def apply[S <: stm.Sys[S]](seed: Long)(implicit tx: S#Tx): TxnRandom[S] = {
+  def apply[S <: Base[S]](seed: Long)(implicit tx: S#Tx): TxnRandom[S] = {
     val id = tx.newId()
     new Impl[S](id, tx.newLongVar(id, initialScramble(seed)))
   }
 
-  def read[S <: stm.Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): TxnRandom[S] =
+  def read[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): TxnRandom[S] =
     serializer[S].read(in, access)
 
-  implicit def serializer[S <: stm.Sys[S]]: Serializer[S#Tx, S#Acc, TxnRandom[S]] = anySer.asInstanceOf[Ser[S]]
+  implicit def serializer[S <: Base[S]]: Serializer[S#Tx, S#Acc, TxnRandom[S]] = anySer.asInstanceOf[Ser[S]]
 
-  private val anySer = new Ser[InMemory]
+  private val anySer = new Ser[Plain]
 
-  private final class Ser[S <: stm.Sys[S]] extends Serializer[S#Tx, S#Acc, TxnRandom[S]] {
+  private final class Ser[S <: Base[S]] extends Serializer[S#Tx, S#Acc, TxnRandom[S]] {
     def write(p: TxnRandom[S], out: DataOutput): Unit = p.write(out)
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): TxnRandom[S] = {
@@ -72,4 +61,4 @@ object TxnRandom {
 /** A transactional pseudo-random number generator which
   * behaves numerically like `java.util.Random`.
   */
-trait TxnRandom[S <: stm.Sys[S]] extends Random[S#Tx] with stm.Mutable[S#Id, S#Tx]
+trait TxnRandom[S <: Base[S]] extends Random[S#Tx] with stm.Mutable[S#Id, S#Tx]

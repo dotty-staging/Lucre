@@ -2,7 +2,8 @@ package de.sciss.lucre.confluent
 
 import java.io.File
 
-import de.sciss.lucre.stm.{MutableSerializer, Mutable}
+import de.sciss.lucre.stm.Mutable
+import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataInput, DataOutput}
 import org.scalatest.{FunSpec, GivenWhenThen}
@@ -160,7 +161,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
 
     object Node {
       implicit object ser extends MutableSerializer[T, Node] {
-        def readData(in: DataInput, _id: T#Id)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
+        def readData(in: DataInput, _id: T#Id)(implicit tx: T#Tx): Node = new Node with MutableImpl[T] {
           val id    = _id
           val name  = in.readUTF()
           val value = tx.readIntVar(id, in)
@@ -169,7 +170,7 @@ class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
         }
       }
 
-      def apply(_name: String, init: Int)(implicit tx: T#Tx): Node = new Node with Mutable.Impl[T] {
+      def apply(_name: String, init: Int)(implicit tx: T#Tx): Node = new Node with MutableImpl[T] {
         val id    = tx.newId()
         val name  = _name
         val value = tx.newIntVar(id, init)

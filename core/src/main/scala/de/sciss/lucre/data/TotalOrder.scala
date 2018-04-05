@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.data
 
+import de.sciss.lucre.stm.impl.MutableImpl
 import de.sciss.lucre.stm.{Mutable, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
 
@@ -90,7 +91,7 @@ object TotalOrder {
     final class Entry[S <: Sys[S]] private[TotalOrder](val id: S#Id, set: Set[S], tagVal: S#Var[Int],
                                                        prevRef: S#Var[EntryOption[S] /* with MutableOption[ S ] */ ],
                                                        nextRef: S#Var[EntryOption[S] /* with MutableOption[ S ] */ ])
-      extends EntryOption[S] with Mutable.Impl[S] with Ordered[S#Tx, Entry[S]] {
+      extends EntryOption[S] with MutableImpl[S] with Ordered[S#Tx, Entry[S]] {
 
       override def toString = s"Set.Entry$id"
 
@@ -166,7 +167,7 @@ object TotalOrder {
   }
 
   private final class SetRead[S <: Sys[S]](in: DataInput, access: S#Acc, tx0: S#Tx)
-    extends Set[S] with Mutable.Impl[S] {
+    extends Set[S] with MutableImpl[S] {
 
     val id: S#Id = tx0.readId(in, access)
 
@@ -182,7 +183,7 @@ object TotalOrder {
   }
 
   private final class SetNew[S <: Sys[S]](val id: S#Id, rootTag: Int, protected val sizeVal: S#Var[Int], tx0: S#Tx)
-    extends Set[S] with Mutable.Impl[S] {
+    extends Set[S] with MutableImpl[S] {
     me =>
 
     val root: E = {
@@ -474,7 +475,7 @@ object TotalOrder {
                                                           tagVal:  S#Var[Int],
                                                           prevRef: S#Var[KeyOption[S, A]],
                                                           nextRef: S#Var[KeyOption[S, A]])
-      extends Mutable.Impl[S] with Ordered[S#Tx, Entry[S, A]] {
+      extends MutableImpl[S] with Ordered[S#Tx, Entry[S, A]] {
 
       private type E    = Entry[S, A]       // scalac bug -- this _is_ used
       private type KOpt = KeyOption[S, A]
@@ -595,7 +596,7 @@ object TotalOrder {
                                               val entryView: A => Map.Entry[S, A],
                                               in: DataInput, access: S#Acc, tx0: S#Tx)
                                              (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
-    extends Map[S, A] with Mutable.Impl[S] {
+    extends Map[S, A] with MutableImpl[S] {
 
     val id: S#Id = tx0.readId(in, access)
 
@@ -613,7 +614,7 @@ object TotalOrder {
                                              protected val observer: Map.RelabelObserver[S#Tx, A],
                                              val entryView: A => Map.Entry[S, A], rootTag: Int, tx0: S#Tx)
                                             (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
-    extends Map[S, A] with Mutable.Impl[S] {
+    extends Map[S, A] with MutableImpl[S] {
 
     val root: E = {
       val rootId  = tx0.newId()

@@ -7,8 +7,8 @@ import de.sciss.lucre.geom.IntDistanceMeasure3D.MS
 import de.sciss.lucre.geom.IntSpace.ThreeDim
 import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, QueryShape, Space}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Random, TxnRandom}
 import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.lucre.stm.{InTxnRandom, Random}
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
 import scala.collection.breakOut
@@ -32,7 +32,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
    val n             = 0x800 // too slow -- 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
    val n2: Int      = n >> 3    // 0x1000    // range query and nn
 
-   val rnd: Random[InTxn] = TxnRandom.peer(2L) // ( 12L )
+   val rnd: Random[InTxn] = InTxnRandom(2L) // ( 12L )
 
    val cube          = IntCube( 0x40000000, 0x40000000, 0x40000000, 0x40000000 )
 

@@ -3,21 +3,22 @@ package de.sciss.lucre.confluent
 import java.io.File
 
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{MutableSerializer, Mutable}
+import de.sciss.lucre.stm.Mutable
+import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataInput, DataOutput}
 
 class Nodes[S <: stm.Sys[S]] {
   object Node {
     implicit object ser extends MutableSerializer[S, Node] {
-      def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx) = new Node with Mutable.Impl[ S ] {
+      def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx) = new Node with MutableImpl[ S ] {
         val id    = _id
         val value = tx.readVar[Int](id, in)
         val next  = tx.readVar[Option[Node]](id, in)
       }
     }
 
-    def apply(init: Int)(implicit tx: S#Tx): Node = new Node with Mutable.Impl[ S ] {
+    def apply(init: Int)(implicit tx: S#Tx): Node = new Node with MutableImpl[ S ] {
       val id    = tx.newId()
       val value = tx.newVar(id, init)
       val next  = tx.newVar(id, Option.empty[Node])
