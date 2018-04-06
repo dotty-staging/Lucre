@@ -23,26 +23,31 @@ import scala.language.higherKinds
   * peer STM transactions. It can thus be used to build purely imperative
   * non-transactional systems.
   *
-  * @tparam B   the representation type of the system
+  * @tparam S   the representation type of the system
   */
-trait Base[B <: Base[B]] extends Closeable {
+trait Base[S <: Base[S]] extends Closeable {
+  type I <: Base[I]
+
+  def inMemory: I
+  def inMemoryTx(tx: S#Tx): I#Tx
+
   /** The variable type of the system. Variables allow transactional storage and
     * retrieval both of immutable and mutable values. Specific systems may extend
     * the minimum capabilities described by the `Var` trait.
     *
     * @tparam A   the type of the value stored in the variable
     */
-  type Var[A] <: stm.Var[B#Tx, A]
+  type Var[A] <: stm.Var[S#Tx, A]
 
   /** The transaction type of the system. */
-  type Tx <: Executor[B]
+  type Tx <: Executor[S]
 
   /** The identifier type of the system. This is an opaque type about which the
     * user only knows that it uniquely identifies and object (or an object along
     * with its access path in the confluent case). It is thus valid to assume
     * that two objects are equal if their identifiers are equal.
     */
-  type Id <: Identifier[B#Tx]
+  type Id <: Identifier[S#Tx]
 
   /** The path access type for objects if they carry a temporal trace. This is
     * used by confluently persistent systems, while it is typically `Unit` for

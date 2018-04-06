@@ -26,9 +26,6 @@ import de.sciss.serial.Serializer
 trait Sys[S <: Sys[S]] extends Base[S] {
   type I <: InMemoryLike[I]
 
-  def inMemory: I
-  def inMemoryTx(tx: S#Tx): I#Tx
-
   /** The transaction type of the system. */
   type Tx <: Txn[S]
 

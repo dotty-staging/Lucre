@@ -100,6 +100,10 @@ object PlainImpl {
 
     def close(): Unit = ()
 
+    def inMemory: I = this
+
+    def inMemoryTx(tx: S#Tx): I#Tx = tx
+
     // ---- Cursor ----
 
     def step[A](fun: Tx => A): A = fun(this)
