@@ -5,7 +5,7 @@ lazy val mimaVersion      = "3.6.0"
 
 lazy val deps = new {
   val base = new {
-    val serial    = "1.1.0-SNAPSHOT"
+    val serial    = "1.1.0"
   }
   val core = new {
     val scalaSTM  = "0.8"
@@ -13,7 +13,7 @@ lazy val deps = new {
   val expr = new {
     val model     = "0.3.4"
     val numbers   = "0.1.5"
-    val span      = "1.4.0-SNAPSHOT"
+    val span      = "1.4.0"
   }
   val confluent = new {
     val finger    = "1.5.2"
