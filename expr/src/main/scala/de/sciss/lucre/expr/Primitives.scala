@@ -16,7 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr
 import de.sciss.lucre.stm.Sys
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.{ImmutableSerializer, Serializer}
 import de.sciss.span.{Span, SpanLike}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -35,7 +35,7 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
   import expr.{IntObj => Repr}
 
   final val typeId = 2
-  final val valueSerializer = ImmutableSerializer.Int
+  final val valueSerializer = Serializer.Int
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -58,7 +58,7 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
   import expr.{LongObj => Repr}
 
   final val typeId = 3
-  final val valueSerializer = ImmutableSerializer.Long
+  final val valueSerializer = Serializer.Long
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -81,7 +81,7 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
   import expr.{DoubleObj => Repr}
 
   final val typeId = 5
-  final val valueSerializer = ImmutableSerializer.Double
+  final val valueSerializer = Serializer.Double
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -104,7 +104,7 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
   import expr.{BooleanObj => Repr}
 
   final val typeId = 6
-  final val valueSerializer = ImmutableSerializer.Boolean
+  final val valueSerializer = Serializer.Boolean
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -127,7 +127,7 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
   import expr.{StringObj => Repr}
 
   final val typeId = 8
-  final val valueSerializer = ImmutableSerializer.String
+  final val valueSerializer = Serializer.String
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)

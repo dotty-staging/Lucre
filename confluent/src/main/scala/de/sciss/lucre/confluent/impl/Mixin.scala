@@ -23,7 +23,7 @@ import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.RandomImpl
 import de.sciss.lucre.stm.{DataStore, IdentifierMap, Random, Txn, TxnLike}
 import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer, Serializer}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -63,7 +63,7 @@ trait Mixin[S <: Sys[S]]
         val idCnt         = tx.newCachedIntVar(0)
         val versionLinear = tx.newCachedIntVar(0)
         val versionRandom = tx.newCachedLongVar(RandomImpl.initialScramble(0L)) // scramble !!!
-        val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, ImmutableSerializer.Long, _.toInt)
+        val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, Serializer.Long, _.toInt)
         GlobalState[S, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
           versionRandom = versionRandom, partialTree = partialTree)
       }
@@ -441,7 +441,7 @@ trait Mixin[S <: Sys[S]]
     val dtx   = durableTx(tx)
     val term  = index.term
     log(s"txn new tree ${term.toInt}")
-    val tree  = Ancestor.newTree[D, Long](term)(dtx, ImmutableSerializer.Long, _.toInt)
+    val tree  = Ancestor.newTree[D, Long](term)(dtx, Serializer.Long, _.toInt)
     val it    = new IndexTreeImpl(tree, level)
     val vInt  = term.toInt
     store.put { out =>
@@ -452,7 +452,7 @@ trait Mixin[S <: Sys[S]]
     }
     writeTreeVertex(it, tree.root)(dtx)
 
-    val map = newIndexMap(index, term, ())(tx, ImmutableSerializer.Unit)
+    val map = newIndexMap(index, term, ())(tx, Serializer.Unit)
     store.put { out =>
       out.writeByte(5)
       out.writeInt(vInt)
@@ -470,7 +470,7 @@ trait Mixin[S <: Sys[S]]
       out.writeByte(5)
       out.writeInt(index.term.toInt)
     } { in =>
-      readIndexMap[Unit](in, index)(tx, ImmutableSerializer.Unit)
+      readIndexMap[Unit](in, index)(tx, Serializer.Unit)
     }
     opt.getOrElse(sys.error(s"No time stamp map found for $index"))
   }
@@ -481,7 +481,7 @@ trait Mixin[S <: Sys[S]]
       out.writeByte(1)
       out.writeInt(term.toInt)
     } { in =>
-      val tree = Ancestor.readTree[D, Long](in, ())(tx, ImmutableSerializer.Long, _.toInt) // tx.durable
+      val tree = Ancestor.readTree[D, Long](in, ())(tx, Serializer.Long, _.toInt) // tx.durable
       val level = in./* PACKED */ readInt()
       new IndexTreeImpl(tree, level)
     } getOrElse {

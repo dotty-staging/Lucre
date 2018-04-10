@@ -20,7 +20,7 @@ import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Obj, Source, T
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.concurrent.stm.{InTxn, Ref => ScalaRef, TxnExecutor}
+import scala.concurrent.stm.{InTxn, TxnExecutor, Ref => ScalaRef}
 
 object InMemoryImpl {
   def apply(): InMemory = new System
@@ -64,24 +64,6 @@ object InMemoryImpl {
   }
 
   private def opNotSupported(name: String): Nothing = sys.error(s"Operation not supported: $name")
-
-  private final class VarImpl[S <: InMemoryLike[S], A](val peer: ScalaRef[A])
-    extends InMemoryLike.Var[S, A] {
-
-    override def toString = s"Var<${hashCode().toHexString}>"
-
-    def apply()     (implicit tx: S#Tx): A    = peer.get    (tx.peer)
-    def update(v: A)(implicit tx: S#Tx): Unit = peer.set (v)(tx.peer)
-    def swap  (v: A)(implicit tx: S#Tx): A    = peer.swap(v)(tx.peer)
-
-    def write(out: DataOutput): Unit = ()
-
-    def dispose()(implicit tx: S#Tx): Unit = {
-      // XXX TODO --- what to do with the contexts?
-      peer.set(null.asInstanceOf[A])(tx.peer)
-      // tx.markDirty()
-    }
-  }
 
   private final class IdImpl[S <: InMemoryLike[S]](val id: Int) extends InMemoryLike.Id[S] {
     def write(out: DataOutput): Unit = ()
@@ -139,22 +121,22 @@ object InMemoryImpl {
 
     final def newVar[A](id: S#Id, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
       val peer = ScalaRef(init)
-      new VarImpl[S, A](peer)
+      new SysInMemoryRef[S, A](peer)
     }
 
     final def newIntVar(id: S#Id, init: Int): S#Var[Int] = {
       val peer = ScalaRef(init)
-      new VarImpl[S, Int](peer)
+      new SysInMemoryRef[S, Int](peer)
     }
 
     final def newBooleanVar(id: S#Id, init: Boolean): S#Var[Boolean] = {
       val peer = ScalaRef(init)
-      new VarImpl[S, Boolean](peer)
+      new SysInMemoryRef[S, Boolean](peer)
     }
 
     final def newLongVar(id: S#Id, init: Long): S#Var[Long] = {
       val peer = ScalaRef(init)
-      new VarImpl[S, Long](peer)
+      new SysInMemoryRef[S, Long](peer)
     }
 
     final def newVarArray[A](size: Int) = new Array[S#Var[A]](size)

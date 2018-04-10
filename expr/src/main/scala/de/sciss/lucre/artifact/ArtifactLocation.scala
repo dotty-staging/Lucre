@@ -20,7 +20,7 @@ import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr
 import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.Sys
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.{ImmutableSerializer, Serializer}
 
 object ArtifactLocation extends expr.impl.ExprTypeImpl[File, ArtifactLocation] {
   import artifact.{ArtifactLocation => Repr}
@@ -35,7 +35,7 @@ object ArtifactLocation extends expr.impl.ExprTypeImpl[File, ArtifactLocation] {
     newConst(dir)
   }
   
-  implicit def valueSerializer: ImmutableSerializer[File] = ImmutableSerializer.File
+  implicit def valueSerializer: ImmutableSerializer[File] = Serializer.File
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)

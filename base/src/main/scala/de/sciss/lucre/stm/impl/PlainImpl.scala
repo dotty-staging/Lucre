@@ -118,6 +118,8 @@ object PlainImpl {
 
     def readId(in: DataInput, acc: Acc): Id = opNotSupported("readId")
 
+    def newRef[A](init: A): Ref[Tx, A] = new VarImpl(init)
+
     def newVar[A](id: Id, init: A)(implicit serializer: Serializer[Tx, Acc, A]): Var[A] =
       new VarImpl(init)
 
@@ -128,6 +130,9 @@ object PlainImpl {
     def newVarArray[A](size: Int): Array[Var[A]] = new Array[S#Var[A]](size)
 
     def newInMemoryIdMap[A]: IdentifierMap[Id, Tx, A] = new PlainIdentifierMap[A]
+
+    def newInMemoryMap[K, V]: RefMap[S, K, V] = new PlainInMemoryMap[K, V]
+    def newInMemorySet[A]   : RefSet[S, A]    = new PlainInMemorySet[A]
 
     def readVar[A](id: Id, in: DataInput)(implicit serializer: Serializer[Tx, Acc, A]): Var[A] =
       opNotSupported("readVar")

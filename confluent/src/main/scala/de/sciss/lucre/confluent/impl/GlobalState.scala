@@ -17,7 +17,7 @@ package impl
 import de.sciss.lucre.data.Ancestor
 import de.sciss.lucre.stm
 import de.sciss.serial
-import de.sciss.serial.{ImmutableSerializer, DataInput, DataOutput}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 private[impl] object GlobalState {
   private val SER_VERSION = 0x436F6E666C6E7400L  // "Conflnt\0"
@@ -46,7 +46,7 @@ private[impl] object GlobalState {
       val idCnt         = tx.readCachedIntVar(in)
       val versionLinear = tx.readCachedIntVar(in)
       val versionRandom = tx.readCachedLongVar(in)
-      val partialTree   = Ancestor.readTree[D, Long](in, acc)(tx, ImmutableSerializer.Long, _.toInt)
+      val partialTree   = Ancestor.readTree[D, Long](in, acc)(tx, Serializer.Long, _.toInt)
       GlobalState[S, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
         versionRandom = versionRandom, partialTree = partialTree)
     }

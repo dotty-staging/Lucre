@@ -14,12 +14,11 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.{stm, expr}
 import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.{expr, stm}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
-import scala.language.higherKinds
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 
 object Type {
   trait Extension {

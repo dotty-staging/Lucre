@@ -23,6 +23,8 @@ trait Executor[S <: Base[S]] {
 
   // ---- variables ----
 
+  def newRef[A](init: A): Ref[S#Tx, A]
+
   def newVar[A](id: S#Id, init: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
   def newBooleanVar(id: S#Id, init: Boolean): S#Var[Boolean]
   def newIntVar    (id: S#Id, init: Int    ): S#Var[Int]
@@ -41,6 +43,9 @@ trait Executor[S <: Base[S]] {
     */
   def newInMemoryIdMap[A]: IdentifierMap[S#Id, S#Tx, A]
 
+  def newInMemorySet[A]    : RefSet[S, A]
+  def newInMemoryMap[A, B] : RefMap[S, A, B]
+
   def readVar[A](id: S#Id, in: DataInput)(implicit serializer: Serializer[S#Tx, S#Acc, A]): S#Var[A]
   def readBooleanVar(id: S#Id, in: DataInput): S#Var[Boolean]
   def readIntVar    (id: S#Id, in: DataInput): S#Var[Int]
@@ -58,5 +63,4 @@ trait Executor[S <: Base[S]] {
     * @return              the handle
     */
   def newHandle[A](value: A)(implicit serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A]
-
 }

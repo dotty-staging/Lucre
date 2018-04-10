@@ -18,29 +18,29 @@ import de.sciss.lucre.stm
 import scala.concurrent.stm.{Ref => STMRef, InTxn}
 
 object InMemoryLike {
-  trait Id[S <: InMemoryLike[S]] extends Identifier[S#Tx] {
+  trait Id[S <: Sys[S]] extends Identifier[S#Tx] {
     private[stm] def id: Int
   }
 
-  trait Txn[S <: InMemoryLike[S]] extends stm.Txn[S] {
+  trait Txn[S <: Sys[S]] extends stm.Txn[S] {
     private[stm] def getVar[A](vr: S#Var[A]): A
     private[stm] def putVar[A](vr: S#Var[A], value: A): Unit
   }
 
-  trait Var[S <: InMemoryLike[S], A] extends stm.Var[S#Tx, A] {
+  trait Var[S <: Sys[S], A] extends stm.Var[S#Tx, A] {
     private[stm] def peer: STMRef[A]
   }
 
-  trait Context[S <: InMemoryLike[S]] {
-    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A
-    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit
-  }
+//  trait Context[S <: InMemoryLike[S]] {
+//    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A
+//    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit
+//  }
 }
 trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]   = InMemoryLike.Var[S, A]
   final type Id       = InMemoryLike.Id[S]
   final type Acc      = Unit
-  final type Context  = InMemoryLike.Context[S]
+//  final type Context  = InMemoryLike.Context[S]
 
   type Tx <: InMemoryLike.Txn[S]
 
