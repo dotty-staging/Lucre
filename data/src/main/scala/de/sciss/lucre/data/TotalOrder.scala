@@ -14,7 +14,7 @@
 package de.sciss.lucre.data
 
 import de.sciss.lucre.stm.impl.MutableImpl
-import de.sciss.lucre.stm.{Mutable, Sys}
+import de.sciss.lucre.stm.{Mutable, Base}
 import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
 
 import scala.annotation.{switch, tailrec}
@@ -41,22 +41,22 @@ object TotalOrder {
   // ---- Set ----
 
   object Set {
-    def empty[S <: Sys[S]](implicit tx: S#Tx): Set[S] = empty()
+    def empty[S <: Base[S]](implicit tx: S#Tx): Set[S] = empty()
 
-    def empty[S <: Sys[S]](rootTag: Int = 0)(implicit tx: S#Tx): Set[S] = {
+    def empty[S <: Base[S]](rootTag: Int = 0)(implicit tx: S#Tx): Set[S] = {
       val id = tx.newId()
       new SetNew[S](id, rootTag, tx.newIntVar(id, 1), tx)
     }
 
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Set[S] =
+    def read[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Set[S] =
       new SetRead(in, access, tx)
 
-    implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Set[S]] =
+    implicit def serializer[S <: Base[S]]: Serializer[S#Tx, S#Acc, Set[S]] =
       new SetSerializer[S]
 
     // ( relabelObserver )
 
-    sealed trait EntryOption[S <: Sys[S]] {
+    sealed trait EntryOption[S <: Base[S]] {
       protected type E    = Entry[S]
       protected type EOpt = EntryOption[S] /* with MutableOption[ S ] */
 
@@ -71,7 +71,7 @@ object TotalOrder {
       def isEmpty: Boolean
     }
 
-    final class EmptyEntry[S <: Sys[S]] private[TotalOrder]() extends EntryOption[S] /* with EmptyMutable */ {
+    final class EmptyEntry[S <: Base[S]] private[TotalOrder]() extends EntryOption[S] /* with EmptyMutable */ {
       private[Set] def updatePrev(e: EOpt)(implicit tx: S#Tx): Unit = ()
       private[Set] def updateNext(e: EOpt)(implicit tx: S#Tx): Unit = ()
 
@@ -88,7 +88,7 @@ object TotalOrder {
       override def toString = "<empty>"
     }
 
-    final class Entry[S <: Sys[S]] private[TotalOrder](val id: S#Id, set: Set[S], tagVal: S#Var[Int],
+    final class Entry[S <: Base[S]] private[TotalOrder](val id: S#Id, set: Set[S], tagVal: S#Var[Int],
                                                        prevRef: S#Var[EntryOption[S] /* with MutableOption[ S ] */ ],
                                                        nextRef: S#Var[EntryOption[S] /* with MutableOption[ S ] */ ])
       extends EntryOption[S] with MutableImpl[S] with Ordered[S#Tx, Entry[S]] {
@@ -157,7 +157,7 @@ object TotalOrder {
     }
   }
 
-  private final class SetSerializer[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, Set[S]] {
+  private final class SetSerializer[S <: Base[S]] extends Serializer[S#Tx, S#Acc, Set[S]] {
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Set[S] =
       new SetRead[S](in, access, tx)
 
@@ -166,7 +166,7 @@ object TotalOrder {
     override def toString = "Set.serializer"
   }
 
-  private final class SetRead[S <: Sys[S]](in: DataInput, access: S#Acc, tx0: S#Tx)
+  private final class SetRead[S <: Base[S]](in: DataInput, access: S#Acc, tx0: S#Tx)
     extends Set[S] with MutableImpl[S] {
 
     val id: S#Id = tx0.readId(in, access)
@@ -182,7 +182,7 @@ object TotalOrder {
     val root: Set.Entry[S] = EntrySerializer.read(in, access)(tx0)
   }
 
-  private final class SetNew[S <: Sys[S]](val id: S#Id, rootTag: Int, protected val sizeVal: S#Var[Int], tx0: S#Tx)
+  private final class SetNew[S <: Base[S]](val id: S#Id, rootTag: Int, protected val sizeVal: S#Var[Int], tx0: S#Tx)
     extends Set[S] with MutableImpl[S] {
     me =>
 
@@ -195,7 +195,7 @@ object TotalOrder {
     }
   }
 
-  sealed trait Set[S <: Sys[S]] extends TotalOrder[S] {
+  sealed trait Set[S <: Base[S]] extends TotalOrder[S] {
     me =>
 
     final type           E    = Set.Entry[S]
@@ -407,20 +407,20 @@ object TotalOrder {
   // ---- Map ----
 
   object Map {
-    def empty[S <: Sys[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A], entryView: A => Map.Entry[S, A],
+    def empty[S <: Base[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A], entryView: A => Map.Entry[S, A],
                               rootTag: Int = 0)
                              (implicit tx: S#Tx, keySerializer: Serializer[S#Tx, S#Acc, A]): Map[S, A] = {
       val id = tx.newId()
       new MapNew[S, A](id, tx.newIntVar(id, 1), relabelObserver, entryView, rootTag, tx)
     }
 
-    def read[S <: Sys[S], A](in: DataInput, access: S#Acc, relabelObserver: Map.RelabelObserver[S#Tx, A],
+    def read[S <: Base[S], A](in: DataInput, access: S#Acc, relabelObserver: Map.RelabelObserver[S#Tx, A],
                              entryView: A => Map.Entry[S, A])
                             (implicit tx: S#Tx, keySerializer: Serializer[S#Tx, S#Acc, A]): Map[S, A] =
       new MapRead[S, A](relabelObserver, entryView, in, access, tx)
 
 
-    implicit def serializer[S <: Sys[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A],
+    implicit def serializer[S <: Base[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A],
                                             entryView: A => Map.Entry[S, A])
                                            (implicit keySerializer: Serializer[S#Tx, S#Acc, A]): Serializer[S#Tx, S#Acc, Map[S, A]] =
       new MapSerializer[S, A](relabelObserver, entryView)
@@ -471,7 +471,7 @@ object TotalOrder {
       override def toString = "NoRelabelObserver"
     }
 
-    final class Entry[S <: Sys[S], A] private[TotalOrder](map: Map[S, A], val id: S#Id,
+    final class Entry[S <: Base[S], A] private[TotalOrder](map: Map[S, A], val id: S#Id,
                                                           tagVal:  S#Var[Int],
                                                           prevRef: S#Var[KeyOption[S, A]],
                                                           nextRef: S#Var[KeyOption[S, A]])
@@ -537,7 +537,7 @@ object TotalOrder {
     }
   }
 
-  private[TotalOrder] sealed trait KeyOption[S <: Sys[S], A] extends Writable {
+  private[TotalOrder] sealed trait KeyOption[S <: Base[S], A] extends Writable {
     def orNull: Map.Entry[S, A]
 
     def isDefined: Boolean
@@ -546,7 +546,7 @@ object TotalOrder {
     def get: A
   }
 
-  private[TotalOrder] final class EmptyKey[S <: Sys[S], A]
+  private[TotalOrder] final class EmptyKey[S <: Base[S], A]
     extends KeyOption[S, A] /* with EmptyMutable */ {
 
     def isDefined: Boolean = false
@@ -563,7 +563,7 @@ object TotalOrder {
     override def toString = "<empty>"
   }
 
-  private[TotalOrder] final class DefinedKey[S <: Sys[S], A](map: Map[S, A], val get: A)
+  private[TotalOrder] final class DefinedKey[S <: Base[S], A](map: Map[S, A], val get: A)
     extends KeyOption[S, A] {
 
     def isDefined: Boolean = true
@@ -579,7 +579,7 @@ object TotalOrder {
     override def toString: String = get.toString
   }
 
-  private final class MapSerializer[S <: Sys[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A],
+  private final class MapSerializer[S <: Base[S], A](relabelObserver: Map.RelabelObserver[S#Tx, A],
                                                     entryView: A => Map.Entry[S, A])
                                                    (implicit keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Serializer[S#Tx, S#Acc, Map[S, A]] {
@@ -592,7 +592,7 @@ object TotalOrder {
     override def toString = "Map.serializer"
   }
 
-  private final class MapRead[S <: Sys[S], A](protected val observer: Map.RelabelObserver[S#Tx, A],
+  private final class MapRead[S <: Base[S], A](protected val observer: Map.RelabelObserver[S#Tx, A],
                                               val entryView: A => Map.Entry[S, A],
                                               in: DataInput, access: S#Acc, tx0: S#Tx)
                                              (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
@@ -610,7 +610,7 @@ object TotalOrder {
     val root: Map.Entry[S, A] = EntrySerializer.read(in, access)(tx0)
   }
 
-  private final class MapNew[S <: Sys[S], A](val id: S#Id, protected val sizeVal: S#Var[Int],
+  private final class MapNew[S <: Base[S], A](val id: S#Id, protected val sizeVal: S#Var[Int],
                                              protected val observer: Map.RelabelObserver[S#Tx, A],
                                              val entryView: A => Map.Entry[S, A], rootTag: Int, tx0: S#Tx)
                                             (implicit private[TotalOrder] val keySerializer: Serializer[S#Tx, S#Acc, A])
@@ -625,7 +625,7 @@ object TotalOrder {
     }
   }
 
-  private final class MapEntrySerializer[S <: Sys[S], A](map: Map[S, A])
+  private final class MapEntrySerializer[S <: Base[S], A](map: Map[S, A])
     extends Serializer[S#Tx, S#Acc, Map.Entry[S, A]] {
 
     private type E    = Map.Entry[S, A]
@@ -643,7 +643,7 @@ object TotalOrder {
     def write(v: E, out: DataOutput): Unit = v.write(out)
   }
 
-  private final class KeyOptionSerializer[S <: Sys[S], A](map: Map[S, A])
+  private final class KeyOptionSerializer[S <: Base[S], A](map: Map[S, A])
     extends Serializer[S#Tx, S#Acc, KeyOption[S, A]] {
 
     private type KOpt = KeyOption[S, A]
@@ -662,7 +662,7 @@ object TotalOrder {
   /*
     * A special iterator used for the relabel observer.
     */
-  private final class RelabelIterator[S <: Sys[S], A](recOff: Int, num: Int, recE: Map.Entry[S, A],
+  private final class RelabelIterator[S <: Base[S], A](recOff: Int, num: Int, recE: Map.Entry[S, A],
                                                       firstK: KeyOption[S, A],
                                                       entryView: A => Map.Entry[S, A])(implicit tx: S#Tx)
     extends Iterator[A] {
@@ -696,7 +696,7 @@ object TotalOrder {
     }
   }
 
-  sealed trait Map[S <: Sys[S], A] extends TotalOrder[S] {
+  sealed trait Map[S <: Base[S], A] extends TotalOrder[S] {
     map =>
 
     override def toString = s"Map$id"
@@ -926,7 +926,7 @@ object TotalOrder {
     }
   }
 }
-sealed trait TotalOrder[S <: Sys[S]] extends Mutable[S#Id, S#Tx] {
+sealed trait TotalOrder[S <: Base[S]] extends Mutable[S#Id, S#Tx] {
   type E
 
   /**

@@ -49,8 +49,8 @@ lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
-  .aggregate(base, core, expr, confluent, bdb, bdb6)
-  .dependsOn(base, core, expr, confluent, bdb /* , bdb6 */)
+  .aggregate(base, geom, data, core, expr, confluent, bdb, bdb6)
+  .dependsOn(base, geom, data, core, expr, confluent, bdb /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -69,8 +69,24 @@ lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-base" % mimaVersion)
   )
 
+lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
+  .settings(
+    licenses := Seq(lgpl),
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "serial" % deps.base.serial
+    ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-geom" % mimaVersion)
+  )
+
+lazy val data = project.withId(s"$baseNameL-data").in(file("data"))
+  .dependsOn(base, geom)
+  .settings(
+    licenses := Seq(lgpl),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-data" % mimaVersion)
+  )
+
 lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
-  .dependsOn(base)
+  .dependsOn(data)
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .settings(

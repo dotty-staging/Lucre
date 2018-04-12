@@ -16,7 +16,7 @@ package de.sciss.lucre.data
 import de.sciss.lucre.data.TotalOrder.Set
 import de.sciss.lucre.geom.IntSpace.ThreeDim
 import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.stm.{Disposable, Base}
 import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
 
 object Ancestor {
@@ -24,14 +24,14 @@ object Ancestor {
 
   private[Ancestor] val cube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
 
-  private type TreeOrder[S <: Sys[S]] = TotalOrder.Set.Entry[S]
+  private type TreeOrder[S <: Base[S]] = TotalOrder.Set.Entry[S]
 
   object Vertex {
-    private[Ancestor] implicit def toPoint[S <: Sys[S], Version](v: Vertex[S, Version], tx: S#Tx): IntPoint3D =
+    private[Ancestor] implicit def toPoint[S <: Base[S], Version](v: Vertex[S, Version], tx: S#Tx): IntPoint3D =
       IntPoint3D(v.pre.tag(tx), v.post.tag(tx), v.versionInt)
   }
 
-  sealed trait Vertex[S <: Sys[S], Version] extends Writable with Disposable[S#Tx] {
+  sealed trait Vertex[S <: Base[S], Version] extends Writable with Disposable[S#Tx] {
 
     // ---- abstract ----
 
@@ -64,25 +64,25 @@ object Ancestor {
     override def toString = s"Vertex($version)"
   }
 
-  implicit def treeSerializer[S <: Sys[S], Version](
+  implicit def treeSerializer[S <: Base[S], Version](
     implicit versionSerializer: Serializer[S#Tx, S#Acc, Version],
     intView: Version => Int): Serializer[S#Tx, S#Acc, Tree[S, Version]] = new TreeSer[S, Version]
 
-  def newTree[S <: Sys[S], Version](rootVersion: Version)(
+  def newTree[S <: Base[S], Version](rootVersion: Version)(
     implicit tx: S#Tx, versionSerializer: Serializer[S#Tx, S#Acc, Version],
     intView: Version => Int): Tree[S, Version] = {
 
     new TreeNew[S, Version](rootVersion, tx)
   }
 
-  def readTree[S <: Sys[S], Version](in: DataInput, access: S#Acc)(
+  def readTree[S <: Base[S], Version](in: DataInput, access: S#Acc)(
     implicit tx: S#Tx, versionSerializer: Serializer[S#Tx, S#Acc, Version],
     intView: Version => Int): Tree[S, Version] = {
 
     new TreeRead[S, Version](in, access, tx)
   }
 
-  private final class TreeSer[S <: Sys[S], Version](implicit versionSerializer: Serializer[S#Tx, S#Acc, Version],
+  private final class TreeSer[S <: Base[S], Version](implicit versionSerializer: Serializer[S#Tx, S#Acc, Version],
                                                     versionView: Version => Int)
     extends Serializer[S#Tx, S#Acc, Tree[S, Version]] {
 
@@ -94,7 +94,7 @@ object Ancestor {
     override def toString = "Ancestor.treeSerializer"
   }
 
-  private sealed trait TreeImpl[S <: Sys[S], Version] extends Tree[S, Version] {
+  private sealed trait TreeImpl[S <: Base[S], Version] extends Tree[S, Version] {
     me =>
 
     // ---- abstract ----
@@ -162,7 +162,7 @@ object Ancestor {
     }
   }
 
-  private final class TreeNew[S <: Sys[S], Version](rootVersion: Version, tx0: S#Tx)(
+  private final class TreeNew[S <: Base[S], Version](rootVersion: Version, tx0: S#Tx)(
     implicit val versionSerializer: Serializer[S#Tx, S#Acc, Version], val intView: Version => Int)
     extends TreeImpl[S, Version] {
     me =>
@@ -178,7 +178,7 @@ object Ancestor {
     }
   }
 
-  private final class TreeRead[S <: Sys[S], Version](in: DataInput, access: S#Acc, tx0: S#Tx)(
+  private final class TreeRead[S <: Base[S], Version](in: DataInput, access: S#Acc, tx0: S#Tx)(
     implicit val versionSerializer: Serializer[S#Tx, S#Acc, Version], val intView: Version => Int)
     extends TreeImpl[S, Version] {
 
@@ -192,7 +192,7 @@ object Ancestor {
     val root: K = VertexSerializer.read(in, access)(tx0)
   }
 
-  sealed trait Tree[S <: Sys[S], Version] extends Writable with Disposable[S#Tx] {
+  sealed trait Tree[S <: Base[S], Version] extends Writable with Disposable[S#Tx] {
     protected type K = Vertex[S, Version]
 
     private[Ancestor] def versionSerializer: Serializer[S#Tx, S#Acc, Version]
@@ -207,7 +207,7 @@ object Ancestor {
     def insertRetroParent(child : K, newParent: Version)(implicit tx: S#Tx): K
   }
 
-  private type MarkOrder[S <: Sys[S], Version, A] = TotalOrder.Map.Entry[S, Mark[S, Version, A]]
+  private type MarkOrder[S <: Base[S], Version, A] = TotalOrder.Map.Entry[S, Mark[S, Version, A]]
 
   private final val chebyMetric = IntDistanceMeasure3D.chebyshevXY
   // left-bottom-front
@@ -244,7 +244,7 @@ object Ancestor {
     }
   }
 
-  private sealed trait Mark[S <: Sys[S], Version, /* @spec(ValueSpec) */ A] extends Writable {
+  private sealed trait Mark[S <: Base[S], Version, /* @spec(ValueSpec) */ A] extends Writable {
 
     // ---- abstract ----
 
@@ -277,13 +277,13 @@ object Ancestor {
     override def toString = s"Mark(${fullVertex.version} -> $value)"
   }
 
-  def newMap[S <: Sys[S], Version, /* @spec(ValueSpec) */ A](full: Tree[S, Version], rootVertex: Vertex[S, Version],
+  def newMap[S <: Base[S], Version, /* @spec(ValueSpec) */ A](full: Tree[S, Version], rootVertex: Vertex[S, Version],
     rootValue: A)(implicit tx: S#Tx, valueSerializer: Serializer[S#Tx, S#Acc, A]): Map[S, Version, A] = {
 
     new MapNew[S, Version, A](full, rootVertex, rootValue, tx, valueSerializer)
   }
 
-  def readMap[S <: Sys[S], Version, /* @spec(ValueSpec) */ A](in: DataInput, access: S#Acc, full: Tree[S, Version])(
+  def readMap[S <: Base[S], Version, /* @spec(ValueSpec) */ A](in: DataInput, access: S#Acc, full: Tree[S, Version])(
     implicit tx: S#Tx, valueSerializer: Serializer[S#Tx, S#Acc, A]): Map[S, Version, A] = {
 
     new MapRead[S, Version, A](full, in, access, tx, valueSerializer)
@@ -303,7 +303,7 @@ object Ancestor {
    *                `0` indicates that both refer to the same version, and `1` indicates that the full vertex lies
    *                right to the mark vertex in the post-order list
    */
-  private final class IsoResult[S <: Sys[S], Version, /* @spec(ValueSpec) */ A](val pre:  Mark[S, Version, A],
+  private final class IsoResult[S <: Base[S], Version, /* @spec(ValueSpec) */ A](val pre:  Mark[S, Version, A],
                                                                           val preCmp: Int,
                                                                           val post: Mark[S, Version, A],
                                                                           val postCmp: Int) {
@@ -315,7 +315,7 @@ object Ancestor {
     }
   }
 
-  private sealed trait MapImpl[S <: Sys[S], Version, /* @spec(ValueSpec) */ A]
+  private sealed trait MapImpl[S <: Base[S], Version, /* @spec(ValueSpec) */ A]
     extends Map[S, Version, A] with TotalOrder.Map.RelabelObserver[S#Tx, Mark[S, Version, A]] {
     me =>
 
@@ -526,7 +526,7 @@ object Ancestor {
     }
   }
 
-  private final class MapNew[S <: Sys[S], Version, A](val full: Tree[S, Version],
+  private final class MapNew[S <: Base[S], Version, A](val full: Tree[S, Version],
                                                       rootVertex: Vertex[S, Version],
                                                       rootValue: A, tx0: S#Tx,
                                                       val valueSerializer: Serializer[S#Tx, S#Acc, A])
@@ -575,7 +575,7 @@ object Ancestor {
     }
   }
 
-  private final class MapRead[S <: Sys[S], Version, A](val full: Tree[S, Version], in: DataInput,
+  private final class MapRead[S <: Base[S], Version, A](val full: Tree[S, Version], in: DataInput,
                                                        access: S#Acc, tx0: S#Tx,
                                                        val valueSerializer: Serializer[S#Tx, S#Acc, A])
     extends MapImpl[S, Version, A] {
@@ -611,7 +611,7 @@ object Ancestor {
     }
   }
 
-  sealed trait Map[S <: Sys[S], Version, /* @spec(ValueSpec) */ A] extends Writable with Disposable[S#Tx] {
+  sealed trait Map[S <: Base[S], Version, /* @spec(ValueSpec) */ A] extends Writable with Disposable[S#Tx] {
     type K = Vertex[S, Version]
 
     def full: Tree[S, Version]

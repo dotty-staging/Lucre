@@ -29,8 +29,17 @@ Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.12, 2.11.
 
 ## linking to Lucre
 
-Lucre comes with multiple modules, `core`, `durable`, `confluent`, `data`, `expr`, `bdb`, `bdb6`. 
-The `bdb` module adds a durable store implementation based on Oracle BerkeleyDB Java Edition 5, `bdb6` uses BDB JE 6.
+Lucre comes with multiple modules:
+
+- `base` introduces `Base` quasi-system type, which may or may not be transactional;
+  it contains a `Plain` base system.
+- `geom` introduces geometric data types (required by `data`)
+- `data` introduces data structures compatible with `base`
+- `core` introduces `Sys` system type, extending over `base`, and introducing the
+  event reaction layer; it contains in-memory and durable systems.
+- `expr` introduces expressions
+- `confluent` contains a confluently persistent system
+- `bdb` and `bdb6` contain database back-ends (GPL), based on Oracle BerkeleyDB Java Edition 5 (`bdb`) or 6 (`bdb6`)
 
 The following dependency is necessary:
 
@@ -38,7 +47,7 @@ The following dependency is necessary:
 
 Or just for a selected module:
 
-    "de.sciss" %% "lucrestm-{module}" % v
+    "de.sciss" %% "lucre-{module}" % v
 
 Where `{module}` is any of the above names. And for the database backend:
 
@@ -50,7 +59,7 @@ Where `{module}` is any of the above names. And for the database backend:
 Note that the file format of BDB JE v6 is not backward compatible with v5. Also BDB JE v6 requires Java 1.7, 
 whereas BDB v5 works with Java 1.6.
 
-The current version `v` is `"3.5.0"`.
+The current version `v` is `"3.6.0"`.
 
 ## contributing
 

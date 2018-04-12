@@ -16,7 +16,7 @@ package de.sciss.lucre.data
 import java.io.PrintStream
 
 import de.sciss.lucre.geom.{DistanceMeasure, QueryShape, Space}
-import de.sciss.lucre.stm.{Disposable, Identifiable, Mutable, Sys}
+import de.sciss.lucre.stm.{Disposable, Identifiable, Mutable, Base}
 import de.sciss.serial.impl.ByteArrayOutputStream
 import de.sciss.serial.{DataInput, DataOutput, Serializer, Writable}
 
@@ -70,22 +70,22 @@ object DeterministicSkipOctree {
     if (stat_print) println(s"<stat> remove pq: $obj")
   }
 
-  def empty[S <: Sys[S], D <: Space[D], A](hyperCube: D#HyperCube, skipGap: Int = 2)
+  def empty[S <: Base[S], D <: Space[D], A](hyperCube: D#HyperCube, skipGap: Int = 2)
                                           (implicit view: (A, S#Tx) => D#PointLike, tx: S#Tx, space: D,
                                            keySerializer: Serializer[S#Tx, S#Acc, A]): DeterministicSkipOctree[S, D, A] =
     new ImplNew[S, D, A](skipGap, tx.newId(), hyperCube, view, tx)
 
-  def read[S <: Sys[S], D <: Space[D], A](in: DataInput, access: S#Acc)(
+  def read[S <: Base[S], D <: Space[D], A](in: DataInput, access: S#Acc)(
       implicit tx: S#Tx, view: (A, S#Tx) => D#PointLike, space: D,
       keySerializer: Serializer[S#Tx, S#Acc, A]): DeterministicSkipOctree[S, D, A] =
     new ImplRead[S, D, A](view, in, access, tx)
 
-  implicit def serializer[S <: Sys[S], D <: Space[D], A](
+  implicit def serializer[S <: Base[S], D <: Space[D], A](
       implicit view: (A, S#Tx) => D#PointLike, space: D,
       keySerializer: Serializer[S#Tx, S#Acc, A]): Serializer[S#Tx, S#Acc, DeterministicSkipOctree[S, D, A]] =
     new OctreeSerializer[S, D, A]
 
-  private final class OctreeSerializer[S <: Sys[S], D <: Space[D], A](
+  private final class OctreeSerializer[S <: Base[S], D <: Space[D], A](
     implicit view: (A, S#Tx) => D#PointLike, space: D, keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Serializer[S#Tx, S#Acc, DeterministicSkipOctree[S, D, A]] {
 
@@ -98,7 +98,7 @@ object DeterministicSkipOctree {
     def write(v: DeterministicSkipOctree[S, D, A], out: DataOutput): Unit = v.write(out)
   }
 
-  private final class ImplRead[S <: Sys[S], D <: Space[D], A](val pointView: (A, S#Tx) => D#PointLike, in: DataInput,
+  private final class ImplRead[S <: Base[S], D <: Space[D], A](val pointView: (A, S#Tx) => D#PointLike, in: DataInput,
                                                               access: S#Acc, tx0: S#Tx)
                                                              (implicit val space: D,
                                                               val keySerializer: Serializer[S#Tx, S#Acc, A])
@@ -124,7 +124,7 @@ object DeterministicSkipOctree {
     }
   }
 
-  private final class ImplNew[S <: Sys[S], D <: Space[D], A](skipGap: Int, val id: S#Id, val hyperCube: D#HyperCube,
+  private final class ImplNew[S <: Base[S], D <: Space[D], A](skipGap: Int, val id: S#Id, val hyperCube: D#HyperCube,
                                                              val pointView: (A, S#Tx) => D#PointLike, tx0: S#Tx)
                                                             (implicit val space: D,
                                                              val keySerializer: Serializer[S#Tx, S#Acc, A])
@@ -155,17 +155,17 @@ object DeterministicSkipOctree {
 
   sealed trait Child[+S, +D, +A] extends Writable
 
-  sealed trait LeftNonEmpty[S <: Sys[S], D <: Space[D]] extends Left with NonEmpty[S, D]
+  sealed trait LeftNonEmpty[S <: Base[S], D <: Space[D]] extends Left with NonEmpty[S, D]
 
   /** Utility trait which elements the rightward search `findPN`. */
-  sealed trait ChildBranch[S <: Sys[S], D <: Space[D], A]
+  sealed trait ChildBranch[S <: Base[S], D <: Space[D], A]
     extends Branch       [S, D, A] /* Like */
       with  NonEmptyChild[S, D, A]
 
   sealed trait Next[+S, +D, +A] extends Child[S, D, A]
 
   /** A node is an object that can be stored in a orthant of a branch. */
-  sealed trait NonEmpty[S <: Sys[S], D <: Space[D]]
+  sealed trait NonEmpty[S <: Base[S], D <: Space[D]]
     extends Identifiable[S#Id] /* extends Down with Child */ {
 
     protected def shortString: String
@@ -196,7 +196,7 @@ object DeterministicSkipOctree {
   sealed trait Left
   sealed trait LeftChild[+S, +D, +A] extends Left with Child[S, D, A]
 
-  sealed trait Branch[S <: Sys[S], D <: Space[D], A] extends Child[S, D, A] with NonEmpty[S, D] {
+  sealed trait Branch[S <: Base[S], D <: Space[D], A] extends Child[S, D, A] with NonEmpty[S, D] {
     /** Returns the hyper-cube covered by this node. */
     def hyperCube: D#HyperCube
 
@@ -227,7 +227,7 @@ object DeterministicSkipOctree {
     private[DeterministicSkipOctree] def demoteLeaf(point: D#PointLike, leaf: Leaf[S, D, A])(implicit tx: S#Tx): Unit
   }
 
-  sealed trait Leaf[S <: Sys[S], D <: Space[D], A] 
+  sealed trait Leaf[S <: Base[S], D <: Space[D], A] 
     extends Child             [S, D, A]
       with  LeftNonEmptyChild [S, D, A]
       with  RightNonEmptyChild[S, D, A]
@@ -241,7 +241,7 @@ object DeterministicSkipOctree {
   }
   
   /** A common trait used in pattern matching, comprised of `Leaf` and `LeftChildBranch`. */
-  sealed trait LeftNonEmptyChild[S <: Sys[S], D <: Space[D], A]
+  sealed trait LeftNonEmptyChild[S <: Base[S], D <: Space[D], A]
     extends LeftNonEmpty [S, D]
       with  NonEmptyChild[S, D, A]
       with  LeftChild    [S, D, A] with Writable {
@@ -252,28 +252,28 @@ object DeterministicSkipOctree {
   sealed trait RightChild[+S, +D, +A] extends Child[S, D, A]
   
   /** An inner non empty tree element has a mutable parent node. */
-  sealed trait NonEmptyChild[S <: Sys[S], D <: Space[D], A] extends NonEmpty[S, D] with Child[S, D, A] {
+  sealed trait NonEmptyChild[S <: Base[S], D <: Space[D], A] extends NonEmpty[S, D] with Child[S, D, A] {
     def parent(implicit tx: S#Tx): Branch[S, D, A]
   }
 
   protected sealed trait LeafOrEmpty[+S, +D, +A] extends LeftChild[S, D, A]
 
   /** A common trait used in pattern matching, comprised of `Leaf` and `RightChildBranch`. */
-  sealed trait RightNonEmptyChild[S <: Sys[S], D <: Space[D], A]
+  sealed trait RightNonEmptyChild[S <: Base[S], D <: Space[D], A]
     extends RightChild   [S, D, A] 
       with  NonEmptyChild[S, D, A] with Writable {
 
     private[DeterministicSkipOctree] def updateParentRight(p: RightBranch[S, D, A])(implicit tx: S#Tx): Unit
   }
 
-  sealed trait TopBranch[S <: Sys[S], D <: Space[D], A] extends Branch[S, D, A]
+  sealed trait TopBranch[S <: Base[S], D <: Space[D], A] extends Branch[S, D, A]
 
-  sealed trait LeftTopBranch[S <: Sys[S], D <: Space[D], A]
+  sealed trait LeftTopBranch[S <: Base[S], D <: Space[D], A]
     extends LeftBranch  [S, D, A]
       with  TopBranch   [S, D, A]
       with  Disposable  [S#Tx]
 
-  sealed trait RightTopBranch[S <: Sys[S], D <: Space[D], A]
+  sealed trait RightTopBranch[S <: Base[S], D <: Space[D], A]
     extends RightBranch [S, D, A]
       with  TopBranch   [S, D, A]
 
@@ -291,7 +291,7 @@ object DeterministicSkipOctree {
     * `findImmediateLeaf` which is typically called after arriving here
     * from a `findP0` call.
     */
-  sealed trait LeftBranch[S <: Sys[S], D <: Space[D], A]
+  sealed trait LeftBranch[S <: Base[S], D <: Space[D], A]
     extends Branch[S, D, A] /* Like */
       with LeftNonEmpty[S, D] {
 
@@ -321,7 +321,7 @@ object DeterministicSkipOctree {
     * of type `RightChild`. It furthermore defines the node in Qi-1 via the
     * `prev` method.
     */
-  sealed trait RightBranch[S <: Sys[S], D <: Space[D], A] extends Next[S, D, A] with Branch[S, D, A] {
+  sealed trait RightBranch[S <: Base[S], D <: Space[D], A] extends Next[S, D, A] with Branch[S, D, A] {
     def prev: Branch[S, D, A]
 
     private[DeterministicSkipOctree] def updateChild(idx: Int, c: RightChild[S, D, A])(implicit tx: S#Tx): Unit
@@ -342,7 +342,7 @@ object DeterministicSkipOctree {
     private[DeterministicSkipOctree] def insert(point: D#PointLike, leaf: Leaf[S, D, A])(implicit tx: S#Tx): Unit
   }
 
-  sealed trait LeftChildBranch[S <: Sys[S], D <: Space[D], A]
+  sealed trait LeftChildBranch[S <: Base[S], D <: Space[D], A]
     extends LeftBranch        [S, D, A] 
       with  ChildBranch       [S, D, A]
       with  LeftNonEmptyChild [S, D, A] {
@@ -352,7 +352,7 @@ object DeterministicSkipOctree {
     private[DeterministicSkipOctree] def parent_=(node: LeftBranch[S, D, A])(implicit tx: S#Tx): Unit
   }
 
-  sealed trait RightChildBranch[S <: Sys[S], D <: Space[D], A]
+  sealed trait RightChildBranch[S <: Base[S], D <: Space[D], A]
     extends RightBranch       [S, D, A]
       with  ChildBranch       [S, D, A]
       with  RightNonEmptyChild[S, D, A] {
@@ -362,7 +362,7 @@ object DeterministicSkipOctree {
     private[DeterministicSkipOctree] def parent_=(node: RightBranch[S, D, A])(implicit tx: S#Tx): Unit
   }
 
-  private abstract class Impl[S <: Sys[S], D <: Space[D], A]
+  private abstract class Impl[S <: Base[S], D <: Space[D], A]
     extends DeterministicSkipOctree[S, D, A] {
     octree =>
 
@@ -2159,7 +2159,7 @@ object DeterministicSkipOctree {
   }
 }
 
-sealed trait DeterministicSkipOctree[S <: Sys[S], D <: Space[D], A]
+sealed trait DeterministicSkipOctree[S <: Base[S], D <: Space[D], A]
   extends SkipOctree[S, D, A] {
 
   def verifyConsistency(reportOnly: Boolean)(implicit tx: S#Tx): Vec[String]

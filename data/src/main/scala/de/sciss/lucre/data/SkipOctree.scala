@@ -14,7 +14,7 @@
 package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.{DistanceMeasure, QueryShape, Space}
-import de.sciss.lucre.stm.{Mutable, Sys}
+import de.sciss.lucre.stm.{Mutable, Base}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -23,20 +23,20 @@ object SkipOctree {
   implicit def nonTxnPointView[D <: Space[D], A](implicit view: A => D#PointLike): (A, Any) => D#PointLike =
     (a, _) => view(a)
 
-  def empty[S <: Sys[S], D <: Space[D], A](hyperCube: D#HyperCube)
+  def empty[S <: Base[S], D <: Space[D], A](hyperCube: D#HyperCube)
                                           (implicit tx: S#Tx, view: (A, S#Tx) => D#PointLike, space: D,
                                            keySerializer: Serializer[S#Tx, S#Acc, A]): SkipOctree[S, D, A] =
     DeterministicSkipOctree.empty[S, D, A](hyperCube)
 
-  def read[S <: Sys[S], D <: Space[D], A](in: DataInput, access: S#Acc)(
+  def read[S <: Base[S], D <: Space[D], A](in: DataInput, access: S#Acc)(
       implicit tx: S#Tx, view: (A, S#Tx) => D#PointLike, space: D,
       keySerializer: Serializer[S#Tx, S#Acc, A]): SkipOctree[S, D, A] =
     DeterministicSkipOctree.read[S, D, A](in, access)
 
-  implicit def serializer[S <: Sys[S], D <: Space[D], A](implicit view: (A, S#Tx) => D#PointLike, space: D,
+  implicit def serializer[S <: Base[S], D <: Space[D], A](implicit view: (A, S#Tx) => D#PointLike, space: D,
       keySerializer: Serializer[S#Tx, S#Acc, A]): Serializer[S#Tx, S#Acc, SkipOctree[S, D, A]] = new Ser[S, D, A]
 
-  private final class Ser[S <: Sys[S], D <: Space[D], A](implicit view: (A, S#Tx) => D#PointLike, space: D, keySerializer: Serializer[S#Tx, S#Acc, A])
+  private final class Ser[S <: Base[S], D <: Space[D], A](implicit view: (A, S#Tx) => D#PointLike, space: D, keySerializer: Serializer[S#Tx, S#Acc, A])
     extends Serializer[S#Tx, S#Acc, /* Deterministic */ SkipOctree[S, D, A]] {
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): SkipOctree[S, D, A] =
@@ -53,7 +53,7 @@ object SkipOctree {
   * of Scala's mutable `Map` and adds further operations such
   * as range requires and nearest neighbour search.
   */
-trait SkipOctree[S <: Sys[S], D <: Space[D], A] extends Mutable[S#Id, S#Tx] {
+trait SkipOctree[S <: Base[S], D <: Space[D], A] extends Mutable[S#Id, S#Tx] {
   /** The space (i.e., resolution and dimensionality) underlying the tree. */
   def space: D
 
