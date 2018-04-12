@@ -14,7 +14,7 @@
 package de.sciss.lucre.data
 
 import de.sciss.lucre.stm.impl.MutableImpl
-import de.sciss.lucre.stm.{Mutable, Sink, Base}
+import de.sciss.lucre.stm.{Base, Sink}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.{switch, tailrec}
@@ -1389,7 +1389,6 @@ object HASkipList {
                                   (implicit ordering: Ordering[S#Tx, A],
                                    keySerializer: Serializer[S#Tx, S#Acc, A]): Serializer[S#Tx, S#Acc, HASkipList.Set[S, A]] =
       new SetSer[S, A](keyObserver)
-
   }
 
   sealed trait Set[S <: Base[S], A] extends SkipList.Set[S, A] {

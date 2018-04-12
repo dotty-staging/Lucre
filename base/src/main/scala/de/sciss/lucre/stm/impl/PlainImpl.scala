@@ -29,8 +29,8 @@ object PlainImpl {
     def write(out: DataOutput): Unit = opNotSupported("Plain.Id.write")
   }
   
-  private abstract class AbstractVar {
-    final def dispose()(implicit tx: Plain): Unit = ()
+  private abstract class AbstractVar extends Disposable[Plain#Tx] {
+    final def dispose()(implicit tx: Plain#Tx): Unit = ()
 
     final def write(out: DataOutput): Unit = opNotSupported("Plain.Var.write")
   }

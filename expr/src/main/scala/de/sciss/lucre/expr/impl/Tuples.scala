@@ -26,7 +26,7 @@ trait Tuple1Op[A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] <: E
 
   def value(a: T1): A
 
-  final def unapply[S <: Sys[S]](ex: ReprA[S])(implicit tx: S#Tx): Option[ReprT1[S]] = ex match {
+  final def unapply[S <: Sys[S]](ex: ReprA[S])/* (implicit tx: S#Tx) */: Option[ReprT1[S]] = ex match {
     case tup0: Tuple1[_, _, _, _, _] if tup0.op == this =>
       val tup = tup0.asInstanceOf[Tuple1[S, A, T1, ReprA, ReprT1]]
       Some(tup._1)
@@ -81,7 +81,7 @@ trait Tuple2Op[A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] 
 
   // final protected def writeTypes(out: DataOutput) = ()
 
-  final def unapply[S <: Sys[S]](ex: ReprA[S])(implicit tx: S#Tx): Option[(ReprT1[S], ReprT2[S])] =
+  final def unapply[S <: Sys[S]](ex: ReprA[S])/* (implicit tx: S#Tx) */: Option[(ReprT1[S], ReprT2[S])] =
     ex match {
       case tup0: Tuple2[_, _, _, _, _, _, _] if tup0.op == this =>
         val tup = tup0.asInstanceOf[Tuple2[S, A, T1, T2, ReprA, ReprT1, ReprT2]]

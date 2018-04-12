@@ -33,10 +33,10 @@ object MapImpl {
     }
   }
 
-  def serializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](implicit keyType: Key[K]): Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
+  def serializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
     new Ser[S, K, Repr]
 
-  def modSerializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](implicit keyType: Key[K]): Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
+  def modSerializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
     new ModSer[S, K, Repr]
 
   private class Ser[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])

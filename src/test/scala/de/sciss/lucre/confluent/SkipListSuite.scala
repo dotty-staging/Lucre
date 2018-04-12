@@ -6,6 +6,7 @@ import de.sciss.lucre.data.{HASkipList, SkipList}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{InTxnRandom, Random}
+import de.sciss.serial.Serializer
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
 import scala.collection.immutable.IntMap
@@ -25,150 +26,150 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
    val REMOVAL       = true
    val TWO_GAP_SIZES = true
 
-   // large
-   val NUM1          = 0x4000
-   val NUM2          = 0x2000
+  // large
+  val NUM1 = 0x4000
+  val NUM2 = 0x2000
 
-   require( NUM1 >= 1 && NUM2 >= 6 )
+  require(NUM1 >= 1 && NUM2 >= 6)
 
-   // small
-   val NUM3          = 10
+  // small
+  val NUM3 = 10
 
-   val SEED          = 0L
+  val SEED = 0L
 
-//   val rnd           = new util.Random( SEED )
-   val rnd: Random[InTxn] = InTxnRandom(SEED)
+  //   val rnd           = new util.Random( SEED )
+  val rnd: Random[InTxn] = InTxnRandom(SEED)
 
-   // make sure we don't look tens of thousands of actions
-   showLog = false
+  // make sure we don't look tens of thousands of actions
+  showLog = false
 
   def withSys[S <: Sys[S]](sysName: String, sysCreator: () => S, sysCleanUp: S => Unit): Unit = {
-      if( TWO_GAP_SIZES ) {
-         withList[ S ]( "HA-1 (" + sysName + ")", { oo =>
-            implicit val sys = sysCreator()
-            implicit val ser = HASkipList.Set.serializer[ S, Int ]( oo )
-            val (access, cursor) = sys.cursorRoot { implicit tx =>
-               HASkipList.Set.empty[ S, Int ]( minGap = 1, keyObserver = oo )
-            } { implicit tx => _ => sys.newCursor() }
-            (cursor, access, () => sysCleanUp( sys ))
-         })
-      }
-      withList[ S ]( "HA-2 (" + sysName + ")", { oo =>
-         implicit val sys = sysCreator()
-         implicit val ser = HASkipList.Set.serializer[ S, Int ]( oo )
-        val (access, cursor) = sys.cursorRoot[HASkipList.Set[S, Int], stm.Cursor[S]] { implicit tx =>
-          HASkipList.Set.empty[ S, Int ]( minGap = 2, keyObserver = oo )
-        } {
-          implicit tx => _ => sys.newCursor()
-        }
+    if (TWO_GAP_SIZES) {
+      withList[S]("HA-1 (" + sysName + ")", { oo =>
+        implicit val sys: S = sysCreator()
+        implicit val ser: Serializer[S#Tx, S#Acc, HASkipList.Set[S, Int]] = HASkipList.Set.serializer[S, Int](oo)
+        val (access, cursor) = sys.cursorRoot { implicit tx =>
+          HASkipList.Set.empty[S, Int](minGap = 1, keyObserver = oo)
+        } { implicit tx => _ => sys.newCursor() }
         (cursor, access, () => sysCleanUp(sys))
       })
-   }
+    }
+    withList[S]("HA-2 (" + sysName + ")", { oo =>
+      implicit val sys = sysCreator()
+      implicit val ser = HASkipList.Set.serializer[S, Int](oo)
+      val (access, cursor) = sys.cursorRoot[HASkipList.Set[S, Int], stm.Cursor[S]] { implicit tx =>
+        HASkipList.Set.empty[S, Int](minGap = 2, keyObserver = oo)
+      } {
+        implicit tx => _ => sys.newCursor()
+      }
+      (cursor, access, () => sysCleanUp(sys))
+    })
+  }
 
-   withSys[ Confluent ]( "Confluent", () => {
-      val dir     = File.createTempFile( "skiplist", "_database" )
-      dir.delete()
-      dir.mkdir()
-      println( dir.getAbsolutePath )
-      val store = BerkeleyDB.factory( dir )
-      val res = Confluent( store )
-//      res.root[ Unit ] { _ => }
-      res
-   }, s => {
-//      val sz = bdb.step( bdb.numUserRecords( _ ))
-////         println( "FINAL DB SIZE = " + sz )
-//      assert( sz == 0, "Final DB user size should be 0, but is " + sz )
-//      bdb.close()
-      s.close()
-   })
+  withSys[Confluent]("Confluent", () => {
+    val dir = File.createTempFile("skiplist", "_database")
+    dir.delete()
+    dir.mkdir()
+    println(dir.getAbsolutePath)
+    val store = BerkeleyDB.factory(dir)
+    val res = Confluent(store)
+    //      res.root[ Unit ] { _ => }
+    res
+  }, s => {
+    //      val sz = bdb.step( bdb.numUserRecords( _ ))
+    ////         println( "FINAL DB SIZE = " + sz )
+    //      assert( sz == 0, "Final DB user size should be 0, but is " + sz )
+    //      bdb.close()
+    s.close()
+  })
 
-   def atomic[ A ]( fun: InTxn => A ) : A = TxnExecutor.defaultAtomic( fun )
+  def atomic[A](fun: InTxn => A): A = TxnExecutor.defaultAtomic(fun)
 
   def randFill[S <: stm.Sys[S]](access: stm.Source[S#Tx, SkipList.Set[S, Int]], s: MSet[Int])
                                (implicit cursor: stm.Cursor[S]): Unit = {
-      Given( "a randomly filled structure" )
-      val s1 = cursor.step { implicit tx =>
-         implicit val itx = tx.peer
-         Seq.fill( NUM1 )( rnd.nextInt( 0x7FFFFFFF )).toSet
-      }
-      s ++= s1
-      cursor.step { implicit tx =>
-         val l = access()
-         s1.foreach( l.add( _ ))
-      }
-   }
+    Given("a randomly filled structure")
+    val s1 = cursor.step { implicit tx =>
+      implicit val itx = tx.peer
+      Seq.fill(NUM1)(rnd.nextInt(0x7FFFFFFF)).toSet
+    }
+    s ++= s1
+    cursor.step { implicit tx =>
+      val l = access()
+      s1.foreach(l.add(_))
+    }
+  }
 
-   def randFill2( implicit tx: InTxn ) : Set[ Int ] = {
-      Given( "a set of random numbers" )
-      var res   = Set.empty[ Int ]
-      for( i <- 0 until NUM2 ) {
-         res += rnd.nextInt() & ~1   // any int except MaxValue
-      }
-      res
-   }
+  def randFill2(implicit tx: InTxn): Set[Int] = {
+    Given("a set of random numbers")
+    var res = Set.empty[Int]
+    for (i <- 0 until NUM2) {
+      res += rnd.nextInt() & ~1 // any int except MaxValue
+    }
+    res
+  }
 
-   def randFill3( implicit tx: InTxn ) : Set[ Int ] = {
-      var res   = Set.empty[ Int ]
-      for( i <- 0 until NUM3 ) {
-         res += rnd.nextInt( 100 )
-      }
-      Given( "a small set of numbers : " + res.mkString( ", " ))
-      res
-   }
+  def randFill3(implicit tx: InTxn): Set[Int] = {
+    var res = Set.empty[Int]
+    for (i <- 0 until NUM3) {
+      res += rnd.nextInt(100)
+    }
+    Given("a small set of numbers : " + res.mkString(", "))
+    res
+  }
 
   def verifyOrder[S <: stm.Sys[S]](access: stm.Source[S#Tx, SkipList.Set[S, Int]])
                                   (implicit cursor: stm.Cursor[S]): Unit = {
-      When( "the structure is mapped to its pairwise comparisons" )
-//atomic { implicit tx => println( l.toList )}
-      var res  = Set.empty[ Int ]
-      val seq  = cursor.step( implicit tx => access().toIndexedSeq )
-//      val iter = atomic( l.iterator( _ ))
-      var prev = -2
-      seq.foreach { next =>
-         res      += prev compare next
-         prev      = next
-      }
-      res
+    When("the structure is mapped to its pairwise comparisons")
+    //atomic { implicit tx => println( l.toList )}
+    var res = Set.empty[Int]
+    val seq = cursor.step(implicit tx => access().toIndexedSeq)
+    //      val iter = atomic( l.iterator( _ ))
+    var prev = -2
+    seq.foreach { next =>
+      res += prev compare next
+      prev = next
+    }
+    res
 
-      Then( "the resulting set should only contain -1" )
-      assert( res == Set( -1 ), res.toString() )
-   }
+    Then("the resulting set should only contain -1")
+    assert(res == Set(-1), res.toString())
+  }
 
   def verifyElems[S <: stm.Sys[S]](access: stm.Source[S#Tx, SkipList.Set[S, Int]], s: MSet[Int])
                                   (implicit cursor: stm.Cursor[S]): Unit = {
-    When( "the structure l is compared to an independently maintained set s" )
-      val ll       = cursor.step { implicit tx => access().toIndexedSeq }
-      val onlyInS  = cursor.step { implicit tx => val l = access(); s.filterNot( l.contains( _ ))}
-      val onlyInL  = ll.filterNot( s.contains( _ ))
-      val szL      = cursor.step { implicit tx => access().size }
-      val szS      = s.size
-      Then( "all elements of s should be contained in l" )
-      assert( onlyInS.isEmpty, onlyInS.take( 10 ).toString() )
-      Then( "all elements of l should be contained in s" )
-      assert( onlyInL.isEmpty, onlyInL.take( 10 ).toString() )
-      Then( "both should report the same size" )
-      assert( szL == szS, "skip list has size " + szL + " / set has size " + szS )
+    When("the structure l is compared to an independently maintained set s")
+    val ll = cursor.step { implicit tx => access().toIndexedSeq }
+    val onlyInS = cursor.step { implicit tx => val l = access(); s.filterNot(l.contains) }
+    val onlyInL = ll.filterNot(s.contains(_))
+    val szL = cursor.step { implicit tx => access().size }
+    val szS = s.size
+    Then("all elements of s should be contained in l")
+    assert(onlyInS.isEmpty, onlyInS.take(10).toString())
+    Then("all elements of l should be contained in s")
+    assert(onlyInL.isEmpty, onlyInL.take(10).toString())
+    Then("both should report the same size")
+    assert(szL == szS, "skip list has size " + szL + " / set has size " + szS)
 
-      When( "the structure l is compared to the output from its iterator" )
-      Then( "both should have the same size" )
-      assert( ll.size == szL, "skip list has size " + szL + " / iterator has size " + ll.size )
-   }
+    When("the structure l is compared to the output from its iterator")
+    Then("both should have the same size")
+    assert(ll.size == szL, "skip list has size " + szL + " / iterator has size " + ll.size)
+  }
 
   def verifyContainsNot[S <: stm.Sys[S]](access: stm.Source[S#Tx, SkipList.Set[S, Int]], s: MSet[Int])
                                         (implicit cursor: stm.Cursor[S]): Unit = {
-    When( "the structure l is queried for keys not in the independently maintained set s" )
-      var testSet = Set.empty[ Int ]
-      val inL = cursor.step { implicit tx =>
-         val l = access()
-         while( testSet.size < 100 ) {
-            val x = rnd.nextInt()( tx.peer )
-            if( !s.contains( x )) testSet += x
-         }
-         testSet.filter( l.contains( _ ))
+    When("the structure l is queried for keys not in the independently maintained set s")
+    var testSet = Set.empty[Int]
+    val inL = cursor.step { implicit tx =>
+      val l = access()
+      while (testSet.size < 100) {
+        val x = rnd.nextInt()(tx.peer)
+        if (!s.contains(x)) testSet += x
       }
-      Then( "none of them should be contained in l" )
-      assert( inL.isEmpty, inL.take( 10 ).toString() )
-   }
+      testSet.filter(l.contains)
+    }
+    Then("none of them should be contained in l")
+    assert(inL.isEmpty, inL.take(10).toString())
+  }
 
   def verifyAddRemoveAll[S <: stm.Sys[S]](access: stm.Source[S#Tx, SkipList.Set[S, Int]], s: MSet[Int])
                                          (implicit cursor: stm.Cursor[S]): Unit = {
