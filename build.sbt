@@ -5,7 +5,7 @@ lazy val mimaVersion      = "3.6.0"
 
 lazy val deps = new {
   val base = new {
-    val serial    = "1.1.0"
+    val serial    = "1.1.1"
   }
   val core = new {
     val scalaSTM  = "0.8"
@@ -70,6 +70,7 @@ lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
   )
 
 lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
+  .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
@@ -80,6 +81,7 @@ lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
 
 lazy val data = project.withId(s"$baseNameL-data").in(file("data"))
   .dependsOn(base, geom)
+  .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-data" % mimaVersion)
