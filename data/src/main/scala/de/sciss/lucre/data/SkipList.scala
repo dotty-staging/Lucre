@@ -141,10 +141,11 @@ object SkipList {
 
     /** Inserts a new entry into the map.
       *
-      * @param   entry  the key-value pair to insert
+      * @param   key    the entry's key to insert
+      * @param   value  the entry's value to insert
       * @return  the previous value stored at the key, or `None` if the key was not in the map
       */
-    def add(entry: (A, B))(implicit tx: S#Tx): Option[B]
+    def put(key: A, value: B)(implicit tx: S#Tx): Option[B]
 
     /** Removes an entry from the map.
       *
@@ -159,6 +160,10 @@ object SkipList {
       * @return     the value if it was found at the key, otherwise `None`
       */
     def get(key: A)(implicit tx: S#Tx): Option[B]
+
+    def getOrElse[B1 >: B](key: A, default: => B1)(implicit tx: S#Tx): B1
+
+    def getOrElseUpdate(key: A, op: => B)(implicit tx: S#Tx): B
   }
 }
 
@@ -185,6 +190,21 @@ sealed trait SkipList[S <: Base[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) 
     *             to the search key (e.g. the list is empty)
     */
   def ceil(key: A)(implicit tx: S#Tx): Option[E]
+
+  /** Returns the first element. Throws an exception if the list is empty. */
+  def head(implicit tx: S#Tx): E
+
+  /** Returns the first element, or `None` if the list is empty. */
+  def headOption(implicit tx: S#Tx): Option[E]
+
+  /** Returns the last element. Throws an exception if the list is empty. */
+  def last(implicit tx: S#Tx): E
+
+  def firstKey(implicit tx: S#Tx): A
+  def lastKey (implicit tx: S#Tx): A
+
+  /** Returns the last element, or `None` if the list is empty. */
+  def lastOption(implicit tx: S#Tx): Option[E]
 
   def toIndexedSeq(implicit tx: S#Tx): Vec[E]
   def toList      (implicit tx: S#Tx): List[E]

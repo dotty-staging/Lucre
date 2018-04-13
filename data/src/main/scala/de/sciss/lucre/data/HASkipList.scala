@@ -121,6 +121,9 @@ object HASkipList {
     def add   (key: A)(implicit tx: S#Tx): Boolean = addEntry(key, key).isEmpty
     def remove(key: A)(implicit tx: S#Tx): Boolean = removeEntry(key).isDefined
 
+    def firstKey(implicit tx: S#Tx): A = head
+    def lastKey (implicit tx: S#Tx): A = last
+
     def +=(key: A)(implicit tx: S#Tx): this.type = {
       addEntry(key, key)
       this
@@ -144,20 +147,24 @@ object HASkipList {
     }
   }
 
-  private final class MapImpl[S <: Base[S], /* @spec(KeySpec) */ A, /* @spec(ValueSpec) */ B](val id: S#Id, val minGap: Int,
-                                                                                             protected val keyObserver: SkipList.KeyObserver[S#Tx, A],
-                                                                                             _downNode: MapImpl[S, A, B] => S#Var[Map.Node[S, A, B]])
-                                                               (implicit val ordering: Ordering[S#Tx, A],
-                                                                val keySerializer:   Serializer[S#Tx, S#Acc, A],
-                                                                val valueSerializer: Serializer[S#Tx, S#Acc, B])
+  private final class MapImpl[S <: Base[S], A, B](val id: S#Id, val minGap: Int,
+                                                  protected val keyObserver: SkipList.KeyObserver[S#Tx, A],
+                                                  _downNode: MapImpl[S, A, B] => S#Var[Map.Node[S, A, B]])
+                                                 (implicit val ordering : Ordering  [S#Tx, A],
+                                                  val keySerializer     : Serializer[S#Tx, S#Acc, A],
+                                                  val valueSerializer   : Serializer[S#Tx, S#Acc, B])
     extends Impl[S, A, (A, B)] with HASkipList.Map[S, A, B] {
 
     protected val downNode: S#Var[Map.Node[S, A, B]] = _downNode(this)
 
     override def toString = s"SkipList.Map$id"
 
-    def add   (entry: (A, B))(implicit tx: S#Tx): Option[B] = addEntry(entry._1, entry).map(_._2)
-    def remove(key: A)       (implicit tx: S#Tx): Option[B] = removeEntry(key).map(_._2)
+    def put(key: A, value: B)(implicit tx: S#Tx): Option[B] = addEntry(key, (key, value)).map(_._2)
+
+    def remove(key: A)(implicit tx: S#Tx): Option[B] = removeEntry(key).map(_._2)
+
+    def firstKey(implicit tx: S#Tx): A = head._1
+    def lastKey (implicit tx: S#Tx): A = last._1
 
     def +=(entry: (A, B))(implicit tx: S#Tx): this.type = {
       addEntry(entry._1, entry)
@@ -219,6 +226,16 @@ object HASkipList {
       val c = topN
       if (c eq null) None else stepRight(c)
     }
+
+    def getOrElse[B1 >: B](key: A, default: => B1)(implicit tx: S#Tx): B1 =
+      get(key).getOrElse(default) // XXX TODO --- could optimize this at some point
+
+    def getOrElseUpdate(key: A, op: => B)(implicit tx: S#Tx): B =
+      get(key).getOrElse { // XXX TODO --- could optimize this at some point
+        val value = op
+        put(key, value)
+        value
+      }
 
     private final class KeyIteratorImpl(implicit tx: S#Tx) extends IteratorImpl[A] {
       protected def getValue(l: Leaf[S, A, (A, B)], idx: Int): A = l.key(idx)
@@ -353,7 +370,49 @@ object HASkipList {
       b.result()
     }
 
-    /** Finds the leaf and index in the leaf corresponding to the entry that holds either the given
+    @tailrec
+    private[this] def headImpl(n: Node[S, A, E])(implicit tx: S#Tx): E = {
+      if (n.isLeaf) {
+        n.asLeaf.entry(0)
+      } else {
+        headImpl(n.asBranch.down(0))
+      }
+    }
+
+    final def head(implicit tx: S#Tx): E = {
+      val n0 = topN
+      if (n0 eq null) throw new NoSuchElementException("head of empty list")
+      else headImpl(n0)
+    }
+
+    final def headOption(implicit tx: S#Tx): Option[E] = {
+      val n0 = topN
+      if (n0 eq null) None
+      else Some(headImpl(n0))
+    }
+
+    @tailrec
+    private[this] def lastImpl(n: Node[S, A, E])(implicit tx: S#Tx): E = {
+      if (n.isLeaf) {
+        n.asLeaf.entry(n.size - 2)  // N.B. we have `null` as terminator
+      } else {
+        lastImpl(n.asBranch.down(n.size - 1))
+      }
+    }
+
+    final def last(implicit tx: S#Tx): E = {
+      val n0 = topN
+      if (n0 eq null) throw new NoSuchElementException("last of empty list")
+      else lastImpl(n0)
+    }
+
+    final def lastOption(implicit tx: S#Tx): Option[E] = {
+      val n0 = topN
+      if (n0 eq null) None
+      else Some(lastImpl(n0))
+    }
+
+  /** Finds the leaf and index in the leaf corresponding to the entry that holds either the given
       * search key or the greatest key in the set smaller than the search key.
       *
       * @param key  the search key
@@ -578,11 +637,11 @@ object HASkipList {
 
       } else {
         if (l.size == arrMaxSz) {
-          val splitKey = l.key(minGap)
-          val tup = l.splitAndInsert(idx, entry)
-          val left = tup._1
-          val right = tup._2
-          val pNew = p.insertAfterSplit(pIdx, splitKey, left, right)
+          val splitKey  = l.key(minGap)
+          val tup       = l.splitAndInsert(idx, entry)
+          val left      = tup._1
+          val right     = tup._2
+          val pNew      = p.insertAfterSplit(pIdx, splitKey, left, right)
           pp.updateDown(ppIdx, pNew)
           if (hasObserver) keyObserver.keyUp(splitKey)
         } else {

@@ -172,7 +172,7 @@ object BiPinImpl {
     type EntryAux[~ <: Sys[~]] = Entry[~, E[~]]
     in.iterator.foreach { case (time, xsIn) =>
       val xsOut = xsIn.map(e => context[EntryAux](e))
-      out.add(time -> xsOut)
+      out.put(time, xsOut)
       xsOut.foreach { entry =>
         outImpl.changed += entry
       }

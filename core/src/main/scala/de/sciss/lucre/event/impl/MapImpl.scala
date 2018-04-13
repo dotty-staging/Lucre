@@ -182,7 +182,7 @@ object MapImpl {
       val idx       = oldVec.indexWhere(_.key == key)
       val found     = idx >= 0
       val newVec    = if (found) oldVec.updated(idx, entry) else oldVec :+ entry
-      peer.add(key -> newVec)
+      peer.put(key, newVec)
 
       if (found) {
         val oldEntry = oldVec(idx)
@@ -205,7 +205,7 @@ object MapImpl {
       if (newVec.isEmpty) {
         peer.remove(key)
       } else {
-        peer.add(key -> newVec)
+        peer.put(key, newVec)
       }
 
       // unregisterElement(entry)
