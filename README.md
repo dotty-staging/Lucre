@@ -5,10 +5,9 @@
 
 ## statement
 
-Lucre is an STM based persistent and reactive system for the Scala programming language. This is the next
-generation of the project that in version 2 was split into several sub-projects
-([LucreSTM](https://github.com/Sciss/LucreSTM), [LucreData](https://github.com/Sciss/LucreData),
-[LucreConfluent](https://github.com/Sciss/LucreConfluent)).
+Lucre is an STM based persistent and reactive system for the Scala programming language. It is the foundation
+of the computer music framework [SoundProcesses](https://github.com/Sciss/SoundProcesses) and its
+interface front-end [Mellite](https://github.com/Sciss/Mellite).
 
 Lucre is (C)opyright 2009&ndash;2018 by Hanns Holger Rutz. All rights reserved. 
 All modules but the BerkeleyDB bindings are released under 
@@ -21,7 +20,8 @@ The software comes with absolutely no warranties. To contact the author, send an
 
 Further reading:
 
- - Rutz, H.H., "A Reactive, Confluently Persistent Framework for the Design of Computer Music Systems," in Proceedings of the 9th Sound and Music Computing Conference (SMC), Copenhagen 2012.
+ - Rutz, H.H., "A Reactive, Confluently Persistent Framework for the Design of Computer Music Systems," in Proceedings
+   of the 9th Sound and Music Computing Conference (SMC), Copenhagen 2012.
 
 ## requirements / installation
 
