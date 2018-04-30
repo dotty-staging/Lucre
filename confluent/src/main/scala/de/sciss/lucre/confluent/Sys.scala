@@ -56,7 +56,8 @@ trait Sys[S <: Sys[S]] extends stm.Sys[S] {
 
   /* private[confluent] */ def readPath(in: DataInput): S#Acc
 
-  private[confluent] def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx]): S#Tx
+  private[confluent] def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
+                                   systemTimeNanos: Long): S#Tx
 
   // ---- cursors ----
 

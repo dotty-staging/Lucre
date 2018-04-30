@@ -78,7 +78,7 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   private[lucre] def newIdValue()(implicit tx: S#Tx): Int
 
-  def wrap(peer: InTxn): S#Tx  // XXX TODO this might go in Cursor?
+  def wrap(peer: InTxn, systemTimeNanos: Long = 0L): S#Tx  // XXX TODO this might go in Cursor?
 
   // def inMemory: I
 }

@@ -20,7 +20,6 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.elidable
-import scala.annotation.meta.field
 import scala.concurrent.stm.{InTxn, Ref}
 
 object DurableImpl {
@@ -41,7 +40,7 @@ object DurableImpl {
     protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] =
       IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
 
-    @field private[this] val idCntVar = step { implicit tx =>
+    private[this] val idCntVar = step { implicit tx =>
       val _id = store.get(_.writeInt(0))(_.readInt()).getOrElse(1)
       val _idCnt = Ref(_id)
       new CachedIntVar[S](0, _idCnt)
@@ -75,6 +74,8 @@ object DurableImpl {
     def step[A](fun: S#Tx => A): A = Txn.atomic { implicit itx =>
       fun(wrap(itx))
     }
+
+    def stepTag[A](systemTimeNanos: Long)(fun: S#Tx => A): A = step(fun)
 
     def position(implicit tx: S#Tx): S#Acc = ()
 
@@ -305,7 +306,7 @@ object DurableImpl {
 //    }
   }
 
-  private final class IdImpl[S <: D[S]](@field val id: Int) extends DurableLike.Id[S] {
+  private final class IdImpl[S <: D[S]](val id: Int) extends DurableLike.Id[S] {
     def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id)
 
     override def hashCode: Int = id
@@ -320,11 +321,11 @@ object DurableImpl {
     override def toString = s"<$id>"
   }
 
-//  private final class IdMapImpl[S <: D[S], A](@field val id: S#Id)(implicit serializer: Serializer[S#Tx, S#Acc, A])
+//  private final class IdMapImpl[S <: D[S], A](val id: S#Id)(implicit serializer: Serializer[S#Tx, S#Acc, A])
 //    extends IdentifierMap[S#Id, S#Tx, A] {
 //    map =>
 //
-//    @field private[this] val idn = id.id.toLong << 32
+//    private[this] val idn = id.id.toLong << 32
 //
 //    def get(id: S#Id)(implicit tx: S#Tx): Option[A] = {
 //      tx.system.tryRead(idn | (id.id.toLong & 0xFFFFFFFFL))(serializer.read(_, ()))
@@ -359,8 +360,8 @@ object DurableImpl {
       require(tx.system.exists(id), s"trying to write disposed ref $id")
   }
 
-  private final class VarImpl[S <: D[S], A](@field protected val id: Int,
-                                            @field protected val ser: Serializer[S#Tx, S#Acc, A])
+  private final class VarImpl[S <: D[S], A](protected val id: Int,
+                                            protected val ser: Serializer[S#Tx, S#Acc, A])
     extends BasicSource[S, A] {
 
     def apply()(implicit tx: S#Tx): A =
@@ -383,7 +384,7 @@ object DurableImpl {
     override def toString = s"Var($id)"
   }
 
-  private final class CachedVarImpl[S <: D[S], A](@field protected val id: Int, peer: Ref[A],
+  private final class CachedVarImpl[S <: D[S], A](protected val id: Int, peer: Ref[A],
                                                   ser: Serializer[S#Tx, S#Acc, A])
     extends BasicSource[S, A] {
 
@@ -411,7 +412,7 @@ object DurableImpl {
     override def toString = s"Var($id)"
   }
 
-  private final class BooleanVar[S <: D[S]](@field protected val id: Int)
+  private final class BooleanVar[S <: D[S]](protected val id: Int)
     extends BasicSource[S, Boolean] {
 
     def apply()(implicit tx: S#Tx): Boolean =
@@ -434,7 +435,7 @@ object DurableImpl {
     override def toString = s"Var[Boolean]($id)"
   }
 
-  private final class IntVar[S <: D[S]](@field protected val id: Int)
+  private final class IntVar[S <: D[S]](protected val id: Int)
     extends BasicSource[S, Int] {
 
     def apply()(implicit tx: S#Tx): Int =
@@ -457,7 +458,7 @@ object DurableImpl {
     override def toString = s"Var[Int]($id)"
   }
 
-  private final class CachedIntVar[S <: D[S]](@field protected val id: Int, peer: Ref[Int])
+  private final class CachedIntVar[S <: D[S]](protected val id: Int, peer: Ref[Int])
     extends BasicSource[S, Int] {
 
     def apply()(implicit tx: S#Tx): Int = peer.get(tx.peer)
@@ -484,7 +485,7 @@ object DurableImpl {
     override def toString = s"Var[Int]($id)"
   }
 
-  private final class LongVar[S <: D[S]](@field protected val id: Int)
+  private final class LongVar[S <: D[S]](protected val id: Int)
     extends BasicSource[S, Long] {
 
     def apply()(implicit tx: S#Tx): Long =
@@ -507,7 +508,7 @@ object DurableImpl {
     override def toString = s"Var[Long]($id)"
   }
 
-  private final class CachedLongVar[S <: D[S]](@field protected val id: Int, peer: Ref[Long])
+  private final class CachedLongVar[S <: D[S]](protected val id: Int, peer: Ref[Long])
     extends BasicSource[S, Long] {
 
     def apply()(implicit tx: S#Tx): Long = peer.get(tx.peer)
@@ -534,7 +535,7 @@ object DurableImpl {
     override def toString = s"Var[Long]($id)"
   }
 
-  private final class TxnImpl(@field val system: System, @field val peer: InTxn)
+  private final class TxnImpl(val system: System, val peer: InTxn)
     extends TxnMixin[Durable] with Durable.Txn {
 
     lazy val inMemory: InMemory#Tx = system.inMemory.wrap(peer)
@@ -543,18 +544,17 @@ object DurableImpl {
 
  }
 
-  private final class System(@field val store     : DataStore
-                             /*, @field protected val eventStore: DataStore */)
+  private final class System(val store: DataStore)
     extends Mixin[Durable, InMemory] with Durable {
 
     private type S = Durable    // scalac bug -- it _is_ used
 
-    @field val inMemory: InMemory = InMemory()
+    val inMemory: InMemory = InMemory()
 
     def inMemoryTx(tx: Tx): I#Tx = tx.inMemory
 
     override def toString = s"Durable@${hashCode.toHexString}"
 
-    def wrap(peer: InTxn): S#Tx = new TxnImpl(this, peer)
+    def wrap(peer: InTxn, systemTimeNanos: Long): S#Tx = new TxnImpl(this, peer)
   }
 }

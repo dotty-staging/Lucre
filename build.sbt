@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.6.0"
-lazy val mimaVersion      = "3.6.0"
+lazy val projectVersion   = "3.7.0-SNAPSHOT"
+lazy val mimaVersion      = "3.7.0"
 
 lazy val deps = new {
   val base = new {
@@ -32,8 +32,8 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
-  scalaVersion        := "2.12.5",
-  crossScalaVersions  := Seq("2.12.5", "2.11.12"),
+  scalaVersion        := "2.12.6",
+  crossScalaVersions  := Seq("2.12.6", "2.11.12"),
   scalacOptions      ++= Seq("-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!

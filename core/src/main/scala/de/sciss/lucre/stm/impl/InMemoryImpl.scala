@@ -11,12 +11,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm.impl
+package de.sciss.lucre.stm
+package impl
 
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm.InMemoryLike.Var
-import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Obj, Source, TxnLike}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -54,10 +54,12 @@ object InMemoryImpl {
 
     // ---- cursor ----
 
-    final def step[A](fun: S#Tx => A): A = {
+    final def step[A](fun: S#Tx => A): A = stepTag(0L)(fun)
+
+    final def stepTag[A](systemTimeNanos: Long)(fun: S#Tx => A): A = {
       // note: in-memory has no problem with nested
       // transactions, so we do not need to check that condition.
-      TxnExecutor.defaultAtomic(itx => fun(wrap(itx))) // new TxnImpl( this, itx )))
+      TxnExecutor.defaultAtomic(itx => fun(wrap(itx, systemTimeNanos)))
     }
 
     final def position(implicit tx: S#Tx): S#Acc = ()
@@ -208,6 +210,6 @@ object InMemoryImpl {
 
     override def toString = s"InMemory@${hashCode.toHexString}"
 
-    def wrap(itx: InTxn): S#Tx = new TxnImpl(this, itx)
+    def wrap(itx: InTxn, systemTimeNanos: Long): S#Tx = new TxnImpl(this, itx)
   }
 }

@@ -108,6 +108,8 @@ object PlainImpl {
 
     def step[A](fun: Tx => A): A = fun(this)
 
+    def stepTag[A](systemTimeNanos: Long)(fun: S#Tx => A): A = fun(this)
+
     def position(implicit tx: S#Tx): Acc = ()
 
     // ---- Executor ----

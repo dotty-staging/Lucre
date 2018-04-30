@@ -49,5 +49,5 @@ trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
 
   private[lucre] def newIdValue()(implicit tx: S#Tx): Int
 
-  def wrap(peer: InTxn) : S#Tx
+  def wrap(peer: InTxn, systemTimeNanos: Long = 0L) : S#Tx
 }

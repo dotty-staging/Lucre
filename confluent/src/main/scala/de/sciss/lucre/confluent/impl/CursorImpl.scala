@@ -113,22 +113,26 @@ object CursorImpl {
       fun(dtx)
     }
 
-    def step[A](fun: S#Tx => A): A = {
+    def step[A](fun: S#Tx => A): A = stepTag(0L)(fun)
+
+    def stepTag[A](systemTimeNanos: Long)(fun: S#Tx => A): A = {
       topLevelAtomic { implicit dtx =>
         val inputAccess = data.path()
-        performStep(inputAccess, retroactive = false, dtx = dtx, fun = fun)
+        performStep(inputAccess, systemTimeNanos = systemTimeNanos, retroactive = false, dtx = dtx, fun = fun)
       }
     }
 
-    def stepFrom[A](inputAccess: S#Acc, retroactive: Boolean)(fun: S#Tx => A): A = {
+    def stepFrom[A](inputAccess: S#Acc, retroactive: Boolean, systemTimeNanos: Long)(fun: S#Tx => A): A = {
       topLevelAtomic { implicit dtx =>
         data.path() = inputAccess
-        performStep(inputAccess, retroactive, dtx, fun)
+        performStep(inputAccess, systemTimeNanos = systemTimeNanos, retroactive = retroactive, dtx = dtx, fun = fun)
       }
     }
 
-    private def performStep[A](inputAccess: S#Acc, retroactive: Boolean, dtx: D1#Tx, fun: S#Tx => A): A = {
-      val tx = system.createTxn(dtx, inputAccess, retroactive, this)
+    private def performStep[A](inputAccess: S#Acc, retroactive: Boolean, systemTimeNanos: Long,
+                               dtx: D1#Tx, fun: S#Tx => A): A = {
+      val tx = system.createTxn(dtx = dtx, inputAccess = inputAccess, retroactive = retroactive,
+        cursorCache = this, systemTimeNanos = systemTimeNanos)
       logCursor(s"${data.id} step. input path = $inputAccess")
       fun(tx)
     }

@@ -55,6 +55,6 @@ trait Cursor[S <: Sys[S], D <: stm.Sys[D]]
 
   def data: Cursor.Data[S, D]
 
-  def stepFrom[A](path: S#Acc, retroactive: Boolean = false)(fun: S#Tx => A): A
+  def stepFrom[A](path: S#Acc, retroactive: Boolean = false, systemTimeNanos: Long = 0L)(fun: S#Tx => A): A
   def position(implicit tx: D#Tx): S#Acc
 }

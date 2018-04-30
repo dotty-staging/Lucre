@@ -38,7 +38,9 @@ trait Mixin[S <: Sys[S]]
 
   protected def storeFactory: DataStore.Factory
 
-  protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx]): S#Tx
+  protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
+                            systemTimeNanos: Long): S#Tx
+
   protected def wrapRoot(peer: InTxn): S#Tx
 
   def durableTx(tx: S#Tx): D#Tx
@@ -53,7 +55,7 @@ trait Mixin[S <: Sys[S]]
 
   final protected val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] = {
     val map = InMemoryConfluentMap.newIntMap[S]
-    new InMemoryIdMapImpl(map)
+    new InMemoryIdMapImpl[S, Map[Int, List[Observer[S, _]]]](map)
   }
 
   private val global: GlobalState[S, D] = 
@@ -98,9 +100,10 @@ trait Mixin[S <: Sys[S]]
     res
   }
 
-  final def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx]): S#Tx = {
+  final def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
+                      systemTimeNanos: Long): S#Tx = {
     log(s"::::::: atomic - input access = $inputAccess${if (retroactive) " - retroactive" else ""} :::::::")
-    wrapRegular(dtx, inputAccess, retroactive, cursorCache)
+    wrapRegular(dtx, inputAccess, retroactive, cursorCache, systemTimeNanos)
   }
 
   final def readPath(in: DataInput): S#Acc = Path.read[S](in)
