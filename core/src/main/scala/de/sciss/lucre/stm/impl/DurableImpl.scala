@@ -71,11 +71,11 @@ object DurableImpl {
 
     // ---- cursor ----
 
-    def step[A](fun: S#Tx => A): A = Txn.atomic { implicit itx =>
-      fun(wrap(itx))
-    }
+    def step[A](fun: S#Tx => A): A = stepTag(0L)(fun)
 
-    def stepTag[A](systemTimeNanos: Long)(fun: S#Tx => A): A = step(fun)
+    def stepTag[A](systemTimeNanos: Long)(fun: S#Tx => A): A = Txn.atomic { implicit itx =>
+      fun(wrap(itx, systemTimeNanos))
+    }
 
     def position(implicit tx: S#Tx): S#Acc = ()
 
