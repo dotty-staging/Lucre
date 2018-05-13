@@ -248,42 +248,42 @@ object DoubleExtensions {
 
     case object Midicps extends Op {
       final val id = 10
-      def value(a: Double): Double = rd.midicps(a)
+      def value(a: Double): Double = rd.midiCps(a)
     }
 
     case object Cpsmidi extends Op {
       final val id = 11
-      def value(a: Double): Double = rd.cpsmidi(a)
+      def value(a: Double): Double = rd.cpsMidi(a)
     }
 
     case object Midiratio extends Op {
       final val id = 12
-      def value(a: Double): Double = rd.midiratio(a)
+      def value(a: Double): Double = rd.midiRatio(a)
     }
 
     case object Ratiomidi extends Op {
       final val id = 13
-      def value(a: Double): Double = rd.ratiomidi(a)
+      def value(a: Double): Double = rd.ratioMidi(a)
     }
 
     case object Dbamp extends Op {
       final val id = 14
-      def value(a: Double): Double = rd.dbamp(a)
+      def value(a: Double): Double = rd.dbAmp(a)
     }
 
     case object Ampdb extends Op {
       final val id = 15
-      def value(a: Double): Double = rd.ampdb(a)
+      def value(a: Double): Double = rd.ampDb(a)
     }
 
     case object Octcps extends Op {
       final val id = 16
-      def value(a: Double): Double = rd.octcps(a)
+      def value(a: Double): Double = rd.octCps(a)
     }
 
     case object Cpsoct extends Op {
       final val id = 17
-      def value(a: Double): Double = rd.cpsoct(a)
+      def value(a: Double): Double = rd.cpsOct(a)
     }
 
     case object Log extends Op {
@@ -482,7 +482,7 @@ object DoubleExtensions {
 
     case object Hypotx extends Op {
       final val id = 42
-      def value(a: Double, b: Double): Double = rd.hypotx(a, b)
+      def value(a: Double, b: Double): Double = rd.hypotApx(a, b)
     }
 
     case object Pow extends Op {
@@ -500,27 +500,27 @@ object DoubleExtensions {
     //      case object Ring4          extends Op( 33 )
     case object Difsqr extends Op {
       final val id = 44
-      def value(a: Double, b: Double): Double = rd.difsqr(a, b)
+      def value(a: Double, b: Double): Double = rd.difSqr(a, b)
     }
 
     case object Sumsqr extends Op {
       final val id = 45
-      def value(a: Double, b: Double): Double = rd.sumsqr(a, b)
+      def value(a: Double, b: Double): Double = rd.sumSqr(a, b)
     }
 
     case object Sqrsum extends Op {
       final val id = 46
-      def value(a: Double, b: Double): Double = rd.sqrsum(a, b)
+      def value(a: Double, b: Double): Double = rd.sqrSum(a, b)
     }
 
     case object Sqrdif extends Op {
       final val id = 47
-      def value(a: Double, b: Double): Double = rd.sqrdif(a, b)
+      def value(a: Double, b: Double): Double = rd.sqrDif(a, b)
     }
 
     case object Absdif extends Op {
       final val id = 48
-      def value(a: Double, b: Double): Double = rd.absdif(a, b)
+      def value(a: Double, b: Double): Double = rd.absDif(a, b)
     }
 
     //    case object Thresh extends Op {
@@ -580,14 +580,14 @@ object DoubleExtensions {
     def sqrt      (implicit tx: S#Tx): E = Sqrt      (a)
     def exp       (implicit tx: S#Tx): E = Exp       (a)
     def reciprocal(implicit tx: S#Tx): E = Reciprocal(a)
-    def midicps   (implicit tx: S#Tx): E = Midicps   (a)
-    def cpsmidi   (implicit tx: S#Tx): E = Cpsmidi   (a)
-    def midiratio (implicit tx: S#Tx): E = Midiratio (a)
-    def ratiomidi (implicit tx: S#Tx): E = Ratiomidi (a)
-    def dbamp     (implicit tx: S#Tx): E = Dbamp     (a)
-    def ampdb     (implicit tx: S#Tx): E = Ampdb     (a)
-    def octcps    (implicit tx: S#Tx): E = Octcps    (a)
-    def cpsoct    (implicit tx: S#Tx): E = Cpsoct    (a)
+    def midiCps   (implicit tx: S#Tx): E = Midicps   (a)
+    def cpsMidi   (implicit tx: S#Tx): E = Cpsmidi   (a)
+    def midiRatio (implicit tx: S#Tx): E = Midiratio (a)
+    def ratioMidi (implicit tx: S#Tx): E = Ratiomidi (a)
+    def dbAmp     (implicit tx: S#Tx): E = Dbamp     (a)
+    def ampDb     (implicit tx: S#Tx): E = Ampdb     (a)
+    def octCps    (implicit tx: S#Tx): E = Octcps    (a)
+    def cpsOct    (implicit tx: S#Tx): E = Cpsoct    (a)
     def log       (implicit tx: S#Tx): E = Log       (a)
     def log2      (implicit tx: S#Tx): E = Log2      (a)
     def log10     (implicit tx: S#Tx): E = Log10     (a)
@@ -603,20 +603,20 @@ object DoubleExtensions {
 
     // def rand : E              = UnOp.make( 'rand, ex )
     // def rand2 : E             = UnOp.make( 'rand2, ex )
-    // def linrand : E           = UnOp.make( 'linrand, ex )
-    // def bilinrand : E         = UnOp.make( 'bilinrand, ex )
-    // def sum3rand : E          = UnOp.make( 'sum3rand, ex )
+    // def linRand : E           = UnOp.make( 'linrand, ex )
+    // def bilinRand : E         = UnOp.make( 'bilinrand, ex )
+    // def sum3Rand : E          = UnOp.make( 'sum3rand, ex )
     // def distort : E   = Distort.make( ex )
-    // def softclip : E  = Softclip.make( ex )
+    // def softClip : E  = Softclip.make( ex )
     // def coin : E              = UnOp.make( 'coin, ex )
     // def even : E              = UnOp.make( 'even, ex )
     // def odd : E               = UnOp.make( 'odd, ex )
     // def rectWindow : E        = UnOp.make( 'rectWindow, ex )
-    // def hanWindow : E         = UnOp.make( 'hanWindow, ex )
-    // def welWindow : E         = UnOp.make( 'sum3rand, ex )
+    // def hannWindow : E         = UnOp.make( 'hanWindow, ex )
+    // def welchWindow : E         = UnOp.make( 'sum3rand, ex )
     // def triWindow : E         = UnOp.make( 'triWindow, ex )
     // def ramp : E      = Ramp.make( ex )
-    // def scurve : E    = Scurve.make( ex )
+    // def sCurve : E    = Scurve.make( ex )
     // def isPositive : E        = UnOp.make( 'isPositive, ex )
     // def isNegative : E        = UnOp.make( 'isNegative, ex )
     // def isStrictlyPositive : E= UnOp.make( 'isStrictlyPositive, ex )
@@ -632,34 +632,34 @@ object DoubleExtensions {
     def trunc   (b: E)(implicit tx: S#Tx): E = Trunc   (a, b)
     def atan2   (b: E)(implicit tx: S#Tx): E = Atan2   (a, b)
     def hypot   (b: E)(implicit tx: S#Tx): E = Hypot   (a, b)
-    def hypotx  (b: E)(implicit tx: S#Tx): E = Hypotx  (a, b)
+    def hypotApx(b: E)(implicit tx: S#Tx): E = Hypotx  (a, b)
     def pow     (b: E)(implicit tx: S#Tx): E = Pow     (a, b)
 
     //      def ring1( b: E ) : E     = Ring1.make( ex, b )
     //      def ring2( b: E ) : E     = Ring2.make( ex, b )
     //      def ring3( b: E ) : E     = Ring3.make( ex, b )
     //      def ring4( b: E ) : E     = Ring4.make( ex, b )
-    def difsqr  (b: E)(implicit tx: S#Tx): E = Difsqr  (a, b)
-    def sumsqr  (b: E)(implicit tx: S#Tx): E = Sumsqr  (a, b)
-    def sqrsum  (b: E)(implicit tx: S#Tx): E = Sqrsum  (a, b)
-    def sqrdif  (b: E)(implicit tx: S#Tx): E = Sqrdif  (a, b)
-    def absdif  (b: E)(implicit tx: S#Tx): E = Absdif  (a, b)
+    def difSqr  (b: E)(implicit tx: S#Tx): E = Difsqr  (a, b)
+    def sumSqr  (b: E)(implicit tx: S#Tx): E = Sumsqr  (a, b)
+    def sqrSum  (b: E)(implicit tx: S#Tx): E = Sqrsum  (a, b)
+    def sqrDif  (b: E)(implicit tx: S#Tx): E = Sqrdif  (a, b)
+    def absDif  (b: E)(implicit tx: S#Tx): E = Absdif  (a, b)
     // def thresh  (b: E): E = Thresh  (ex, b)
 
-    //      def amclip( b: E ) : E    = Amclip.make( ex, b )
-    //      def scaleneg( b: E ) : E  = Scaleneg.make( ex, b )
+    //      def amClip( b: E ) : E    = Amclip.make( ex, b )
+    //      def scaleNeg( b: E ) : E  = Scaleneg.make( ex, b )
     def clip2   (b: E)(implicit tx: S#Tx): E = Clip2   (a, b)
 
     //      def excess( b: E ) : E    = Excess.make( ex, b )
     def fold2   (b: E)(implicit tx: S#Tx): E = Fold2   (a, b)
     def wrap2   (b: E)(implicit tx: S#Tx): E = Wrap2   (a, b)
 
-    // def firstarg( b: Double ) : Double  = d
+    // def firstArg( b: Double ) : Double  = d
 
-    //      def linlin( srcLo: Double, srcHi: Double, dstLo: Double, dstHi: Double ) : Double =
-    //         rd.linlin( d, srcLo, srcHi, dstLo, dstHi )
+    //      def linLin( srcLo: Double, srcHi: Double, dstLo: Double, dstHi: Double ) : Double =
+    //         rd.linLin( d, srcLo, srcHi, dstLo, dstHi )
     //
-    //      def linexp( srcLo: Double, srcHi: Double, dstLo: Double, dstHi: Double ) : Double =
-    //         rd.linexp( d, srcLo, srcHi, dstLo, dstHi )
+    //      def linExp( srcLo: Double, srcHi: Double, dstLo: Double, dstHi: Double ) : Double =
+    //         rd.linExp( d, srcLo, srcHi, dstLo, dstHi )
   }
 }
