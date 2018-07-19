@@ -58,7 +58,7 @@ object Type {
 
   trait Expr[A1, Repr[~ <: Sys[~]] <: expr.Expr[~, A1]] extends Obj.Type {
     type A = A1
-    type Ex   [S <: Sys[S]] = Repr[S] // yeah, well, we're waiting for Dotty
+    type _Ex   [S <: Sys[S]] = Repr[S] // yeah, well, we're waiting for Dotty
     // type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A]
     type Var  [S <: Sys[S]] = Repr[S] with stm.Var[S#Tx, Repr[S]]
     type Const[S <: Sys[S]] = Repr[S] with expr.Expr.Const[S, A]
@@ -75,7 +75,7 @@ object Type {
     // ---- public ----
 
     object Var {
-      def unapply[S <: Sys[S]](expr: Ex[S]): Option[Var[S]] = {
+      def unapply[S <: Sys[S]](expr: _Ex[S]): Option[Var[S]] = {
         // !!! this wrongly reports `true` for `Const`, probably due
         // to some erasure that scalac doesn't warn about
         // if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[S]]) else None

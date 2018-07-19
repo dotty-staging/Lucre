@@ -30,7 +30,7 @@ object SpanExtensions  {
 
   def init(): Unit = _init
 
-  type Ex[S <: Sys[S]] = SpanObj[S]
+  type _Ex[S <: Sys[S]] = SpanObj[S]
 
   private[this] object LongTuple1s extends Type.Extension1[LongObj] {
     // final val arity = 1
@@ -60,7 +60,7 @@ object SpanExtensions  {
     val name = "Int-Int Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       import BinaryOp._
       val op /* : Op[_, _, _, _] */ = opId /* : @switch */ match {
         case Apply.id => Apply
@@ -72,7 +72,7 @@ object SpanExtensions  {
 
   final class Ops2(val `this`: Span.type) extends AnyVal { me =>
     // import me.{`this` => ex}
-    def apply[S <: Sys[S]](start: LongObj[S], stop: LongObj[S])(implicit tx: S#Tx): Ex[S] =
+    def apply[S <: Sys[S]](start: LongObj[S], stop: LongObj[S])(implicit tx: S#Tx): _Ex[S] =
       (start, stop) match {
         case (Expr.Const(startC), Expr.Const(stopC)) => SpanObj.newConst(Span(startC, stopC))
         case _ =>
@@ -93,7 +93,7 @@ object SpanExtensions  {
   }
 
   // XXX TODO: fold constants
-  final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
+  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
     import me.{`this` => ex}
     // ---- unary ----
     def start (implicit tx: S#Tx): LongObj[S] = UnaryOp.Start (ex)
@@ -101,7 +101,7 @@ object SpanExtensions  {
     def length(implicit tx: S#Tx): LongObj[S] = UnaryOp.Length(ex)
 
     // ---- binary ----
-    def shift(delta: LongObj[S])(implicit tx: S#Tx): Ex[S] = BinaryOp.Shift(ex, delta)
+    def shift(delta: LongObj[S])(implicit tx: S#Tx): _Ex[S] = BinaryOp.Shift(ex, delta)
   }
 
   // ----- operators -----
@@ -168,15 +168,15 @@ object SpanExtensions  {
       with Op[Span, Long, SpanObj, LongObj] {
 
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                                 (implicit tx: S#Tx): Ex[S] = {
+                                 (implicit tx: S#Tx): _Ex[S] = {
         val _1 = SpanObj.read[S](in, access)
         val _2 = LongObj.read[S](in, access)
         new Tuple2[S, Span, SpanObj, Long, LongObj](targets, this, _1, _2)
       }
 
-      final def apply[S <: Sys[S]](a: Ex[S], b: LongObj[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
+      final def apply[S <: Sys[S]](a: _Ex[S], b: LongObj[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => SpanObj.newConst[S](value(ca, cb))
-        case _ => 
+        case _ =>
           new Tuple2[S, Span, SpanObj, Long, LongObj](Targets[S], this, a, b).connect()
       }
     }
@@ -191,7 +191,7 @@ object SpanExtensions  {
       override def toString[S <: Sys[S]](_1: LongObj[S], _2: LongObj[S]): String = s"Span(${_1}, ${_2})"
 
       def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                           (implicit tx: S#Tx): Ex[S] = {
+                           (implicit tx: S#Tx): _Ex[S] = {
         val _1 = LongObj.read(in, access)
         val _2 = LongObj.read(in, access)
         new Tuple2[S, Long, LongObj, Long, LongObj](targets, this, _1, _2)

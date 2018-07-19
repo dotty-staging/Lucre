@@ -28,7 +28,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
 
   implicit final def tpe: Type.Expr[A1, Repr] = this
 
-  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
+  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): _Ex[S] =
     (in.readByte(): @switch) match {
       case 3 => readIdentifiedConst[S](in, access)
       case 0 =>
@@ -44,7 +44,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     * which will be resolved using `readOpExtension`.
     */
   protected def readNode[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                                     (implicit tx: S#Tx): Ex[S] = {
+                                     (implicit tx: S#Tx): _Ex[S] = {
     val opId = in.readInt()
     readExtension(op = opId, in = in, access = access, targets = targets)
   }
@@ -53,10 +53,10 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     * By default this throws an exception. Sub-classes may use a cookie greater
     * than `3` for other constant types.
     */
-  protected def readCookie[S <: Sys[S]](in: DataInput, access: S#Acc, cookie: Byte)(implicit tx: S#Tx): Ex[S] =
+  protected def readCookie[S <: Sys[S]](in: DataInput, access: S#Acc, cookie: Byte)(implicit tx: S#Tx): _Ex[S] =
     sys.error(s"Unexpected cookie $cookie")
 
-  implicit final def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Repr[S]] */ =
+  implicit final def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, _Ex[S]] /* EventLikeSerializer[S, Repr[S]] */ =
     anySer.asInstanceOf[Ser[S]]
 
   implicit final def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Var[S]] /* Serializer[S#Tx, S#Acc, ReprVar[S]] */ =
@@ -66,16 +66,16 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   implicit final def newConst[S <: Sys[S]](value: A)(implicit tx: S#Tx): Const[S] =
     mkConst[S](tx.newId(), value)
 
-  final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Var[S] = {
+  final def newVar[S <: Sys[S]](init: _Ex[S])(implicit tx: S#Tx): Var[S] = {
     val targets = Targets[S]
-    val ref     = tx.newVar[Ex[S]](targets.id, init)
+    val ref     = tx.newVar[_Ex[S]](targets.id, init)
     mkVar[S](targets, ref, connect = true)
   }
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S]
-  protected def mkVar  [S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)(implicit tx: S#Tx): Var[S]
+  protected def mkVar  [S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)(implicit tx: S#Tx): Var[S]
 
-  final def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
+  final def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): _Ex[S] =
     serializer[S].read(in, access)
 
   final def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Const[S] = {
@@ -105,7 +105,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   @inline
   private[this] def readIdentifiedVar[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
                                                   (implicit tx: S#Tx): Var[S] = {
-    val ref = tx.readVar[Ex[S]](targets.id, in)
+    val ref = tx.readVar[_Ex[S]](targets.id, in)
     mkVar[S](targets, ref, connect = false)
   }
 
@@ -123,7 +123,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
   }
 
   protected trait VarImpl[S <: Sys[S]]
-    extends expr.impl.VarImpl[S, A, Ex[S]] {
+    extends expr.impl.VarImpl[S, A, _Ex[S]] {
 
     final def tpe: Obj.Type = self
 
@@ -143,10 +143,10 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Var[S] = readVar[S](in, access)
   }
 
-  private[this] final class Ser[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, Ex[S]] /* EventLikeSerializer[S, Ex[S]] */ {
-    def write(ex: Ex[S], out: DataOutput): Unit = ex.write(out)
+  private[this] final class Ser[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, _Ex[S]] /* EventLikeSerializer[S, Ex[S]] */ {
+    def write(ex: _Ex[S], out: DataOutput): Unit = ex.write(out)
 
-    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] = {
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): _Ex[S] = {
       val tpe = in.readInt()
       if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in, access)

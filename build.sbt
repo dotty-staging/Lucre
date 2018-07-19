@@ -49,8 +49,8 @@ lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
-  .aggregate(base, geom, data, core, expr, confluent, bdb, bdb6)
-  .dependsOn(base, geom, data, core, expr, confluent, bdb /* , bdb6 */)
+  .aggregate(base, geom, aux, data, core, expr, confluent, bdb, bdb6)
+  .dependsOn(base, geom, aux, data, core, expr, confluent, bdb /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -77,6 +77,17 @@ lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
       "de.sciss" %% "serial" % deps.base.serial
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-geom" % mimaVersion)
+  )
+
+lazy val aux = project.withId(s"$baseNameL-aux").in(file("aux"))
+  .dependsOn(base)
+  .settings(commonSettings)
+  .settings(
+    licenses := Seq(lgpl),
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "numbers" % deps.expr.numbers
+    ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-aux" % mimaVersion)
   )
 
 lazy val data = project.withId(s"$baseNameL-data").in(file("data"))
@@ -109,14 +120,13 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   )
 
 lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
-  .dependsOn(core)
+  .dependsOn(core, aux)
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "model"   % deps.expr.model,
       "de.sciss" %% "span"    % deps.expr.span,
-      "de.sciss" %% "numbers" % deps.expr.numbers
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )

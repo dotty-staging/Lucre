@@ -29,7 +29,7 @@ object IntExtensions {
 
   def init(): Unit = _init
 
-  type Ex[S <: Sys[S]] = IntObj[S]
+  type _Ex[S <: Sys[S]] = IntObj[S]
 
   private[this] object IntTuple1s extends Type.Extension1[IntObj] {
     // final val arity = 1
@@ -39,7 +39,7 @@ object IntExtensions {
     val name = "Int-1 Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       val op /* : UnaryOp[_, _] */ = (opId: @switch) match {
         // ---- Int => Int ----
         case Neg    .id => Neg
@@ -63,7 +63,7 @@ object IntExtensions {
     val name = "Int-2 Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       val op: BinaryOp = (opId: @switch) match {
         case Plus               .id => Plus
         case Minus              .id => Minus
@@ -116,11 +116,11 @@ object IntExtensions {
 
   sealed trait UnaryOp[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] extends impl.Tuple1Op[Int, T1, IntObj, ReprT1] {
     def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                         (implicit tx: S#Tx): Ex[S] //  impl.Tuple1[S, Int, T1]
+                         (implicit tx: S#Tx): _Ex[S] //  impl.Tuple1[S, Int, T1]
 
     def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
-    def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
+    def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): _Ex[S] = a match {
       case Expr.Const(c)  => IntObj.newConst[S](value(c))
       case _              => new Tuple1[S, T1, ReprT1](Targets[S], this, a).connect()
     }
@@ -147,7 +147,7 @@ object IntExtensions {
 
   private[this] sealed abstract class IntUnaryOp extends UnaryOp[Int, IntObj] {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                               (implicit tx: S#Tx): Ex[S] = {
+                               (implicit tx: S#Tx): _Ex[S] = {
       val _1 = IntObj.read(in, access)
       new Tuple1[S, Int, IntObj](targets, this, _1)
     }
@@ -156,7 +156,7 @@ object IntExtensions {
   private[this] case object Neg extends IntUnaryOp {
     final val id = 0
     def value(a: Int): Int = -a
-    override def toString[S <: Sys[S]](_1: Ex[S]): String = s"-${_1}"
+    override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"-${_1}"
   }
 
   private[this] case object Abs extends IntUnaryOp {
@@ -167,7 +167,7 @@ object IntExtensions {
   private[this] case object BitNot extends IntUnaryOp {
     final val id = 2
     def value(a: Int): Int = ~a
-    override def toString[S <: Sys[S]](_1: Ex[S]): String = s"~${_1}"
+    override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"~${_1}"
   }
 
   // case object ToLong     extends Op(  6 )
@@ -191,7 +191,7 @@ object IntExtensions {
 
   sealed trait BooleanUnaryOp extends UnaryOp[Boolean, BooleanObj] {
     final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                               (implicit tx: S#Tx): Ex[S] = {
+                               (implicit tx: S#Tx): _Ex[S] = {
       val _1 = BooleanObj.read(in, access)
       new Tuple1[S, Boolean, BooleanObj](targets, this, _1)
     }
@@ -205,9 +205,9 @@ object IntExtensions {
   // ---- (Int, Int) => Int ----
 
   private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int, IntObj, IntObj, IntObj] {
-    final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
+    final def apply[S <: Sys[S]](a: _Ex[S], b: _Ex[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => IntObj.newConst(value(ca, cb))
-      case _ => 
+      case _ =>
         new Tuple2[S, Int, IntObj, Int, IntObj](Targets[S], this,  a, b).connect()
     }
 
@@ -215,7 +215,7 @@ object IntExtensions {
 
     def isInfix: Boolean
 
-    final def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String =
+    final def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String =
       if (isInfix) s"(${_1} $name ${_2})" else s"${_1}.$name(${_2})"
 
     def name: String = {
@@ -321,10 +321,10 @@ object IntExtensions {
   //         def value( a: Int, b: Int ) : Int = ri_wrap2( a, b )
   //      }
 
-  final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
+  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
     import me.{`this` => a}
 
-    private type E = Ex[S]
+    private type E = _Ex[S]
 
     // ---- Int => Int ----
 

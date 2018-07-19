@@ -40,7 +40,7 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -50,7 +50,7 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -63,7 +63,7 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -73,7 +73,7 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -86,7 +86,7 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -96,7 +96,7 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -109,7 +109,7 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -119,7 +119,7 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -132,7 +132,7 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -142,7 +142,7 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -155,7 +155,7 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -165,7 +165,7 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -178,7 +178,7 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -188,7 +188,7 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -201,7 +201,7 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -211,7 +211,7 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }
 
@@ -224,7 +224,7 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
-  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[Ex[S]], connect: Boolean)
+  protected def mkVar[S <: Sys[S]](targets: Targets[S], vr: S#Var[_Ex[S]], connect: Boolean)
                                   (implicit tx: S#Tx): Var[S] = {
     val res = new _Var[S](targets, vr)
     if (connect) res.connect()
@@ -234,6 +234,6 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   private[this] final class _Const[S <: Sys[S]](val id: S#Id, val constValue: A)
     extends ConstImpl[S] with Repr[S]
 
-  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[Ex[S]])
+  private[this] final class _Var[S <: Sys[S]](val targets: Targets[S], val ref: S#Var[_Ex[S]])
     extends VarImpl[S] with Repr[S]
 }

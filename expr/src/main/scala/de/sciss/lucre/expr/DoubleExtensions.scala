@@ -29,7 +29,7 @@ object DoubleExtensions {
 
   def init(): Unit = _init
 
-  type Ex[S <: Sys[S]] = DoubleObj[S]
+  type _Ex[S <: Sys[S]] = DoubleObj[S]
 
   private[this] object DoubleTuple1s extends Type.Extension1[DoubleObj] {
     // final val arity = 1
@@ -39,7 +39,7 @@ object DoubleExtensions {
     val name = "Double-Double Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       import UnaryOp._
       val op: Op = (opId: @switch) match {
         case Neg        .id => Neg
@@ -97,7 +97,7 @@ object DoubleExtensions {
     val name = "Double-Double Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       import BinaryOp._
       val op: Op = (opId: @switch) match {
         case Plus   .id => Plus
@@ -172,12 +172,12 @@ object DoubleExtensions {
 
     sealed abstract class Op extends impl.Tuple1Op[Double, Double, DoubleObj, DoubleObj] {
       def id: Int
-      final def apply[S <: Sys[S]](_1: Ex[S])(implicit tx: S#Tx): Ex[S] = _1 match {
+      final def apply[S <: Sys[S]](_1: _Ex[S])(implicit tx: S#Tx): _Ex[S] = _1 match {
         case Expr.Const(c)  => DoubleObj.newConst(value(c))
         case _              => new Tuple1[S, Double, DoubleObj](Targets[S], this, _1).connect()
       }
 
-      def toString[S <: Sys[S]](_1: Ex[S]): String = s"${_1}.$name"
+      def toString[S <: Sys[S]](_1: _Ex[S]): String = s"${_1}.$name"
 
       def name: String = {
         val cn = getClass.getName
@@ -191,7 +191,7 @@ object DoubleExtensions {
       final val id = 0
       def value(a: Double): Double = -a // rd.neg(a)
 
-      override def toString[S <: Sys[S]](_1: Ex[S]): String = s"-${_1}"
+      override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"-${_1}"
     }
 
     case object Abs extends Op {
@@ -370,7 +370,7 @@ object DoubleExtensions {
 
     sealed abstract class Op extends impl.Tuple2Op[Double, Double, Double, DoubleObj, DoubleObj, DoubleObj] {
 
-      final def apply[S <: Sys[S]](_1: Ex[S], _2: Ex[S])(implicit tx: S#Tx): Ex[S] = (_1, _2) match {
+      final def apply[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S])(implicit tx: S#Tx): _Ex[S] = (_1, _2) match {
         case (Expr.Const(ca), Expr.Const(cb)) => DoubleObj.newConst(value(ca, cb))
         case _ =>
           new Tuple2[S, Double, DoubleObj, Double, DoubleObj](Targets[S], this, _1, _2).connect()
@@ -378,7 +378,7 @@ object DoubleExtensions {
 
       def value(a: Double, b: Double): Double
 
-      def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String = s"${_1}.$name(${_2})"
+      def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String = s"${_1}.$name(${_2})"
 
       def name: String = {
         val cn = getClass.getName
@@ -391,7 +391,7 @@ object DoubleExtensions {
     trait Infix {
       _: Op =>
 
-      override def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String =
+      override def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String =
         s"(${_1} $name ${_2})"
     }
 
@@ -549,9 +549,9 @@ object DoubleExtensions {
     //      case object Firstarg       extends Op( 46 )
   }
 
-  final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
+  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
     import me.{`this` => a}
-    private type E = Ex[S]
+    private type E = _Ex[S]
 
     import UnaryOp._
 

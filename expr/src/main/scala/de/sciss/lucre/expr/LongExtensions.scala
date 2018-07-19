@@ -29,7 +29,7 @@ object LongExtensions {
 
   def init(): Unit = _init
 
-  type Ex[S <: Sys[S]] = LongObj[S]
+  type _Ex[S <: Sys[S]] = LongObj[S]
 
   private[this] object LongTuple1s extends Type.Extension1[LongObj] {
     // final val arity = 1
@@ -39,7 +39,7 @@ object LongExtensions {
     val name = "Long-Long Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       import UnaryOp._
       val op /* : Op[_, _] */ = (opId: @switch) match {
         // ---- Long ----
@@ -62,7 +62,7 @@ object LongExtensions {
     val name = "Long-Long Ops"
 
     def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): Ex[S] = {
+                                  (implicit tx: S#Tx): _Ex[S] = {
       import BinaryOp._
       val op: Op = (opId: @switch) match {
         // ---- Long ----
@@ -126,11 +126,11 @@ object LongExtensions {
   object UnaryOp {
     trait Op[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] extends impl.Tuple1Op[Long, T1, LongObj, ReprT1] {
       def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                           (implicit tx: S#Tx): Ex[S]
+                           (implicit tx: S#Tx): _Ex[S]
 
       def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
 
-      def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): Ex[S] = a match {
+      def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): _Ex[S] = a match {
         case Expr.Const(c)  => LongObj.newConst[S](value(c))
         case _              => new Tuple1[S, T1, ReprT1](Targets[S], this, a).connect()
       }
@@ -145,7 +145,7 @@ object LongExtensions {
 
     sealed abstract class LongOp extends Op[Long, LongObj] {
       final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                                 (implicit tx: S#Tx): Ex[S] = {
+                                 (implicit tx: S#Tx): _Ex[S] = {
         val _1 = LongObj.read(in, access)
         new Tuple1[S, Long, LongObj](targets, this, _1)
       }
@@ -154,7 +154,7 @@ object LongExtensions {
     case object Neg extends LongOp {
       final val id = 0
       def value(a: Long): Long = -a
-      override def toString[S <: Sys[S]](_1: Ex[S]): String = s"-${_1}"
+      override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"-${_1}"
     }
 
     case object Abs extends LongOp {
@@ -165,7 +165,7 @@ object LongExtensions {
     case object BitNot extends LongOp {
       final val id = 2
       def value(a: Long): Long = ~a
-      override def toString[S <: Sys[S]](_1: Ex[S]): String = s"~${_1}"
+      override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"~${_1}"
     }
 
     // case object ToLong     extends Op(  6 )
@@ -189,7 +189,7 @@ object LongExtensions {
 
   private object BinaryOp {
     sealed trait Op extends impl.Tuple2Op[Long, Long, Long, LongObj, LongObj, LongObj] {
-      final def apply[S <: Sys[S]](a: Ex[S], b: Ex[S])(implicit tx: S#Tx): Ex[S] = (a, b) match {
+      final def apply[S <: Sys[S]](a: _Ex[S], b: _Ex[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => LongObj.newConst(value(ca, cb))
         case _ =>
           new Tuple2[S, Long, LongObj, Long, LongObj](Targets[S], this, a, b).connect()
@@ -197,7 +197,7 @@ object LongExtensions {
 
       def value(a: Long, b: Long): Long
 
-      def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String = s"${_1}.$name(${_2})"
+      def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String = s"${_1}.$name(${_2})"
 
       def name: String = {
         val cn = getClass.getName
@@ -210,7 +210,7 @@ object LongExtensions {
     trait Infix {
       _: Op =>
 
-      override def toString[S <: Sys[S]](_1: Ex[S], _2: Ex[S]): String = s"(${_1} $name ${_2})"
+      override def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String = s"(${_1} $name ${_2})"
     }
 
     case object Plus extends Op with Infix {
@@ -287,9 +287,9 @@ object LongExtensions {
     //      }
   }
 
-  final class Ops[S <: Sys[S]](val `this`: Ex[S]) extends AnyVal { me =>
+  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
     import me.{`this` => a}
-    private type E = Ex[S]
+    private type E = _Ex[S]
 
     import UnaryOp._
 
