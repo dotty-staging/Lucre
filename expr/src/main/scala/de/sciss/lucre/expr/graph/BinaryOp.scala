@@ -3,7 +3,12 @@ package graph
 
 import de.sciss.lucre.aux.Aux.{Num, NumDouble, NumFrac, NumInt, Ord, Widen2}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
-import de.sciss.lucre.stm.Base
+import de.sciss.lucre.event.Observable
+import de.sciss.lucre.event.impl.ObservableImpl
+import de.sciss.lucre.stm.{Sys, TxnLike}
+import de.sciss.model.Change
+
+import scala.concurrent.stm.Ref
 
 object BinaryOp {
   sealed abstract class Op[A1, A2] extends ProductWithAux {
@@ -265,6 +270,59 @@ object BinaryOp {
     def name                  : String    = "Wrap2"
     def aux                   : scala.List[Aux] = num :: Nil
   }
+
+  private final class Expanded[S <: Sys[S], A1, A2, A3, A](op: BinaryOp.Op[A3, A],
+                                                           a: ExprLike[S, A1], b: ExprLike[S, A2], tx0: S#Tx)
+                                                          (implicit val widen: Widen2[A1, A2, A3])
+    extends ExprLike[S, A] with ObservableImpl[S, Change[A]] {
+
+    private[this] val aVal = Ref(a.value(tx0))
+    private[this] val bVal = Ref(b.value(tx0))
+
+    private[this] val aObs = a.changed.react { implicit tx => aCh =>
+      import TxnLike.peer
+      val bBefore = bVal()
+      val bNow    = b.value
+      val before  = value1(aCh.before, bBefore)
+      val now     = value1(aCh.now   , bNow   )
+      val ch      = Change(before, now)
+      aVal()      = aCh.now
+      bVal()      = bNow
+      if (ch.isSignificant) fire(ch)
+    } (tx0)
+
+    private[this] val bObs = b.changed.react { implicit tx => bCh =>
+      import TxnLike.peer
+      val aBefore = aVal()
+      val aNow    = a.value
+      val before  = value1(aBefore, bCh.before)
+      val now     = value1(aNow   , bCh.now   )
+      val ch      = Change(before, now)
+      aVal()      = aNow
+      bVal()      = bCh.now
+      if (ch.isSignificant) fire(ch)
+    } (tx0)
+
+    def changed: Observable[S#Tx, Change[A]] = this
+
+    @inline
+    private def value1(av: A1, bv: A2): A = {
+      val avw = widen.widen1(av)
+      val bvw = widen.widen2(bv)
+      op.apply(avw, bvw)
+    }
+
+    def value(implicit tx: S#Tx): A = {
+      val av = a.value
+      val bv = b.value
+      value1(av, bv)
+    }
+
+    def dispose()(implicit tx: S#Tx): Unit = {
+      aObs.dispose()
+      bObs.dispose()
+    }
+ }
 }
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A3, A], a: Ex[A1], b: Ex[A2])
                                         (implicit val widen: Widen2[A1, A2, A3])
@@ -272,11 +330,17 @@ final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A3, A], a: Ex[A1], b: E
 
   def aux: scala.List[Aux] = widen :: Nil
 
-  def value[S <: Base[S]](implicit tx: S#Tx): A = {
-    val av = widen.widen1(a.value[S])
-    val bv = widen.widen2(b.value[S])
-    op.apply(av, bv)
+  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): ExprLike[S, A] = {
+    val ax = a.expand[S]
+    val bx = b.expand[S]
+    new BinaryOp.Expanded[S, A1, A2, A3, A](op, ax, bx, tx)
   }
+
+  //  def value[S <: Base[S]](implicit tx: S#Tx): A = {
+//    val av = widen.widen1(a.value[S])
+//    val bv = widen.widen2(b.value[S])
+//    op.apply(av, bv)
+//  }
 
 //  def transform[S <: Base[S]](t: Transform)(implicit ctx: Context[S], tx: S#Tx): Pat[A] = {
 //    val aT = t(a)

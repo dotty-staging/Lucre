@@ -14,8 +14,14 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.ProductWithAux
-import de.sciss.lucre.stm.Base
+import de.sciss.lucre.expr.Ex.Context
+import de.sciss.lucre.stm.{Base, Sys}
 
+object Ex {
+  trait Context[S <: Base[S]]
+}
 trait Ex[A] extends ProductWithAux {
-  def value[S <: Base[S]](implicit /* ctx: Context[S], */ tx: S#Tx): A
+  final def value[S <: Base[S]](implicit /* ctx: Context[S], */ tx: S#Tx): A = ???
+
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ExprLike[S, A]
 }
