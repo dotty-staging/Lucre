@@ -267,6 +267,12 @@ object UnaryOp {
   // Ramp
   // Scurve
 
+  final case class ToStr[A]() extends Op[A, String] {
+    def apply(a: A)           : String  = a.toString
+    def name                  : String  = "ToStr"
+    def aux : scala.List[Aux] = Nil
+  }
+
   private final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
                                                    (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IEventImpl[S, Change[A]] {

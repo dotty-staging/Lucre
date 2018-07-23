@@ -20,7 +20,7 @@ import de.sciss.lucre.expr.Ex.Context
 import de.sciss.lucre.stm.{Base, Sys, TxnLike}
 import de.sciss.model.Change
 
-import scala.concurrent.stm.{Ref, TMap}
+import scala.concurrent.stm.Ref
 
 object Ex {
   object Var {
@@ -80,24 +80,7 @@ object Ex {
   }
 
   object Context {
-    def apply[S <: Sys[S]]: Context[S] = new Impl[S]
-
-    private final class Impl[S <: Sys[S]] extends Context[S] {
-      val targets: ITargets[S] = ITargets[S]
-
-      private[this] val sourceMap = TMap.empty[AnyRef, Any]
-
-      def visit[U](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
-        import TxnLike.peer
-        sourceMap.get(ref) match {
-          case Some(res) => res.asInstanceOf[U]  // not so pretty...
-          case None =>
-            val exp    = init
-            sourceMap += ref -> exp
-            exp
-        }
-      }
-    }
+    def apply[S <: Sys[S]]: Context[S] = new impl.ContextImpl[S]
   }
   trait Context[S <: Base[S]] {
     implicit def targets: ITargets[S]
