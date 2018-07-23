@@ -54,4 +54,6 @@ object Expr {
   * as a binary operator (e.g., an integer expression that sums two input
   * integer expressions).
   */
-trait Expr[S <: Sys[S], +A] extends ExprLike[S, A] with Obj[S] with Publisher[S, Change[A]]
+trait Expr[S <: Sys[S], +A] extends /* ExprLike[S, A] with */ Obj[S] with Publisher[S, Change[A]] {
+  def value(implicit tx: S#Tx): A
+}

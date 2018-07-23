@@ -13,15 +13,108 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.aux.ProductWithAux
+import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.event.impl.IGenerator
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.Ex.Context
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.stm.{Base, Sys, TxnLike}
+import de.sciss.model.Change
+
+import scala.concurrent.stm.{Ref, TMap}
 
 object Ex {
-  trait Context[S <: Base[S]]
-}
-trait Ex[A] extends ProductWithAux {
-  final def value[S <: Base[S]](implicit /* ctx: Context[S], */ tx: S#Tx): A = ???
+  object Var {
+    private final class Expanded[S <: Sys[S], A](init: IExpr[S, A], tx0: S#Tx)
+                                                (implicit protected val targets: ITargets[S])
+      extends IExpr.Var[S, A] with IGenerator[S, Change[A]] {
 
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ExprLike[S, A]
+      private[this] val ref = Ref(init)
+
+      init.changed.--->(this)(tx0)
+
+      def value(implicit tx: S#Tx): A = apply().value
+
+      def apply()(implicit tx: S#Tx): IExpr[S, A] = ref.get(tx.peer)
+
+      def update(v: IExpr[S, A])(implicit tx: S#Tx): Unit = {
+        import TxnLike.peer
+        val before = ref()
+        if (before != v) {
+          before.changed -/-> this
+          ref() = v
+          v     .changed ---> this
+
+          val beforeV = before.value
+          val exprV   = v     .value
+          fire(Change(beforeV, exprV))
+        }
+      }
+
+      def dispose()(implicit tx: S#Tx): Unit = {
+        import TxnLike.peer
+        ref().changed -/-> changed
+      }
+
+      private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+//        if (pull.parents(this).isEmpty) {
+          Some(pull.resolve[Change[A]])
+//        } else {
+//          pull(ref().changed)
+//        }
+      }
+
+      def changed: IEvent[S, Change[A]] = this
+    }
+  }
+  final case class Var[A](init: Ex[A]) extends Ex[A] {
+    // this acts now as a fast unique reference
+    @transient final private[this] lazy val ref = new AnyRef
+
+    override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr.Var[S, A] = {
+      import ctx.targets
+      val initEx = init.expand[S]
+      ctx.visit(ref, new Var.Expanded[S, A](initEx, tx))
+    }
+
+    def aux: scala.List[Aux] = Nil
+  }
+
+  object Context {
+    def apply[S <: Sys[S]]: Context[S] = new Impl[S]
+
+    private final class Impl[S <: Sys[S]] extends Context[S] {
+      val targets: ITargets[S] = ITargets[S]
+
+      private[this] val sourceMap = TMap.empty[AnyRef, Any]
+
+      def visit[U](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
+        import TxnLike.peer
+        sourceMap.get(ref) match {
+          case Some(res) => res.asInstanceOf[U]  // not so pretty...
+          case None =>
+            val exp    = init
+            sourceMap += ref -> exp
+            exp
+        }
+      }
+    }
+  }
+  trait Context[S <: Base[S]] {
+    implicit def targets: ITargets[S]
+
+    def visit[U](ref: AnyRef, init: => U)(implicit tx: S#Tx): U
+  }
+
+  trait Lazy[A] extends Ex[A] {
+    // this acts now as a fast unique reference
+    @transient final private[this] lazy val ref = new AnyRef
+
+    final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] =
+      ctx.visit(ref, mkExpr)
+
+    protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A]
+  }
+}
+trait Ex[+A] extends ProductWithAux {
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A]
 }

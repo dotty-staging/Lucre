@@ -15,17 +15,17 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.lucre.aux.Aux
-import de.sciss.lucre.event.{Dummy, Observable}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.event.{IDummy, IEvent}
+import de.sciss.lucre.stm.Base
 import de.sciss.model.Change
 
 object Constant {
-  private final class Expanded[S <: Sys[S], A](peer: A)
-    extends ExprLike[S, A] {
+  private final class Expanded[S <: Base[S], A](peer: A)
+    extends IExpr[S, A] {
 
     override def toString: String = peer.toString
 
-    def changed: Observable[S#Tx, Change[A]] = Dummy[S, Change[A]]
+    def changed: IEvent[S, Change[A]] = IDummy.apply
 
     def value(implicit tx: S#Tx): A = peer
 
@@ -34,7 +34,7 @@ object Constant {
 }
 final case class Constant[A](peer: A) extends Ex[A] {
 
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): ExprLike[S, A] =
+  def expand[S <: Base[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
     new Constant.Expanded[S, A](peer)
 
   override def toString: String = peer.toString

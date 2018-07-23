@@ -13,19 +13,33 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.stm.{Base, Disposable, Sys}
 
 object Observer {
   def apply[S <: Sys[S], A](event: Event[S, A], fun: S#Tx => A => Unit)
                            (implicit tx: S#Tx): Observer[S, A] = {
-//    val c = event.node._targets.isEmpty && !tx.reactionMap.hasEventReactions(event)
-//    if (c) {
-//      log(s"$event connect")
-//      event.connect()
-//    }
     new Impl(event, tx, fun)
   }
 
+  def apply[S <: Base[S], A](event: IEvent[S, A], fun: S#Tx => A => Unit)
+                           (implicit tx: S#Tx, targets: ITargets[S]): Observer[S, A] = {
+    new IImpl(event, tx, fun)
+  }
+
+  private final class IImpl[S <: Base[S], A](event: IEvent[S, A], tx0: S#Tx, fun: S#Tx => A => Unit)
+                                            (implicit targets: ITargets[S])
+    extends Observer[S, A] {
+
+    override def toString = s"Observer<$event>"
+
+    targets.addEventReaction[A](event, this)(tx0)
+
+    def apply(update: A)(implicit tx: S#Tx): Unit = fun(tx)(update)
+
+    def dispose()(implicit tx: S#Tx): Unit = {
+      targets.removeEventReaction(event, this)
+    }
+  }
   private final class Impl[S <: Sys[S], A](event0: Event[S, A], tx0: S#Tx, fun: S#Tx => A => Unit)
     extends Observer[S, A] {
 
@@ -41,18 +55,12 @@ object Observer {
 
     def dispose()(implicit tx: S#Tx): Unit = {
       val event = this.event
-      // event -/-> key
       tx.reactionMap.removeEventReaction(event, this)
-//      val c = event.node._targets.isEmpty && !tx.reactionMap.hasEventReactions(event)
-//      if (c) {
-//        log(s"$event disconnect")
-//        event.disconnect()
-//      }
     }
   }
 
   /** This method is cheap. */
-  def dummy[S <: Sys[S]]: Disposable[S#Tx] = Dummy
+  def dummy[S <: Base[S]]: Disposable[S#Tx] = Dummy
 
   private object Dummy extends Disposable[Any] {
     override def toString = "Observer.Dummy"
@@ -60,7 +68,7 @@ object Observer {
     def dispose()(implicit tx: Any): Unit = ()
   }
 }
-trait Observer[S <: Sys[S], -A] extends Disposable[S#Tx] {
-  def event(implicit tx: S#Tx): Event[S, Any]
+trait Observer[S <: Base[S], -A] extends Disposable[S#Tx] {
+//  def event(implicit tx: S#Tx): Event[S, Any]
   def apply(update: A)(implicit tx: S#Tx): Unit
 }

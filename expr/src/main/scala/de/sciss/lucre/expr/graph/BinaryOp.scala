@@ -1,14 +1,25 @@
+/*
+ *  BinaryOp.scala
+ *  (Lucre)
+ *
+ *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.expr
 package graph
 
 import de.sciss.lucre.aux.Aux.{Num, NumDouble, NumFrac, NumInt, Ord, Widen2}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
-import de.sciss.lucre.event.Observable
-import de.sciss.lucre.event.impl.ObservableImpl
-import de.sciss.lucre.stm.{Sys, TxnLike}
+import de.sciss.lucre.event.impl.IEventImpl
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
-
-import scala.concurrent.stm.Ref
 
 object BinaryOp {
   sealed abstract class Op[A1, A2] extends ProductWithAux {
@@ -271,39 +282,44 @@ object BinaryOp {
     def aux                   : scala.List[Aux] = num :: Nil
   }
 
-  private final class Expanded[S <: Sys[S], A1, A2, A3, A](op: BinaryOp.Op[A3, A],
-                                                           a: ExprLike[S, A1], b: ExprLike[S, A2], tx0: S#Tx)
-                                                          (implicit val widen: Widen2[A1, A2, A3])
-    extends ExprLike[S, A] with ObservableImpl[S, Change[A]] {
+  private final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A3, A],
+                                                            a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
+                                                           (implicit val widen: Widen2[A1, A2, A3],
+                                                            protected val targets: ITargets[S])
+    extends IExpr[S, A] with IEventImpl[S, Change[A]] {
 
-    private[this] val aVal = Ref(a.value(tx0))
-    private[this] val bVal = Ref(b.value(tx0))
+    a.changed.--->(this)(tx0)
+    b.changed.--->(this)(tx0)
 
-    private[this] val aObs = a.changed.react { implicit tx => aCh =>
-      import TxnLike.peer
-      val bBefore = bVal()
-      val bNow    = b.value
-      val before  = value1(aCh.before, bBefore)
-      val now     = value1(aCh.now   , bNow   )
-      val ch      = Change(before, now)
-      aVal()      = aCh.now
-      bVal()      = bNow
-      if (ch.isSignificant) fire(ch)
-    } (tx0)
+    override def toString: String = s"BinaryOp($op, $a, $b)"
 
-    private[this] val bObs = b.changed.react { implicit tx => bCh =>
-      import TxnLike.peer
-      val aBefore = aVal()
-      val aNow    = a.value
-      val before  = value1(aBefore, bCh.before)
-      val now     = value1(aNow   , bCh.now   )
-      val ch      = Change(before, now)
-      aVal()      = aNow
-      bVal()      = bCh.now
-      if (ch.isSignificant) fire(ch)
-    } (tx0)
+    def changed: IEvent[S, Change[A]] = this
 
-    def changed: Observable[S#Tx, Change[A]] = this
+    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+      val _1c = a.changed
+      val _2c = b.changed
+
+      val _1ch = if (pull.contains(_1c)) pull(_1c) else None
+      val _2ch = if (pull.contains(_2c)) pull(_2c) else None
+
+      (_1ch, _2ch) match {
+        case (Some(ach), None) =>
+          val bv      = b.value
+          val before  = value1(ach.before, bv)
+          val now     = value1(ach.now, bv)
+          if (before == now) None else Some(Change(before, now))
+        case (None, Some(bch)) =>
+          val av      = a.value
+          val before  = value1(av, bch.before)
+          val now     = value1(av, bch.now)
+          if (before == now) None else Some(Change(before, now))
+        case (Some(ach), Some(bch)) =>
+          val before  = value1(ach.before, bch.before)
+          val now     = value1(ach.now, bch.now)
+          if (before == now) None else Some(Change(before, now))
+        case _ => None
+      }
+    }
 
     @inline
     private def value1(av: A1, bv: A2): A = {
@@ -319,18 +335,19 @@ object BinaryOp {
     }
 
     def dispose()(implicit tx: S#Tx): Unit = {
-      aObs.dispose()
-      bObs.dispose()
+      a.changed -/-> changed
+      b.changed -/-> changed
     }
  }
 }
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A3, A], a: Ex[A1], b: Ex[A2])
                                         (implicit val widen: Widen2[A1, A2, A3])
-  extends Ex[A] { pat =>
+  extends Ex.Lazy[A] { pat =>
 
   def aux: scala.List[Aux] = widen :: Nil
 
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): ExprLike[S, A] = {
+  protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+    import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]
     new BinaryOp.Expanded[S, A1, A2, A3, A](op, ax, bx, tx)
