@@ -32,12 +32,12 @@ object Constant {
     def dispose()(implicit tx: S#Tx): Unit = ()
   }
 }
-final case class Constant[A](peer: A) extends Ex[A] {
+final case class Constant[A](value: A) extends Ex[A] {
 
   def expand[S <: Base[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
-    new Constant.Expanded[S, A](peer)
+    new Constant.Expanded[S, A](value)
 
-  override def toString: String = peer.toString
+  override def toString: String = value.toString
 
   def aux: scala.List[Aux] = Nil
 }
