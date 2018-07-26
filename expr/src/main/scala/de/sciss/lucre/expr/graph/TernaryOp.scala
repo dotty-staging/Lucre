@@ -22,8 +22,8 @@ import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object TernaryOp {
-  sealed abstract class Op[A1, A2] extends ProductWithAux {
-    def apply(a: A1, b: A1, c: A1): A2
+  sealed abstract class Op[A, B, C, D] extends ProductWithAux {
+    def apply(a: A, b: B, c: C): D
 
     override final def productPrefix = s"TernaryOp$$$name"
 
@@ -32,30 +32,29 @@ object TernaryOp {
     override def toString: String = name
   }
 
-  // ---- (Num, Num, Num) -> Num ----
+  // ---- (Num, Num, Num) -> Num --- -
 
-  final case class Clip[A]()(implicit num: Num[A]) extends Op[A, A] {
-    def apply(a: A, b: A, c: A) : A         = num.clip(a, b, c)
+  final case class Clip[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) extends Op[A, B, B, C] {
+    def apply(a: A, b: B, c: B) : C         = num.clip(widen.widen1(a), widen.widen2(b), widen.widen2(c))
     def name                    : String    = "Clip"
-    def aux                     : scala.List[Aux] = num :: Nil
+    def aux                     : scala.List[Aux] = widen :: num :: Nil
   }
 
-  final case class Fold[A]()(implicit num: Num[A]) extends Op[A, A] {
-    def apply(a: A, b: A, c: A) : A         = num.fold(a, b, c)
+  final case class Fold[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) extends Op[A, B, B, C] {
+    def apply(a: A, b: B, c: B) : C         = num.fold(widen.widen1(a), widen.widen2(b), widen.widen2(c))
     def name                    : String    = "Fold"
-    def aux                     : scala.List[Aux] = num :: Nil
+    def aux                     : scala.List[Aux] = widen :: num :: Nil
   }
 
-  final case class Wrap[A]()(implicit num: Num[A]) extends Op[A, A] {
-    def apply(a: A, b: A, c: A) : A         = num.wrap(a, b, c)
+  final case class Wrap[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) extends Op[A, B, B, C] {
+    def apply(a: A, b: B, c: B) : C         = num.wrap(widen.widen1(a), widen.widen2(b), widen.widen2(c))
     def name                    : String    = "Wrap"
-    def aux                     : scala.List[Aux] = num :: Nil
+    def aux                     : scala.List[Aux] = widen :: num :: Nil
   }
 
-  private final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A3, A],
-                                                            a: IExpr[S, A1], b: IExpr[S, A2], c: IExpr[S, A2], tx0: S#Tx)
-                                                           (implicit val widen: Widen2[A1, A2, A3],
-                                                            protected val targets: ITargets[S])
+  private final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
+                                                            a: IExpr[S, A1], b: IExpr[S, A2], c: IExpr[S, A3], tx0: S#Tx)
+                                                           (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IEventImpl[S, Change[A]] {
 
     a.changed.--->(this)(tx0)
@@ -113,11 +112,8 @@ object TernaryOp {
     }
 
     @inline
-    private def value1(av: A1, bv: A2, cv: A2): A = {
-      val avw = widen.widen1(av)
-      val bvw = widen.widen2(bv)
-      val cvw = widen.widen2(cv)
-      op.apply(avw, bvw, cvw)
+    private def value1(av: A1, bv: A2, cv: A3): A = {
+      op.apply(av, bv, cv)
     }
 
     def value(implicit tx: S#Tx): A = {
@@ -133,11 +129,10 @@ object TernaryOp {
     }
   }
 }
-final case class TernaryOp[A1, A2, A3, A](op: TernaryOp.Op[A3, A], a: Ex[A1], b: Ex[A2], c: Ex[A2])
-                                        (implicit val widen: Widen2[A1, A2, A3])
+final case class TernaryOp[A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A], a: Ex[A1], b: Ex[A2], c: Ex[A3])
   extends Ex.Lazy[A] { pat =>
 
-  def aux: scala.List[Aux] = widen :: Nil
+  def aux: scala.List[Aux] = Nil
 
   protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
