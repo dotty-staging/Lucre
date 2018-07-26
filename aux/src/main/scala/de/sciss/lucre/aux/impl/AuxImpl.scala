@@ -100,6 +100,8 @@ trait SeqLikeNum[A] extends SeqLikeOrd[A] with Num[Seq[A]] {
   final def rangeRand[Tx](a: In, b: In)(implicit r: Random[Tx], tx: Tx): In = binOp(a, b)(peer.rangeRand[Tx])
 
   final def fold(a: In, lo: In, hi: In): In = ternOp(a, lo, hi)(peer.fold)
+  final def clip(a: In, lo: In, hi: In): In = ternOp(a, lo, hi)(peer.clip)
+  final def wrap(a: In, lo: In, hi: In): In = ternOp(a, lo, hi)(peer.wrap)
 }
 
 trait SeqLikeNumFrac[A] extends SeqLikeNum[A] with NumFrac[Seq[A]] {

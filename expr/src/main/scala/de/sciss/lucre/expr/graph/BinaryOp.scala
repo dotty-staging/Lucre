@@ -282,6 +282,14 @@ object BinaryOp {
     def aux                   : scala.List[Aux] = num :: Nil
   }
 
+//  // ---- Option ----
+//
+//  final case class OptionContains[A]() extends Op[Option[A], Boolean] {
+//    def apply(a: Option[A])   : Boolean = a.isEmpty
+//    def name                  : String  = "OptionIsEmpty"
+//    def aux : scala.List[Aux] = Nil
+//  }
+
   private final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A3, A],
                                                             a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
                                                            (implicit val widen: Widen2[A1, A2, A3],

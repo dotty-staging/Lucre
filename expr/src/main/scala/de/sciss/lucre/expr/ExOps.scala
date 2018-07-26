@@ -1,9 +1,10 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Constant, BinaryOp => BinOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Constant, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
 import scala.language.implicitConversions
+import scala.collection.immutable.{Seq => ISeq}
 
 object ExOps {
   implicit def constIntPat    (x: Int     ): Ex[Int     ] = Constant[Int    ](x)
@@ -11,7 +12,9 @@ object ExOps {
   implicit def constBooleanPat(x: Boolean ): Ex[Boolean ] = Constant[Boolean](x)
   implicit def constStringPat (x: String  ): Ex[String  ] = Constant[String ](x)
   
-  implicit def exOps[A](x: Ex[A]): ExOps[A] = new ExOps(x)
+  implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps       (x)
+  implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
+  implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
 }
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
@@ -115,6 +118,12 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def fold2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Fold2 [A2](), x, that)
   def wrap2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Wrap2 [A2](), x, that)
 
+  // ternary
+
+  def clip[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Clip[A2](), x, lo, hi)
+  def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A2](), x, lo, hi)
+  def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A2](), x, lo, hi)
+
 //  def linLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
 //                    (implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] =
 //    LinLin[A, A1, A2](x, inLo = inLo, inHi = inHi, outLo = outLo, outHi = outHi)
@@ -133,4 +142,31 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
 //
 //  def poll(label: Ex[String] = "poll", gate: Ex[Boolean] = true): Ex[A] =
 //    Poll(x, gate = gate, label = label)
+}
+
+final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
+//  def apply(index: Ex[Int]): Ex[A] = ...
+
+  def applyOption(index: Ex[Int]): Ex[Option[A]] = ??? // BinOp(BinOp.SeqApplyOption[A](), x, index)
+
+  def headOption: Ex[Option[A]] = UnOp(UnOp.SeqHeadOption[A](), x)
+  def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
+
+  def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
+
+  def isEmpty   : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
+  def nonEmpty  : Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
+}
+
+final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
+  def isEmpty   : Ex[Boolean] = UnOp(UnOp.OptionIsEmpty   [A](), x)
+  def isDefined : Ex[Boolean] = UnOp(UnOp.OptionIsDefined [A](), x)
+  def nonEmpty  : Ex[Boolean] = isDefined
+
+  def getOrElse [B >: A](default    : Ex[B])        : Ex[B]         = ???
+  def orElse    [B >: A](alternative: Ex[Option[B]]): Ex[Option[B]] = ???
+
+  def contains[B >: A](elem: B): Ex[Boolean] = ??? // BinOp(BinOp.OptionContains[B](), x, elem)
+
+  def toList: Ex[scala.List[A]] = UnOp(UnOp.OptionToList[A](), x)
 }

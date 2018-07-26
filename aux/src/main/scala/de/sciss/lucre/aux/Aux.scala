@@ -208,7 +208,9 @@ object Aux {
     def rangeRand[Tx](a: A, b: A)(implicit r: Random[Tx], tx: Tx): A
 
     // ternary
-    def fold (a: A, lo: A, hi: A): A
+    def fold(a: A, lo: A, hi: A): A
+    def clip(a: A, lo: A, hi: A): A
+    def wrap(a: A, lo: A, hi: A): A
   }
 
   type ScalarNum[A] = Num[A] with Scalar[A]
@@ -335,8 +337,8 @@ object Aux {
 
   final object IntSeqTop
     extends NumInt      [Seq[Int]]
-      with    SeqLikeNum  [Int]
-      with    SeqLikeToNum[Int] {
+      with  SeqLikeNum  [Int]
+      with  SeqLikeToNum[Int] {
 
     protected val peer: IntTop.type = IntTop
 
@@ -358,8 +360,8 @@ object Aux {
 
   final object IntTop
     extends NumInt          [Int]
-      with    ScalarEqImpl    [Int]
-      with    ScalarToNumImpl [Int] {
+      with  ScalarEqImpl    [Int]
+      with  ScalarToNumImpl [Int] {
 
     final val id = 0
 
@@ -434,7 +436,9 @@ object Aux {
     def gt  (a: Int, b: Int): Boolean = a >  b
     def geq (a: Int, b: Int): Boolean = a >= b
 
-    def fold (a: Int, lo: Int, hi: Int): Int = ri.fold(a, lo, hi)
+    def fold(a: Int, lo: Int, hi: Int): Int = ri.fold(a, lo, hi)
+    def clip(a: Int, lo: Int, hi: Int): Int = ri.clip(a, lo, hi)
+    def wrap(a: Int, lo: Int, hi: Int): Int = ri.wrap(a, lo, hi)
   }
 
   trait WidenSelfToDouble[A] extends WidenToDouble[A, A] {
@@ -558,6 +562,8 @@ object Aux {
       r.nextDouble() < a
 
     def fold(a: In, lo: In, hi: In): In = rd.fold(a, lo, hi)
+    def clip(a: In, lo: In, hi: In): In = rd.clip(a, lo, hi)
+    def wrap(a: In, lo: In, hi: In): In = rd.wrap(a, lo, hi)
   }
 
   implicit final object BooleanSeqTop

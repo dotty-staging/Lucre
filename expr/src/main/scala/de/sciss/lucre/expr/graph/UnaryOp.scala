@@ -22,6 +22,8 @@ import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
+import scala.collection.immutable.{Seq => ISeq}
+
 object UnaryOp {
   sealed abstract class Op[A1, A2] extends ProductWithAux {
     override final def productPrefix = s"UnaryOp$$$name"
@@ -267,9 +269,63 @@ object UnaryOp {
   // Ramp
   // Scurve
 
+  // ---- general ----
+
   final case class ToStr[A]() extends Op[A, String] {
     def apply(a: A)           : String  = a.toString
     def name                  : String  = "ToStr"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  // ---- Option ----
+
+  final case class OptionIsEmpty[A]() extends Op[Option[A], Boolean] {
+    def apply(a: Option[A])   : Boolean = a.isEmpty
+    def name                  : String  = "OptionIsEmpty"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class OptionIsDefined[A]() extends Op[Option[A], Boolean] {
+    def apply(a: Option[A])   : Boolean = a.isDefined
+    def name                  : String  = "OptionIsDefined"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class OptionToList[A]() extends Op[Option[A], scala.List[A]] {
+    def apply(a: Option[A])   : scala.List[A] = a.toList
+    def name                  : String  = "OptionToList"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  // ---- Seq ----
+
+  final case class SeqSize[A]() extends Op[ISeq[A], Int] {
+    def apply(a: ISeq[A])     : Int     = a.size
+    def name                  : String  = "SeqSize"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SeqHeadOption[A]() extends Op[ISeq[A], Option[A]] {
+    def apply(a: ISeq[A])     : Option[A] = a.headOption
+    def name                  : String    = "SeqHeadOption"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SeqLastOption[A]() extends Op[ISeq[A], Option[A]] {
+    def apply(a: ISeq[A])     : Option[A] = a.lastOption
+    def name                  : String    = "SeqLastOption"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SeqIsEmpty[A]() extends Op[ISeq[A], Boolean] {
+    def apply(a: ISeq[A])     : Boolean = a.isEmpty
+    def name                  : String  = "SeqIsEmpty"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SeqNonEmpty[A]() extends Op[ISeq[A], Boolean] {
+    def apply(a: ISeq[A])     : Boolean = a.nonEmpty
+    def name                  : String  = "SeqNonEmpty"
     def aux : scala.List[Aux] = Nil
   }
 
