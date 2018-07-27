@@ -16,8 +16,8 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
 import de.sciss.lucre.expr.graph.{Constant, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
-import scala.language.implicitConversions
 import scala.collection.immutable.{Seq => ISeq}
+import scala.language.implicitConversions
 
 object ExOps {
   implicit def constIntPat    (x: Int     ): Ex[Int     ] = Constant(x)
@@ -44,6 +44,8 @@ object ExOps {
   implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps(x)
   implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps(x)
   implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps(x)
+
+  implicit def stringToExAttr(x: String): StringToExAttr = new StringToExAttr(x)
 }
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
@@ -198,4 +200,10 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
   def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.OptionContains[B](), x, elem)
 
   def toList: Ex[scala.List[A]] = UnOp(UnOp.OptionToList[A](), x)
+}
+
+final class StringToExAttr(private val x: String) extends AnyVal {
+  def attr[A](implicit tpe: Type.Aux[A]): Ex[Option[A]] = ExAttr(x)
+
+  def attr[A](default: Ex[A])(implicit tpe: Type.Aux[A]): Ex[A] = ExAttrWithDefault(x, default)
 }

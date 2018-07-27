@@ -2,7 +2,8 @@ package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.Ex.Context
-import de.sciss.lucre.stm.{Sys, TxnLike}
+import de.sciss.lucre.stm
+import de.sciss.lucre.stm.{Obj, Sys, TxnLike}
 
 import scala.concurrent.stm.TMap
 
@@ -23,4 +24,6 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   }
 }
 
-final class ContextImpl[S <: Sys[S]] extends ContextMixin[S]
+final class ContextImpl[S <: Sys[S]](ownerH: stm.Source[S#Tx, Obj[S]]) extends ContextMixin[S] {
+  def self(implicit tx: S#Tx): Obj[S] = ownerH()
+}

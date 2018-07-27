@@ -16,7 +16,7 @@ package graph
 
 import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.event.{IDummy, IEvent}
-import de.sciss.lucre.stm.Base
+import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object Constant {
@@ -34,7 +34,7 @@ object Constant {
 }
 final case class Constant[A](value: A) extends Ex[A] {
 
-  def expand[S <: Base[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
+  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
     new Constant.Expanded[S, A](value)
 
   override def toString: String = value.toString

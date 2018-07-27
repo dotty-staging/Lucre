@@ -43,6 +43,9 @@ object Aux {
       case Widen .intDoubleDouble   .id => Widen .intDoubleDouble
       case Widen2.doubleIntDouble   .id => Widen2.doubleIntDouble
       case WidenToDouble.DoubleImpl .id => WidenToDouble.DoubleImpl
+      case _ =>
+        val f = getFactory(id)
+        f.readIdentifiedAux(in)
     }
   }
 
@@ -579,7 +582,7 @@ object Aux {
   }
 
   implicit final object BooleanTop
-    extends NumBool     [Boolean]
+    extends NumBool       [Boolean]
       with ScalarEqImpl   [Boolean]
       with ScalarToNumImpl[Boolean] {
 
@@ -596,8 +599,37 @@ object Aux {
 
     final val id = 10
   }
+
+  // ---- extensibility ----
+
+  trait Factory {
+    def id: Int
+
+    def readIdentifiedAux(in: DataInput): Aux
+  }
+
+  private final val sync = new AnyRef
+
+  @volatile private var factoryMap = Map.empty[Int, Factory]
+
+  def addFactory(f: Factory): Unit = {
+    val auxId = f.id
+    if (auxId < 1000) throw new IllegalArgumentException(s"Third party aux id ($auxId) must be >= 1000")
+    sync.synchronized {
+      if (factoryMap.contains(auxId))
+        throw new IllegalArgumentException(s"Aux $auxId was already registered ($f overrides ${factoryMap(auxId)})")
+
+      factoryMap += auxId -> f
+    }
+  }
+
+  @inline
+  def getFactory(id: Int): Factory = factoryMap.getOrElse(id, sys.error(s"Unknown aux $id"))
+
+  sealed trait Primitive extends Aux
+
 }
-sealed trait Aux extends Writable {
+/* sealed */ trait Aux extends Writable {
   def id: Int
 
   def write(out: DataOutput): Unit = {

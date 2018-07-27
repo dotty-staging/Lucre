@@ -15,8 +15,8 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.stm.{Obj, Sys}
-import de.sciss.lucre.{expr, stm}
-import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
+import de.sciss.lucre.{aux, expr, stm}
+import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer, Serializer}
 
 import scala.language.{higherKinds, implicitConversions}
 
@@ -54,6 +54,42 @@ object Type {
 
     /** This method is not thread-safe. We assume extensions are registered upon application start only! */
     def registerExtension(ext: Type.Extension1[Repr]): Unit
+  }
+
+  private lazy val _init: Unit = aux.Aux.addFactory(Type.Aux)
+
+  def init(): Unit = _init
+
+  object Aux extends aux.Aux.Factory {
+    implicit def int    : Aux[Int    ] = new Impl(IntObj    )
+    implicit def long   : Aux[Long   ] = new Impl(LongObj   )
+    implicit def double : Aux[Double ] = new Impl(DoubleObj )
+    implicit def boolean: Aux[Boolean] = new Impl(BooleanObj)
+    implicit def string : Aux[String ] = new Impl(StringObj )
+
+    final val id = 1000
+
+    private final class Impl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](val peer: Type.Expr[A, _Ex]) extends Type.Aux[A] {
+      type E[~ <: Sys[~]] = _Ex[~]
+
+      def id: Int = Aux.id
+    }
+
+    def readIdentifiedAux(in: DataInput): aux.Aux = {
+      val typeId  = in.readInt()
+      val objTpe: Obj.Type = Obj.getType(typeId)
+      new Impl(objTpe.asInstanceOf[Type.Expr[Any, ({ type E[~ <: Sys[~]] <: expr.Expr[~, Any] }) # E]])
+    }
+  }
+  sealed trait Aux[A] extends aux.Aux {
+    type E[~ <: Sys[~]] <: expr.Expr[~, A]
+
+    def peer: Type.Expr[A, E]
+
+    override def write(out: DataOutput): Unit = {
+      super.write(out)
+      out.writeInt(peer.typeId)
+    }
   }
 
   trait Expr[A1, Repr[~ <: Sys[~]] <: expr.Expr[~, A1]] extends Obj.Type {

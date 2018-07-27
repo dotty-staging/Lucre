@@ -60,5 +60,7 @@ package object expr {
     StringExtensions  .init()
     SpanLikeExtensions.init()
     SpanExtensions    .init()
+
+    Type              .init()
   }
 }

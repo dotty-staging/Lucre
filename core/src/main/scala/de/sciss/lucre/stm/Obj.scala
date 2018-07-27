@@ -77,6 +77,8 @@ object Obj {
     anyAttrMapSer.asInstanceOf[Serializer[S#Tx, S#Acc, AttrMap[S]]]
 
   private[this] val anyAttrMapSer = evt.Map.Modifiable.serializer[NoSys, String, Obj]
+
+  final val attrName = "name"
 }
 
 /** An `Obj` is a type of element that has an `S#Id` identifier and
