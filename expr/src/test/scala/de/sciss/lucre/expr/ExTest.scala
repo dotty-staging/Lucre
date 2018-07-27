@@ -25,9 +25,7 @@ object ExTest {
     type S = InMemory
     val sys: S = InMemory()
 
-    implicit val ctx: Ex.Context[S] = sys.step { implicit tx =>
-      Ex.Context[S](IntObj.newConst(0))
-    }
+    implicit val ctx: Ex.Context[S] = Ex.Context[S]()
 
     val (obs, ax) = sys.step { implicit tx =>
       val gx  = g.expand[S]

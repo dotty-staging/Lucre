@@ -24,6 +24,6 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   }
 }
 
-final class ContextImpl[S <: Sys[S]](ownerH: stm.Source[S#Tx, Obj[S]]) extends ContextMixin[S] {
-  def self(implicit tx: S#Tx): Obj[S] = ownerH()
+final class ContextImpl[S <: Sys[S]](ownerH: Option[stm.Source[S#Tx, Obj[S]]]) extends ContextMixin[S] {
+  def selfOption(implicit tx: S#Tx): Option[Obj[S]] = ownerH.map(_.apply())
 }

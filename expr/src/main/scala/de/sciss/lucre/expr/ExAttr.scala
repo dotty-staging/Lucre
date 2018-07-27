@@ -17,17 +17,15 @@ import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr
+import de.sciss.lucre.expr.graph.Constant
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 object ExAttr {
-  private final class Expanded[S <: Sys[S], A](key: String, tx0: S#Tx)
-                                              (implicit ctx: Ex.Context[S], tpe: Type.Aux[A])
+  private final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]])
     extends IExpr[S, Option[A]] with IEventImpl[S, Change[Option[A]]] {
 
     protected val targets: ITargets[S] = ITargets[S]
-
-    private[this] val attrView = CellView.attr[S, A, tpe.E](ctx.self(tx0).attr(tx0), key)(tx0, tpe.peer)
 
     def value(implicit tx: S#Tx): Option[A] = attrView()
 
@@ -40,8 +38,12 @@ object ExAttr {
   }
 }
 final case class ExAttr[A](key: String)(implicit tpe: Type.Aux[A]) extends Ex[Option[A]] {
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] =
-    new expr.ExAttr.Expanded[S, A](key, tx)
+  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
+    ctx.selfOption.fold(Constant(Option.empty[A]).expand[S]) { self =>
+      val attrView = CellView.attr[S, A, tpe.E](self.attr, key)(tx, tpe.peer)
+      new expr.ExAttr.Expanded[S, A](attrView)
+    }
+  }
 
   def aux: scala.List[Aux] = tpe :: Nil
 }

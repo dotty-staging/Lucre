@@ -17,6 +17,7 @@ import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.Ex.Context
+import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Obj, Sys, TxnLike}
 import de.sciss.model.Change
 
@@ -80,13 +81,13 @@ object Ex {
   }
 
   object Context {
-    def apply[S <: Sys[S]](self: Obj[S])(implicit tx: S#Tx): Context[S] =
-      new impl.ContextImpl[S](tx.newHandle(self))
+    def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None): Context[S] =
+      new impl.ContextImpl[S](selfH)
   }
   trait Context[S <: Sys[S]] {
     implicit def targets: ITargets[S]
 
-    def self(implicit tx: S#Tx): Obj[S]
+    def selfOption(implicit tx: S#Tx): Option[Obj[S]]
 
     def visit[U](ref: AnyRef, init: => U)(implicit tx: S#Tx): U
   }

@@ -23,13 +23,10 @@ import de.sciss.model.Change
 import scala.concurrent.stm.Ref
 
 object ExAttrWithDefault {
-  private final class Expanded[S <: Sys[S], A](key: String, default: IExpr[S, A], tx0: S#Tx)
-                                              (implicit ctx: Ex.Context[S], tpe: Type.Aux[A])
+  private final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A], tx0: S#Tx)
     extends IExpr[S, A] with IGenerator[S, Change[A]] {
 
     protected val targets: ITargets[S] = ITargets[S]
-
-    private[this] val attrView = CellView.attr[S, A, tpe.E](ctx.self(tx0).attr(tx0), key)(tx0, tpe.peer)
 
     private[this] val ref = Ref(attrView()(tx0))
 
@@ -46,12 +43,8 @@ object ExAttrWithDefault {
     default.changed.--->(this)(tx0)
 
     def value(implicit tx: S#Tx): A = {
-      val attr  = ctx.self.attr
-      val opt   = attr.get(key).collect {
-        case v if v.tpe.typeId == tpe.peer.typeId =>
-          v.asInstanceOf[Expr[S, A]]
-      }
-      opt.fold(default.value)(_.value)
+      val opt = attrView()
+      opt.getOrElse(default.value)
     }
 
     private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
@@ -74,8 +67,12 @@ object ExAttrWithDefault {
   }
 }
 final case class ExAttrWithDefault[A](key: String, default: Ex[A])(implicit tpe: Type.Aux[A]) extends Ex[A] {
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
-    new expr.ExAttrWithDefault.Expanded[S, A](key, default.expand[S], tx)
+  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+    ctx.selfOption.fold(default.expand[S]) { self =>
+      val attrView = CellView.attr[S, A, tpe.E](self.attr, key)(tx, tpe.peer)
+      new expr.ExAttrWithDefault.Expanded[S, A](attrView, default.expand[S], tx)
+    }
+  }
 
   def aux: scala.List[Aux] = tpe :: Nil
 }
