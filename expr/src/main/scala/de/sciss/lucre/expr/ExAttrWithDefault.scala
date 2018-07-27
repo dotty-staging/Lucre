@@ -24,9 +24,8 @@ import scala.concurrent.stm.Ref
 
 object ExAttrWithDefault {
   private final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A], tx0: S#Tx)
+                                              (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IGenerator[S, Change[A]] {
-
-    protected val targets: ITargets[S] = ITargets[S]
 
     private[this] val ref = Ref(attrView()(tx0))
 
@@ -36,7 +35,7 @@ object ExAttrWithDefault {
         val before1   = before.getOrElse(default.value)
         val now1      = now   .getOrElse(default.value)
         val ch        = Change(before1, now1)
-        fire(ch)
+        if (ch.isSignificant) fire(ch)
       }
     } (tx0)
 
@@ -69,6 +68,7 @@ object ExAttrWithDefault {
 final case class ExAttrWithDefault[A](key: String, default: Ex[A])(implicit tpe: Type.Aux[A]) extends Ex[A] {
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     ctx.selfOption.fold(default.expand[S]) { self =>
+      import ctx.targets
       val attrView = CellView.attr[S, A, tpe.E](self.attr, key)(tx, tpe.peer)
       new expr.ExAttrWithDefault.Expanded[S, A](attrView, default.expand[S], tx)
     }

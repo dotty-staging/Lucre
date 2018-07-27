@@ -23,10 +23,8 @@ import de.sciss.model.Change
 import scala.collection.immutable.{Seq => ISeq}
 
 object ExSeq {
-  private final class Expanded[S <: Sys[S], A](elems: ISeq[IExpr[S, A]])
+  private final class Expanded[S <: Sys[S], A](elems: ISeq[IExpr[S, A]])(implicit protected val targets: ITargets[S])
     extends IExpr[S, ISeq[A]] with IEventImpl[S, Change[ISeq[A]]] {
-
-    protected val targets: ITargets[S] = ITargets[S]
 
     def init()(implicit tx: S#Tx): this.type = {
       elems.foreach { in =>
@@ -68,6 +66,7 @@ object ExSeq {
 }
 final case class ExSeq[+A](elems: ISeq[Ex[A]]) extends Ex[ISeq[A]] {
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
+    import ctx.targets
     val elemsEx = elems.map(_.expand[S])
     new expr.ExSeq.Expanded(elemsEx).init()
   }
