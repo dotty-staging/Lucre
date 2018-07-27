@@ -1,3 +1,16 @@
+/*
+ *  ExOps.scala
+ *  (Lucre)
+ *
+ *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Lesser General Public License v2.1+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
@@ -7,14 +20,30 @@ import scala.language.implicitConversions
 import scala.collection.immutable.{Seq => ISeq}
 
 object ExOps {
-  implicit def constIntPat    (x: Int     ): Ex[Int     ] = Constant[Int    ](x)
-  implicit def constDoublePat (x: Double  ): Ex[Double  ] = Constant[Double ](x)
-  implicit def constBooleanPat(x: Boolean ): Ex[Boolean ] = Constant[Boolean](x)
-  implicit def constStringPat (x: String  ): Ex[String  ] = Constant[String ](x)
-  
-  implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps       (x)
-  implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
-  implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
+  implicit def constIntPat    (x: Int     ): Ex[Int     ] = Constant(x)
+  implicit def constDoublePat (x: Double  ): Ex[Double  ] = Constant(x)
+  implicit def constBooleanPat(x: Boolean ): Ex[Boolean ] = Constant(x)
+  implicit def constStringPat (x: String  ): Ex[String  ] = Constant(x)
+
+  implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Constant(x)
+  implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
+    case Some(ex) => UnOp(UnOp.OptionSome[A](), ex)
+    case None     => Constant(Option.empty[A])
+  }
+
+  implicit def liftSeq[A](x: Seq[A]): Ex[ISeq[A]] = Constant(immutable(x))
+
+  implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[ISeq[A]] =
+    if (x.isEmpty) Constant(Nil) else ExSeq(immutable(x))
+
+  private def immutable[A](in: Seq[A]): ISeq[A] = in match {
+    case ix: ISeq[A] => ix
+    case _ => in.toList
+  }
+
+  implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps(x)
+  implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps(x)
+  implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps(x)
 }
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise

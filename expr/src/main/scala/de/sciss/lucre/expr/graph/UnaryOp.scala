@@ -279,6 +279,12 @@ object UnaryOp {
 
   // ---- Option ----
 
+  final case class OptionSome[A]() extends Op[A, Option[A]] {
+    def apply(a: A)           : Option[A] = Some(a)
+    def name                  : String    = "OptionSome"
+    def aux : scala.List[Aux] = Nil
+  }
+
   final case class OptionIsEmpty[A]() extends Op[Option[A], Boolean] {
     def apply(a: Option[A])   : Boolean = a.isEmpty
     def name                  : String  = "OptionIsEmpty"
