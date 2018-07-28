@@ -14,9 +14,10 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
+import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{aux, expr, stm}
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer, Serializer}
+import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.language.{higherKinds, implicitConversions}
 
@@ -61,34 +62,23 @@ object Type {
   def init(): Unit = _init
 
   object Aux extends aux.Aux.Factory {
-    implicit def int    : Aux[Int    ] = new Impl(IntObj    )
-    implicit def long   : Aux[Long   ] = new Impl(LongObj   )
-    implicit def double : Aux[Double ] = new Impl(DoubleObj )
-    implicit def boolean: Aux[Boolean] = new Impl(BooleanObj)
-    implicit def string : Aux[String ] = new Impl(StringObj )
-
     final val id = 1000
-
-    private final class Impl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](val peer: Type.Expr[A, _Ex]) extends Type.Aux[A] {
-      type E[~ <: Sys[~]] = _Ex[~]
-
-      def id: Int = Aux.id
-    }
 
     def readIdentifiedAux(in: DataInput): aux.Aux = {
       val typeId  = in.readInt()
-      val objTpe: Obj.Type = Obj.getType(typeId)
-      new Impl(objTpe.asInstanceOf[Type.Expr[Any, ({ type E[~ <: Sys[~]] <: expr.Expr[~, Any] }) # E]])
-    }
-  }
-  sealed trait Aux[A] extends aux.Aux {
-    type E[~ <: Sys[~]] <: expr.Expr[~, A]
-
-    def peer: Type.Expr[A, E]
-
-    override def write(out: DataOutput): Unit = {
-      super.write(out)
-      out.writeInt(peer.typeId)
+      val peer    = Obj.getType(typeId)
+      new ExAttrBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
+//      (typeId: @switch) match {
+//        case IntObj       .typeId => ExAttrBridgeImpl.int
+//        case LongObj      .typeId => ExAttrBridgeImpl.long
+//        case DoubleObj    .typeId => ExAttrBridgeImpl.double
+//        case BooleanObj   .typeId => ExAttrBridgeImpl.boolean
+//        case StringObj    .typeId => ExAttrBridgeImpl.string
+//        case SpanLikeObj  .typeId => ExAttrBridgeImpl.spanLike
+//        case SpanObj      .typeId => ExAttrBridgeImpl.span
+//        case IntVector    .typeId => ExAttrBridgeImpl.intVec
+//        case DoubleVector .typeId => ExAttrBridgeImpl.doubleVec
+//      }
     }
   }
 

@@ -65,16 +65,16 @@ object ExAttrWithDefault {
     def changed: IEvent[S, Change[A]] = this
   }
 }
-final case class ExAttrWithDefault[A](key: String, default: Ex[A])(implicit tpe: Type.Aux[A])
+final case class ExAttrWithDefault[A](key: String, default: Ex[A])(implicit br: ExAttrBridge[A])
   extends Ex[A] with ExAttrLike[A] {
 
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     ctx.selfOption.fold(default.expand[S]) { self =>
       import ctx.targets
-      val attrView = CellView.attr[S, A, tpe.E](self.attr, key)(tx, tpe.peer)
+      val attrView = br.cellView[S](self, key)
       new expr.ExAttrWithDefault.Expanded[S, A](attrView, default.expand[S], tx)
     }
   }
 
-  def aux: scala.List[Aux] = tpe :: Nil
+  def aux: scala.List[Aux] = br :: Nil
 }

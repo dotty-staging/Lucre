@@ -20,10 +20,12 @@ import scala.collection.immutable.{Seq => ISeq}
 import scala.language.implicitConversions
 
 object ExOps {
-  implicit def constIntPat    (x: Int     ): Ex[Int     ] = Constant(x)
-  implicit def constDoublePat (x: Double  ): Ex[Double  ] = Constant(x)
-  implicit def constBooleanPat(x: Boolean ): Ex[Boolean ] = Constant(x)
-  implicit def constStringPat (x: String  ): Ex[String  ] = Constant(x)
+  implicit def constEx[A](x: A): Ex[A] = Constant(x)
+
+//  implicit def constIntEx    (x: Int     ): Ex[Int     ] = Constant(x)
+//  implicit def constDoubleEx (x: Double  ): Ex[Double  ] = Constant(x)
+//  implicit def constBooleanEx(x: Boolean ): Ex[Boolean ] = Constant(x)
+//  implicit def constStringEx (x: String  ): Ex[String  ] = Constant(x)
 
   implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Constant(x)
   implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
@@ -34,16 +36,16 @@ object ExOps {
   implicit def liftSeq[A](x: Seq[A]): Ex[ISeq[A]] = Constant(immutable(x))
 
   implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[ISeq[A]] =
-    if (x.isEmpty) Constant(Nil) else ExSeq(immutable(x))
+    if (x.isEmpty) Constant(Nil) else ExSeq(immutable(x): _*)
 
   private def immutable[A](in: Seq[A]): ISeq[A] = in match {
     case ix: ISeq[A] => ix
     case _ => in.toList
   }
 
-  implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps(x)
-  implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps(x)
-  implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps(x)
+  implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps       (x)
+  implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
+  implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
 
   implicit def stringToExAttr(x: String): StringToExAttr = new StringToExAttr(x)
 }
@@ -207,8 +209,8 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {
-  def attr[A](implicit tpe: Type.Aux[A]): ExAttr[A] /* Ex[Option[A]] */ = ExAttr(x)
+  def attr[A](implicit br: ExAttrBridge[A]): ExAttr[A] /* Ex[Option[A]] */ = ExAttr(x)
 
-  def attr[A](default: Ex[A])(implicit tpe: Type.Aux[A]): ExAttrWithDefault[A] /* Ex[A] */ =
+  def attr[A](default: Ex[A])(implicit br: ExAttrBridge[A]): ExAttrWithDefault[A] /* Ex[A] */ =
     ExAttrWithDefault(x, default)
 }

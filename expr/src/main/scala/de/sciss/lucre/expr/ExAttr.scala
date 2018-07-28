@@ -47,14 +47,14 @@ object ExAttr {
       obsAttr.dispose()
   }
 }
-final case class ExAttr[A](key: String)(implicit tpe: Type.Aux[A]) extends Ex[Option[A]] with ExAttrLike[A] {
+final case class ExAttr[A](key: String)(implicit br: ExAttrBridge[A]) extends Ex[Option[A]] with ExAttrLike[A] {
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
     ctx.selfOption.fold(Constant(Option.empty[A]).expand[S]) { self =>
       import ctx.targets
-      val attrView = CellView.attr[S, A, tpe.E](self.attr, key)(tx, tpe.peer)
+      val attrView = br.cellView[S](self, key)
       new expr.ExAttr.Expanded[S, A](attrView, tx)
     }
   }
 
-  def aux: scala.List[Aux] = tpe :: Nil
+  def aux: scala.List[Aux] = br :: Nil
 }

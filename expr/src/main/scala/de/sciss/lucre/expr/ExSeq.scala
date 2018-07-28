@@ -20,6 +20,7 @@ import de.sciss.lucre.expr
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
+import scala.collection.breakOut
 import scala.collection.immutable.{Seq => ISeq}
 
 object ExSeq {
@@ -64,10 +65,21 @@ object ExSeq {
     }
   }
 }
-final case class ExSeq[+A](elems: ISeq[Ex[A]]) extends Ex[ISeq[A]] {
+final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] {
+  // $COVERAGE-OFF$
+  private def simpleString: String = {
+    val xs = elems.iterator.take(5).toList
+    val es = if (xs.lengthCompare(5) == 0) xs.init.mkString("", ", ", ", ...")
+    else xs.mkString(", ")
+    s"Pat($es)"
+  }
+
+  override def toString: String = simpleString
+  // $COVERAGE-ON$
+
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
     import ctx.targets
-    val elemsEx = elems.map(_.expand[S])
+    val elemsEx: ISeq[IExpr[S, A]] = elems.map(_.expand[S])(breakOut)
     new expr.ExSeq.Expanded(elemsEx).init()
   }
 
