@@ -21,7 +21,7 @@ import de.sciss.serial.DataOutput
 import scala.language.higherKinds
 
 final class ExAttrBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
-  extends ExAttrBridge[A] {
+  extends ExAttr.Bridge[A] {
 
   def cellView[S <: Sys[S]](obj: Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]] =
     CellView.attr[S, A, _Ex](map = obj.attr, key = key)(tx, peer)

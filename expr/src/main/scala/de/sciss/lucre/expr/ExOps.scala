@@ -209,8 +209,8 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {
-  def attr[A](implicit br: ExAttrBridge[A]): ExAttr[A] /* Ex[Option[A]] */ = ExAttr(x)
+  def attr[A](implicit bridge: ExAttr.Bridge[A]): ExAttr[A] = ExAttr(x)
 
-  def attr[A](default: Ex[A])(implicit br: ExAttrBridge[A]): ExAttrWithDefault[A] /* Ex[A] */ =
-    ExAttrWithDefault(x, default)
+  def attr[A](default: Ex[A])(implicit bridge: ExAttr.Bridge[A]): ExAttr.WithDefault[A] =
+    ExAttr.WithDefault(x, default)
 }
