@@ -155,6 +155,10 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A, A1, A2](), x, lo, hi)
   def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
 
+//  def ---> (attr: ExAttrLike[A]): Unit = ...
+//  def <--- (attr: ExAttrLike[A]): Unit = ...
+//  def <--> (attr: ExAttrLike[A]): Unit = ...
+
 //  def linLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
 //                    (implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] =
 //    LinLin[A, A1, A2](x, inLo = inLo, inHi = inHi, outLo = outLo, outHi = outHi)
@@ -203,7 +207,8 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {
-  def attr[A](implicit tpe: Type.Aux[A]): Ex[Option[A]] = ExAttr(x)
+  def attr[A](implicit tpe: Type.Aux[A]): ExAttr[A] /* Ex[Option[A]] */ = ExAttr(x)
 
-  def attr[A](default: Ex[A])(implicit tpe: Type.Aux[A]): Ex[A] = ExAttrWithDefault(x, default)
+  def attr[A](default: Ex[A])(implicit tpe: Type.Aux[A]): ExAttrWithDefault[A] /* Ex[A] */ =
+    ExAttrWithDefault(x, default)
 }

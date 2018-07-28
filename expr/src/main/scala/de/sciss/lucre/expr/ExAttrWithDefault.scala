@@ -65,7 +65,9 @@ object ExAttrWithDefault {
     def changed: IEvent[S, Change[A]] = this
   }
 }
-final case class ExAttrWithDefault[A](key: String, default: Ex[A])(implicit tpe: Type.Aux[A]) extends Ex[A] {
+final case class ExAttrWithDefault[A](key: String, default: Ex[A])(implicit tpe: Type.Aux[A])
+  extends Ex[A] with ExAttrLike[A] {
+
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     ctx.selfOption.fold(default.expand[S]) { self =>
       import ctx.targets

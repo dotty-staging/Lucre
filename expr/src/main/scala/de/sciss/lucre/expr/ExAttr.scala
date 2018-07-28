@@ -47,7 +47,7 @@ object ExAttr {
       obsAttr.dispose()
   }
 }
-final case class ExAttr[A](key: String)(implicit tpe: Type.Aux[A]) extends Ex[Option[A]] {
+final case class ExAttr[A](key: String)(implicit tpe: Type.Aux[A]) extends Ex[Option[A]] with ExAttrLike[A] {
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
     ctx.selfOption.fold(Constant(Option.empty[A]).expand[S]) { self =>
       import ctx.targets
