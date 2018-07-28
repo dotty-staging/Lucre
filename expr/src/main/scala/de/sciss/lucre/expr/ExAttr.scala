@@ -16,10 +16,10 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.{aux, expr}
 import de.sciss.lucre.expr.graph.Constant
 import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
 import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.{aux, expr}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
 
@@ -38,8 +38,28 @@ object ExAttr {
   }
 
   object WithDefault {
-    private final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A], tx0: S#Tx)
-                                                (implicit protected val targets: ITargets[S])
+    def apply[A](key: String, default: Ex[A])(implicit bridge: Bridge[A]): WithDefault[A] =
+      Impl(key, default)
+
+    private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Bridge[A])
+      extends WithDefault[A] {
+
+      override def productPrefix: String = s"ExAttr$$WithDefault" // serialization
+
+      def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+        val defaultEx = default.expand[S]
+        ctx.selfOption.fold(defaultEx) { self =>
+          import ctx.targets
+          val attrView = bridge.cellView[S](self, key)
+          new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
+        }
+      }
+
+      def aux: scala.List[Aux] = bridge :: Nil
+    }
+
+    final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A], tx0: S#Tx)
+                                        (implicit protected val targets: ITargets[S])
       extends IExpr[S, A] with IGenerator[S, Change[A]] {
 
       private[this] val ref = Ref(attrView()(tx0))
@@ -80,20 +100,8 @@ object ExAttr {
       def changed: IEvent[S, Change[A]] = this
     }
   }
-  final case class WithDefault[A](key: String, default: Ex[A])(implicit val bridge: Bridge[A])
-    extends Ex[A] with Like[A] {
-
-    override def productPrefix: String = s"ExAttr$$WithDefault" // serialization
-
-    def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
-      ctx.selfOption.fold(default.expand[S]) { self =>
-        import ctx.targets
-        val attrView = bridge.cellView[S](self, key)
-        new WithDefault.Expanded[S, A](attrView, default.expand[S], tx)
-      }
-    }
-
-    def aux: scala.List[Aux] = bridge :: Nil
+  trait WithDefault[A] extends Ex[A] with Like[A] {
+    def default: Ex[A]
   }
 
   object Bridge {
@@ -114,8 +122,8 @@ object ExAttr {
     def cellView[S <: Sys[S]](obj: Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
   }
 
-  private final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
-                                              (implicit protected val targets: ITargets[S])
+  final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
+                                      (implicit protected val targets: ITargets[S])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
 
     private[this] val ref = Ref(value(tx0))

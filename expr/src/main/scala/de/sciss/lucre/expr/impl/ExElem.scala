@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
+import java.io.File
 import java.util
 
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
@@ -88,6 +89,7 @@ object ExElem {
       case 'F' => in.readFloat()
       case 'D' => in.readDouble()
       case 'L' => in.readLong()
+      case 'f' => new File(in.readUTF())
       case '\u0000' => null
     }
 
@@ -229,6 +231,11 @@ object ExElem {
     case l: Long =>
       out.writeByte('L')
       out.writeLong(l)
+      ref0
+
+    case f: File =>
+      out.writeByte('f')
+      out.writeUTF(f.getPath)
       ref0
 
     case null =>

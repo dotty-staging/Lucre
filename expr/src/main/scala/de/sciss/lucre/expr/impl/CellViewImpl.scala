@@ -224,7 +224,7 @@ object CellViewImpl {
     final type Repr = Option[E[S]] // Expr[S, A]]
 
     def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
-      new ExprMapLikeObs1[S, A, E](map = h(), key = key, fun = fun, tx0 = tx)
+      new AttrMapExprObs[S, A](map = h(), key = key, fun = fun, tx0 = tx)
 
 //    def repr(implicit tx: S#Tx): Repr = {
 //      val opt = h().$[E](key)
@@ -253,14 +253,15 @@ object CellViewImpl {
   }
 
   // XXX TODO --- lot's of overlap with CellViewImpl
-  private[this] final class ExprMapLikeObs1[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
-                                                                                          map: Obj.AttrMap[S], key: String, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)(implicit tpe: Type.Expr[A, E])
+  /** N.B.: `tpe` must denote objects that extend `Expr`, otherwise we get class-cast exceptions. */
+  final class AttrMapExprObs[S <: Sys[S], A](
+      map: Obj.AttrMap[S], key: String, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)(implicit tpe: Obj.Type)
     extends Disposable[S#Tx] {
 
     private[this] val valObs = Ref(null: Disposable[S#Tx])
 
     private[this] def obsAdded(value: Obj[S])(implicit tx: S#Tx): Unit = {
-      val valueT = value.asInstanceOf[E[S]]
+      val valueT = value.asInstanceOf[expr.Expr[S, A]]
       valueAdded(valueT)
       // XXX TODO -- if we moved this into `valueAdded`, the contract
       // could be that initially the view is updated
@@ -284,10 +285,10 @@ object CellViewImpl {
     } (tx0)
 
     map.get(key)(tx0).foreach { value =>
-      if (value.tpe == tpe) valueAdded(value.asInstanceOf[E[S]])(tx0)
+      if (value.tpe == tpe) valueAdded(value.asInstanceOf[expr.Expr[S, A]])(tx0)
     }
 
-    private[this] def valueAdded(value: E[S])(implicit tx: S#Tx): Unit = {
+    private[this] def valueAdded(value: expr.Expr[S, A])(implicit tx: S#Tx): Unit = {
       val res = value.changed.react { implicit tx => {
         case Change(_, now) =>
           fun(tx)(Some(now))
