@@ -18,7 +18,7 @@ import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.Constant
 import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Disposable, Obj, Sys}
 import de.sciss.lucre.{aux, expr}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
@@ -31,10 +31,6 @@ object ExAttr {
     def key: String
 
     def bridge: Bridge[A]
-
-    //  def <--- (that: Ex.Var[A]): Unit = that ---> this
-    //  def ---> (that: Ex.Var[A]): Unit = that <--- this
-    //  def <--> (that: Ex.Var[A]): Unit = that <--> this
   }
 
   object WithDefault {
@@ -42,7 +38,7 @@ object ExAttr {
       Impl(key, default)
 
     private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Bridge[A])
-      extends WithDefault[A] {
+      extends WithDefault[A] with ProductWithAux {
 
       override def productPrefix: String = s"ExAttr$$WithDefault" // serialization
 
@@ -55,7 +51,7 @@ object ExAttr {
         }
       }
 
-      def aux: scala.List[Aux] = bridge :: Nil
+      override def aux: scala.List[Aux] = bridge :: Nil
     }
 
     final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A], tx0: S#Tx)
@@ -144,9 +140,38 @@ object ExAttr {
     def dispose()(implicit tx: S#Tx): Unit =
       obsAttr.dispose()
   }
+
+  object Update {
+    private final class Expanded[S <: Sys[S], A](source: IExpr[S, A], attrView: CellView.Var[S, Option[A]], tx0: S#Tx)
+      extends Disposable[S#Tx] {
+
+      private[this] val obs = source.changed.react { implicit tx => upd =>
+        val value = Some(upd.now)
+        attrView.update(value)
+      } (tx0)
+
+      def dispose()(implicit tx: S#Tx): Unit =
+        obs.dispose()
+    }
+  }
+  final case class Update[A](source: Ex[A], key: String)(implicit bridge: ExAttr.Bridge[A])
+    extends Control with ProductWithAux {
+
+    override def productPrefix: String = s"ExAttr$$Update"
+
+    type Repr[S <: Sys[S]] = Disposable[S#Tx]
+
+    protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] =
+      ctx.selfOption.fold(Disposable.empty[S#Tx]) { self =>
+        val attrView = bridge.cellView[S](self, key)
+        new Update.Expanded[S, A](source.expand[S], attrView, tx)
+      }
+
+    override def aux: scala.List[Aux] = bridge :: Nil
+  }
 }
 final case class ExAttr[A](key: String)(implicit val bridge: ExAttr.Bridge[A])
-  extends Ex[Option[A]] with ExAttr.Like[A] {
+  extends Ex[Option[A]] with ExAttr.Like[A] with ProductWithAux {
 
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
     ctx.selfOption.fold(Constant(Option.empty[A]).expand[S]) { self =>

@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.aux.Aux
+import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.expr
@@ -65,7 +65,7 @@ object ExSeq {
     }
   }
 }
-final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] {
+final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] with ProductWithAux {
   // $COVERAGE-OFF$
   private def simpleString: String = {
     val xs = elems.iterator.take(5).toList

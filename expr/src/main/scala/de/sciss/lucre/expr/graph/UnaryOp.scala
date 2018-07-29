@@ -379,6 +379,4 @@ final case class UnaryOp[A1, A](op: Op[A1, A], a: Ex[A1])
 //    val aT = t(a)
 //    if (aT.eq(a)) this else copy(a = aT)
 //  }
-
-  def aux: scala.List[Aux] = Nil
 }

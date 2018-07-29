@@ -132,8 +132,6 @@ object TernaryOp {
 final case class TernaryOp[A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A], a: Ex[A1], b: Ex[A2], c: Ex[A3])
   extends Ex.Lazy[A] { pat =>
 
-  def aux: scala.List[Aux] = Nil
-
   protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
     val ax = a.expand[S]

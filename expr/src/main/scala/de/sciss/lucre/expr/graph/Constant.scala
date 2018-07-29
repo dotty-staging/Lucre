@@ -14,7 +14,6 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.event.{IDummy, IEvent}
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
@@ -38,6 +37,4 @@ final case class Constant[A](value: A) extends Ex[A] {
     new Constant.Expanded[S, A](value)
 
   override def toString: String = value.toString
-
-  def aux: scala.List[Aux] = Nil
 }

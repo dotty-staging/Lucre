@@ -13,21 +13,24 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.aux.ProductWithAux
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.Ex.Context
+import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Obj, Sys}
 
 object Ex {
-//  def apply[A](elems: Ex[A]*): Ex[ISeq[A]] = ExSeq[A](elems: _*)
-
   object Context {
-    def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None): Context[S] =
-      new impl.ContextImpl[S](selfH)
+    def apply[S <: Sys[S]](g: Graph = Graph.empty, selfH: Option[stm.Source[S#Tx, Obj[S]]] = None)
+                          (implicit cursor: stm.Cursor[S]): Context[S] =
+      new ContextImpl[S](g, selfH)
   }
   trait Context[S <: Sys[S]] {
     implicit def targets: ITargets[S]
+
+    implicit def cursor: stm.Cursor[S]
+
+    def getProperty[A](c: Control, key: String): Option[A]
 
     def selfOption(implicit tx: S#Tx): Option[Obj[S]]
 
@@ -44,6 +47,6 @@ object Ex {
     protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A]
   }
 }
-trait Ex[+A] extends ProductWithAux {
+trait Ex[+A] extends Product {
   def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A]
 }
