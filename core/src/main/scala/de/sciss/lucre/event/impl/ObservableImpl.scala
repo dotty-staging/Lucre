@@ -40,9 +40,6 @@ trait ObservableImpl[S <: Sys[S], U] extends Observable[S#Tx, U] {
   }
 }
 
-object DummyObservableImpl extends Disposable[Any] {
-  def dispose()(implicit tx: Any): Unit = ()
-}
 trait DummyObservableImpl[S <: Sys[S]] extends Observable[S#Tx, Nothing] {
-  def react(fun: S#Tx => Nothing => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = DummyObservableImpl
+  def react(fun: S#Tx => Nothing => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Disposable.empty
 }

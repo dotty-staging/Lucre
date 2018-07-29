@@ -367,16 +367,11 @@ object UnaryOp {
 }
 
 final case class UnaryOp[A1, A](op: Op[A1, A], a: Ex[A1])
-  extends Ex.Lazy[A] { pat =>
+  extends Ex.Lazy[A] {
 
   protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
     val ax = a.expand[S]
     new UnaryOp.Expanded[S, A1, A](op, ax, tx)
   }
-
-//  def transform[S <: Base[S]](t: Transform)(implicit ctx: Context[S], tx: S#Tx): Pat[A] = {
-//    val aT = t(a)
-//    if (aT.eq(a)) this else copy(a = aT)
-//  }
 }

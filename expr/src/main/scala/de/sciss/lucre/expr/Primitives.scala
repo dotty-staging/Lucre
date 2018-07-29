@@ -37,6 +37,8 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
   final val typeId = 2
   final val valueSerializer = Serializer.Int
 
+  override def toString = "IntObj"
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -59,6 +61,8 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
 
   final val typeId = 3
   final val valueSerializer = Serializer.Long
+
+  override def toString = "LongObj"
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -83,6 +87,8 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
   final val typeId = 5
   final val valueSerializer = Serializer.Double
 
+  override def toString = "DoubleObj"
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -105,6 +111,8 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
 
   final val typeId = 6
   final val valueSerializer = Serializer.Boolean
+
+  override def toString = "BooleanObj"
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -129,6 +137,8 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
   final val typeId = 8
   final val valueSerializer = Serializer.String
 
+  override def toString = "StringObj"
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -151,6 +161,8 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
 
   final val typeId = 9
   final val valueSerializer: ImmutableSerializer[SpanLike] = SpanLike.serializer
+
+  override def toString = "SpanLikeObj"
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -175,6 +187,8 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
   final val typeId = 10
   final val valueSerializer: ImmutableSerializer[Span] = Span.serializer
 
+  override def toString = "SpanObj"
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -198,6 +212,8 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
   final val typeId = 0x2002 //  0x2000 | IntObj.typeId
   final val valueSerializer: ImmutableSerializer[Vec[Int]] = ImmutableSerializer.indexedSeq
 
+  override def toString = "IntVector"
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -220,6 +236,8 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
 
   final val typeId = 0x2005 //  0x2000 | DoubleObj.typeId
   final val valueSerializer: ImmutableSerializer[Vec[Double]] = ImmutableSerializer.indexedSeq
+
+  override def toString = "DoubleVector"
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)

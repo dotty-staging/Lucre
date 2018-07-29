@@ -15,6 +15,15 @@ package de.sciss.lucre.event
 
 import de.sciss.lucre.stm.Disposable
 
+object Observable {
+  def empty[Tx, A]: Observable[Tx, A] = Empty.asInstanceOf[Observable[Tx, A]]
+
+  private object Empty extends Observable[Any, Nothing] {
+    override def toString = "Observable.empty"
+
+    def react(fun: Any => Nothing => Unit)(implicit tx: Any): Disposable[Any] = Disposable.empty
+  }
+}
 trait Observable[Tx, +A] {
   /** Registers a live observer with this observable. The method is called with the
     * observing function which receives the observable's update message of type `A`, and the

@@ -368,10 +368,10 @@ object BinaryOp {
       a.changed -/-> changed
       b.changed -/-> changed
     }
- }
+  }
 }
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A], a: Ex[A1], b: Ex[A2])
-  extends Ex.Lazy[A] { pat =>
+  extends Ex.Lazy[A] {
 
   protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
@@ -379,16 +379,4 @@ final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A], a: Ex[A1], 
     val bx = b.expand[S]
     new BinaryOp.Expanded[S, A1, A2, A3, A](op, ax, bx, tx)
   }
-
-  //  def value[S <: Base[S]](implicit tx: S#Tx): A = {
-//    val av = widen.widen1(a.value[S])
-//    val bv = widen.widen2(b.value[S])
-//    op.apply(av, bv)
-//  }
-
-//  def transform[S <: Base[S]](t: Transform)(implicit ctx: Context[S], tx: S#Tx): Pat[A] = {
-//    val aT = t(a)
-//    val bT = t(b)
-//    if (aT.eq(a) && bT.eq(b)) this else copy(a = aT, b = bT)
-//  }
 }

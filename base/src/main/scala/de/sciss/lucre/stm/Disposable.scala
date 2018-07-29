@@ -14,11 +14,13 @@
 package de.sciss.lucre.stm
 
 object Disposable {
-  private[this] val emptyVal: Disposable[Any] = new Disposable[Any] {
+  private object Empty extends Disposable[Any] {
+    override def toString = "Disposable.empty"
+
     def dispose()(implicit tx: Any): Unit = ()
   }
 
-  def empty[Tx]: Disposable[Tx] = emptyVal
+  def empty[Tx]: Disposable[Tx] = Empty
 
   def seq[Tx](xs: Disposable[Tx]*): Disposable[Tx] = new Disposable[Tx] {
     def dispose()(implicit tx: Tx): Unit = xs.foreach(_.dispose())

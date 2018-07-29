@@ -47,6 +47,8 @@ object ExOps {
   implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
   implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
 
+  implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
+
   implicit def stringToExAttr(x: String): StringToExAttr = new StringToExAttr(x)
 }
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
