@@ -27,4 +27,6 @@ final class TrigOps(private val t: Trig) extends AnyVal {
 
 //  def filter    (ex: Ex[Boolean]): Trig = ...
 //  def filterNot (ex: Ex[Boolean]): Trig = ...
+
+  def ---> (act: Act): Unit = Act.Link(t, act)
 }
