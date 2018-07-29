@@ -19,6 +19,9 @@ trait Executor[S <: Base[S]] {
   /** Back link to the underlying system. */
   val system: S
 
+  /** THe cursor that created the current executor */
+  def cursor: Cursor[S]
+
   def newId(): S#Id
 
   // ---- variables ----

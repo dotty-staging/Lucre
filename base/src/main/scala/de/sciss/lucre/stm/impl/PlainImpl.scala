@@ -116,6 +116,8 @@ object PlainImpl {
 
     val system: S = this
 
+    def cursor: Cursor[S] = this
+
     def newId(): Id = new IdImpl
 
     def readId(in: DataInput, acc: Acc): Id = opNotSupported("readId")

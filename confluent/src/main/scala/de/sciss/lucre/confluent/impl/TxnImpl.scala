@@ -333,6 +333,10 @@ trait TxnMixin[S <: Sys[S]]
 trait RegularTxnMixin[S <: Sys[S], D <: stm.DurableLike[D]] extends TxnMixin[S] {
   _: S#Tx =>
 
+  val cursor: Cursor[S, D]
+
+  final val system: S = cursor.system
+
   protected def cursorCache: Cache[S#Tx]
 
   final protected def flushCaches(meldInfo: MeldInfo[S], newVersion: Boolean, caches: Vec[Cache[S#Tx]]): Unit =
@@ -344,6 +348,10 @@ trait RegularTxnMixin[S <: Sys[S], D <: stm.DurableLike[D]] extends TxnMixin[S] 
 trait RootTxnMixin[S <: Sys[S], D <: stm.DurableLike[D]]
   extends TxnMixin[S] {
   _: S#Tx =>
+
+  val cursor: Cursor[S, D]
+
+  final val system: S = cursor.system
 
   final val inputAccess: S#Acc = Path.root[S]
 
@@ -359,7 +367,7 @@ private[impl] sealed trait TxnImpl extends Txn[Confluent] {
   final lazy val inMemory: InMemory#Tx = system.inMemory.wrap(peer)
 }
 
-private[impl] final class RegularTxn(val system: Confluent, val durable: Durable#Tx,
+private[impl] final class RegularTxn(val cursor: Cursor[Confluent, Durable], val durable: Durable#Tx,
                                val inputAccess: Confluent#Acc, val isRetroactive: Boolean,
                                val cursorCache: Cache[Confluent#Tx])
   extends RegularTxnMixin[Confluent, Durable] with TxnImpl {
@@ -367,7 +375,7 @@ private[impl] final class RegularTxn(val system: Confluent, val durable: Durable
   lazy val peer: InTxn = durable.peer
 }
 
-private[impl] final class RootTxn(val system: Confluent, val peer: InTxn)
+private[impl] final class RootTxn(val cursor: Cursor[Confluent, Durable], val peer: InTxn)
   extends RootTxnMixin[Confluent, Durable] with TxnImpl {
 
   lazy val durable: Durable#Tx = {

@@ -38,10 +38,10 @@ trait Mixin[S <: Sys[S]]
 
   protected def storeFactory: DataStore.Factory
 
-  protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
-                            systemTimeNanos: Long): S#Tx
+  protected def wrapRegular(cursor: Cursor[S, D], dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean,
+                            cursorCache: Cache[S#Tx], systemTimeNanos: Long): S#Tx
 
-  protected def wrapRoot(peer: InTxn): S#Tx
+  protected def wrapRoot(cursor: Cursor[S, D], peer: InTxn): S#Tx
 
   def durableTx(tx: S#Tx): D#Tx
 
@@ -100,10 +100,10 @@ trait Mixin[S <: Sys[S]]
     res
   }
 
-  final def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
-                      systemTimeNanos: Long): S#Tx = {
+  final def createTxn(cursor: Cursor[S, D], dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean,
+                      cursorCache: Cache[S#Tx], systemTimeNanos: Long): S#Tx = {
     log(s"::::::: atomic - input access = $inputAccess${if (retroactive) " - retroactive" else ""} :::::::")
-    wrapRegular(dtx, inputAccess, retroactive, cursorCache, systemTimeNanos)
+    wrapRegular(cursor, dtx, inputAccess, retroactive, cursorCache, systemTimeNanos)
   }
 
   final def readPath(in: DataInput): S#Acc = Path.read[S](in)
@@ -127,14 +127,14 @@ trait Mixin[S <: Sys[S]]
       rootBody(init)
     }
 
-  final def rootJoin[A](init: S#Tx => A)
-                       (implicit itx: TxnLike, serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
-    log("::::::: rootJoin :::::::")
-    TxnExecutor.defaultAtomic { itx =>
-      implicit val tx: S#Tx = wrapRoot(itx)
-      rootBody(init)
-    }
-  }
+//  final def rootJoin[A](init: S#Tx => A)
+//                       (implicit itx: TxnLike, serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+//    log("::::::: rootJoin :::::::")
+//    TxnExecutor.defaultAtomic { itx =>
+//      implicit val tx: S#Tx = wrapRoot(itx)
+//      rootBody(init)
+//    }
+//  }
 
   private def rootBody[A](init: S#Tx => A)
                          (implicit tx: S#Tx, serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {

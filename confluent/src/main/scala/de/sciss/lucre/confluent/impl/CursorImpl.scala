@@ -103,7 +103,7 @@ object CursorImpl {
   }
 
   private final class Impl[S <: Sys[S], D1 <: stm.DurableLike[D1]](val data: Data[S, D1])
-                                                          (implicit system: S { type D = D1 })
+                                                                  (implicit val system: S { type D = D1 })
     extends Cursor[S, D1] with Cache[S#Tx] {
 
     override def toString = s"Cursor${data.id}"
@@ -131,7 +131,7 @@ object CursorImpl {
 
     private def performStep[A](inputAccess: S#Acc, retroactive: Boolean, systemTimeNanos: Long,
                                dtx: D1#Tx, fun: S#Tx => A): A = {
-      val tx = system.createTxn(dtx = dtx, inputAccess = inputAccess, retroactive = retroactive,
+      val tx = system.createTxn(cursor = this, dtx = dtx, inputAccess = inputAccess, retroactive = retroactive,
         cursorCache = this, systemTimeNanos = systemTimeNanos)
       logCursor(s"${data.id} step. input path = $inputAccess")
       fun(tx)

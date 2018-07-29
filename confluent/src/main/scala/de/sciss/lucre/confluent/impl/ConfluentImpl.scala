@@ -35,10 +35,10 @@ object ConfluentImpl {
     def durableTx (tx: S#Tx): D#Tx = tx.durable
     def inMemoryTx(tx: S#Tx): I#Tx = tx.inMemory
 
-    protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
-                              systemTimeNanos: Long): S#Tx =
-      new RegularTxn(this, dtx, inputAccess, retroactive, cursorCache)
+    protected def wrapRegular(cursor: Cursor[S, D], dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean,
+                              cursorCache: Cache[S#Tx], systemTimeNanos: Long): S#Tx =
+      new RegularTxn(cursor, dtx, inputAccess, retroactive, cursorCache)
 
-    protected def wrapRoot(peer: InTxn): S#Tx = new RootTxn(this, peer)
+    protected def wrapRoot(cursor: Cursor[S, D], peer: InTxn): S#Tx = new RootTxn(cursor, peer)
   }
 }

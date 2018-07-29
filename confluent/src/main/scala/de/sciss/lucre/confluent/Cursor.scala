@@ -53,6 +53,8 @@ object Cursor {
 trait Cursor[S <: Sys[S], D <: stm.Sys[D]]
   extends stm.Cursor[S] with Disposable[D#Tx] with Writable {
 
+  def system: S
+
   def data: Cursor.Data[S, D]
 
   def stepFrom[A](path: S#Acc, retroactive: Boolean = false, systemTimeNanos: Long = 0L)(fun: S#Tx => A): A

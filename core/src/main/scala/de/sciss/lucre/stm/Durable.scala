@@ -80,6 +80,9 @@ trait DurableLike[S <: DurableLike[S]] extends Sys[S] with Cursor[S] {
 
   def wrap(peer: InTxn, systemTimeNanos: Long = 0L): S#Tx  // XXX TODO this might go in Cursor?
 
+  private[lucre] def rootJoin[A](init: S#Tx => A)
+                                (implicit tx: TxnLike, serializer: Serializer[S#Tx, S#Acc, A]): Source[S#Tx, A]
+
   // def inMemory: I
 }
 

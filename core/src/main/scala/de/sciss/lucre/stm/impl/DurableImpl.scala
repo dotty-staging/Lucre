@@ -145,6 +145,8 @@ object DurableImpl {
 
     private[lucre] final def reactionMap: ReactionMap[S] = system.reactionMap
 
+    final def cursor: Cursor[S] = system
+
     final def newId(): S#Id = new IdImpl[S](system.newIdValue()(this))
 
     final def newVar[A](id: S#Id, init: A)(implicit ser: Serializer[S#Tx, S#Acc, A]): S#Var[A] = {

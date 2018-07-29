@@ -13,9 +13,8 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.{event => evt}
-import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
+import de.sciss.lucre.{stm, event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.language.higherKinds
@@ -64,14 +63,14 @@ object Obj {
 
   // ---- attributes ----
 
-  type AttrMap    [S <: Sys[S]] = evt.Map.Modifiable[S, String, Obj]
-  type AttrUpdate [S <: Sys[S]] = evt.Map.Update [S, String, Obj]
-  val  AttrAdded                = evt.Map.Added
-  type AttrAdded  [S <: Sys[S]] = evt.Map.Added  [S, String, Obj[S]]
-  val  AttrRemoved              = evt.Map.Removed
-  type AttrRemoved[S <: Sys[S]] = evt.Map.Removed[S, String, Obj[S]]
-  val  AttrReplaced             = evt.Map.Replaced
-  type AttrReplaced[S <: Sys[S]]= evt.Map.Replaced[S, String, Obj[S]]
+  type AttrMap      [S <: Sys[S]]           = evt.Map.Modifiable[S, String, Obj]
+  type AttrUpdate   [S <: Sys[S]]           = evt.Map.Update [S, String, Obj]
+  val  AttrAdded    : evt.Map.Added.type    = evt.Map.Added
+  type AttrAdded    [S <: Sys[S]]           = evt.Map.Added  [S, String, Obj[S]]
+  val  AttrRemoved  : evt.Map.Removed.type  = evt.Map.Removed
+  type AttrRemoved  [S <: Sys[S]]           = evt.Map.Removed[S, String, Obj[S]]
+  val  AttrReplaced : evt.Map.Replaced.type = evt.Map.Replaced
+  type AttrReplaced [S <: Sys[S]]           = evt.Map.Replaced[S, String, Obj[S]]
 
   implicit def attrMapSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] =
     anyAttrMapSer.asInstanceOf[Serializer[S#Tx, S#Acc, AttrMap[S]]]
