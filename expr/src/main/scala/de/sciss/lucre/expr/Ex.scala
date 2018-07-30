@@ -17,18 +17,18 @@ import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.Ex.Context
 import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Cursor, Obj, Sys, WorkspaceHandle}
 
 object Ex {
   object Context {
     def apply[S <: Sys[S]](g: Graph = Graph.empty, selfH: Option[stm.Source[S#Tx, Obj[S]]] = None)
-                          (implicit cursor: stm.Cursor[S]): Context[S] =
+                          (implicit workspace: WorkspaceHandle[S], cursor: Cursor[S]): Context[S] =
       new ContextImpl[S](g, selfH)
   }
   trait Context[S <: Sys[S]] {
-    implicit def targets: ITargets[S]
-
-    implicit def cursor: stm.Cursor[S]
+    implicit def targets  : ITargets        [S]
+    implicit def cursor   : Cursor          [S]
+    implicit def workspace: WorkspaceHandle [S]
 
     def getProperty[A](c: Control, key: String): Option[A]
 

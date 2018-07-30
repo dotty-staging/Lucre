@@ -11,20 +11,18 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.stm
 package impl
 
 import de.sciss.lucre.event.{Targets, impl => eimpl}
-import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
-import de.sciss.lucre.{event => evt}
+import de.sciss.lucre.{stm, event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.{switch, tailrec}
 import scala.language.higherKinds
 
 object ListImpl {
-  import de.sciss.lucre.expr.List.Modifiable
+  import stm.List.Modifiable
 
   def newModifiable[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, E[S]] =
     new Impl1[S, E] {
@@ -356,7 +354,7 @@ object ListImpl {
       if (rec != null) rec.elem else throw new NoSuchElementException("last of empty list")
     }
 
-    final def iterator(implicit tx: S#Tx): Iterator[A] = new Iter(headRef())
+    final def iterator(implicit tx: S#Tx): Iterator[A] = new Iter[S, A](headRef())
   }
 
   private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]] extends Impl[S, E] {
@@ -371,7 +369,7 @@ object ListImpl {
     final private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx,
                                                      context: Copy[S, Out]): Elem[Out] = {
       val out = newModifiable[Out, E]
-      context.defer[ListAux](in, out)(copyList(in, out))
+      context.defer[ListAux](in, out)(copyList[S, Out, E](in, out))
       // .connect
       out
     }

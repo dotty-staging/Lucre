@@ -16,7 +16,7 @@ package de.sciss.lucre
 import de.sciss.lucre.artifact.{Artifact, ArtifactLocation}
 import de.sciss.lucre.bitemp.{BiGroup, BiPin}
 import de.sciss.lucre.event.Map
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.{Folder, Sys}
 
 import scala.language.higherKinds
 
@@ -45,7 +45,8 @@ package object expr {
     IntVector         .init()
     DoubleVector      .init()
 
-    List              .init()
+    stm.List          .init()
+    Folder            .init()
     Map               .init()
     Artifact          .init()
     ArtifactLocation  .init()

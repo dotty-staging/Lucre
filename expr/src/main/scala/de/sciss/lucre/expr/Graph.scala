@@ -14,8 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Disposable, Obj, Sys}
+import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, WorkspaceHandle}
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
@@ -95,7 +94,8 @@ object Graph {
 
     override def productPrefix: String = "Graph"
 
-    def expand[S <: Sys[S]](self: Option[Obj[S]] = None)(implicit tx: S#Tx, cursor: stm.Cursor[S]): Disposable[S#Tx] = {
+    def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
+                           (implicit tx: S#Tx, workspace: WorkspaceHandle[S], cursor: Cursor[S]): Disposable[S#Tx] = {
       implicit val ctx: Ex.Context[S] = Ex.Context(this, self.map(tx.newHandle(_)))
       if (controls.isEmpty) Disposable.empty[S#Tx] else {
         val disp = controls.map(_.control.expand[S])

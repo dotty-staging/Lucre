@@ -11,11 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.stm
 
 import de.sciss.lucre.event.Publisher
-import de.sciss.lucre.expr.impl.{ListImpl => Impl}
-import de.sciss.lucre.stm.{Elem, Obj, Sys}
+import de.sciss.lucre.stm.impl.{ListImpl => Impl}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 
@@ -24,16 +23,6 @@ import scala.language.higherKinds
 
 object List extends Obj.Type {
   final val typeId  = 23
-
-  //  val Type: Type3[List] = Impl.TypeImpl
-  //
-  //  implicit def Ops[S <: Sys[S], Elem, U](list: List[S, Elem, U]): Ops[S, Elem] = new Impl.Ops(list)
-  //
-  //  trait Ops[S <: Sys[S], Elem] extends Any {
-  //    def isEmpty_@   (implicit tx: S#Tx): Expr[S, Boolean]
-  //    def nonEmpty_@  (implicit tx: S#Tx): Expr[S, Boolean]
-  //    def size_@      (implicit tx: S#Tx): Expr[S, Int    ]
-  //  }
 
   final case class Update[S <: Sys[S], A](list: List[S, A], changes: Vec[Change[S, A]])
 
@@ -86,11 +75,6 @@ object List extends Obj.Type {
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
-
-//  /** Hint key for copying the list. The value is a predicate function `(A) => Boolean`
-//    * to determine which elements to copy. If absent, the entire list is copied
-//    */
-//  final val hintFilter = "filter"
 }
 
 /** An observable linked list with fast `head` and `last` operations.
