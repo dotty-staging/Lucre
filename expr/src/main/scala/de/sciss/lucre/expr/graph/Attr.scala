@@ -1,5 +1,5 @@
 /*
- *  ExAttr.scala
+ *  Attr.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
@@ -11,26 +11,29 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.{aux, stm}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.Constant
+import de.sciss.lucre.expr.graph.impl.ExpandedAttrUpdate
 import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
-import de.sciss.lucre.stm.{Disposable, Obj, Sys}
-import de.sciss.lucre.{aux, expr}
+import de.sciss.lucre.expr.{BooleanObj, CellView, Control, DoubleObj, DoubleVector, Ex, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
+import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.Ref
 
-object ExAttr {
+object Attr {
   trait Like[A] extends ProductWithAux {
-    def key: String
+//    def key: String
+//
+//    def bridge: Bridge[A]
 
-    def bridge: Bridge[A]
+    def update(in: Ex[A]): Control
   }
 
   object WithDefault {
@@ -40,7 +43,9 @@ object ExAttr {
     private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Bridge[A])
       extends WithDefault[A] with ProductWithAux {
 
-      override def productPrefix: String = s"ExAttr$$WithDefault" // serialization
+      override def productPrefix: String = s"Attr$$WithDefault" // serialization
+
+      def update(in: Ex[A]): Control = Attr.Update(in, key)
 
       def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
         val defaultEx = default.expand[S]
@@ -96,6 +101,8 @@ object ExAttr {
       def changed: IEvent[S, Change[A]] = this
     }
   }
+  // N.B. we use a trait here not a case class, because
+  // we reuse the interface elsewhere (SP -> Artifact)
   trait WithDefault[A] extends Ex[A] with Like[A] {
     def default: Ex[A]
   }
@@ -115,7 +122,7 @@ object ExAttr {
   trait Bridge[A] extends aux.Aux {
     // def peer: Obj.Type
 
-    def cellView[S <: Sys[S]](obj: Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
+    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
   }
 
   final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
@@ -141,44 +148,34 @@ object ExAttr {
       obsAttr.dispose()
   }
 
-  private final class ExpandedUpdate[S <: Sys[S], A](source: IExpr[S, A], attrView: CellView.Var[S, Option[A]], tx0: S#Tx)
-    extends Disposable[S#Tx] {
-
-    private[this] val obs = source.changed.react { implicit tx => upd =>
-      val value = Some(upd.now)
-      attrView.update(value)
-    } (tx0)
-
-    def dispose()(implicit tx: S#Tx): Unit =
-      obs.dispose()
-  }
-
-  final case class Update[A](source: Ex[A], key: String)(implicit bridge: ExAttr.Bridge[A])
+  final case class Update[A](source: Ex[A], key: String)(implicit bridge: Attr.Bridge[A])
     extends Control with ProductWithAux {
 
-    override def productPrefix: String = s"ExAttr$$Update"
+    override def productPrefix: String = s"Attr$$Update"
 
     type Repr[S <: Sys[S]] = Disposable[S#Tx]
 
     protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] =
       ctx.selfOption.fold(Disposable.empty[S#Tx]) { self =>
         val attrView = bridge.cellView[S](self, key)
-        new ExpandedUpdate[S, A](source.expand[S], attrView, tx)
+        new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       }
 
     override def aux: scala.List[Aux] = bridge :: Nil
   }
 }
-final case class ExAttr[A](key: String)(implicit val bridge: ExAttr.Bridge[A])
-  extends Ex[Option[A]] with ExAttr.Like[A] with ProductWithAux {
+final case class Attr[A](key: String)(implicit val bridge: Attr.Bridge[A])
+  extends Ex[Option[A]] with Attr.Like[A] with ProductWithAux {
+
+  def update(in: Ex[A]): Control = Attr.Update(in, key)
 
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
     ctx.selfOption.fold(Constant(Option.empty[A]).expand[S]) { self =>
       import ctx.targets
       val attrView = bridge.cellView[S](self, key)
-      new expr.ExAttr.Expanded[S, A](attrView, tx)
+      new Attr.Expanded[S, A](attrView, tx)
     }
   }
 
-  def aux: scala.List[Aux] = bridge :: Nil
+  override def aux: scala.List[Aux] = bridge :: Nil
 }

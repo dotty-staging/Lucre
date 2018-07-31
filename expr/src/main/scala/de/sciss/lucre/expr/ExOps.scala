@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Constant, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Constant, Attr, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
 import scala.collection.immutable.{Seq => ISeq}
 import scala.language.implicitConversions
@@ -159,7 +159,7 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A, A1, A2](), x, lo, hi)
   def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
 
-  def ---> (attr: ExAttr.Like[A]): Unit = ExAttr.Update(x, attr.key)(attr.bridge)
+  def ---> (attr: Attr.Like[A]): Unit = attr.update(x)
 
   //  def <--- (attr: ExAttrLike[A]): Unit = ...
   //  def <--> (attr: ExAttrLike[A]): Unit = ...
@@ -212,8 +212,8 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {
-  def attr[A](implicit bridge: ExAttr.Bridge[A]): ExAttr[A] = ExAttr(x)
+  def attr[A](implicit bridge: Attr.Bridge[A]): Attr[A] = Attr(x)
 
-  def attr[A](default: Ex[A])(implicit bridge: ExAttr.Bridge[A]): ExAttr.WithDefault[A] =
-    ExAttr.WithDefault(x, default)
+  def attr[A](default: Ex[A])(implicit bridge: Attr.Bridge[A]): Attr.WithDefault[A] =
+    Attr.WithDefault(x, default)
 }

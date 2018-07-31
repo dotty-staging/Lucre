@@ -13,16 +13,18 @@
 
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.expr.graph.Attr
+
 trait Model[A] {
   def apply(): Ex[A]
   def update(value: Ex[A]): Unit
 
-  def <--> (attr: ExAttr.WithDefault[A]): Unit = {
+  def <--> (attr: Attr.WithDefault[A]): Unit = {
     this <--- attr
     this ---> attr
   }
 
-  def ---> (attr: ExAttr.Like[A]): Unit = {
+  def ---> (attr: Attr.Like[A]): Unit = {
     import ExOps._
     apply() ---> attr
   }
