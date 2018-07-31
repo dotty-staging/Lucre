@@ -24,16 +24,36 @@ import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
 
+import scala.annotation.tailrec
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.Ref
 
 object Attr {
   trait Like[A] extends ProductWithAux {
-//    def key: String
-//
-//    def bridge: Bridge[A]
-
     def update(in: Ex[A]): Control
+  }
+
+  private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Ex.Context[S], tx: S#Tx,
+                                                   bridge: Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
+    @tailrec
+    def loop(objOpt: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
+      objOpt match {
+        case Some(obj) =>
+          val i = sub.indexOf(':')
+          if (i < 0) {
+            val attrView = bridge.cellView[S](obj, sub)
+            Some(attrView)
+          } else {
+            val head = sub.substring(0, i)
+            val tail = sub.substring(i + 1)
+            val next = obj.attr.get(head)
+            loop(next, tail)
+          }
+
+        case _ => None
+      }
+
+    loop(ctx.selfOption, key)
   }
 
   object WithDefault {
@@ -49,9 +69,8 @@ object Attr {
 
       def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
         val defaultEx = default.expand[S]
-        ctx.selfOption.fold(defaultEx) { self =>
+        resolveNested(key).fold(defaultEx) { attrView =>
           import ctx.targets
-          val attrView = bridge.cellView[S](self, key)
           new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
         }
       }
@@ -156,8 +175,7 @@ object Attr {
     type Repr[S <: Sys[S]] = Disposable[S#Tx]
 
     protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] =
-      ctx.selfOption.fold(Disposable.empty[S#Tx]) { self =>
-        val attrView = bridge.cellView[S](self, key)
+      resolveNested(key).fold(Disposable.empty[S#Tx]) { attrView  =>
         new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       }
 
