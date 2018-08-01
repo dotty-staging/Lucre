@@ -28,8 +28,8 @@ object InMemoryImpl {
   trait Mixin[S <: InMemoryLike[S]] extends InMemoryLike[S] with ReactionMapImpl.Mixin[S] {
     private[this] final val idCnt = ScalaRef(0)
 
-    protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
+    protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, scala.List[Observer[S, _]]]] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, scala.List[Observer[S, _]]]](_.id)
 
     private[lucre] final val attrMap: IdentifierMap[S#Id, S#Tx, Obj.AttrMap[S]] =
       IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Obj.AttrMap[S]](_.id)

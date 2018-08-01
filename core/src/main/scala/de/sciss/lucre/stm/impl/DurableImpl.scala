@@ -37,8 +37,8 @@ object DurableImpl {
 
     def store: DataStore
 
-    protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] =
-      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]](_.id)
+    protected final val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, scala.List[Observer[S, _]]]] =
+      IdentifierMapImpl.newInMemoryIntMap[S#Id, S#Tx, Map[Int, scala.List[Observer[S, _]]]](_.id)
 
     private[this] val idCntVar = step { implicit tx =>
       val _id = store.get(_.writeInt(0))(_.readInt()).getOrElse(1)

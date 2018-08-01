@@ -53,7 +53,7 @@ trait TxnLike {
 object Txn {
   trait Resource extends Closeable with ExternalDecider
 
-  private[this] final class Decider(var instances: List[Resource])
+  private[this] final class Decider(var instances: scala.List[Resource])
     extends ExternalDecider {
 
     def shouldCommit(implicit txn: InTxnEnd): Boolean = instances match {
@@ -62,7 +62,7 @@ object Txn {
     }
 
     @tailrec
-    private[this] def commitAll(remain: List[Resource], done: List[Resource])(implicit txn: InTxnEnd): Boolean =
+    private[this] def commitAll(remain: scala.List[Resource], done: scala.List[Resource])(implicit txn: InTxnEnd): Boolean =
       remain match {
         case head :: tail =>
           if (head.shouldCommit) {
