@@ -19,7 +19,7 @@ import java.util
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.Ex.Context
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Cursor, Obj, Sys, TxnLike, WorkspaceHandle}
+import de.sciss.lucre.stm.{Cursor, Obj, Sys, TxnLike, Workspace}
 
 import scala.concurrent.stm.TMap
 
@@ -62,5 +62,5 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
 
 final class ContextImpl[S <: Sys[S]](protected val graph: Graph,
                                      protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
-                                    (implicit val workspace: WorkspaceHandle[S], val cursor: Cursor[S])
+                                    (implicit val workspace: Workspace[S], val cursor: Cursor[S])
   extends ContextMixin[S]

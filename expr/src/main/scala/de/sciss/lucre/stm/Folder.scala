@@ -29,13 +29,12 @@ object Folder extends Obj.Type {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Folder[S] =
     serializer[S].read(in, access)
 
-  type Update[S <: Sys[S]] = stm.List.Update[S, Obj[S]]
-
-  type Change[S <: Sys[S]]  = stm.List.Change[S, Obj[S]]
-  type Added [S <: Sys[S]]  = stm.List.Added[S, Obj[S]]
-  val Added                 = stm.List.Added
-  type Removed[S <: Sys[S]] = stm.List.Removed[S, Obj[S]]
-  val Removed               = stm.List.Removed
+  type Update [S <: Sys[S]]           = stm.List.Update [S, Obj[S]]
+  type Change [S <: Sys[S]]           = stm.List.Change [S, Obj[S]]
+  type Added  [S <: Sys[S]]           = stm.List.Added  [S, Obj[S]]
+  val Added  : stm.List.Added   .type = stm.List.Added
+  type Removed[S <: Sys[S]]           = stm.List.Removed[S, Obj[S]]
+  val Removed: stm.List.Removed .type = stm.List.Removed
 
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Folder[S]] =
     Impl.serializer[S]

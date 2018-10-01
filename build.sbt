@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.9.1"
-lazy val mimaVersion      = "3.9.0"
+lazy val projectVersion   = "3.10.0-SNAPSHOT"
+lazy val mimaVersion      = "3.10.0"
 
 lazy val deps = new {
   val base = new {
@@ -31,10 +31,12 @@ lazy val commonSettings = Seq(
   version             := projectVersion,
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
-  homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
-  scalaVersion        := "2.12.6",
-  crossScalaVersions  := Seq("2.12.6", "2.11.12"),
-  scalacOptions      ++= Seq("-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"),
+  homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
+  scalaVersion        := "2.12.7",
+  crossScalaVersions  := Seq("2.12.7", "2.11.12"),
+  scalacOptions      ++= Seq(
+    "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture", "-Xsource:2.13"
+  ),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
@@ -179,8 +181,8 @@ lazy val publishSettings = Seq(
   pomIncludeRepository := { _ => false },
   pomExtra := {
 <scm>
-  <url>git@github.com:Sciss/{baseName}.git</url>
-  <connection>scm:git:git@github.com:Sciss/{baseName}.git</connection>
+  <url>git@git.iem.at:sciss/{baseName}.git</url>
+  <connection>scm:git:git@git.iem.at:sciss/{baseName}.git</connection>
 </scm>
 <developers>
    <developer>
