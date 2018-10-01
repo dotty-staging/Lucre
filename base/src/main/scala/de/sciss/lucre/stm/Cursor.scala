@@ -14,6 +14,9 @@
 package de.sciss.lucre
 package stm
 
+//object Cursor {
+//  def inMemory[S <: Base[S]](base: S): Cursor[base.I] = ...
+//}
 trait Cursor[S <: Base[S]] {
   /** Issues a new transaction (executor), runs the function argument on it,
     * and returns the result.
