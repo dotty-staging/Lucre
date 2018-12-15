@@ -17,7 +17,6 @@ import de.sciss.lucre.stm.Base
 
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
-import scala.collection.breakOut
 import scala.collection.immutable.{Map => IMap}
 
 object IPush {
@@ -85,11 +84,11 @@ object IPush {
     def parents (child : IEvent[S, Any]): Parents[S]  = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {
-      val reactions: List[Reaction[S, Any]] = pushMap.flatMap { case (event, _) =>
+      val reactions: List[Reaction[S, Any]] = pushMap.iterator.flatMap { case (event, _) =>
         val observers: List[Observer[S, Any]] = targets.getEventReactions(event) // tx.reactionMap.getEventReactions(event)
         if (observers.nonEmpty || event.isInstanceOf[Caching])
           apply[Any](event).map(new Reaction(_, observers)) else None
-      } (breakOut)
+      } .toList
       logEvent(s"numReactions = ${reactions.size}")
       reactions.foreach(_.apply())
     }

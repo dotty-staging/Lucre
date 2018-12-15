@@ -11,7 +11,6 @@ import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{InTxnRandom, Random}
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
-import scala.collection.breakOut
 import scala.collection.mutable.{Set => MSet}
 import scala.concurrent.stm.InTxn
 
@@ -285,27 +284,27 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
                                              (implicit ord: math.Ordering[M], cursor: stm.Cursor[S]): Unit = {
 
     When("the quadtree is searched for nearest neighbours")
-      val ps0 = cursor.step { tx =>
-        val f = pointFun(tx.peer)
-        Seq.fill(n2)(f(0xFFFFFFFF))
-      }
-      // tricky: this guarantees that there are no 63 bit overflows,
-      // while still allowing points outside the root hyperCube to enter the test
-      val ps: Seq[ D#Point ] = ps0.filter( pointFilter )
-      val nnT: Map[ D#Point, D#Point ] = cursor.step { implicit tx =>
-         val t = access()
-         ps.map( p => p -> t.nearestNeighbor( p, euclideanDist ))( breakOut )
-      }
-      val ks   = m // .keySet
-//      val nnM: Map[ D#Point, D#Point ] = ps.map( p => p -> ks.minBy( _.distanceSq( p ))( t.space.bigOrdering ))( breakOut )
-      val nnM: Map[ D#Point , D#Point ] = ps.map( p => p -> ks.minBy( p2 => euclideanDist.distance( p2, p )))( breakOut )
-      Then( "the results should match brute force with the corresponding set" )
-      assert( nnT == nnM, {
-         nnT.collect {
-           case (q, v) if nnM(q) != v => (q, v, nnM(q))
-         }.take( 10 ).toString()
-      })
-   }
+    val ps0 = cursor.step { tx =>
+      val f = pointFun(tx.peer)
+      Seq.fill(n2)(f(0xFFFFFFFF))
+    }
+    // tricky: this guarantees that there are no 63 bit overflows,
+    // while still allowing points outside the root hyperCube to enter the test
+    val ps: Seq[D#Point] = ps0.filter(pointFilter)
+    val nnT: Map[D#Point, D#Point] = cursor.step { implicit tx =>
+      val t = access()
+      ps.iterator.map(p => p -> t.nearestNeighbor(p, euclideanDist)).toMap
+    }
+    val ks = m // .keySet
+    //      val nnM: Map[ D#Point, D#Point ] = ps.map( p => p -> ks.minBy( _.distanceSq( p ))( t.space.bigOrdering ))( breakOut )
+    val nnM: Map[D#Point, D#Point] = ps.iterator.map(p => p -> ks.minBy(p2 => euclideanDist.distance(p2, p))).toMap
+    Then("the results should match brute force with the corresponding set")
+    assert(nnT == nnM, {
+      nnT.collect {
+        case (q, v) if nnM(q) != v => (q, v, nnM(q))
+      }.take(10).toString()
+    })
+  }
 
   def withTree[S <: Sys[S]](name: String, tf: () => (stm.Cursor[S],
     stm.Source[S#Tx, DeterministicSkipOctree[S, ThreeDim, ThreeDim#Point]], Boolean => Unit)): Unit = {

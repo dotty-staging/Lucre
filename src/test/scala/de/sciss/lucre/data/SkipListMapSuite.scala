@@ -3,7 +3,6 @@ package de.sciss.lucre.data
 import de.sciss.lucre.stm.InMemory
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
-import scala.collection.breakOut
 import scala.collection.immutable.{Vector => Vec}
 
 /*
@@ -120,7 +119,7 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
       Then("the correct values should be retrieved")
       assert(flat === seqVals)
 
-      val seqKeys: Set[Int] = seq.map(_._1)(breakOut)
+      val seqKeys: Set[Int] = seq.iterator.map(_._1).toSet
       val keys = q.toSet -- seqKeys
       val notFound = atomic { implicit tx =>
         keys.flatMap(map.get)

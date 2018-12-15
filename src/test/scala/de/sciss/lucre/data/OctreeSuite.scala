@@ -6,7 +6,6 @@ import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
 import org.scalatest.{FeatureSpec, GivenWhenThen}
 
-import scala.collection.breakOut
 import scala.collection.mutable.{Set => MSet}
 import scala.util.control.NonFatal
 
@@ -198,11 +197,11 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
      // while still allowing points outside the root hyperCube to enter the test
      val ps : Seq[D#Point]          = ps0.filter(pointFilter)
      val nnT: Map[D#Point, D#Point] = cursor.step { implicit tx =>
-       ps.map(p => p -> t.nearestNeighbor(p, euclideanDist))(breakOut)
+       ps.iterator.map(p => p -> t.nearestNeighbor(p, euclideanDist)).toMap
      }
      val ks = m // .keySet
      //      val nnM: Map[ D#Point, D#Point ] = ps.map( p => p -> ks.minBy( _.distanceSq( p ))( t.space.bigOrdering ))( breakOut )
-     val nnM: Map[D#Point, D#Point] = ps.map(p => p -> ks.minBy(p2 => euclideanDist.distance(p2, p)))(breakOut)
+     val nnM: Map[D#Point, D#Point] = ps.iterator.map(p => p -> ks.minBy(p2 => euclideanDist.distance(p2, p))).toMap
      Then("the results should match brute force with the corresponding set")
      assert(nnT == nnM, {
        nnT.collect {

@@ -104,12 +104,12 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
   /** Calculates the minimum distance to a point in the euclidean metric.
     * This calls `minDistanceSq` and then takes the square root.
     */
-  final def minDistance(point: PointLike): Double = math.sqrt(minDistanceSq(point).doubleValue())
+  final def minDistance(point: PointLike): Double = math.sqrt(minDistanceSq(point).doubleValue)
 
   /** Calculates the maximum distance to a point in the euclidean metric.
     * This calls `maxDistanceSq` and then takes the square root.
     */
-  final def maxDistance(point: PointLike): Double = math.sqrt(maxDistanceSq(point).doubleValue())
+  final def maxDistance(point: PointLike): Double = math.sqrt(maxDistanceSq(point).doubleValue)
 
   /** The squared (euclidean) distance of the closest of the square's corners
     * or sides to the point, if the point is outside the square,

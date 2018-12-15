@@ -20,7 +20,6 @@ import de.sciss.lucre.expr
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
-import scala.collection.breakOut
 import scala.collection.immutable.{Seq => ISeq}
 
 object ExSeq {
@@ -79,7 +78,7 @@ final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] with ProductWithAu
 
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
     import ctx.targets
-    val elemsEx: ISeq[IExpr[S, A]] = elems.map(_.expand[S])(breakOut)
+    val elemsEx: ISeq[IExpr[S, A]] = elems.iterator.map(_.expand[S]).toList
     new expr.ExSeq.Expanded(elemsEx).init()
   }
 

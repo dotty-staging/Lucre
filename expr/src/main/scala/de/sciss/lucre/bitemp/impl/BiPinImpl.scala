@@ -23,7 +23,6 @@ import de.sciss.lucre.{event => evt, stm}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
@@ -211,13 +210,13 @@ object BiPinImpl {
       def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Update[S, A]] = {
         if (pull.isOrigin(this)) return Some(pull.resolve)
 
-        val changes: List[Moved[S, A]] = pull.parents(this).flatMap { evt =>
+        val changes: List[Moved[S, A]] = pull.parents(this).iterator.flatMap { evt =>
           val entry = evt.node
           val opt   = pull(evt).map { ch =>
             Moved(ch.asInstanceOf[Change[Long]], entry.asInstanceOf[Entry[S, A]])
           }
           opt
-        } (breakOut)
+        } .toList
 
         if (changes.isEmpty) None
         else {

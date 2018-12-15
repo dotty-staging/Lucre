@@ -28,7 +28,6 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import de.sciss.span.{Span, SpanLike}
 
 import scala.annotation.elidable
-import scala.collection.breakOut
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.higherKinds
 
@@ -299,7 +298,7 @@ object BiGroupImpl {
         val par = pull.parents(this)
         log(s"$this.pullUpdate -> parents = $par")
 
-        val changes: List[BiGroup.Moved[S, A]] = par.flatMap { evt =>
+        val changes: List[BiGroup.Moved[S, A]] = par.iterator.flatMap { evt =>
           val entry = evt.node.asInstanceOf[Entry[S, A]]
           val ch0   = pull(entry.changed)
           log(s"$this.pullUpdate -> from entry $entry pulled $ch0")
@@ -309,7 +308,7 @@ object BiGroupImpl {
               addNoFire          (spanValNew, entry)
               BiGroup.Moved(ch, entry)
           }
-        } (breakOut)
+        } .toList
 
         if (changes.isEmpty) None else Some(BiGroup.Update(group, changes))
       }

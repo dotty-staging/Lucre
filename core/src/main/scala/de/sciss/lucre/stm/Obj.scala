@@ -73,7 +73,7 @@ object Obj {
   val  AttrReplaced             = evt.Map.Replaced
   type AttrReplaced[S <: Sys[S]]= evt.Map.Replaced[S, String, Obj[S]]
 
-  implicit def attrMapSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] =
+  /* implicit */ def attrMapSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] =
     anyAttrMapSer.asInstanceOf[Serializer[S#Tx, S#Acc, AttrMap[S]]]
 
   private[this] val anyAttrMapSer = evt.Map.Modifiable.serializer[NoSys, String, Obj]
