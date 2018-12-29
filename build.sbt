@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.11.0-SNAPSHOT"
+lazy val projectVersion   = "3.11.0"
 lazy val mimaVersion      = "3.11.0"
 
 lazy val deps = new {
@@ -16,7 +16,7 @@ lazy val deps = new {
     val span      = "1.4.2"
   }
   val confluent = new {
-    val finger    = "1.5.3-SNAPSHOT"
+    val finger    = "1.5.3"
   }
   val bdb = new {
     val sleepy5   = "5.0.104" // = Berkeley DB Java Edition; sleepycat license, compatible to GPL 2 // Java 6+ required
