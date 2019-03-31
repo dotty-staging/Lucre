@@ -13,20 +13,24 @@
 
 package de.sciss.lucre.expr
 
-import scala.language.implicitConversions
+import de.sciss.lucre.expr.graph.{TTBinaryOp, TBinaryOp}
 
-import de.sciss.lucre.expr.graph.{TTBinaryOp => BinOp}
+import scala.language.implicitConversions
 
 object TrigOps {
   implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
 }
 final class TrigOps(private val t: Trig) extends AnyVal {
-  def & (that: Trig): Trig = BinOp(BinOp.And(), t, that)
-  def | (that: Trig): Trig = BinOp(BinOp.Or (), t, that)
-  def ^ (that: Trig): Trig = BinOp(BinOp.Xor(), t, that)
+  def & (that: Trig): Trig = TTBinaryOp(TTBinaryOp.And(), t, that)
+  def | (that: Trig): Trig = TTBinaryOp(TTBinaryOp.Or (), t, that)
+  def ^ (that: Trig): Trig = TTBinaryOp(TTBinaryOp.Xor(), t, that)
 
-//  def filter    (ex: Ex[Boolean]): Trig = ...
-//  def filterNot (ex: Ex[Boolean]): Trig = ...
+  def filter(that: Ex[Boolean]): Trig = TBinaryOp(TBinaryOp.And(), t, that)
+
+//  def filterNot (ex: Ex[Boolean]): Trig = {
+//    import ExOps._
+//    filter(!ex)
+//  }
 
   def ---> (act: Act): Unit = Act.Link(t, act)
 }

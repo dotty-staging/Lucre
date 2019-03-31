@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Constant, Attr, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Constant, SeqMkString, ToTrig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
 import scala.collection.immutable.{Seq => ISeq}
 import scala.language.implicitConversions
@@ -46,6 +46,8 @@ object ExOps {
   implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps       (x)
   implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
   implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
+//  implicit def exBooleanOps  (x: Ex[Boolean])   : ExBooleanOps    = new ExBooleanOps(x)
+//  implicit def exStringOps   (x: Ex[String])    : ExStringOps     = new ExStringOps(x)
 
   implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
 
@@ -54,23 +56,23 @@ object ExOps {
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
 
-  def unary_-   (implicit num: Num[A]     ): Ex[A]         = UnOp(UnOp.Neg[A](), x)
-  def unary_!   (implicit num: NumBool[A] ): Ex[A]         = UnOp(UnOp.Not[A](), x)
-  def unary_~   (implicit num: NumInt[A]  ): Ex[A]         = UnOp(UnOp.BitNot[A](), x)
-  def abs       (implicit num: Num[A]     ): Ex[A]         = UnOp(UnOp.Abs[A](), x)
+  def unary_-   (implicit num: Num[A]     ): Ex[A]          = UnOp(UnOp.Neg[A](), x)
+  def unary_!   (implicit num: NumBool[A] ): Ex[A]          = UnOp(UnOp.Not[A](), x)
+  def unary_~   (implicit num: NumInt[A]  ): Ex[A]          = UnOp(UnOp.BitNot[A](), x)
+  def abs       (implicit num: Num[A]     ): Ex[A]          = UnOp(UnOp.Abs[A](), x)
 
-  def toDouble  (implicit to: ToNum[A]): Ex[to.Double]     = UnOp(UnOp.ToDouble[A, to.Double]()(to), x)
-  def toInt     (implicit to: ToNum[A]): Ex[to.Int]        = UnOp(UnOp.ToInt   [A, to.Int   ]()(to), x)
+  def toDouble  (implicit to: ToNum[A]): Ex[to.Double]      = UnOp(UnOp.ToDouble[A, to.Double]()(to), x)
+  def toInt     (implicit to: ToNum[A]): Ex[to.Int]         = UnOp(UnOp.ToInt   [A, to.Int   ]()(to), x)
 
-  def ceil      (implicit num: NumFrac[A] ): Ex[A]         = UnOp(UnOp.Ceil    [A](), x)
-  def floor     (implicit num: NumFrac[A] ): Ex[A]         = UnOp(UnOp.Floor   [A](), x)
-  def frac      (implicit num: NumFrac[A] ): Ex[A]         = UnOp(UnOp.Frac    [A](), x)
-  def signum    (implicit num: Num[A]     ): Ex[A]         = UnOp(UnOp.Signum  [A](), x)
-  def squared   (implicit num: Num[A]     ): Ex[A]         = UnOp(UnOp.Squared [A](), x)
-  def cubed     (implicit num: Num[A]     ): Ex[A]         = UnOp(UnOp.Cubed   [A](), x)
+  def ceil      (implicit num: NumFrac[A] ): Ex[A]          = UnOp(UnOp.Ceil    [A](), x)
+  def floor     (implicit num: NumFrac[A] ): Ex[A]          = UnOp(UnOp.Floor   [A](), x)
+  def frac      (implicit num: NumFrac[A] ): Ex[A]          = UnOp(UnOp.Frac    [A](), x)
+  def signum    (implicit num: Num[A]     ): Ex[A]          = UnOp(UnOp.Signum  [A](), x)
+  def squared   (implicit num: Num[A]     ): Ex[A]          = UnOp(UnOp.Squared [A](), x)
+  def cubed     (implicit num: Num[A]     ): Ex[A]          = UnOp(UnOp.Cubed   [A](), x)
 
-  def sqrt   [B](implicit wd: WidenToDouble[A, B]): Ex[B] = UnOp(UnOp.Sqrt[A, B](), x)
-  def exp    [B](implicit wd: WidenToDouble[A, B]): Ex[B] = UnOp(UnOp.Exp [A, B](), x)
+  def sqrt   [B](implicit wd: WidenToDouble[A, B]): Ex[B]   = UnOp(UnOp.Sqrt[A, B](), x)
+  def exp    [B](implicit wd: WidenToDouble[A, B]): Ex[B]   = UnOp(UnOp.Exp [A, B](), x)
 
   def reciprocal[B](implicit w: Widen[A, B], num: NumFrac[B]): Ex[B] = UnOp(UnOp.Reciprocal[A, B](), x)
 
@@ -182,7 +184,26 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
 //
 //  def poll(label: Ex[String] = "poll", gate: Ex[Boolean] = true): Ex[A] =
 //    Poll(x, gate = gate, label = label)
+
+  // ---- bridge to trigger ----
+
+  def toTrig(implicit ev: Ex[A] =:= Ex[Boolean]): Trig = ToTrig(ev(x))
+
+  def changed: Trig = Changed(x)
 }
+
+//final class ExStringOps(private val x: Ex[String]) extends AnyVal {
+//  def length: Ex[Int]
+//
+//  def size: Ex[Int] = length
+//
+//  def isEmpty: Ex[Boolean]
+//
+//  def nonEmpty: Ex[Boolean] = {
+//    import ExOps.exOps
+//    !isEmpty
+//  }
+//}
 
 final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
 //  def apply(index: Ex[Int]): Ex[A] = ...
@@ -196,6 +217,13 @@ final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
 
   def isEmpty   : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
   def nonEmpty  : Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
+
+  def mkString(sep: Ex[String]): Ex[String] = {
+    import ExOps.constEx
+    mkString("", sep, "")
+  }
+
+  def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] = SeqMkString(x, start, sep, end)
 }
 
 final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {

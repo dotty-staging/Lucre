@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.11.0"
+lazy val projectVersion   = "3.11.1"
 lazy val mimaVersion      = "3.11.0"
 
 lazy val deps = new {
@@ -16,7 +16,7 @@ lazy val deps = new {
     val span      = "1.4.2"
   }
   val confluent = new {
-    val finger    = "1.5.3"
+    val finger    = "1.5.4"
   }
   val bdb = new {
     val sleepy5   = "5.0.104" // = Berkeley DB Java Edition; sleepycat license, compatible to GPL 2 // Java 6+ required
@@ -24,7 +24,7 @@ lazy val deps = new {
     val sleepy7   = "7.4.5"   // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest = "3.0.5"
+    val scalaTest = "3.0.7"
   }
 }
 
@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.13.0-M5",
+  scalaVersion        := "2.12.8",
   crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture", "-Xsource:2.13"
@@ -44,8 +44,7 @@ lazy val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
   libraryDependencies += {
-    val v = if (scalaVersion.value == "2.13.0-M5") "3.0.6-SNAP5" else deps.test.scalaTest
-    "org.scalatest" %% "scalatest" % v % Test
+    "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
   }
 ) ++ publishSettings
 
