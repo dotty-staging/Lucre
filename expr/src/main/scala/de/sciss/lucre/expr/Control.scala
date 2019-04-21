@@ -2,7 +2,7 @@
  *  Control.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.stm.Sys
 
 import scala.language.higherKinds
 
@@ -23,7 +23,7 @@ object Control {
   }
 }
 trait Control extends Product {
-  type Repr[S <: Sys[S]] <: Disposable[S#Tx]
+  type Repr[S <: Sys[S]] <: IControl[S]
 
   // this acts now as a fast unique reference
   @transient final private[this] lazy val ref = new AnyRef

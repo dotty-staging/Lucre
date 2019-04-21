@@ -2,7 +2,7 @@
  *  Ex.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -26,8 +26,8 @@ object Ex {
       new ContextImpl[S](g, selfH)
   }
   trait Context[S <: Sys[S]] {
-    implicit def targets  : ITargets        [S]
-    implicit def cursor   : Cursor          [S]
+    implicit def targets  : ITargets  [S]
+    implicit def cursor   : Cursor    [S]
     implicit def workspace: Workspace [S]
 
     def getProperty[A](c: Control, key: String): Option[A]

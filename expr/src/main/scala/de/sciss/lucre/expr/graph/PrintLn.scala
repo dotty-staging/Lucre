@@ -1,8 +1,8 @@
 /*
- *  Println.scala
+ *  PrintLn.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -16,7 +16,7 @@ package graph
 
 import de.sciss.lucre.stm.Sys
 
-object Println {
+object PrintLn {
   private final class Expanded[S <: Sys[S]](text: IExpr[S, String]) extends IAction[S] {
     def execute()(implicit tx: S#Tx): Unit = {
       val s = text.value
@@ -28,7 +28,7 @@ object Println {
     def dispose()(implicit tx: S#Tx): Unit = ()
   }
 }
-final case class Println(text: Ex[String]) extends Act {
+final case class PrintLn(text: Ex[String]) extends Act {
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IAction[S] =
-    new Println.Expanded(text.expand[S])
+    new PrintLn.Expanded(text.expand[S])
 }

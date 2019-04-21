@@ -2,7 +2,7 @@
  *  Graph.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
-import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, Workspace}
+import de.sciss.lucre.stm.{Cursor, Obj, Sys, Workspace}
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
@@ -79,8 +79,11 @@ object Graph {
     }
   }
 
-  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[Disposable[S#Tx]])
-    extends Disposable[S#Tx] {
+  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]])
+    extends IControl[S] {
+
+    def init()(implicit tx: S#Tx): Unit =
+      controls.foreach(_.init())
 
     def dispose()(implicit tx: S#Tx): Unit =
       controls.foreach(_.dispose())
@@ -95,15 +98,18 @@ object Graph {
     override def productPrefix: String = "Graph"
 
     def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
-                           (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): Disposable[S#Tx] = {
+                           (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S] = {
       implicit val ctx: Ex.Context[S] = Ex.Context(this, self.map(tx.newHandle(_)))
-      if (controls.isEmpty) Disposable.empty[S#Tx] else {
-        val disp = controls.map(_.control.expand[S])
-        new Graph.ExpandedImpl[S](disp)
+      if (controls.isEmpty) IControl.empty[S] else {
+        val disposables = controls.map(_.control.expand[S])
+        new Graph.ExpandedImpl[S](disposables)
       }
     }
   }
 }
 trait Graph {
   def controls: Vec[Control.Configured]
+
+  def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
+                         (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S]
 }

@@ -2,7 +2,7 @@
  *  Attr.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -19,7 +19,7 @@ import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.impl.ExpandedAttrUpdate
 import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
-import de.sciss.lucre.expr.{BooleanObj, CellView, Control, DoubleObj, DoubleVector, Ex, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
+import de.sciss.lucre.expr.{BooleanObj, CellView, Control, DoubleObj, DoubleVector, Ex, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
@@ -172,12 +172,14 @@ object Attr {
 
     override def productPrefix: String = s"Attr$$Update"
 
-    type Repr[S <: Sys[S]] = Disposable[S#Tx]
+    type Repr[S <: Sys[S]] = IControl[S]
 
-    protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] =
-      resolveNested(key).fold(Disposable.empty[S#Tx]) { attrView  =>
+    protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] = {
+      val peer = resolveNested(key).fold(Disposable.empty[S#Tx]) { attrView =>
         new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       }
+      IControl.wrap(peer)
+    }
 
     override def aux: scala.List[Aux] = bridge :: Nil
   }

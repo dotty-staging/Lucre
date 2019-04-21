@@ -9,7 +9,7 @@ Lucre is an STM based persistent and reactive system for the Scala programming l
 of the computer music framework [SoundProcesses](https://git.iem.at/sciss/SoundProcesses) and its
 interface front-end [Mellite](https://git.iem.at/sciss/Mellite).
 
-Lucre is (C)opyright 2009&ndash;2018 by Hanns Holger Rutz. All rights reserved. 
+Lucre is (C)opyright 2009&ndash;2019 by Hanns Holger Rutz. All rights reserved. 
 All modules but the BerkeleyDB bindings are released under 
 the [GNU Lesser General Public License](https://git.iem.at/sciss/Lucre/raw/master/licenses/Lucre-License.txt), 
 whereas the `bdb` backend module for Berkeley DB JE 5 (itself governed by the Sleepycat License) is released under 

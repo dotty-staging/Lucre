@@ -1,14 +1,14 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.11.1"
-lazy val mimaVersion      = "3.11.0"
+lazy val projectVersion   = "3.12.0-SNAPSHOT"
+lazy val mimaVersion      = "3.12.0"
 
 lazy val deps = new {
   val base = new {
     val serial    = "1.1.1"
   }
   val core = new {
-    val scalaSTM  = "0.9"
+    val scalaSTM  = "0.9.1"
   }
   val expr = new {
     val model     = "0.3.4"
@@ -24,7 +24,7 @@ lazy val deps = new {
     val sleepy7   = "7.4.5"   // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest = "3.0.7"
+    val scalaTest = "3.0.8-RC2"
   }
 }
 
@@ -34,9 +34,9 @@ lazy val commonSettings = Seq(
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.12.8",
-  crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
+  crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0-RC1"),
   scalacOptions      ++= Seq(
-    "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture", "-Xsource:2.13"
+    "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!

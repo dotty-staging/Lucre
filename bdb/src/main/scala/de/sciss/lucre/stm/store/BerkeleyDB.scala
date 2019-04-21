@@ -2,7 +2,7 @@
  *  BerkeleyDB.scala
  *  (Lucre-bdb)
  *
- *  Copyright (c) 2009-2018 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
  *  Note that depending on which BDB JE edition you are linking to,
  *  more restrictive licenses may apply:
