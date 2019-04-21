@@ -13,9 +13,8 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.event.impl.IEventImpl
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
@@ -64,23 +63,19 @@ object ExSeq {
     }
   }
 }
-final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] with ProductWithAux {
-  // $COVERAGE-OFF$
+final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] {
   private def simpleString: String = {
     val xs = elems.iterator.take(5).toList
     val es = if (xs.lengthCompare(5) == 0) xs.init.mkString("", ", ", ", ...")
     else xs.mkString(", ")
-    s"Pat($es)"
+    s"ExSeq($es)"
   }
 
   override def toString: String = simpleString
-  // $COVERAGE-ON$
 
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
     import ctx.targets
     val elemsEx: ISeq[IExpr[S, A]] = elems.iterator.map(_.expand[S]).toList
     new expr.ExSeq.Expanded(elemsEx).init()
   }
-
-  def aux: scala.List[Aux] = Nil
 }
