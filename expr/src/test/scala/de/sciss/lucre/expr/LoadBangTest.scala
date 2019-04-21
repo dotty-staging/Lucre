@@ -17,6 +17,6 @@ object LoadBangTest extends App {
   import Workspace.Implicits._
 
   system.step { implicit tx =>
-    g.expand[S]().init()
+    g.expand[S]().initControl()
   }
 }

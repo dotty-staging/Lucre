@@ -21,17 +21,17 @@ object IControl {
   def empty[S <: Base[S]]: IControl[S] = new Empty
 
   private final class Wrap[S <: Base[S]](peer: Disposable[S#Tx]) extends IControl[S] {
-    def init()(implicit tx: S#Tx): Unit = ()
+    def initControl()(implicit tx: S#Tx): Unit = ()
 
     def dispose()(implicit tx: S#Tx): Unit = peer.dispose()
   }
 
   private final class Empty[S <: Base[S]] extends IControl[S] {
-    def init()(implicit tx: S#Tx): Unit = ()
+    def initControl()(implicit tx: S#Tx): Unit = ()
 
     def dispose()(implicit tx: S#Tx): Unit = ()
   }
 }
 trait IControl[S <: Base[S]] extends Disposable[S#Tx] {
-  def init()(implicit tx: S#Tx): Unit
+  def initControl()(implicit tx: S#Tx): Unit
 }

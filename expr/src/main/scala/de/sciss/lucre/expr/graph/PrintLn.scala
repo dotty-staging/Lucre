@@ -18,7 +18,7 @@ import de.sciss.lucre.stm.Sys
 
 object PrintLn {
   private final class Expanded[S <: Sys[S]](text: IExpr[S, String]) extends IAction[S] {
-    def execute()(implicit tx: S#Tx): Unit = {
+    def executeAction()(implicit tx: S#Tx): Unit = {
       val s = text.value
       tx.afterCommit {
         println(s)

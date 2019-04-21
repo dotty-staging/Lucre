@@ -82,8 +82,8 @@ object Graph {
   private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]])
     extends IControl[S] {
 
-    def init()(implicit tx: S#Tx): Unit =
-      controls.foreach(_.init())
+    def initControl()(implicit tx: S#Tx): Unit =
+      controls.foreach(_.initControl())
 
     def dispose()(implicit tx: S#Tx): Unit =
       controls.foreach(_.dispose())

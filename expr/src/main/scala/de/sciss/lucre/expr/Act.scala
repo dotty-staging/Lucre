@@ -27,7 +27,7 @@ object Act {
     protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val tr    = source.expand[S]
       val ac    = sink  .expand[S]
-      val peer  = tr.changed.react { implicit tx => _ => ac.execute() }
+      val peer  = tr.changed.react { implicit tx => _ => ac.executeAction() }
       IControl.wrap(peer)
     }
   }

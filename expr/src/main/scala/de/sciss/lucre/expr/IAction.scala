@@ -16,5 +16,5 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.stm.{Base, Disposable}
 
 trait IAction[S <: Base[S]] extends Disposable[S#Tx] {
-  def execute()(implicit tx: S#Tx): Unit
+  def executeAction()(implicit tx: S#Tx): Unit
 }

@@ -32,7 +32,7 @@ object LoadBang {
 
     def dispose()(implicit tx: S#Tx): Unit = ()
 
-    def init()(implicit tx: S#Tx): Unit = fire(())
+    def initControl()(implicit tx: S#Tx): Unit = fire(())
   }
 
 }
