@@ -25,7 +25,7 @@ import scala.concurrent.stm.TMap
 
 trait ContextMixin[S <: Sys[S]] extends Context[S] {
   // ---- abstract ----
-  protected val graph: Graph
+
   protected def selfH: Option[stm.Source[S#Tx, Obj[S]]]
 
   // ---- impl ----
@@ -34,6 +34,14 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
 
   private[this] val sourceMap   = TMap.empty[AnyRef, Any]
   private[this] val properties  = new util.IdentityHashMap[Control, Map[String, Any]]()
+
+  def withGraph[A](g: Graph)(body: => A): A = {
+    properties.clear()
+    g.controls.foreach { conf =>
+      properties.put(conf.control, conf.properties)
+    }
+    body
+  }
 
   final def visit[U](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
     import TxnLike.peer
@@ -46,10 +54,6 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     }
   }
 
-  graph.controls.foreach { conf =>
-    properties.put(conf.control, conf.properties)
-  }
-
   def selfOption(implicit tx: S#Tx): Option[Obj[S]] = selfH.map(_.apply())
 
   def getProperty[A](c: Control, key: String): Option[A] = {
@@ -60,7 +64,6 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   }
 }
 
-final class ContextImpl[S <: Sys[S]](protected val graph: Graph,
-                                     protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
+final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
                                     (implicit val workspace: Workspace[S], val cursor: Cursor[S])
   extends ContextMixin[S]

@@ -21,14 +21,16 @@ import de.sciss.lucre.stm.{Cursor, Obj, Sys, Workspace}
 
 object Ex {
   object Context {
-    def apply[S <: Sys[S]](g: Graph = Graph.empty, selfH: Option[stm.Source[S#Tx, Obj[S]]] = None)
+    def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None)
                           (implicit workspace: Workspace[S], cursor: Cursor[S]): Context[S] =
-      new ContextImpl[S](g, selfH)
+      new ContextImpl[S](selfH)
   }
   trait Context[S <: Sys[S]] {
     implicit def targets  : ITargets  [S]
     implicit def cursor   : Cursor    [S]
     implicit def workspace: Workspace [S]
+
+    def withGraph[A](g: Graph)(body: => A): A
 
     def getProperty[A](c: Control, key: String): Option[A]
 

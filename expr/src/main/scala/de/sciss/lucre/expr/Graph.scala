@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
-import de.sciss.lucre.stm.{Cursor, Obj, Sys, Workspace}
+import de.sciss.lucre.stm.Sys
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
@@ -38,7 +38,7 @@ object Graph {
     def putProperty(c: Control, key: String, value: Any): Unit = ()
   }
 
-  def apply(thunk: => Unit): Graph = {
+  def apply(thunk: => Any): Graph = {
     val b = new BuilderImpl
     use(b) {
       thunk
@@ -97,19 +97,24 @@ object Graph {
 
     override def productPrefix: String = "Graph"
 
-    def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
-                           (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S] = {
-      implicit val ctx: Ex.Context[S] = Ex.Context(this, self.map(tx.newHandle(_)))
+    def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Ex.Context[S]): IControl[S] = {
       if (controls.isEmpty) IControl.empty[S] else {
-        val disposables = controls.map(_.control.expand[S])
+        val disposables = ctx.withGraph(this) {
+          controls.map(_.control.expand[S])
+        }
         new Graph.ExpandedImpl[S](disposables)
       }
     }
+
+//    def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
+//                           (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S] = {
+//      implicit val ctx: Ex.Context[S] = Ex.Context(this, self.map(tx.newHandle(_)))
+//        ...
+//    }
   }
 }
 trait Graph {
   def controls: Vec[Control.Configured]
 
-  def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
-                         (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S]
+  def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Ex.Context[S]): IControl[S]
 }

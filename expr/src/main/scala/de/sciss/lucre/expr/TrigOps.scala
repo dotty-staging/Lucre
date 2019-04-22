@@ -32,5 +32,8 @@ final class TrigOps(private val t: Trig) extends AnyVal {
 //    filter(!ex)
 //  }
 
-  def ---> (act: Act): Unit = Act.Link(t, act)
+  def ---> [A <: Act](act: A): A = {
+    Act.Link(t, act)
+    act
+  }
 }

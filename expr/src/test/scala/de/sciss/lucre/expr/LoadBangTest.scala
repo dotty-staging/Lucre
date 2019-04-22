@@ -16,7 +16,9 @@ object LoadBangTest extends App {
 
   import Workspace.Implicits._
 
+  implicit val ctx: Ex.Context[S] = Ex.Context()
+
   system.step { implicit tx =>
-    g.expand[S]().initControl()
+    g.expand.initControl()
   }
 }
