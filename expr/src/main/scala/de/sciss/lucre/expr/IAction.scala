@@ -16,5 +16,19 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.stm.{Base, Disposable}
 
 trait IAction[S <: Base[S]] extends Disposable[S#Tx] {
+  /** Directly adds a trigger input to the action.
+    * Actions that do not produce successive events can
+    * simply rewrite this as
+    *
+    * {{{
+    * tr.changed.react { implicit tx => _ => executeAction() }
+    * }}}
+    *
+    * If the action produces successive events, it should
+    * prevent this indirection, as triggered cannot be logically
+    * combined that way.
+    */
+  def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit
+
   def executeAction()(implicit tx: S#Tx): Unit
 }

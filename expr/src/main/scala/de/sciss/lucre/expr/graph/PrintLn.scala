@@ -14,18 +14,17 @@
 package de.sciss.lucre.expr
 package graph
 
+import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.stm.Sys
 
 object PrintLn {
-  private final class Expanded[S <: Sys[S]](text: IExpr[S, String]) extends IAction[S] {
+  private final class Expanded[S <: Sys[S]](text: IExpr[S, String]) extends IActionImpl[S] {
     def executeAction()(implicit tx: S#Tx): Unit = {
       val s = text.value
       tx.afterCommit {
         println(s)
       }
     }
-
-    def dispose()(implicit tx: S#Tx): Unit = ()
   }
 }
 final case class PrintLn(text: Ex[String]) extends Act {

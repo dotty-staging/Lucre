@@ -20,7 +20,7 @@ trait IEvent[S <: Base[S], +A] extends Observable[S#Tx, A] {
 //  private[event] def slot: Int
 
   /** Connects the given selector to this event. That is, this event will
-    * adds the selector to its propagation targets.
+    * add the selector to its propagation targets.
     */
   def ---> (sink: IEvent[S, Any])(implicit tx: S#Tx): Unit
 

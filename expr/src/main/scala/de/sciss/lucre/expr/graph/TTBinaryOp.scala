@@ -48,7 +48,7 @@ object TTBinaryOp {
   }
 
   private final class Expanded[S <: Base[S]](op: Op, a: ITrigger[S], b: ITrigger[S], tx0: S#Tx)
-                                                           (implicit protected val targets: ITargets[S])
+                                            (implicit protected val targets: ITargets[S])
     extends ITrigger[S] with IEventImpl[S, Unit] {
 
     a.changed.--->(this)(tx0)
