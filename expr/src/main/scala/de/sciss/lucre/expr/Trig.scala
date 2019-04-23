@@ -29,6 +29,14 @@ object Trig {
     protected def mkTrig[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S]
   }
 }
+
+/** A trigger element.
+  *
+  * ''Important:'' Implementation inadvertently run into trouble if they do not
+  * extend `Trig.Lazy` to avoid "splitting" of the event paths. The only reason this
+  * is not enforced is that implementation may already mixin lazy traits such as
+  * `Control` (and by extension, `Widget`).
+  */
 trait Trig extends Product {
   def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S]
 }
