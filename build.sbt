@@ -177,7 +177,7 @@ lazy val bdb7 = project.withId(s"$baseNameL-bdb7").in(file("bdb7"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb7" % mimaVersion)
   )
 
-lazy val loggingEnabled = false  // only effective for snapshot versions
+lazy val loggingEnabled = true  // only effective for snapshot versions
 
 // ---- publishing ----
 
