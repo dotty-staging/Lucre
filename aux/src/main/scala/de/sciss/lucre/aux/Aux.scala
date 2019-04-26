@@ -19,6 +19,8 @@ import de.sciss.serial.{DataInput, DataOutput, Writable}
 import de.sciss.numbers.{DoubleFunctions => rd, IntFunctions => ri, IntFunctions2 => ri2, LongFunctions => rl, LongFunctions2 => rl2}
 
 import scala.annotation.switch
+import scala.util.{Failure, Success, Try}
+import scala.util.control.NoStackTrace
 
 object Aux {
   private[Aux] final val COOKIE = 0x4175   // "Au"
@@ -343,6 +345,42 @@ object Aux {
     //    def double: NumDouble[Double]
   }
 
+  object FromAny {
+    val Unsupported: Try[Nothing] = Failure(new NoStackTrace {})
+
+    // So this is all a bit nasty. Trying to remember why `IntTop` is not
+    // an implicit object, but `BooleanTop` is. I think it has to do with
+    // disambiguating `IntTop` and `IntSeqTop`.
+    implicit def intTop     : IntTop    .type = IntTop
+    implicit def doubleTop  : DoubleTop .type = DoubleTop
+    implicit def longTop    : LongTop   .type = LongTop
+//    implicit def booleanTop : BooleanTop.type = BooleanTop
+//    implicit def stringTop  : StringTop .type = StringTop
+  }
+  trait FromAny[A] extends Aux {
+    /** Tries to extract a value of type `A` from an unknown input value.
+      * If the input value is generally incompatible with `A`, an efficient
+      * return value is `Unsupported`.
+      *
+      * The extraction should be direct and lossless. For example, a `FromAny[Int]`
+      * should not try to parse a string, nor should it case a `Long` to an `Int`.
+      * On the other hand, a `FromAny[Double]` should accept a `Float` as input.
+      */
+    def fromAny(in: Any): Try[A]
+  }
+
+  object HasDefault {
+    // So this is all a bit nasty. Trying to remember why `IntTop` is not
+    // an implicit object, but `BooleanTop` is. I think it has to do with
+    // disambiguating `IntTop` and `IntSeqTop`.
+    implicit def intTop     : IntTop    .type = IntTop
+    implicit def doubleTop  : DoubleTop .type = DoubleTop
+    implicit def longTop    : LongTop   .type = LongTop
+  }
+  trait HasDefault[A] {
+    def defaultValue: A
+  }
+
   type ScalarToNum[A] = ToNum[A] with Scalar[A]
 
   trait Scalar[A] {
@@ -381,7 +419,9 @@ object Aux {
   final object IntTop
     extends NumInt          [Int]
       with  ScalarEqImpl    [Int]
-      with  ScalarToNumImpl [Int] {
+      with  ScalarToNumImpl [Int]
+      with  FromAny         [Int]
+      with  HasDefault      [Int] {
 
     final val id = 0
 
@@ -459,12 +499,25 @@ object Aux {
     def fold(a: Int, lo: Int, hi: Int): Int = ri.fold(a, lo, hi)
     def clip(a: Int, lo: Int, hi: Int): Int = ri.clip(a, lo, hi)
     def wrap(a: Int, lo: Int, hi: Int): Int = ri.wrap(a, lo, hi)
+
+    // ---- FromAny ----
+
+    def fromAny(in: Any): Try[Int] = in match {
+      case i: Int => Success(i)
+      case _      => FromAny.Unsupported
+    }
+
+    // ---- HasDefault ----
+
+    def defaultValue: Int = 0
   }
 
   final object LongTop
     extends NumInt          [Long]
       with  ScalarEqImpl    [Long]
-      with  ScalarToNumImpl [Long] {
+      with  ScalarToNumImpl [Long]
+      with  FromAny         [Long]
+      with  HasDefault      [Long] {
 
     final val id = 6
 
@@ -530,6 +583,18 @@ object Aux {
     def fold (a: Long, lo: Long, hi: Long): Long = rl.fold(a, lo, hi)
     def clip (a: Long, lo: Long, hi: Long): Long = rl.clip(a, lo, hi)
     def wrap (a: Long, lo: Long, hi: Long): Long = rl.wrap(a, lo, hi)
+
+    // ---- FromAny ----
+
+    def fromAny(in: Any): Try[Long] = in match {
+      case n: Long  => Success(n)
+      case i: Int   => Success(i.toLong)
+      case _        => FromAny.Unsupported
+    }
+
+    // ---- HasDefault ----
+
+    def defaultValue: Long = 0L
   }
 
   trait WidenSelfToDouble[A] extends WidenToDouble[A, A] {
@@ -557,7 +622,9 @@ object Aux {
   sealed abstract class DoubleTop
     extends NumDouble       [Double]
       with  ScalarEqImpl    [Double]
-      with  ScalarToNumImpl [Double] {
+      with  ScalarToNumImpl [Double]
+      with  FromAny         [Double]
+      with  HasDefault      [Double] {
 
     def zero   : In = 0.0
     def one    : In = 1.0
@@ -655,6 +722,19 @@ object Aux {
     def fold(a: In, lo: In, hi: In): In = rd.fold(a, lo, hi)
     def clip(a: In, lo: In, hi: In): In = rd.clip(a, lo, hi)
     def wrap(a: In, lo: In, hi: In): In = rd.wrap(a, lo, hi)
+
+    // ---- FromAny ----
+
+    def fromAny(in: Any): Try[Double] = in match {
+      case d: Double  => Success(d)
+      case f: Float   => Success(f.toDouble)
+      case i: Int     => Success(i.toDouble)
+      case _          => FromAny.Unsupported
+    }
+
+    // ---- HasDefault ----
+
+    def defaultValue: Double = 0.0
   }
 
   implicit final object BooleanSeqTop
@@ -672,7 +752,9 @@ object Aux {
   implicit final object BooleanTop
     extends NumBool       [Boolean]
       with ScalarEqImpl   [Boolean]
-      with ScalarToNumImpl[Boolean] {
+      with ScalarToNumImpl[Boolean]
+      with FromAny        [Boolean]
+      with HasDefault     [Boolean] {
 
     final val id = 4
 
@@ -680,12 +762,36 @@ object Aux {
     def toDouble(a: In): Double  = if (a) 1.0 else 0.0
 
     def not(a: In): In = !a
+
+    // ---- FromAny ----
+
+    def fromAny(in: Any): Try[Boolean] = in match {
+      case b: Boolean => Success(b)
+      case _          => FromAny.Unsupported
+    }
+
+    // ---- HasDefault ----
+
+    def defaultValue: Boolean = false
   }
 
   implicit final object StringTop
-    extends ScalarEqImpl[String] {
+    extends ScalarEqImpl[String]
+    with    FromAny     [String]
+    with    HasDefault  [String] {
 
     final val id = 10
+
+    // ---- FromAny ----
+
+    def fromAny(in: Any): Try[String] = in match {
+      case s: String  => Success(s)
+      case _          => FromAny.Unsupported
+    }
+
+    // ---- HasDefault ----
+
+    def defaultValue: String = ""
   }
 
   // ---- extensibility ----

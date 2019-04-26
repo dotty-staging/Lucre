@@ -18,7 +18,7 @@ import java.io.File
 import java.util
 
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
-import de.sciss.lucre.expr.graph.Constant
+import de.sciss.lucre.expr.graph.Const
 import de.sciss.lucre.stm.Base
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
@@ -47,7 +47,7 @@ object ExElem {
     (in.readByte(): @switch) match {
       case 'C' =>
         val value = read(in, ref0)
-        Constant(value)
+        Const(value)
       case 'O' => if (in.readBoolean()) {
         val ref = if (ref0 == null) new RefMapIn else ref0
         Some(read(in, ref))
@@ -168,7 +168,7 @@ object ExElem {
   def write[A](v: A, out: DataOutput): Unit = write(v, out, null)
 
   def write(v: Any, out: DataOutput, ref0: RefMapOut): RefMapOut = v match {
-    case c: Constant[_] =>
+    case c: Const[_] =>
       out.writeByte('C')
       write(c.value, out, ref0)
 

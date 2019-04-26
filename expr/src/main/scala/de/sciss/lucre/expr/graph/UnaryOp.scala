@@ -335,6 +335,28 @@ object UnaryOp {
     def aux : scala.List[Aux] = Nil
   }
 
+  // ---- String ----
+
+  final case class StringIsEmpty() extends Op[String, Boolean] {
+    def apply(a: String)      : Boolean = a.isEmpty
+    def name                  : String  = "StringIsEmpty"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class StringNonEmpty() extends Op[String, Boolean] {
+    def apply(a: String)      : Boolean = !a.isEmpty
+    def name                  : String  = "StringNonEmpty"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class StringLength() extends Op[String, Int] {
+    def apply(a: String)      : Int     = a.length
+    def name                  : String  = "StringLength"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  // ---- Impl ----
+
   private final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
                                                    (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IEventImpl[S, Change[A]] {

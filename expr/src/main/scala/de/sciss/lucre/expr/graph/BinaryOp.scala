@@ -315,6 +315,17 @@ object BinaryOp {
     def aux : scala.List[Aux] = Nil
   }
 
+  // ---- String ----
+
+  final case class StringConcat() extends Op[String, String, String] {
+    def apply(a: String, b: String): String = a + b
+
+    def name: String          = "StringConcat"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  // ---- Impl ----
+
   private final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],
                                                             a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
                                                            (implicit protected val targets: ITargets[S])

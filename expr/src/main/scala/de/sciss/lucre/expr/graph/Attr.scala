@@ -190,7 +190,7 @@ final case class Attr[A](key: String)(implicit val bridge: Attr.Bridge[A])
   def update(in: Ex[A]): Control = Attr.Update(in, key)
 
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
-    ctx.selfOption.fold(Constant(Option.empty[A]).expand[S]) { self =>
+    ctx.selfOption.fold(Const(Option.empty[A]).expand[S]) { self =>
       import ctx.targets
       val attrView = bridge.cellView[S](self, key)
       new Attr.Expanded[S, A](attrView, tx)

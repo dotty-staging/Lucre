@@ -14,29 +14,29 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Constant, SeqMkString, ToTrig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Const, SeqMkString, ToTrig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
 import scala.collection.immutable.{Seq => ISeq}
 import scala.language.implicitConversions
 
 object ExOps {
-  implicit def constEx[A](x: A): Ex[A] = Constant(x)
+  implicit def constEx[A](x: A): Ex[A] = Const(x)
 
 //  implicit def constIntEx    (x: Int     ): Ex[Int     ] = Constant(x)
 //  implicit def constDoubleEx (x: Double  ): Ex[Double  ] = Constant(x)
 //  implicit def constBooleanEx(x: Boolean ): Ex[Boolean ] = Constant(x)
 //  implicit def constStringEx (x: String  ): Ex[String  ] = Constant(x)
 
-  implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Constant(x)
+  implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Const(x)
   implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
     case Some(ex) => UnOp(UnOp.OptionSome[A](), ex)
-    case None     => Constant(Option.empty[A])
+    case None     => Const(Option.empty[A])
   }
 
-  implicit def liftSeq[A](x: Seq[A]): Ex[ISeq[A]] = Constant(immutable(x))
+  implicit def liftSeq[A](x: Seq[A]): Ex[ISeq[A]] = Const(immutable(x))
 
   implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[ISeq[A]] =
-    if (x.isEmpty) Constant(Nil) else ExSeq(immutable(x): _*)
+    if (x.isEmpty) Const(Nil) else ExSeq(immutable(x): _*)
 
   private def immutable[A](in: Seq[A]): ISeq[A] = in match {
     case ix: ISeq[A] => ix
@@ -47,7 +47,7 @@ object ExOps {
   implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
   implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
 //  implicit def exBooleanOps  (x: Ex[Boolean])   : ExBooleanOps    = new ExBooleanOps(x)
-//  implicit def exStringOps   (x: Ex[String])    : ExStringOps     = new ExStringOps(x)
+  implicit def exStringOps   (x: Ex[String])    : ExStringOps     = new ExStringOps(x)
 
   implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
 
@@ -192,18 +192,17 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def changed: Trig = Changed(x)
 }
 
-//final class ExStringOps(private val x: Ex[String]) extends AnyVal {
-//  def length: Ex[Int]
-//
-//  def size: Ex[Int] = length
-//
-//  def isEmpty: Ex[Boolean]
-//
-//  def nonEmpty: Ex[Boolean] = {
-//    import ExOps.exOps
-//    !isEmpty
-//  }
-//}
+final class ExStringOps(private val x: Ex[String]) extends AnyVal {
+  def length  : Ex[Int]     = UnOp(UnOp.StringLength(), x)
+  def size    : Ex[Int]     = length
+
+  def isEmpty : Ex[Boolean] = UnOp(UnOp.StringIsEmpty(), x)
+  def nonEmpty: Ex[Boolean] = UnOp(UnOp.StringNonEmpty(), x)
+
+  def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
+
+  // def format(args: Ex[Any]*): Ex[String] = ...
+}
 
 final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
 //  def apply(index: Ex[Int]): Ex[A] = ...
