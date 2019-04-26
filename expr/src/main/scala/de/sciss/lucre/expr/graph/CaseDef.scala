@@ -24,17 +24,49 @@ import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
+import scala.util.Success
 
+object CaseDef {
+  sealed trait Expanded[S <: Sys[S], A] extends IExpr[S, A] {
+    def select(value: Any)(implicit tx: S#Tx): Boolean
+
+    def commit()(implicit tx: S#Tx): Unit
+  }
+}
 sealed trait CaseDef[A] extends Ex[A] with ProductWithAux {
   def fromAny: FromAny[A]
 
   def aux: List[Aux] = fromAny :: Nil
+
+  override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): CaseDef.Expanded[S, A]
 }
 
+object Quote {
+  private final class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, A])(implicit fromAny: FromAny[A])
+    extends Expanded[S, A] {
+
+    def select(value: Any)(implicit tx: S#Tx): Boolean =
+      fromAny.fromAny(value) match {
+        case Success(v) if v == in.value  => true
+        case _                            => false
+      }
+
+    def commit()(implicit tx: S#Tx): Unit = ()
+
+    def value(implicit tx: S#Tx): A = in.value
+
+    def dispose()(implicit tx: S#Tx): Unit = in.dispose()
+
+    def changed: IEvent[S, Change[A]] = in.changed
+  }
+
+  trait Expanded[S <: Sys[S], A] extends CaseDef.Expanded[S, A]
+}
 final case class Quote[A](in: Ex[A])(implicit val fromAny: FromAny[A])
   extends CaseDef[A] {
 
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = in.expand[S]
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): CaseDef.Expanded[S, A] =
+    new Quote.ExpandedImpl(in.expand[S])
 }
 
 object Var {
@@ -43,11 +75,14 @@ object Var {
   def apply[A]()(implicit from: FromAny[A], default: HasDefault[A]): Var[A] =
     Impl(Const(default.defaultValue))
 
-  private final class Expanded[S <: Sys[S], A](init: IExpr[S, A], tx0: S#Tx)
-                                              (implicit protected val targets: ITargets[S])
-    extends IExpr.Var[S, A] with IGenerator[S, Change[A]]{
+  trait Expanded[S <: Sys[S], A] extends CaseDef.Expanded[S, A] with IExpr.Var[S, A]
 
-    private[this] val ref = Ref(init)
+  private final class ExpandedImpl[S <: Sys[S], A](init: IExpr[S, A], tx0: S#Tx)
+                                              (implicit protected val targets: ITargets[S], val fromAny: FromAny[A])
+    extends Expanded[S, A] with IGenerator[S, Change[A]] {
+
+    private[this] val ref     = Ref(init)
+    private[this] val selRef  = Ref.make[A]
 
     init.changed.--->(changed)(tx0)
 
@@ -75,6 +110,21 @@ object Var {
         pull(ref().changed)
       }
 
+    def select(value: Any)(implicit tx: S#Tx): Boolean =
+      fromAny.fromAny(value) match {
+        case Success(v) =>
+          selRef() = v
+          true
+        case _ =>
+          false
+      }
+
+//    def commit()(implicit tx: S#Tx): Unit =
+//      ref() = new graph.Const.Expanded(selRef())
+
+    def commit()(implicit tx: S#Tx): Unit =
+      update(new graph.Const.Expanded(selRef()))
+
     def dispose()(implicit tx: S#Tx): Unit =
       ref().changed -/-> changed
 
@@ -82,14 +132,20 @@ object Var {
   }
 
   private final case class Impl[A](init: Ex[A])(implicit val fromAny: FromAny[A]) extends Var[A] {
+    // this acts now as a fast unique reference
+    @transient final private[this] lazy val ref = new AnyRef
+
     override def productPrefix: String = "Var"  // serialization
 
-    override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr.Var[S, A] = {
+    def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Var.Expanded[S, A] =
+      ctx.visit(ref, mkExpr)
+
+    private def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Var.Expanded[S, A] = {
       import ctx.targets
-      new graph.Var.Expanded[S, A](init.expand[S], tx)
+      new Var.ExpandedImpl[S, A](init.expand[S], tx)
     }
   }
 }
 trait Var[A] extends Ex[A] with CaseDef[A] with ProductWithAux {
-  override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr.Var[S, A]
+  override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Var.Expanded[S, A]
 }

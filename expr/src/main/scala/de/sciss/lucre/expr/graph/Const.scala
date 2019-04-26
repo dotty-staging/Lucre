@@ -19,7 +19,7 @@ import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object Const {
-  private final class Expanded[S <: Base[S], A](peer: A)
+  final class Expanded[S <: Base[S], A](peer: A)
     extends IExpr[S, A] {
 
     override def toString: String = peer.toString
@@ -32,7 +32,6 @@ object Const {
   }
 }
 final case class Const[A](value: A) extends Ex[A] {
-
   def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
     new Const.Expanded[S, A](value)
 
