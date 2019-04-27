@@ -1,7 +1,7 @@
 # Lucre
 
 [![Build Status](https://travis-ci.org/Sciss/Lucre.svg?branch=master)](https://travis-ci.org/Sciss/Lucre)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.11)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.12)
 
 ## statement
 
@@ -59,7 +59,7 @@ Where `{module}` is any of the above names. And for the database backend:
 Note that the file format of BDB JE v6 is not backward compatible with v5. Also BDB JE v6 requires Java 1.7, 
 whereas BDB v5 works with Java 1.6.
 
-The current version `v` is `"3.11.1"`.
+The current version `v` is `"3.12.0"`.
 
 ## contributing
 
