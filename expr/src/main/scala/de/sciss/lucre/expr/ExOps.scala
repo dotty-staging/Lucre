@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Const, SeqMkString, ToTrig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Const, ExMap, SeqMkString, ToTrig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
 import scala.collection.immutable.{Seq => ISeq}
 import scala.language.implicitConversions
@@ -216,6 +216,21 @@ final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
 
   def isEmpty   : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
   def nonEmpty  : Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
+
+  def map[B](f: Ex[A] => Ex[B]): Ex[ISeq[B]] = {
+    val b     = Graph.builder
+    val it    = b.allocToken[A]()
+    val inner =
+//      Graph {
+        f(it)
+//      }
+    ExMap[A, B](outer = x, it = it, inner = inner)
+  }
+
+  // XXX TODO --- have to introduce a type class because we cannot overload
+//  def flatMap[B](fun: Ex[A] => Ex[Option[B]]): Ex[ISeq[B]] = ...
+//
+//  def flatMap[B](fun: Ex[A] => Ex[ISeq[B]]): Ex[ISeq[B]] = ...
 
   def mkString(sep: Ex[String]): Ex[String] = {
     import ExOps.constEx

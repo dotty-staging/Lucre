@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.expr.graph.It
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
@@ -23,6 +24,8 @@ object Graph {
   trait Builder {
     def addControl  (c: Control): Unit
     def putProperty (c: Control, key: String, value: Any): Unit
+
+    def allocToken[A](): It[A]
   }
 
   /** This is analogous to `SynthGraph.Builder` in ScalaCollider. */
@@ -33,9 +36,13 @@ object Graph {
   }
 
   private[this] object BuilderDummy extends Builder {
+    private def outOfContext: Nothing = sys.error("Out of context")
+
     def addControl(c: Control): Unit = ()
 
     def putProperty(c: Control, key: String, value: Any): Unit = ()
+
+    def allocToken[A](): It[A] = outOfContext
   }
 
   def apply(thunk: => Any): Graph = {

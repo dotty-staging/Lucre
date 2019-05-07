@@ -16,12 +16,16 @@ package impl
 
 import java.util
 
+import de.sciss.lucre.expr.graph.It
+
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.mutable
 
 trait GraphBuilderMixin extends Graph.Builder {
   protected final val controls  : mutable.Builder[Control, Vec[Control]]          = Vector.newBuilder[Control]
   protected final val properties: util.IdentityHashMap[Control, Map[String, Any]] = new util.IdentityHashMap
+
+  private[this] var tokenId   = 0
 
   protected def buildControls(): Vec[Control.Configured] = {
     val vecC = controls.result()
@@ -46,4 +50,14 @@ trait GraphBuilderMixin extends Graph.Builder {
     val m2 = m1 + (key -> value)
     properties.put(c, m2)
   }
+
+  def allocToken[U](): It[U] =
+//    if (parent.isOutside)
+    {
+      val res = tokenId
+      tokenId += 1
+      It(res)
+//    } else {
+//      parent.allocToken()
+    }
 }

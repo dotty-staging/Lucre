@@ -24,3 +24,85 @@ trait IEvent[S <: Base[S], +A] extends Observable[S#Tx, A] {
 
 The amount of duplication is still low, and implementation wise, it does not look like we'd run into much
 DRY, because we won't be using `IdentifierMap`, deal with serialization, etc.
+
+-------
+
+# Map
+
+Can we do this: `Ex[Seq[A]] => Function1[A, B] => Ex[Seq[B]]`? Let's say we rely on a structure where expression
+values are not cached, so the auxiliary iterator variable of type `Ex[A]` does not need to dispatch events (well,
+if it is a problem, it could still do that), so we simply poll the function result expression a number of times,
+an the `IExpr` must hold a counter or something similar. So that `ExMap` expansion, when `value` is called, will
+reset the iterator and poll it a number of times.
+
+```
+trait ExMap[A, B](in: Ex[Seq[A]], it: Ex[A], fun: Ex[B]) extends Ex[Seq[B]] {
+  def expand = {
+    val inEx = in.expand
+    ...
+  }
+}
+```
+
+There is a cyclic dependency from `it` to `ExMap` (and vice versa). How did we solve this in Patterns?
+
+```
+  def map[B](f: Pat[A] => Pat[B]): Pat[Pat[B]] = {
+    val b     = Graph.builder
+    val it    = b.allocToken[A]()
+    val inner = Graph {
+      f(it)
+    }
+    PatMap(outer = x, it = it, inner = inner)
+  }
+  
+  // where
+  
+  def allocToken[A](): It[A]
+  
+  case class It[A](token: Int) extends Pattern[A]
+  
+  case class PatMap[A1, A](outer: Pat[Pat[A1]], it: It[A1], inner: Pat[A]) extends Pattern[Pat[A]]
+  
+```
+
+which would translate to
+
+```
+  def map[B](f: Ex[A] => Ex[B]): Ex[Seq[B]] = {
+    val b     = Graph.builder
+    val it    = b.allocToken[A]()
+    val inner = Graph {
+      f(it)
+    }
+    ExMap(outer = x, it = it, inner = inner)
+  }
+  
+  // where
+  
+  def allocToken[A](): It[A]
+  
+  case class It[A](token: Int) extends Ex[A]
+  
+  case class PatMap[A1, A](outer: Ex[Seq[A1]], it: It[A1], inner: Pat[A]) extends Ex[Seq[A]]
+  
+```
+
+There is also
+
+```
+trait ItStreamSource[S <: Base[S], A] {
+  def token: Int
+
+  def mkItStream()(implicit ctx: Context[S], tx: S#Tx): ItStream[S, A]
+
+  def registerItStream(stream: ItStream[S, A])(implicit tx: S#Tx): Unit
+}
+
+```
+
+where the `PatMap` expands to such `ItStreamSource`. This might be more complex and different than what we need,
+because of the multiple expansion of the same pattern (`It`) into streams.
+
+Basically, what we need to copy is the `allocToken`, and a simplified form of it-stream-input, like
+`putItSource` and `popItSource`.
