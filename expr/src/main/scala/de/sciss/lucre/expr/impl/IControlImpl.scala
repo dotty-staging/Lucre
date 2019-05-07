@@ -13,7 +13,8 @@
 
 package de.sciss.lucre.expr.impl
 
-import de.sciss.lucre.expr.{Control, Ex, IControl}
+import de.sciss.lucre.expr.graph.{Control, Ex}
+import de.sciss.lucre.expr.{Context, IControl}
 import de.sciss.lucre.stm.{Disposable, Sys}
 
 trait IControlImpl[S <: Sys[S]] extends IControl[S] {
@@ -25,7 +26,7 @@ trait IControlImpl[S <: Sys[S]] extends IControl[S] {
   def initControl()(implicit tx: S#Tx): Unit = ()
 
   protected final def initProperty[A](key: String, default: A)(set: S#Tx => A => Unit)
-                                     (implicit tx: S#Tx, ctx: Ex.Context[S]): Unit =
+                                     (implicit tx: S#Tx, ctx: Context[S]): Unit =
     ctx.getProperty[Ex[A]](peer, key) match {
       case Some(ex) =>
         val expr    = ex.expand[S]

@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.{Control, Ex, IControl, ITrigger, Trig}
+import de.sciss.lucre.expr.{Context, IControl, ITrigger}
 import de.sciss.lucre.stm.{Base, Sys}
 
 object LoadBang {
@@ -39,7 +39,7 @@ object LoadBang {
 final case class LoadBang() extends Control with Trig {
   type Repr[S <: Base[S]] = IControl[S] with ITrigger[S]
 
-  protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     new LoadBang.Expanded[S](tx)
   }

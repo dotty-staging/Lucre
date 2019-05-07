@@ -17,8 +17,8 @@ import de.sciss.lucre.aux.Aux.{FromAny, HasDefault}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.Ex.Context
-import de.sciss.lucre.expr.{Ex, IExpr, graph}
+import de.sciss.lucre.expr.Context
+import de.sciss.lucre.expr.{IExpr, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change

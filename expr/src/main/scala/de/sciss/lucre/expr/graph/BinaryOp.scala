@@ -21,8 +21,6 @@ import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
-import scala.collection.immutable.{Seq => ISeq}
-
 object BinaryOp {
   sealed abstract class Op[A, B, C] extends ProductWithAux {
     def apply(a: A, b: B): C
@@ -306,8 +304,8 @@ object BinaryOp {
 
   // ---- Seq ----
 
-  final case class SeqApplyOption[A]() extends Op[ISeq[A], Int, Option[A]] {
-    def apply(a: ISeq[A], b: Int): Option[A] = if (b < 0) None else {
+  final case class SeqApplyOption[A]() extends Op[Seq[A], Int, Option[A]] {
+    def apply(a: Seq[A], b: Int): Option[A] = if (b < 0) None else {
       if (a.lengthCompare(b) <= 0) None else Some(a.apply(b))
     }
 
@@ -384,7 +382,7 @@ object BinaryOp {
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A], a: Ex[A1], b: Ex[A2])
   extends Ex.Lazy[A] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]

@@ -19,7 +19,7 @@ import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.impl.ExpandedAttrUpdate
 import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
-import de.sciss.lucre.expr.{BooleanObj, CellView, Control, DoubleObj, DoubleVector, Ex, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
+import de.sciss.lucre.expr.{BooleanObj, CellView, DoubleObj, DoubleVector, Context, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
@@ -33,8 +33,8 @@ object Attr {
     def update(in: Ex[A]): Control
   }
 
-  private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Ex.Context[S], tx: S#Tx,
-                                                   bridge: Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
+  private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
+                                                                bridge: Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
     @tailrec
     def loop(objOpt: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
       objOpt match {
@@ -67,7 +67,7 @@ object Attr {
 
       def update(in: Ex[A]): Control = Attr.Update(in, key)
 
-      def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+      def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
         val defaultEx = default.expand[S]
         resolveNested(key).fold(defaultEx) { attrView =>
           import ctx.targets
@@ -174,7 +174,7 @@ object Attr {
 
     type Repr[S <: Sys[S]] = IControl[S]
 
-    protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val peer = resolveNested(key).fold(Disposable.empty[S#Tx]) { attrView =>
         new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       }
@@ -189,7 +189,7 @@ final case class Attr[A](key: String)(implicit val bridge: Attr.Bridge[A])
 
   def update(in: Ex[A]): Control = Attr.Update(in, key)
 
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
     ctx.selfOption.fold(Const(Option.empty[A]).expand[S]) { self =>
       import ctx.targets
       val attrView = bridge.cellView[S](self, key)

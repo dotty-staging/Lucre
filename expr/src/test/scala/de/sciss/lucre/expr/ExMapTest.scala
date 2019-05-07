@@ -1,17 +1,16 @@
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.stm.{InMemory, Workspace}
-
-import scala.collection.immutable.{Seq => ISeq}
 
 object ExMapTest extends App {
   type S = InMemory
 
   val g = Graph {
     import ExOps._
-    import graph._
+    import graph.{Ex=> _, _}
 
-    val in: Ex[ISeq[Double]] = Seq(0.0, 3.0, 6.0)
+    val in: Ex[Seq[Double]] = Seq(0.0, 3.0, 6.0)
     val out = in.map(_.dbAmp)
     val b = LoadBang()
     val c = in.changed  // XXX TODO --- can't really test this as `in` is constant
@@ -25,7 +24,7 @@ object ExMapTest extends App {
 
   import Workspace.Implicits._
 
-  implicit val ctx: Ex.Context[S] = Ex.Context()
+  implicit val ctx: Context[S] = Context()
 
   system.step { implicit tx =>
     g.expand.initControl()

@@ -15,32 +15,30 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.{Ex, IExpr}
+import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
-import scala.collection.immutable.{Seq => ISeq}
-
 object ExMap {
-  private final class Expanded[S <: Sys[S], A, B](outer: IExpr[S, ISeq[A]], it: It.Expanded[S, A],
+  private final class Expanded[S <: Sys[S], A, B](outer: IExpr[S, Seq[A]], it: It.Expanded[S, A],
                                                   inner: IExpr[S, B], tx0: S#Tx)
                                                  (implicit protected val targets: ITargets[S])
-    extends IExpr[S, ISeq[B]] with IEventImpl[S, Change[ISeq[B]]] {
+    extends IExpr[S, Seq[B]] with IEventImpl[S, Change[Seq[B]]] {
 
     outer.changed.--->(this)(tx0)
 
-    def value(implicit tx: S#Tx): ISeq[B] = {
+    def value(implicit tx: S#Tx): Seq[B] = {
       val outerV = outer.value
       valueOf(outerV)
     }
 
-    private def valueOf(inSeq: ISeq[A])(implicit tx: S#Tx): ISeq[B] =
+    private def valueOf(inSeq: Seq[A])(implicit tx: S#Tx): Seq[B] =
       inSeq.map { in =>
         it.setValue(in)
         inner.value
       }
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[ISeq[B]]] =
+    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[B]]] =
       pull(outer.changed).flatMap { inCh =>
         val before  = valueOf(inCh.before )
         val now     = valueOf(inCh.now    )
@@ -50,11 +48,11 @@ object ExMap {
     def dispose()(implicit tx: S#Tx): Unit =
       outer.changed.-/->(this)
 
-    def changed: IEvent[S, Change[ISeq[B]]] = this
+    def changed: IEvent[S, Change[Seq[B]]] = this
   }
 }
-final case class ExMap[A, B](outer: Ex[ISeq[A]], it: It[A], inner: Ex[B]) extends Ex.Lazy[ISeq[B]] {
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, ISeq[B]] = {
+final case class ExMap[A, B](outer: Ex[Seq[A]], it: It[A], inner: Ex[B]) extends Ex.Lazy[Seq[B]] {
+  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, Seq[B]] = {
     val outerEx = outer .expand[S]
     val itEx    = it    .expand[S]
     val innerEx = inner .expand[S]

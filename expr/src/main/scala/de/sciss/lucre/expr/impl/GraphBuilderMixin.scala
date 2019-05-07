@@ -16,7 +16,7 @@ package impl
 
 import java.util
 
-import de.sciss.lucre.expr.graph.It
+import de.sciss.lucre.expr.graph.{Control, It}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.mutable

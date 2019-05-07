@@ -11,8 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.expr.{Context, Graph, IControl}
 import de.sciss.lucre.stm.Sys
 
 import scala.language.higherKinds
@@ -31,8 +32,8 @@ trait Control extends Product {
   // ---- constructor ----
   Graph.builder.addControl(this)
 
-  final def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S] =
+  final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
     ctx.visit[Repr[S]](ref, mkControl)
 
-  protected def mkControl[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): Repr[S]
+  protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S]
 }

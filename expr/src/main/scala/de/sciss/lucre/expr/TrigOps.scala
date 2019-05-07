@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{TTBinaryOp, TBinaryOp}
+import de.sciss.lucre.expr.graph.{Act, Ex, TBinaryOp, TTBinaryOp, Trig}
 
 import scala.language.implicitConversions
 

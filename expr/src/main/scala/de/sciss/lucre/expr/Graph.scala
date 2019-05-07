@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.It
+import de.sciss.lucre.expr.graph.{Control, It}
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
@@ -104,7 +104,7 @@ object Graph {
 
     override def productPrefix: String = "Graph"
 
-    def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Ex.Context[S]): IControl[S] = {
+    def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S] = {
       if (controls.isEmpty) IControl.empty[S] else {
         val disposables = ctx.withGraph(this) {
           controls.map(_.control.expand[S])
@@ -115,7 +115,7 @@ object Graph {
 
 //    def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
 //                           (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S] = {
-//      implicit val ctx: Ex.Context[S] = Ex.Context(this, self.map(tx.newHandle(_)))
+//      implicit val ctx: ExContext[S] = ExContext(this, self.map(tx.newHandle(_)))
 //        ...
 //    }
   }
@@ -123,5 +123,5 @@ object Graph {
 trait Graph {
   def controls: Vec[Control.Configured]
 
-  def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Ex.Context[S]): IControl[S]
+  def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S]
 }

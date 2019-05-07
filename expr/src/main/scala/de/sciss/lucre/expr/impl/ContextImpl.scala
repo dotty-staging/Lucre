@@ -1,5 +1,5 @@
 /*
- *  ContextImpl.scala
+ *  ContextMixin.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -17,7 +17,7 @@ package impl
 import java.util
 
 import de.sciss.lucre.event.ITargets
-import de.sciss.lucre.expr.Ex.Context
+import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Cursor, Obj, Sys, TxnLike, Workspace}
 

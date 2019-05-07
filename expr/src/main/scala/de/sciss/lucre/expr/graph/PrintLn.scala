@@ -28,6 +28,6 @@ object PrintLn {
   }
 }
 final case class PrintLn(text: Ex[String]) extends Act {
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IAction[S] =
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IAction[S] =
     new PrintLn.Expanded(text.expand[S])
 }

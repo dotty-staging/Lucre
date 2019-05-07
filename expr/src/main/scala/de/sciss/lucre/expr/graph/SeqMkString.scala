@@ -13,16 +13,15 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.expr.{Ex, IExpr}
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.expr.Context
+import de.sciss.lucre.expr.IExpr
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
-import scala.collection.immutable.{Seq => ISeq}
-
 object SeqMkString {
-  private final class Expanded[S <: Base[S], A](in: IExpr[S, ISeq[A]], start: IExpr[S, String], sep: IExpr[S, String],
+  private final class Expanded[S <: Base[S], A](in: IExpr[S, Seq[A]], start: IExpr[S, String], sep: IExpr[S, String],
                                                 stop: IExpr[S, String], tx0: S#Tx)
                                                (implicit protected val targets: ITargets[S])
     extends IExpr[S, String] with IEventImpl[S, Change[String]] {
@@ -60,7 +59,7 @@ object SeqMkString {
     }
 
     @inline
-    private def value1(inV: ISeq[A], startV: String, sepV: String, stopV: String): String =
+    private def value1(inV: Seq[A], startV: String, sepV: String, stopV: String): String =
       inV.mkString(startV, sepV, stopV)
 
     def value(implicit tx: S#Tx): String = {
@@ -79,10 +78,10 @@ object SeqMkString {
     }
   }
 }
-final case class SeqMkString[A](in: Ex[ISeq[A]], start: Ex[String], sep: Ex[String], stop: Ex[String])
+final case class SeqMkString[A](in: Ex[Seq[A]], start: Ex[String], sep: Ex[String], stop: Ex[String])
   extends Ex.Lazy[String] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, String] = {
+  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, String] = {
     import ctx.targets
     val inExp     = in    .expand[S]
     val startExp  = start .expand[S]

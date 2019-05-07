@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.Attr
+import de.sciss.lucre.expr.graph.{Attr, Ex}
 
 trait Model[A] {
   def apply(): Ex[A]

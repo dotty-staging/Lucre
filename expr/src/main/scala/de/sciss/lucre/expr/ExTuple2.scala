@@ -15,6 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
@@ -57,7 +58,7 @@ object ExTuple2 {
   }
 }
 final case class ExTuple2[+T1, +T2](_1: Ex[T1], _2: Ex[T2]) extends Ex[(T1, T2)] {
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, (T1, T2)] = {
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, (T1, T2)] = {
     import ctx.targets
     val _1Ex = _1.expand[S]
     val _2Ex = _2.expand[S]

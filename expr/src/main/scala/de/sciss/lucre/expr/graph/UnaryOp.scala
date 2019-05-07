@@ -22,8 +22,6 @@ import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
-import scala.collection.immutable.{Seq => ISeq}
-
 object UnaryOp {
   sealed abstract class Op[A1, A2] extends ProductWithAux {
     override final def productPrefix = s"UnaryOp$$$name"
@@ -305,32 +303,32 @@ object UnaryOp {
 
   // ---- Seq ----
 
-  final case class SeqSize[A]() extends Op[ISeq[A], Int] {
-    def apply(a: ISeq[A])     : Int     = a.size
+  final case class SeqSize[A]() extends Op[Seq[A], Int] {
+    def apply(a: Seq[A])      : Int     = a.size
     def name                  : String  = "SeqSize"
     def aux : scala.List[Aux] = Nil
   }
 
-  final case class SeqHeadOption[A]() extends Op[ISeq[A], Option[A]] {
-    def apply(a: ISeq[A])     : Option[A] = a.headOption
+  final case class SeqHeadOption[A]() extends Op[Seq[A], Option[A]] {
+    def apply(a: Seq[A])      : Option[A] = a.headOption
     def name                  : String    = "SeqHeadOption"
     def aux : scala.List[Aux] = Nil
   }
 
-  final case class SeqLastOption[A]() extends Op[ISeq[A], Option[A]] {
-    def apply(a: ISeq[A])     : Option[A] = a.lastOption
+  final case class SeqLastOption[A]() extends Op[Seq[A], Option[A]] {
+    def apply(a: Seq[A])      : Option[A] = a.lastOption
     def name                  : String    = "SeqLastOption"
     def aux : scala.List[Aux] = Nil
   }
 
-  final case class SeqIsEmpty[A]() extends Op[ISeq[A], Boolean] {
-    def apply(a: ISeq[A])     : Boolean = a.isEmpty
+  final case class SeqIsEmpty[A]() extends Op[Seq[A], Boolean] {
+    def apply(a: Seq[A])      : Boolean = a.isEmpty
     def name                  : String  = "SeqIsEmpty"
     def aux : scala.List[Aux] = Nil
   }
 
-  final case class SeqNonEmpty[A]() extends Op[ISeq[A], Boolean] {
-    def apply(a: ISeq[A])     : Boolean = a.nonEmpty
+  final case class SeqNonEmpty[A]() extends Op[Seq[A], Boolean] {
+    def apply(a: Seq[A])      : Boolean = a.nonEmpty
     def name                  : String  = "SeqNonEmpty"
     def aux : scala.List[Aux] = Nil
   }
@@ -391,7 +389,7 @@ object UnaryOp {
 final case class UnaryOp[A1, A](op: Op[A1, A], a: Ex[A1])
   extends Ex.Lazy[A] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
     val ax = a.expand[S]
     new UnaryOp.Expanded[S, A1, A](op, ax, tx)

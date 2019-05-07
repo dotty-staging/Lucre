@@ -32,7 +32,7 @@ object Const {
   }
 }
 final case class Const[A](value: A) extends Ex[A] {
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] =
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] =
     new Const.Expanded[S, A](value)
 
   override def toString: String = value.toString

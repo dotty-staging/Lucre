@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.{Ex, ITrigger, Trig}
+import de.sciss.lucre.expr.{Context, ITrigger}
 import de.sciss.lucre.stm.{Base, Sys}
 
 object TTBinaryOp {
@@ -78,7 +78,7 @@ object TTBinaryOp {
 final case class TTBinaryOp(op: TTBinaryOp.Op, a: Trig, b: Trig)
   extends Trig.Lazy {
 
-  protected def mkTrig[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): ITrigger[S] = {
+  protected def mkTrig[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S] = {
     import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]

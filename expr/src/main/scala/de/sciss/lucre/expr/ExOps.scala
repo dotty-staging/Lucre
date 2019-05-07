@@ -14,9 +14,8 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Const, ExMap, SeqMkString, ToTrig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Const, Ex, ExMap, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 
-import scala.collection.immutable.{Seq => ISeq}
 import scala.language.implicitConversions
 
 object ExOps {
@@ -33,18 +32,18 @@ object ExOps {
     case None     => Const(Option.empty[A])
   }
 
-  implicit def liftSeq[A](x: Seq[A]): Ex[ISeq[A]] = Const(immutable(x))
+  implicit def liftSeq[A](x: Seq[A]): Ex[Seq[A]] = Const(x) // immutable(x))
 
-  implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[ISeq[A]] =
-    if (x.isEmpty) Const(Nil) else ExSeq(immutable(x): _*)
+  implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[Seq[A]] =
+    if (x.isEmpty) Const(Nil) else ExSeq(x: _*) // immutable(x): _*)
 
-  private def immutable[A](in: Seq[A]): ISeq[A] = in match {
-    case ix: ISeq[A] => ix
-    case _ => in.toList
-  }
+//  private def immutable[A](in: Seq[A]): ISeq[A] = in match {
+//    case ix: ISeq[A]  => ix
+//    case _            => in.toList
+//  }
 
   implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps       (x)
-  implicit def exSeqOps   [A](x: Ex[ISeq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
+  implicit def exSeqOps   [A](x: Ex[Seq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
   implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
 //  implicit def exBooleanOps  (x: Ex[Boolean])   : ExBooleanOps    = new ExBooleanOps(x)
   implicit def exStringOps   (x: Ex[String])    : ExStringOps     = new ExStringOps(x)
@@ -204,7 +203,7 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   // def format(args: Ex[Any]*): Ex[String] = ...
 }
 
-final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
+final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 //  def apply(index: Ex[Int]): Ex[A] = ...
 
   def applyOption(index: Ex[Int]): Ex[Option[A]] = BinOp(BinOp.SeqApplyOption[A](), x, index)
@@ -217,7 +216,7 @@ final class ExSeqOps[A](private val x: Ex[ISeq[A]]) extends AnyVal {
   def isEmpty   : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
   def nonEmpty  : Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
 
-  def map[B](f: Ex[A] => Ex[B]): Ex[ISeq[B]] = {
+  def map[B](f: Ex[A] => Ex[B]): Ex[Seq[B]] = {
     val b     = Graph.builder
     val it    = b.allocToken[A]()
     val inner =

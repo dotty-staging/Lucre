@@ -132,7 +132,7 @@ object TernaryOp {
 final case class TernaryOp[A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A], a: Ex[A1], b: Ex[A2], c: Ex[A3])
   extends Ex.Lazy[A] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]

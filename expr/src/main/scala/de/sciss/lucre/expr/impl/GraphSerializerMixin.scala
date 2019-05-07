@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
+import de.sciss.lucre.expr.graph.Control
 import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.collection.immutable.{IndexedSeq => Vec}

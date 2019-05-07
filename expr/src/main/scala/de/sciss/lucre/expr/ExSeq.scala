@@ -16,6 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
@@ -73,7 +74,7 @@ final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] {
 
   override def toString: String = simpleString
 
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
     import ctx.targets
     val elemsEx: ISeq[IExpr[S, A]] = elems.iterator.map(_.expand[S]).toList
     new expr.ExSeq.Expanded(elemsEx).init()

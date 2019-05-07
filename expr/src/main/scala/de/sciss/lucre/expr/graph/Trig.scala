@@ -11,9 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.Ex.Context
+import de.sciss.lucre.expr.Context
+import de.sciss.lucre.expr.ITrigger
 import de.sciss.lucre.stm.Sys
 
 object Trig {

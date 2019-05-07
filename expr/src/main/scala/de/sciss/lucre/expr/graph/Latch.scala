@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.{Ex, IExpr, ITrigger, Trig, graph}
+import de.sciss.lucre.expr.{Context, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change
@@ -48,7 +48,7 @@ object Latch {
   }
 }
 final case class Latch[A](in: Ex[A], trig: Trig) extends Ex[A] {
-  def expand[S <: Sys[S]](implicit ctx: Ex.Context[S], tx: S#Tx): IExpr[S, A] = {
+  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
     import ctx.targets
     new graph.Latch.Expanded(in.expand[S], trig.expand[S], tx)
   }
