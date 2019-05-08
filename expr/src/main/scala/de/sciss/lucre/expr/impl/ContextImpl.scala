@@ -18,27 +18,27 @@ import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Source, Sys, Workspace}
+import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, Workspace}
 
-import scala.concurrent.stm.TMap
+import scala.annotation.tailrec
+import scala.concurrent.stm.{Ref, TMap}
 
 trait ContextMixin[S <: Sys[S]] extends Context[S] {
   // ---- abstract ----
-
-  type Repr <: ContextMixin[S]
 
   protected def selfH: Option[stm.Source[S#Tx, Obj[S]]]
 
   // ---- impl ----
 
-//  final val targets: ITargets[S] = ITargets[S]
+  final val targets: ITargets[S] = ITargets[S]
 
-  private[this] val sourceMap   = TMap.empty[AnyRef, Disposable[S#Tx]]
-  private[this] val properties  = TMap.empty[AnyRef, Map[String, Any]]
+  private type SourceMap  = Map [AnyRef, Disposable[S#Tx]]
+  private type Properties = TMap[AnyRef, Map[String, Any]]
 
-  protected def parentOption: Option[Repr]
+  private[this] val sourceMap : Ref[SourceMap]  = Ref(Map.empty)
+  private[this] val properties: Properties      = TMap.empty
 
-  protected def mkChild: Repr
+  private[this] val parents = Ref(List.empty[SourceMap])
 
   def initGraph(g: Graph)(implicit tx: S#Tx): Unit = {
     properties.clear()
@@ -48,8 +48,10 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   }
 
   def nested[A](body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
-    ??? // continue here
-    val disposableIt = sourceMap.values
+    val parentMap = sourceMap.swap(Map.empty)
+    parents.transform(parentMap :: _)
+    val res = body
+    val disposableIt = sourceMap().values
     val disposable: Disposable[S#Tx] =
       if (disposableIt.isEmpty) Disposable.empty
       else disposableIt.toList match {
@@ -57,29 +59,45 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
         case more           => Disposable.seq(more: _*)
       }
 
-    (body, disposable)
+    parents.transform(_.tail)
+    sourceMap() = parentMap
+
+    (res, disposable)
   }
 
-  def dispose()(implicit tx: S#Tx): Unit =
-    if (!sourceMap.isEmpty) {
-      sourceMap.foreach(_._2.dispose())
-      sourceMap.clear()
-    }
+  def dispose()(implicit tx: S#Tx): Unit = {
+    require (parents().isEmpty, "Must not call dispose in a nested operation")
+    val m = sourceMap.swap(Map.empty)
+    m.foreach(_._2.dispose())
+  }
 
   final def visit[U <: Disposable[S#Tx]](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
-    sourceMap.get(ref) match {
+    sourceMap().get(ref) match {
       case Some(res) => res.asInstanceOf[U]  // not so pretty...
       case None =>
-        val exp    = init
-        sourceMap += ref -> exp
-        exp
-    }
+        @tailrec
+        def loop(rem: List[SourceMap]): U =
+          rem match {
+            case head :: tail =>
+              head.get(ref) match {
+                case Some(res) => res.asInstanceOf[U]
+                case None => loop(tail)
+              }
+
+            case Nil =>
+              val exp    = init
+              sourceMap.transform(m => m + (ref -> exp))
+              exp
+          }
+
+        loop(parents())
+     }
   }
 
   def selfOption(implicit tx: S#Tx): Option[Obj[S]] = selfH.map(_.apply())
 
   def getProperty[A](c: Control, key: String)(implicit tx: S#Tx): Option[A] = {
-    val m0 = properties.get(c.token)
+    val m0: Map[String, Any] = properties.get(c.token).orNull
     if (m0 == null) None else {
       m0.get(key).asInstanceOf[Option[A]]
     }
@@ -88,27 +106,4 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
 
 final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
                                     (implicit val workspace: Workspace[S], val cursor: Cursor[S])
-  extends ContextMixin[S] { outer =>
-
-  type Repr = ContextMixin[S]
-
-  val targets: ITargets[S] = ITargets[S]
-
-  protected def parentOption: Option[ContextImpl[S]] = None
-
-  protected def mkChild: Repr = new Child(this)
-
-  private final class Child(parent: ContextMixin[S]) extends ContextMixin[S] {
-    type Repr = ContextMixin[S]
-
-    protected def selfH: Option[Source[S#Tx, Obj[S]]] = outer.selfH
-
-    protected val parentOption: Option[Repr] = Some(parent)
-
-    protected def mkChild: Repr = new Child(this)
-
-    implicit def targets  : ITargets  [S] = outer.targets
-    implicit def cursor   : Cursor    [S] = outer.cursor
-    implicit def workspace: Workspace [S] = outer.workspace
-  }
-}
+  extends ContextMixin[S]

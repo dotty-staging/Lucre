@@ -29,8 +29,14 @@ trait Context[S <: Sys[S]] extends Disposable[S#Tx] {
   implicit def cursor   : Cursor    [S]
   implicit def workspace: Workspace [S]
 
+  /** Prepares graph expansion by copying control properties over
+    * for subsequent look-up through `getProperty`.
+    */
   def initGraph(g: Graph)(implicit tx: S#Tx): Unit
 
+  /** Creates a temporary nested context into which all `visit` calls are
+    * redirected, thus a compound `Disposable` can be returned.
+    */
   def nested[A](body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
 
   def getProperty[A](control: Control, key: String)(implicit tx: S#Tx): Option[A]
