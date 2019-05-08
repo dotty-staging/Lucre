@@ -78,8 +78,9 @@ object Attr {
       override def aux: scala.List[Aux] = bridge :: Nil
     }
 
-    final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A], tx0: S#Tx)
-                                        (implicit protected val targets: ITargets[S])
+    private[graph] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
+                                                        tx0: S#Tx)
+                                                       (implicit protected val targets: ITargets[S])
       extends IExpr[S, A] with IGenerator[S, Change[A]] {
 
       private[this] val ref = Ref(attrView()(tx0))
@@ -144,8 +145,8 @@ object Attr {
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
   }
 
-  final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
-                                      (implicit protected val targets: ITargets[S])
+  private[graph] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
+                                                     (implicit protected val targets: ITargets[S])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
 
     private[this] val ref = Ref(value(tx0))
