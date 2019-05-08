@@ -14,38 +14,42 @@
 package de.sciss.lucre.expr
 package impl
 
-import java.util
-
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, TxnLike, Workspace}
+import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Source, Sys, Workspace}
 
 import scala.concurrent.stm.TMap
 
 trait ContextMixin[S <: Sys[S]] extends Context[S] {
   // ---- abstract ----
 
+  type Repr <: ContextMixin[S]
+
   protected def selfH: Option[stm.Source[S#Tx, Obj[S]]]
 
   // ---- impl ----
 
-  final val targets: ITargets[S] = ITargets[S]
+//  final val targets: ITargets[S] = ITargets[S]
 
   private[this] val sourceMap   = TMap.empty[AnyRef, Disposable[S#Tx]]
-  private[this] val properties  = new util.IdentityHashMap[Control, Map[String, Any]]()
+  private[this] val properties  = TMap.empty[AnyRef, Map[String, Any]]
 
-  def withGraph[A](g: Graph)(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
+  protected def parentOption: Option[Repr]
+
+  protected def mkChild: Repr
+
+  def initGraph(g: Graph)(implicit tx: S#Tx): Unit = {
     properties.clear()
-    // XXX TODO --- continue here; instead of clearing,
-    // we should nest contexts with parent look-up.
-    sourceMap .clear()
     g.controls.foreach { conf =>
-      properties.put(conf.control, conf.properties)
+      properties.put(conf.control.token, conf.properties)
     }
+  }
+
+  def nested[A](body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
+    ??? // continue here
     val disposableIt = sourceMap.values
-    sourceMap.clear()
     val disposable: Disposable[S#Tx] =
       if (disposableIt.isEmpty) Disposable.empty
       else disposableIt.toList match {
@@ -63,7 +67,6 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     }
 
   final def visit[U <: Disposable[S#Tx]](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
-    import TxnLike.peer
     sourceMap.get(ref) match {
       case Some(res) => res.asInstanceOf[U]  // not so pretty...
       case None =>
@@ -75,8 +78,8 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
 
   def selfOption(implicit tx: S#Tx): Option[Obj[S]] = selfH.map(_.apply())
 
-  def getProperty[A](c: Control, key: String): Option[A] = {
-    val m0 = properties.get(c)
+  def getProperty[A](c: Control, key: String)(implicit tx: S#Tx): Option[A] = {
+    val m0 = properties.get(c.token)
     if (m0 == null) None else {
       m0.get(key).asInstanceOf[Option[A]]
     }
@@ -85,4 +88,27 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
 
 final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
                                     (implicit val workspace: Workspace[S], val cursor: Cursor[S])
-  extends ContextMixin[S]
+  extends ContextMixin[S] { outer =>
+
+  type Repr = ContextMixin[S]
+
+  val targets: ITargets[S] = ITargets[S]
+
+  protected def parentOption: Option[ContextImpl[S]] = None
+
+  protected def mkChild: Repr = new Child(this)
+
+  private final class Child(parent: ContextMixin[S]) extends ContextMixin[S] {
+    type Repr = ContextMixin[S]
+
+    protected def selfH: Option[Source[S#Tx, Obj[S]]] = outer.selfH
+
+    protected val parentOption: Option[Repr] = Some(parent)
+
+    protected def mkChild: Repr = new Child(this)
+
+    implicit def targets  : ITargets  [S] = outer.targets
+    implicit def cursor   : Cursor    [S] = outer.cursor
+    implicit def workspace: Workspace [S] = outer.workspace
+  }
+}

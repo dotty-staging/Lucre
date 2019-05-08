@@ -21,7 +21,7 @@ trait Lazy extends Product {
   type Repr[S <: Sys[S]] <: Disposable[S#Tx]
 
   // this acts as a fast unique reference
-  @transient final private[this] lazy val ref = new AnyRef
+  @transient final protected val ref = new AnyRef
 
   final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
     ctx.visit(ref, mkRepr)

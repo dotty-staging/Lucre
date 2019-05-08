@@ -21,7 +21,7 @@ import de.sciss.model.Change
 
 object ExMap {
   private final class Expanded[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
-                                                  closure: Graph, fun: Ex[B], tx0: S#Tx)
+                                                 /* closure: Graph, */ fun: Ex[B], tx0: S#Tx)
                                                  (implicit protected val targets: ITargets[S], ctx: Context[S])
     extends IExpr[S, Seq[B]] with IEventImpl[S, Change[Seq[B]]] {
 
@@ -38,24 +38,27 @@ object ExMap {
         // XXX TODO --- ok, this is the first test for this idea
         // so we just expand and dispose locally. Later we could
         // optimise to avoid re-expansion for non-empty input sequences.
-        val b     = Seq.newBuilder[B]
         val iter  = inSeq.iterator
         val v0    = iter.next()
-        it.setValue(v0, dispatch = false)  // make sure we have the first value ready
-        val (funEx, funDisp) = ctx.withGraph(closure)(fun.expand[S])  // ...which might be read here
-        it.setValue(v0, dispatch = true)
-        b += funEx.value
-
-        // now iterate over the tail
-        while (iter.hasNext) {
-          val vn = iter.next()
-          it.setValue(vn, dispatch = true)
+        it.setValue(v0 /*, dispatch = false*/ )  // make sure we have the first value ready
+        val (outSeq, funDisp) = ctx.nested {
+          val b     = Seq.newBuilder[B]
+          val funEx = fun.expand[S]  // ...which might be read here
+          // it.setValue(v0, dispatch = true)
           b += funEx.value
+
+          // now iterate over the tail
+          while (iter.hasNext) {
+            val vn = iter.next()
+            it.setValue(vn /*, dispatch = true*/)
+            b += funEx.value
+          }
+
+          b.result()
         }
 
         funDisp.dispose()
-
-        b.result()
+        outSeq
       }
 
     private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[B]]] =
@@ -80,6 +83,6 @@ final case class ExMap[A, B](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[
 //    val closureEx = closure .expand[S]
 //    val funEx     = fun     .expand[S]
     import ctx.targets
-    new ExMap.Expanded[S, A, B](inEx, itEx, closure, fun, tx)
+    new ExMap.Expanded[S, A, B](inEx, itEx, /*closure, */ fun, tx)
   }
 }

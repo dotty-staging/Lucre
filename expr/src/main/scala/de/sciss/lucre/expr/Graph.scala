@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.graph.{Control, Ex, It}
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.stm.Sys
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
@@ -95,14 +95,14 @@ object Graph {
     }
   }
 
-  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]], disposable: Disposable[S#Tx])
+  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]] /*, disposable: Disposable[S#Tx]*/ )
     extends IControl[S] {
 
     def initControl()(implicit tx: S#Tx): Unit =
       controls.foreach(_.initControl())
 
     def dispose()(implicit tx: S#Tx): Unit =
-      disposable.dispose() // controls.foreach(_.dispose())
+      controls.foreach(_.dispose())
   }
 
   val empty: Graph = Graph(Vector.empty)
@@ -115,10 +115,9 @@ object Graph {
 
     def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S] = {
       if (controls.isEmpty) IControl.empty[S] else {
-        val (iControls, disposable) = ctx.withGraph(this) {
-          controls.map(_.control.expand[S])
-        }
-        new Graph.ExpandedImpl[S](iControls, disposable)
+        ctx.initGraph(this)
+        val iControls = controls.map(_.control.expand[S])
+        new Graph.ExpandedImpl[S](iControls)
       }
     }
   }

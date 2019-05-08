@@ -26,6 +26,8 @@ object Control {
 trait Control extends Lazy {
   type Repr[S <: Sys[S]] <: IControl[S]
 
+  final def token: AnyRef = ref
+
   // ---- constructor ----
   Graph.builder.addControl(this)
 }

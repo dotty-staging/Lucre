@@ -29,9 +29,11 @@ trait Context[S <: Sys[S]] extends Disposable[S#Tx] {
   implicit def cursor   : Cursor    [S]
   implicit def workspace: Workspace [S]
 
-  def withGraph[A](g: Graph)(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
+  def initGraph(g: Graph)(implicit tx: S#Tx): Unit
 
-  def getProperty[A](c: Control, key: String): Option[A]
+  def nested[A](body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
+
+  def getProperty[A](control: Control, key: String)(implicit tx: S#Tx): Option[A]
 
   def selfOption(implicit tx: S#Tx): Option[Obj[S]]
 
