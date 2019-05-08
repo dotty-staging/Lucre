@@ -24,12 +24,12 @@ object Context {
                         (implicit workspace: Workspace[S], cursor: Cursor[S]): Context[S] =
     new ContextImpl[S](selfH)
 }
-trait Context[S <: Sys[S]] {
+trait Context[S <: Sys[S]] extends Disposable[S#Tx] {
   implicit def targets  : ITargets  [S]
   implicit def cursor   : Cursor    [S]
   implicit def workspace: Workspace [S]
 
-  def withGraph[A](g: Graph)(body: => A): A
+  def withGraph[A](g: Graph)(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
 
   def getProperty[A](c: Control, key: String): Option[A]
 

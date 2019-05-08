@@ -219,11 +219,10 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   def map[B](f: Ex[A] => Ex[B]): Ex[Seq[B]] = {
     val b     = Graph.builder
     val it    = b.allocToken[A]()
-    val inner =
-//      Graph {
-        f(it)
-//      }
-    ExMap[A, B](outer = x, it = it, inner = inner)
+    val (closure, fun) = Graph.expr {
+      f(it)
+    }
+    ExMap[A, B](in = x, it = it, closure = closure, fun = fun)
   }
 
   // XXX TODO --- have to introduce a type class because we cannot overload

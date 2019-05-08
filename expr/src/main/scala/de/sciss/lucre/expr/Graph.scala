@@ -13,9 +13,9 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{Control, It}
+import de.sciss.lucre.expr.graph.{Control, Ex, It}
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
@@ -53,6 +53,15 @@ object Graph {
     }
   }
 
+  def expr[A](thunk: => Ex[A]): (Graph, Ex[A]) = {
+    val b   = new BuilderImpl
+    use(b) {
+      val ex = thunk
+      val g  = b.build()
+      (g, ex)
+    }
+  }
+
   def use[A](b: Builder)(body: => A): A = {
     val old = builderRef.get()
     builderRef.set(b)
@@ -86,14 +95,14 @@ object Graph {
     }
   }
 
-  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]])
+  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]], disposable: Disposable[S#Tx])
     extends IControl[S] {
 
     def initControl()(implicit tx: S#Tx): Unit =
       controls.foreach(_.initControl())
 
     def dispose()(implicit tx: S#Tx): Unit =
-      controls.foreach(_.dispose())
+      disposable.dispose() // controls.foreach(_.dispose())
   }
 
   val empty: Graph = Graph(Vector.empty)
@@ -106,22 +115,17 @@ object Graph {
 
     def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S] = {
       if (controls.isEmpty) IControl.empty[S] else {
-        val disposables = ctx.withGraph(this) {
+        val (iControls, disposable) = ctx.withGraph(this) {
           controls.map(_.control.expand[S])
         }
-        new Graph.ExpandedImpl[S](disposables)
+        new Graph.ExpandedImpl[S](iControls, disposable)
       }
     }
-
-//    def expand[S <: Sys[S]](self: Option[Obj[S]] = None)
-//                           (implicit tx: S#Tx, workspace: Workspace[S], cursor: Cursor[S]): IControl[S] = {
-//      implicit val ctx: ExContext[S] = ExContext(this, self.map(tx.newHandle(_)))
-//        ...
-//    }
   }
 }
-trait Graph {
+trait Graph extends Product {
   def controls: Vec[Control.Configured]
 
+  /** Expands the graph and unites all disposables and controls under the returned control value. */
   def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S]
 }

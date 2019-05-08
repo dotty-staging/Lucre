@@ -25,7 +25,7 @@ import scala.concurrent.stm.Ref
 
 object It {
   trait Expanded[S <: Sys[S], A] extends IExpr[S, A] {
-    def setValue(value: A)(implicit tx: S#Tx): Unit
+    def setValue(value: A, dispatch: Boolean)(implicit tx: S#Tx): Unit
   }
 
   private final class ExpandedImpl[S <: Sys[S], A](implicit protected val targets: ITargets[S])
@@ -33,9 +33,9 @@ object It {
 
     private[this] val ref = Ref.make[A]
 
-    def setValue(value: A)(implicit tx: S#Tx): Unit = {
-      val old = ref.swap(value)
-      if (old != value) {
+    def setValue(value: A, dispatch: Boolean)(implicit tx: S#Tx): Unit = {
+      val old =  ref.swap(value)
+      if (dispatch && (old != value)) {
         fire(Change(old, value))
       }
     }

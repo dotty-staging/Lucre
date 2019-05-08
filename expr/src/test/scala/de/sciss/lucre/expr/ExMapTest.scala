@@ -15,9 +15,10 @@ object ExMapTest extends App {
     val b = LoadBang()
     val c = in.changed  // XXX TODO --- can't really test this as `in` is constant
     val t = b | c
-    t ---> PrintLn(Const("out[0] = ") ++ out.applyOption(0).toStr)
-    t ---> PrintLn(Const("out[1] = ") ++ out.applyOption(1).toStr)
-    t ---> PrintLn(Const("out[2] = ") ++ out.applyOption(2).toStr)
+    t ---> PrintLn(Const("out = ") ++ out.toStr)
+//    t ---> PrintLn(Const("out[0] = ") ++ out.applyOption(0).toStr)
+//    t ---> PrintLn(Const("out[1] = ") ++ out.applyOption(1).toStr)
+//    t ---> PrintLn(Const("out[2] = ") ++ out.applyOption(2).toStr)
   }
 
   implicit val system: S = InMemory()
