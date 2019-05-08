@@ -16,15 +16,16 @@ package graph
 
 import de.sciss.lucre.aux.Aux.{Num, NumBool, NumFrac, NumInt, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
+import de.sciss.lucre.expr.graph.impl.MappedIExpr
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object UnaryOp {
-  sealed abstract class Op[A1, A2] extends ProductWithAux {
-    override final def productPrefix = s"UnaryOp$$$name"
+  abstract class Op[A1, A2] extends ProductWithAux {
+    override def productPrefix = s"UnaryOp$$$name"
 
     def name: String
 
@@ -355,34 +356,13 @@ object UnaryOp {
 
   // ---- Impl ----
 
-  private final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
-                                                   (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IEventImpl[S, Change[A]] {
-
-    a.changed.--->(this)(tx0)
+  private[graph] final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
+                                                          (implicit targets: ITargets[S])
+    extends MappedIExpr[S, A1, A](a, tx0) with IEventImpl[S, Change[A]] {
 
     override def toString: String = s"UnaryOp($op, $a)"
 
-    def changed: IEvent[S, Change[A]] = this
-
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
-      pull(a.changed).flatMap { ach =>
-        val before  = value1(ach.before)
-        val now     = value1(ach.now   )
-        if (before == now) None else Some(Change(before, now))
-      }
-    }
-
-    @inline
-    private def value1(av: A1): A = op(av)
-
-    def value(implicit tx: S#Tx): A = {
-      val av = a.value
-      value1(av)
-    }
-
-    def dispose()(implicit tx: S#Tx): Unit =
-      a.changed -/-> this
+    protected def mapValue(av: A1): A = op(av)
   }
 }
 

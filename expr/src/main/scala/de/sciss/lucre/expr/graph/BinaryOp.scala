@@ -22,10 +22,10 @@ import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object BinaryOp {
-  sealed abstract class Op[A, B, C] extends ProductWithAux {
+  abstract class Op[A, B, C] extends ProductWithAux {
     def apply(a: A, b: B): C
 
-    override final def productPrefix = s"BinaryOp$$$name"
+    override def productPrefix = s"BinaryOp$$$name"
 
     def name: String
 
@@ -324,9 +324,9 @@ object BinaryOp {
 
   // ---- Impl ----
 
-  private final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],
-                                                            a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
-                                                           (implicit protected val targets: ITargets[S])
+  private[graph] final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],
+                                                                   a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
+                                                                  (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IEventImpl[S, Change[A]] {
 
     a.changed.--->(this)(tx0)

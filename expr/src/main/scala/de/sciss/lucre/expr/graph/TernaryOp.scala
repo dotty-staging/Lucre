@@ -22,10 +22,10 @@ import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object TernaryOp {
-  sealed abstract class Op[A, B, C, D] extends ProductWithAux {
+  abstract class Op[A, B, C, D] extends ProductWithAux {
     def apply(a: A, b: B, c: C): D
 
-    override final def productPrefix = s"TernaryOp$$$name"
+    override def productPrefix = s"TernaryOp$$$name"
 
     def name: String
 
@@ -52,9 +52,10 @@ object TernaryOp {
     def aux                     : scala.List[Aux] = widen :: num :: Nil
   }
 
-  private final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
-                                                            a: IExpr[S, A1], b: IExpr[S, A2], c: IExpr[S, A3], tx0: S#Tx)
-                                                           (implicit protected val targets: ITargets[S])
+  private[graph] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
+                                                                   a: IExpr[S, A1], b: IExpr[S, A2],
+                                                                   c: IExpr[S, A3], tx0: S#Tx)
+                                                                  (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IEventImpl[S, Change[A]] {
 
     a.changed.--->(this)(tx0)
