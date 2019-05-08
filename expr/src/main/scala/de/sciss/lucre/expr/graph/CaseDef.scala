@@ -24,6 +24,7 @@ import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
+import scala.language.higherKinds
 import scala.util.Success
 
 object CaseDef {
@@ -34,11 +35,11 @@ object CaseDef {
   }
 }
 sealed trait CaseDef[A] extends Ex[A] with ProductWithAux {
+  type Repr[S <: Sys[S]] <: CaseDef.Expanded[S, A]
+
   def fromAny: FromAny[A]
 
   def aux: List[Aux] = fromAny :: Nil
-
-  override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): CaseDef.Expanded[S, A]
 }
 
 object Quote {
@@ -65,7 +66,9 @@ object Quote {
 final case class Quote[A](in: Ex[A])(implicit val fromAny: FromAny[A])
   extends CaseDef[A] {
 
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): CaseDef.Expanded[S, A] =
+  type Repr[S <: Sys[S]] = CaseDef.Expanded[S, A]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
     new Quote.ExpandedImpl(in.expand[S])
 }
 
@@ -132,20 +135,14 @@ object Var {
   }
 
   private final case class Impl[A](init: Ex[A])(implicit val fromAny: FromAny[A]) extends Var[A] {
-    // this acts now as a fast unique reference
-    @transient final private[this] lazy val ref = new AnyRef
-
     override def productPrefix: String = "Var"  // serialization
 
-    def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Var.Expanded[S, A] =
-      ctx.visit(ref, mkExpr)
-
-    private def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Var.Expanded[S, A] = {
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       import ctx.targets
       new Var.ExpandedImpl[S, A](init.expand[S], tx)
     }
   }
 }
 trait Var[A] extends Ex[A] with CaseDef[A] with ProductWithAux {
-  override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Var.Expanded[S, A]
+  type Repr[S <: Sys[S]] = Var.Expanded[S, A]
 }

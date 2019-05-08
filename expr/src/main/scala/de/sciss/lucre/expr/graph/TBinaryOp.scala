@@ -58,10 +58,10 @@ object TBinaryOp {
       a.changed -/-> changed
   }
 }
-final case class TBinaryOp[A](op: TBinaryOp.Op[A], a: Trig, b: Ex[A])
-  extends Trig.Lazy {
+final case class TBinaryOp[A](op: TBinaryOp.Op[A], a: Trig, b: Ex[A]) extends Trig {
+  type Repr[S <: Sys[S]] = ITrigger[S]
 
-  protected def mkTrig[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S] = {
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]

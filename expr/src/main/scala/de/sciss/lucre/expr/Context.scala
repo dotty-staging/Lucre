@@ -17,7 +17,7 @@ import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Cursor, Obj, Sys, Workspace}
+import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, Workspace}
 
 object Context {
   def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None)
@@ -35,6 +35,6 @@ trait Context[S <: Sys[S]] {
 
   def selfOption(implicit tx: S#Tx): Option[Obj[S]]
 
-  def visit[U](ref: AnyRef, init: => U)(implicit tx: S#Tx): U
+  def visit[U <: Disposable[S#Tx]](ref: AnyRef, init: => U)(implicit tx: S#Tx): U
 }
 

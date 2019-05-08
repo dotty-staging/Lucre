@@ -20,11 +20,9 @@ import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
-import scala.collection.immutable.{Seq => ISeq}
-
 object ExSeq {
-  private final class Expanded[S <: Sys[S], A](elems: ISeq[IExpr[S, A]])(implicit protected val targets: ITargets[S])
-    extends IExpr[S, ISeq[A]] with IEventImpl[S, Change[ISeq[A]]] {
+  private final class Expanded[S <: Sys[S], A](elems: Seq[IExpr[S, A]])(implicit protected val targets: ITargets[S])
+    extends IExpr[S, Seq[A]] with IEventImpl[S, Change[Seq[A]]] {
 
     def init()(implicit tx: S#Tx): this.type = {
       elems.foreach { in =>
@@ -33,7 +31,7 @@ object ExSeq {
       this
     }
 
-    def value(implicit tx: S#Tx): ISeq[A] = elems.map(_.value)
+    def value(implicit tx: S#Tx): Seq[A] = elems.map(_.value)
 
     def dispose()(implicit tx: S#Tx): Unit = {
       elems.foreach { in =>
@@ -41,11 +39,11 @@ object ExSeq {
       }
     }
 
-    def changed: IEvent[S, Change[ISeq[A]]] = this
+    def changed: IEvent[S, Change[Seq[A]]] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[ISeq[A]]] = {
-      val beforeB = ISeq.newBuilder[A]
-      val nowB    = ISeq.newBuilder[A]
+    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[A]]] = {
+      val beforeB = Seq.newBuilder[A]
+      val nowB    = Seq.newBuilder[A]
       elems.foreach { in =>
         val evt = in.changed
         val opt: Option[Change[A]] = if (pull.contains(evt)) pull(evt) else None
@@ -64,7 +62,10 @@ object ExSeq {
     }
   }
 }
-final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] {
+final case class ExSeq[A](elems: Ex[A]*) extends Ex[Seq[A]] {
+
+  type Repr[S <: Sys[S]] = IExpr[S, Seq[A]]
+
   private def simpleString: String = {
     val xs = elems.iterator.take(5).toList
     val es = if (xs.lengthCompare(5) == 0) xs.init.mkString("", ", ", ", ...")
@@ -74,9 +75,9 @@ final case class ExSeq[+A](elems: Ex[A]*) extends Ex[ISeq[A]] {
 
   override def toString: String = simpleString
 
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, ISeq[A]] = {
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
-    val elemsEx: ISeq[IExpr[S, A]] = elems.iterator.map(_.expand[S]).toList
+    val elemsEx: Seq[IExpr[S, A]] = elems.iterator.map(_.expand[S]).toList
     new expr.ExSeq.Expanded(elemsEx).init()
   }
 }

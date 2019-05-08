@@ -367,9 +367,11 @@ object UnaryOp {
 }
 
 final case class UnaryOp[A1, A](op: Op[A1, A], a: Ex[A1])
-  extends Ex.Lazy[A] {
+  extends Ex[A] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
+  type Repr[S <: Sys[S]] = IExpr[S, A]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val ax = a.expand[S]
     new UnaryOp.Expanded[S, A1, A](op, ax, tx)

@@ -39,7 +39,7 @@ object LoadBang {
 final case class LoadBang() extends Control with Trig {
   type Repr[S <: Base[S]] = IControl[S] with ITrigger[S]
 
-  protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     new LoadBang.Expanded[S](tx)
   }

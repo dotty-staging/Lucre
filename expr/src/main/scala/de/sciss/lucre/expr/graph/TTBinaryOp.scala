@@ -75,10 +75,10 @@ object TTBinaryOp {
     }
   }
 }
-final case class TTBinaryOp(op: TTBinaryOp.Op, a: Trig, b: Trig)
-  extends Trig.Lazy {
+final case class TTBinaryOp(op: TTBinaryOp.Op, a: Trig, b: Trig) extends Trig {
+  type Repr[S <: Sys[S]] = ITrigger[S]
 
-  protected def mkTrig[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S] = {
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]

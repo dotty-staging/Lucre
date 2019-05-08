@@ -40,8 +40,10 @@ object Changed {
       in.changed -/-> changed
   }
 }
-final case class Changed[A](in: Ex[A]) extends Trig.Lazy {
-  protected def mkTrig[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S] = {
+final case class Changed[A](in: Ex[A]) extends Trig {
+  type Repr[S <: Sys[S]] = ITrigger[S]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val inExp = in.expand[S]
     new Changed.Expanded[S, A](inExp, tx)

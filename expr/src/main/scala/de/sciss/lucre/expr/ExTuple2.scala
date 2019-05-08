@@ -57,8 +57,10 @@ object ExTuple2 {
     }
   }
 }
-final case class ExTuple2[+T1, +T2](_1: Ex[T1], _2: Ex[T2]) extends Ex[(T1, T2)] {
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, (T1, T2)] = {
+final case class ExTuple2[T1, T2](_1: Ex[T1], _2: Ex[T2]) extends Ex[(T1, T2)] {
+  type Repr[S <: Sys[S]] = IExpr[S, (T1, T2)]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val _1Ex = _1.expand[S]
     val _2Ex = _2.expand[S]

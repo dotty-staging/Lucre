@@ -13,9 +13,10 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.Context
-import de.sciss.lucre.expr.{IAction, IControl}
+import de.sciss.lucre.expr.{Context, IAction, IControl}
 import de.sciss.lucre.stm.Sys
+
+import scala.language.higherKinds
 
 object Act {
   final case class Link[A](source: Trig, sink: Act)
@@ -25,7 +26,7 @@ object Act {
 
     type Repr[S <: Sys[S]] = IControl[S]
 
-    protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val tr    = source.expand[S]
       val ac    = sink  .expand[S]
       ac.addSource(tr)
@@ -34,6 +35,6 @@ object Act {
     }
   }
 }
-trait Act extends Product {
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IAction[S]
+trait Act extends Lazy {
+  type Repr[S <: Sys[S]] <: IAction[S]
 }

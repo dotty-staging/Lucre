@@ -63,12 +63,14 @@ object Attr {
     private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Bridge[A])
       extends WithDefault[A] with ProductWithAux {
 
+      type Repr[S <: Sys[S]] = IExpr[S, A]
+
       override def productPrefix: String = s"Attr$$WithDefault" // serialization
 
       def update(in: Ex[A]): Control = Attr.Update(in, key)
 
-      def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
-        val defaultEx = default.expand[S]
+      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+        val defaultEx: Repr[S] = default.expand[S]
         resolveNested(key).fold(defaultEx) { attrView =>
           import ctx.targets
           new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
@@ -175,7 +177,7 @@ object Attr {
 
     type Repr[S <: Sys[S]] = IControl[S]
 
-    protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val peer = resolveNested(key).fold(Disposable.empty[S#Tx]) { attrView =>
         new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       }
@@ -188,9 +190,11 @@ object Attr {
 final case class Attr[A](key: String)(implicit val bridge: Attr.Bridge[A])
   extends Ex[Option[A]] with Attr.Like[A] with ProductWithAux {
 
+  type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
+
   def update(in: Ex[A]): Control = Attr.Update(in, key)
 
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, Option[A]] = {
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     ctx.selfOption.fold(Const(Option.empty[A]).expand[S]) { self =>
       import ctx.targets
       val attrView = bridge.cellView[S](self, key)

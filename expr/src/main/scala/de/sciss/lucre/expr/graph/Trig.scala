@@ -13,22 +13,13 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.Context
 import de.sciss.lucre.expr.ITrigger
 import de.sciss.lucre.stm.Sys
 
+import scala.language.higherKinds
+
 object Trig {
   final val Some: Option[Unit] = scala.Some(())
-
-  trait Lazy extends Trig {
-    // this acts now as a fast unique reference
-    @transient final private[this] lazy val ref = new AnyRef
-
-    final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S] =
-      ctx.visit(ref, mkTrig)
-
-    protected def mkTrig[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S]
-  }
 }
 
 /** A trigger element.
@@ -38,6 +29,6 @@ object Trig {
   * is not enforced is that implementation may already mixin lazy traits such as
   * `Control` (and by extension, `Widget`).
   */
-trait Trig extends Product {
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): ITrigger[S]
+trait Trig extends Lazy {
+  type Repr[S <: Sys[S]] <: ITrigger[S]
 }

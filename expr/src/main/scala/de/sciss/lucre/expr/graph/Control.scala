@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.{Context, Graph, IControl}
+import de.sciss.lucre.expr.{Graph, IControl}
 import de.sciss.lucre.stm.Sys
 
 import scala.language.higherKinds
@@ -23,17 +23,9 @@ object Control {
     override def productPrefix: String = s"Control$$Configured"
   }
 }
-trait Control extends Product {
+trait Control extends Lazy {
   type Repr[S <: Sys[S]] <: IControl[S]
-
-  // this acts now as a fast unique reference
-  @transient final private[this] lazy val ref = new AnyRef
 
   // ---- constructor ----
   Graph.builder.addControl(this)
-
-  final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-    ctx.visit[Repr[S]](ref, mkControl)
-
-  protected def mkControl[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S]
 }

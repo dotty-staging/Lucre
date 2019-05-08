@@ -79,9 +79,11 @@ object SeqMkString {
   }
 }
 final case class SeqMkString[A](in: Ex[Seq[A]], start: Ex[String], sep: Ex[String], stop: Ex[String])
-  extends Ex.Lazy[String] {
+  extends Ex[String] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, String] = {
+  type Repr[S <: Sys[S]] = IExpr[S, String]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val inExp     = in    .expand[S]
     val startExp  = start .expand[S]

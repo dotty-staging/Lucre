@@ -52,13 +52,10 @@ object It {
 }
 /** A glue element to make `map` and `flatMap` work. */
 final case class It[A](token: Int) extends Ex[A] {
-  // this acts now as a fast unique reference
-  @transient final private[this] lazy val ref = new AnyRef
 
-  override def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): It.Expanded[S, A] =
-    ctx.visit(ref, mkExpr)
+  type Repr[S <: Sys[S]] = It.Expanded[S, A]
 
-  private def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): It.Expanded[S, A] = {
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     new graph.It.ExpandedImpl[S, A]
   }

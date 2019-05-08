@@ -48,7 +48,9 @@ object Latch {
   }
 }
 final case class Latch[A](in: Ex[A], trig: Trig) extends Ex[A] {
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
+  type Repr[S <: Sys[S]] = IExpr[S, A]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     new graph.Latch.Expanded(in.expand[S], trig.expand[S], tx)
   }

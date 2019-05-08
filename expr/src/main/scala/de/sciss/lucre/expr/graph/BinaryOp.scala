@@ -380,9 +380,11 @@ object BinaryOp {
   }
 }
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A], a: Ex[A1], b: Ex[A2])
-  extends Ex.Lazy[A] {
+  extends Ex[A] {
 
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] = {
+  type Repr[S <: Sys[S]] = IExpr[S, A]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val ax = a.expand[S]
     val bx = b.expand[S]

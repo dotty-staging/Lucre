@@ -51,8 +51,10 @@ object ExMap {
     def changed: IEvent[S, Change[Seq[B]]] = this
   }
 }
-final case class ExMap[A, B](outer: Ex[Seq[A]], it: It[A], inner: Ex[B]) extends Ex.Lazy[Seq[B]] {
-  protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, Seq[B]] = {
+final case class ExMap[A, B](outer: Ex[Seq[A]], it: It[A], inner: Ex[B]) extends Ex[Seq[B]] {
+  type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     val outerEx = outer .expand[S]
     val itEx    = it    .expand[S]
     val innerEx = inner .expand[S]

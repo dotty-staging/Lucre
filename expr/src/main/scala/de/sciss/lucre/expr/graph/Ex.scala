@@ -13,20 +13,11 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.{Context, IExpr}
+import de.sciss.lucre.expr.IExpr
 import de.sciss.lucre.stm.Sys
 
-object Ex {
-  trait Lazy[A] extends Ex[A] {
-    // this acts now as a fast unique reference
-    @transient final private[this] lazy val ref = new AnyRef
+import scala.language.higherKinds
 
-    final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A] =
-      ctx.visit(ref, mkExpr)
-
-    protected def mkExpr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A]
-  }
-}
-trait Ex[+A] extends Product {
-  def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): IExpr[S, A]
+trait Ex[+A] extends Lazy {
+  type Repr[S <: Sys[S]] <: IExpr[S, A]
 }
