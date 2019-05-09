@@ -63,20 +63,19 @@ object ExElem {
           rem -= 1
         }
         b.result()
-//      case 'E' =>
-//        val ref = if (ref0 == null) new RefMapIn else ref0
-//        val num = in.readInt()
-//        val b   = Map.newBuilder[String, Any]
-//        b.sizeHint(num)
-//        var rem = num
-//        while (rem > 0) {
-//          val k = in.readUTF()
-//          val v = read(in, ref)
-//          b += k -> v
-//          rem -= 1
-//        }
-//        val m = b.result()
-//        Event(m)
+      case 'M' =>
+        val ref = if (ref0 == null) new RefMapIn else ref0
+        val num = in.readInt()
+        val b   = Map.newBuilder[Any, Any]
+        b.sizeHint(num)
+        var rem = num
+        while (rem > 0) {
+          val k = read(in, ref)
+          val v = read(in, ref)
+          b += k -> v
+          rem -= 1
+        }
+        b.result()
       case 'P' =>
         val ref = if (ref0 == null) new RefMapIn else ref0
         readIdentifiedProduct(in, ref)
@@ -187,14 +186,13 @@ object ExElem {
           out.writeByte('X')
           out.writeInt(xs.size)
           xs.foreach(x => ref = write(x, out, ref))
-//        case ev: Event =>
-//          val m = ev.map
-//          out.writeByte('E')
-//          out.writeInt(m.size)
-//          m.foreach { tup =>
-//            out.writeUTF(tup._1)
-//            ref = write(tup._2, out, ref)
-//          }
+        case m: Map[_, _] =>
+          out.writeByte('M')
+          out.writeInt(m.size)
+          m.foreach { tup =>
+            ref = write(tup._1, out, ref)
+            ref = write(tup._2, out, ref)
+          }
         case _ => throw new Exception(s"Unsupported collection $xs")
       }
       ref

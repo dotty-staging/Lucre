@@ -1,5 +1,5 @@
 /*
- *  ExMap.scala
+ *  ExSeqMap.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -19,7 +19,7 @@ import de.sciss.lucre.expr.{Context, Graph, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
-object ExMap {
+object ExSeqMap {
   private final class Expanded[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
                                                  /* closure: Graph, */ fun: Ex[B], tx0: S#Tx)
                                                  (implicit protected val targets: ITargets[S], ctx: Context[S])
@@ -74,7 +74,7 @@ object ExMap {
     def changed: IEvent[S, Change[Seq[B]]] = this
   }
 }
-final case class ExMap[A, B](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[B]) extends Ex[Seq[B]] {
+final case class ExSeqMap[A, B](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[B]) extends Ex[Seq[B]] {
   type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
@@ -83,6 +83,6 @@ final case class ExMap[A, B](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[
 //    val closureEx = closure .expand[S]
 //    val funEx     = fun     .expand[S]
     import ctx.targets
-    new ExMap.Expanded[S, A, B](inEx, itEx, /*closure, */ fun, tx)
+    new ExSeqMap.Expanded[S, A, B](inEx, itEx, /*closure, */ fun, tx)
   }
 }

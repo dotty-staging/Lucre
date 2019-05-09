@@ -14,7 +14,8 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Const, Ex, ExMap, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Const, Ex, ExOptionFlatMap, ExOptionMap, ExSeqMap, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
 
@@ -42,15 +43,19 @@ object ExOps {
 //    case _            => in.toList
 //  }
 
-  implicit def exOps      [A](x: Ex[A])         : ExOps       [A] = new ExOps       (x)
-  implicit def exSeqOps   [A](x: Ex[Seq  [A]]) : ExSeqOps    [A] = new ExSeqOps    (x)
-  implicit def exOptionOps[A](x: Ex[Option[A]]) : ExOptionOps [A] = new ExOptionOps (x)
+  implicit def exOps      [A](x: Ex[A])           : ExOps       [A] = new ExOps       (x)
+  implicit def exSeqOps   [A](x: Ex[Seq  [A]])    : ExSeqOps    [A] = new ExSeqOps    (x)
+  implicit def exOptionOps[A](x: Ex[Option[A]])   : ExOptionOps [A] = new ExOptionOps (x)
 //  implicit def exBooleanOps  (x: Ex[Boolean])   : ExBooleanOps    = new ExBooleanOps(x)
-  implicit def exStringOps   (x: Ex[String])    : ExStringOps     = new ExStringOps(x)
+  implicit def exStringOps   (x: Ex[String])      : ExStringOps     = new ExStringOps (x)
+  implicit def exSpanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A] = new ExSpanOps   (x)
 
   implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
 
   implicit def stringToExAttr(x: String): StringToExAttr = new StringToExAttr(x)
+
+  type Span     = _Span
+  type SpanLike = _SpanLike
 }
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
@@ -203,6 +208,36 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   // def format(args: Ex[Any]*): Ex[String] = ...
 }
 
+final class ExSpanOps[A <: _SpanLike](private val x: Ex[A]) extends AnyVal {
+  def clip(pos: Ex[Long]): Ex[Long] = BinOp(BinOp.SpanLikeClip(), x, pos)
+
+  def shift(delta: Ex[Long]): Ex[_SpanLike] = BinOp(BinOp.SpanLikeShift(), x, delta)
+
+  def isEmpty : Ex[Boolean] = UnOp(UnOp.SpanLikeIsEmpty (), x)
+  def nonEmpty: Ex[Boolean] = UnOp(UnOp.SpanLikeNonEmpty(), x)
+
+  def contains(pos: Ex[Long]): Ex[Boolean] = BinOp(BinOp.SpanLikeContains(), x, pos)
+
+// cannot overload due to erasure
+//  def contains(that: Ex[SpanLike]): Ex[Boolean]
+
+  def overlaps  (that: Ex[_SpanLike]): Ex[Boolean]    = BinOp(BinOp.SpanLikeOverlaps  (), x, that)
+  def touches   (that: Ex[_SpanLike]): Ex[Boolean]    = BinOp(BinOp.SpanLikeTouches   (), x, that)
+
+  def union     (that: Ex[_SpanLike]): Ex[_SpanLike]  = BinOp(BinOp.SpanLikeUnion     (), x, that)
+  def intersect (that: Ex[_SpanLike]): Ex[_SpanLike]  = BinOp(BinOp.SpanLikeIntersect (), x, that)
+
+  def closedOption: Ex[Option[_Span]] = UnOp(UnOp.SpanLikeClosedOption(), x)
+  def startOption : Ex[Option[Long]]  = UnOp(UnOp.SpanLikeStartOption (), x)
+  def stopOption  : Ex[Option[Long]]  = UnOp(UnOp.SpanLikeStopOption  (), x)
+  def lengthOption: Ex[Option[Long]]  = UnOp(UnOp.SpanLikeLengthOption(), x)
+
+  // ---- simplify to only span here ----
+
+  def start (implicit ev: Ex[A] =:= Ex[_Span]): Ex[Long] = UnOp(UnOp.SpanStart (), ev(x))
+  def stop  (implicit ev: Ex[A] =:= Ex[_Span]): Ex[Long] = UnOp(UnOp.SpanStop  (), ev(x))
+  def length(implicit ev: Ex[A] =:= Ex[_Span]): Ex[Long] = UnOp(UnOp.SpanLength(), ev(x))
+}
 final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 //  def apply(index: Ex[Int]): Ex[A] = ...
 
@@ -222,7 +257,7 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
     val (closure, fun) = Graph.expr {
       f(it)
     }
-    ExMap[A, B](in = x, it = it, closure = closure, fun = fun)
+    ExSeqMap[A, B](in = x, it = it, closure = closure, fun = fun)
   }
 
   // XXX TODO --- have to introduce a type class because we cannot overload
@@ -249,6 +284,24 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
   def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.OptionContains[B](), x, elem)
 
   def toList: Ex[scala.List[A]] = UnOp(UnOp.OptionToList[A](), x)
+
+  def map[B](f: Ex[A] => Ex[B]): Ex[Option[B]] = {
+    val b     = Graph.builder
+    val it    = b.allocToken[A]()
+    val (closure, fun) = Graph.expr {
+      f(it)
+    }
+    ExOptionMap[A, B](in = x, it = it, closure = closure, fun = fun)
+  }
+
+  def flatMap[B](f: Ex[A] => Ex[Option[B]]): Ex[Option[B]] = {
+    val b     = Graph.builder
+    val it    = b.allocToken[A]()
+    val (closure, fun) = Graph.expr {
+      f(it)
+    }
+    ExOptionFlatMap[A, B](in = x, it = it, closure = closure, fun = fun)
+  }
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {

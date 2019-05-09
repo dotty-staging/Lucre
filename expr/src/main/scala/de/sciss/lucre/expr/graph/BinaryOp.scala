@@ -20,6 +20,7 @@ import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
+import de.sciss.span.SpanLike
 
 object BinaryOp {
   abstract class Op[A, B, C] extends ProductWithAux {
@@ -319,6 +320,57 @@ object BinaryOp {
     def apply(a: String, b: String): String = a + b
 
     def name: String          = "StringConcat"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  // ---- SpanLike ----
+
+  final case class SpanLikeClip() extends Op[SpanLike, Long, Long] {
+    def apply(a: SpanLike, b: Long): Long = a.clip(b)
+
+    def name: String          = "SpanLikeClip"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeShift() extends Op[SpanLike, Long, SpanLike] {
+    def apply(a: SpanLike, b: Long): SpanLike = a.shift(b)
+
+    def name: String          = "SpanLikeShift"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeContains() extends Op[SpanLike, Long, Boolean] {
+    def apply(a: SpanLike, b: Long): Boolean = a.contains(b)
+
+    def name: String          = "SpanLikeContains"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeOverlaps() extends Op[SpanLike, SpanLike, Boolean] {
+    def apply(a: SpanLike, b: SpanLike): Boolean = a.overlaps(b)
+
+    def name: String          = "SpanLikeOverlaps"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeTouches() extends Op[SpanLike, SpanLike, Boolean] {
+    def apply(a: SpanLike, b: SpanLike): Boolean = a.touches(b)
+
+    def name: String          = "SpanLikeTouches"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeUnion() extends Op[SpanLike, SpanLike, SpanLike] {
+    def apply(a: SpanLike, b: SpanLike): SpanLike = a.union(b)
+
+    def name: String          = "SpanLikeUnion"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeIntersect() extends Op[SpanLike, SpanLike, SpanLike] {
+    def apply(a: SpanLike, b: SpanLike): SpanLike = a.intersect(b)
+
+    def name: String          = "SpanLikeIntersect"
     def aux : scala.List[Aux] = Nil
   }
 

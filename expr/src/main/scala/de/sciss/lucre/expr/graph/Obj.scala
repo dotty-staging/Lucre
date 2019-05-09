@@ -53,7 +53,7 @@ object Obj {
     }
 
     private def setObj(newObj: Obj, init: Boolean)(implicit tx: S#Tx): Unit = {
-      println(s"newObj = $newObj, bridge = $bridge, key = $key")
+      // println(s"newObj = $newObj, bridge = $bridge, key = $key")
       val newView = bridge.cellView(newObj.peer, key)
       viewRef()   = newView
       val obsNew = newView.react { implicit tx => now =>

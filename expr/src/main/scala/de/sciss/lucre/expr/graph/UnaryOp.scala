@@ -22,6 +22,7 @@ import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
+import de.sciss.span.{Span, SpanLike}
 
 object UnaryOp {
   abstract class Op[A1, A2] extends ProductWithAux {
@@ -352,6 +353,77 @@ object UnaryOp {
     def apply(a: String)      : Int     = a.length
     def name                  : String  = "StringLength"
     def aux : scala.List[Aux] = Nil
+  }
+
+  // ---- SpanLike ----
+
+  final case class SpanLikeIsEmpty() extends Op[SpanLike, Boolean] {
+    def apply(a: SpanLike)    : Boolean = a.isEmpty
+    def name                  : String  = "SpanLikeIsEmpty"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeNonEmpty() extends Op[SpanLike, Boolean] {
+    def apply(a: SpanLike)    : Boolean = a.nonEmpty
+    def name                  : String  = "SpanLikeNonEmpty"
+    def aux : scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeClosedOption() extends Op[SpanLike, Option[Span]] {
+    def apply(a: SpanLike): Option[Span] = a match {
+      case sp: Span => Some(sp)
+      case _        => None
+    }
+
+    def name: String = "SpanLikeClosedOption"
+    def aux: scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeStartOption() extends Op[SpanLike, Option[Long]] {
+    def apply(a: SpanLike): Option[Long] = a.startOption
+
+    def name: String = "SpanLikeStartOption"
+    def aux: scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeStopOption() extends Op[SpanLike, Option[Long]] {
+    def apply(a: SpanLike): Option[Long] = a.stopOption
+
+    def name: String = "SpanLikeStopOption"
+    def aux: scala.List[Aux] = Nil
+  }
+
+  final case class SpanLikeLengthOption() extends Op[SpanLike, Option[Long]] {
+    def apply(a: SpanLike): Option[Long] = a match {
+      case sp: Span.SpanOrVoid  => Some(sp.length)
+      case _                    => None
+    }
+
+    def name: String = "SpanLikeLengthOption"
+    def aux: scala.List[Aux] = Nil
+  }
+
+  // ---- Span ----
+
+  final case class SpanStart() extends Op[Span, Long] {
+    def apply(a: Span): Long = a.start
+
+    def name: String = "SpanStart"
+    def aux: scala.List[Aux] = Nil
+  }
+
+  final case class SpanStop() extends Op[Span, Long] {
+    def apply(a: Span): Long = a.stop
+
+    def name: String = "SpanStop"
+    def aux: scala.List[Aux] = Nil
+  }
+
+  final case class SpanLength() extends Op[Span, Long] {
+    def apply(a: Span): Long = a.length
+
+    def name: String = "SpanLength"
+    def aux: scala.List[Aux] = Nil
   }
 
   // ---- Impl ----
