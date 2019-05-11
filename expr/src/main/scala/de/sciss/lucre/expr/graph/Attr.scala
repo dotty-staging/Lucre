@@ -151,11 +151,14 @@ object Attr {
                                                      (implicit protected val targets: ITargets[S])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
 
+    // println("Attr.Expanded - created")
+
     private[this] val ref = Ref(value(tx0))
 
     private[this] val obsAttr = attrView.react { implicit tx => now =>
       val before = ref.swap(now)(tx.peer)
       val ch = Change(before, now)
+      // println(s"Attr.Expanded change $ch")
       if (ch.isSignificant) fire(ch)
     } (tx0)
 
@@ -166,8 +169,10 @@ object Attr {
 
     def changed: IEvent[S, Change[Option[A]]] = this
 
-    def dispose()(implicit tx: S#Tx): Unit =
+    def dispose()(implicit tx: S#Tx): Unit = {
+      // println("Attr.Expanded - dispose")
       obsAttr.dispose()
+    }
   }
 
   final case class Update[A](source: Ex[A], key: String)(implicit bridge: Attr.Bridge[A])

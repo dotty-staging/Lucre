@@ -73,9 +73,9 @@ object Act {
 //          // XXX TODO Huh, not cool. Perhaps we should return Act.Option directly from CanMap ?
 //        case _ => throw new UnsupportedOperationException(s"Execute on a generic Ex[Option[Act]]")
 ////
-      println("in.value")
+      // println("in.value")
       val v = in.value
-      println(s"---> $v")
+      // println(s"---> $v")
       v.foreach { act =>
         val (actEx, d) = ctx.nested {
           act.expand[S]

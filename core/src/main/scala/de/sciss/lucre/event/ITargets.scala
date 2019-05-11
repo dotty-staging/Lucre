@@ -51,9 +51,9 @@ object ITargets {
       val isEmpty   = now.isEmpty
 
       if (isEmpty)
-        connections += parent -> now
-      else
         connections -= parent
+      else
+        connections += parent -> now
 
       isEmpty
     }

@@ -22,10 +22,10 @@ object MapToActTest extends App {
 
   import Workspace.Implicits._
 
-  val (ctl, selfH) = system.step { implicit tx =>
+  val (ctl, selfH, ctx) = system.step { implicit tx =>
     val self: Obj[S] = StringObj.newConst("foo")
     val _selfH = tx.newHandle(self)
-    implicit val ctx: Context[S] = Context[S](Some(_selfH))
+    implicit val _ctx: Context[S] = Context[S](Some(_selfH))
     println("[expand]")
     val _ctl = g.expand
     _ctl.initControl()
@@ -35,7 +35,7 @@ object MapToActTest extends App {
       println(s"[update] $upd")
     }
 
-    (_ctl, _selfH)
+    (_ctl, _selfH, _ctx)
   }
 
   Thread.sleep(500)
@@ -46,12 +46,12 @@ object MapToActTest extends App {
     self.attr.put("bar", StringObj.newConst("123"))
   }
 
-//  Thread.sleep(500)
-//  println("[remove]")
-//  system.step { implicit tx =>
-//    val self = selfH()
-//    self.attr.remove("bar")
-//  }
+  Thread.sleep(500)
+  println("[remove]")
+  system.step { implicit tx =>
+    val self = selfH()
+    self.attr.remove("bar")
+  }
 
   Thread.sleep(500)
   println("[add]")
@@ -62,6 +62,9 @@ object MapToActTest extends App {
 
   Thread.sleep(500)
   system.step { implicit tx =>
+    println("[dispose graph]")
     ctl.dispose()
+    println("[dispose context]")
+    ctx.dispose()
   }
 }
