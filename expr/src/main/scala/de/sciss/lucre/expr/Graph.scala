@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{Control, Ex, It}
+import de.sciss.lucre.expr.graph.{Control, It}
 import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
@@ -53,7 +53,7 @@ object Graph {
     }
   }
 
-  def expr[A](thunk: => Ex[A]): (Graph, Ex[A]) = {
+  def withResult[A](thunk: => A): (Graph, A) = {
     val b   = new BuilderImpl
     use(b) {
       val ex = thunk

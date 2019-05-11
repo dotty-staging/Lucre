@@ -1,6 +1,5 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr
 import de.sciss.lucre.stm.Durable
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.model.Change
@@ -21,7 +20,7 @@ object BasicTest {
   }
 
   def run(system: S): Unit = {
-    expr.init()
+    LucreExpr.init()
 
     import Ops._
 

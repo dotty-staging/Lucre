@@ -16,7 +16,7 @@ trait ConfluentEventSpec extends fixture.FlatSpec with Matchers {
 //  implicit final protected val IntType  = lucre.expr.Int
 //  implicit final protected val LongType = lucre.expr.Long
 
-  init()
+  LucreExpr.init()
 
   final def withFixture(test: OneArgTest): Outcome = {
     val system = Confluent(BerkeleyDB.tmp())

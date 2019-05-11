@@ -22,6 +22,9 @@ import scala.annotation.switch
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 
+/** These are basically our "type classes" with the ability to serialize and deserialize.
+  * They are supported through `ProductHasAux` which is recognized in serialization.
+  */
 object Aux {
   private[Aux] final val COOKIE = 0x4175   // "Au"
 
