@@ -13,15 +13,14 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.event.impl.IEventImpl
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.expr.{Context, IExpr}
-import de.sciss.lucre.expr.graph.{Ex, It}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
-final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], it: It.Expanded[S, A],
-                                                   fun: Ex[B], tx0: S#Tx)
+final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[B], tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] {
 
@@ -33,8 +32,7 @@ final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], it: 
   }
 
   private def valueOf(inOption: Option[A])(implicit tx: S#Tx): Option[B] =
-    inOption.map { v0 =>
-      it.setValue(v0)  // make sure we have the first value ready
+    if (inOption.isEmpty) None else {
       val (out, d) = ctx.nested {
         val funEx = fun.expand[S]
         val vn    = funEx.value
@@ -42,7 +40,7 @@ final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], it: 
       }
 
       d.dispose()
-      out
+      Some(out)
     }
 
   private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[B]]] =

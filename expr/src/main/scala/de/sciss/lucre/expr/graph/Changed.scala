@@ -32,6 +32,7 @@ object Changed {
 
     private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Unit] = {
       val res: Option[Change[A]] = pull(in.changed)
+      println(s"Changed.pullUpdate: $res")
       val t = res.exists(_.isSignificant)
       if (t) Trig.Some else None
     }

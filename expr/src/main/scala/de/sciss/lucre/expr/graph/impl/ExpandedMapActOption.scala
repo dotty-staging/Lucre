@@ -15,13 +15,12 @@ package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.expr.graph.Act
 import de.sciss.lucre.expr.{Context, IExpr}
-import de.sciss.lucre.expr.graph.{Act, It}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
-final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], it: It.Expanded[S, A],
-                                                 fun: Act, tx0: S#Tx)
+final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], fun: Act, tx0: S#Tx)
                                                 (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IExpr[S, Option[Act]] with IEventImpl[S, Change[Option[Act]]] with Act.Option[S] {
 
@@ -34,8 +33,7 @@ final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], it: It
 
   def executeAction()(implicit tx: S#Tx): Boolean = {
     val inOption = in.value
-    inOption.exists { v0 =>
-      it.setValue(v0)  // make sure we have the first value ready
+    inOption.isDefined && {
       val (_, d) = ctx.nested {
         val actEx = fun.expand[S]
         actEx.executeAction()

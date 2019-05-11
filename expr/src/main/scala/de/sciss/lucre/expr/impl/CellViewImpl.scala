@@ -354,7 +354,7 @@ object CellViewImpl {
     }
 
     def lift(value: Option[A])(implicit tx: S#Tx): Repr =
-      value.map(v => tpe.newConst[S](v))  // IntelliJ highlight bug
+      value.map(v => tpe.newConst[S](v))
 
     def update(v: Option[A])(implicit tx: S#Tx): Unit = repr_=(lift(v))
   }

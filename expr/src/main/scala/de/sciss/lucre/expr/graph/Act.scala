@@ -63,24 +63,27 @@ object Act {
     }
   }
 
-  private final class ExpandedOrNop[S <: Sys[S]](in: IExpr[S, _Option[Act]])/*(implicit ctx: Context[S])*/
+  private final class ExpandedOrNop[S <: Sys[S]](in: IExpr[S, _Option[Act]])(implicit ctx: Context[S])
     extends IActionImpl[S] {
 
-    def executeAction()(implicit tx: S#Tx): Unit =
-      in match {
-        case o: Option[S] => o.executeAction()
-
-          // XXX TODO Huh, not cool. Perhaps we should return Act.Option directly from CanMap ?
-        case _ => throw new UnsupportedOperationException(s"Execute on a generic Ex[Option[Act]]")
+    def executeAction()(implicit tx: S#Tx): Unit = {
+//      in match {
+//        case o: Option[S] => o.executeAction()
 //
-//          in.value.foreach { act =>
-//            val (actEx, d) = ctx.nested {
-//              act.expand[S]
-//            }
-//            actEx.executeAction()
-//            d.dispose()
-//          }
+//          // XXX TODO Huh, not cool. Perhaps we should return Act.Option directly from CanMap ?
+//        case _ => throw new UnsupportedOperationException(s"Execute on a generic Ex[Option[Act]]")
+////
+      println("in.value")
+      val v = in.value
+      println(s"---> $v")
+      v.foreach { act =>
+        val (actEx, d) = ctx.nested {
+          act.expand[S]
+        }
+        actEx.executeAction()
+        d.dispose()
       }
+    }
   }
 
   final case class OrNop(in: Ex[_Option[Act]]) extends Act {

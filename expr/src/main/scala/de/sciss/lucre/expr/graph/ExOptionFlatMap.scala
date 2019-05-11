@@ -15,14 +15,13 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.{Context, Graph, IExpr}
+import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 object ExOptionFlatMap {
   // XXX DRY with ExOptionMap
-  private final class Expanded[S <: Sys[S], A, B](in: IExpr[S, Option[A]], it: It.Expanded[S, A],
-                                                  fun: Ex[Option[B]], tx0: S#Tx)
+  private final class Expanded[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[Option[B]], tx0: S#Tx)
                                                  (implicit protected val targets: ITargets[S], ctx: Context[S])
     extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] {
 
@@ -34,8 +33,7 @@ object ExOptionFlatMap {
     }
 
     private def valueOf(inOption: Option[A])(implicit tx: S#Tx): Option[B] =
-      inOption.flatMap { v0 =>
-        it.setValue(v0)  // make sure we have the first value ready
+      if (inOption.isEmpty) None else {
         val (out, funDisp) = ctx.nested {
           val funEx = fun.expand[S]
           val vn    = funEx.value
@@ -59,15 +57,14 @@ object ExOptionFlatMap {
     def changed: IEvent[S, Change[Option[B]]] = this
   }
 }
-final case class ExOptionFlatMap[A, B](in: Ex[Option[A]], it: It[A], closure: Graph, fun: Ex[Option[B]])
+final case class ExOptionFlatMap[A, B](in: Ex[Option[A]], fun: Ex[Option[B]])
   extends Ex[Option[B]] {
 
   type Repr[S <: Sys[S]] = IExpr[S, Option[B]]
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     val inEx = in.expand[S]
-    val itEx = it.expand[S]
     import ctx.targets
-    new ExOptionFlatMap.Expanded[S, A, B](inEx, itEx, fun, tx)
+    new ExOptionFlatMap.Expanded[S, A, B](inEx, fun, tx)
   }
 }

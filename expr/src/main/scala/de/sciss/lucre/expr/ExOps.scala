@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Const, Ex, ExOptionFlatMap, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Const, Ex, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
@@ -248,10 +248,14 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
 
-  def isEmpty   : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
-  def nonEmpty  : Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
+  def isEmpty : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
+  def nonEmpty: Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
 
-  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To = m.map(x, f)
+  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
+    m.map(x, f)
+
+  def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Seq, B, To]): To =
+    fm.flatMap(x, f)
 
   def mkString(sep: Ex[String]): Ex[String] = {
     import ExOps.constEx
@@ -273,16 +277,11 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 
   def toList: Ex[scala.List[A]] = UnOp(UnOp.OptionToList[A](), x)
 
-  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Option, B, To]): To = m.map(x, f)
+  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Option, B, To]): To =
+    m.map(x, f)
 
-  def flatMap[B](f: Ex[A] => Ex[Option[B]]): Ex[Option[B]] = {
-    val b     = Graph.builder
-    val it    = b.allocToken[A]()
-    val (closure, fun) = Graph.withResult {
-      f(it)
-    }
-    ExOptionFlatMap[A, B](in = x, it = it, closure = closure, fun = fun)
-  }
+  def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Option, B, To]): To =
+    fm.flatMap(x, f)
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {
