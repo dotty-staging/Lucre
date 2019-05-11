@@ -2,6 +2,22 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.stm.{InMemory, Obj, Workspace}
 
+/*
+  expected output
+  TODO: make this a real unit test
+
+  [expand]
+  [add]
+  [update] Some(123)
+  123
+  [remove]
+  [update] None
+  [add]
+  [update] Some(456)
+  456
+
+
+ */
 object MapToActTest extends App {
   type S = InMemory
 
