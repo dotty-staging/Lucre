@@ -98,7 +98,8 @@ object Obj {
       new AttrExpanded(obj.expand[S], key, tx)
     }
 
-    def update(in: Ex[A]): Control = ???
+    def update(in: Ex[A]): Control  = ???
+    def set   (in: Ex[A]): Act      = ???
 
     def aux: List[Aux] = bridge :: Nil
   }

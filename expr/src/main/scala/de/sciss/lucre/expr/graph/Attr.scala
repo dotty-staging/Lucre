@@ -17,9 +17,9 @@ import de.sciss.lucre.{aux, stm}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.impl.ExpandedAttrUpdate
-import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
-import de.sciss.lucre.expr.{BooleanObj, CellView, DoubleObj, DoubleVector, Context, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
+import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate}
+import de.sciss.lucre.expr.impl.{EmptyIAction, ExAttrBridgeImpl}
+import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 import de.sciss.span.{Span, SpanLike}
@@ -31,6 +31,7 @@ import scala.concurrent.stm.Ref
 object Attr {
   trait Like[A] extends ProductWithAux {
     def update(in: Ex[A]): Control
+    def set   (in: Ex[A]): Act
   }
 
   private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
@@ -67,7 +68,8 @@ object Attr {
 
       override def productPrefix: String = s"Attr$$WithDefault" // serialization
 
-      def update(in: Ex[A]): Control = Attr.Update(in, key)
+      def update(in: Ex[A]): Control  = Attr.Update(in, key)
+      def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
 
       protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
         val defaultEx: Repr[S] = default.expand[S]
@@ -191,13 +193,29 @@ object Attr {
 
     override def aux: scala.List[Aux] = bridge :: Nil
   }
+
+  final case class Set[A](source: Ex[A], key: String)(implicit bridge: Attr.Bridge[A])
+    extends Act with ProductWithAux {
+
+    override def productPrefix: String = s"Attr$$Set"
+
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      resolveNested(key).fold[IAction[S]](new EmptyIAction) { attrView =>
+        new ExpandedAttrSet[S, A](source.expand[S], attrView, tx)
+      }
+
+    override def aux: scala.List[Aux] = bridge :: Nil
+  }
 }
 final case class Attr[A](key: String)(implicit val bridge: Attr.Bridge[A])
   extends Ex[Option[A]] with Attr.Like[A] with ProductWithAux {
 
   type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
 
-  def update(in: Ex[A]): Control = Attr.Update(in, key)
+  def update(in: Ex[A]): Control  = Attr.Update(in, key)
+  def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     ctx.selfOption.fold(Const(Option.empty[A]).expand[S]) { self =>

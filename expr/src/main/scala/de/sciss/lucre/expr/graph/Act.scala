@@ -17,10 +17,26 @@ import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IControl, IExpr}
 import de.sciss.lucre.stm.Sys
 
-import scala.{Option => _Option}
 import scala.language.{higherKinds, implicitConversions}
+import scala.{Option => _Option}
 
 object Act {
+  def apply(xs: Act*): Act = SeqImpl(xs)
+
+  private final class ExpandedSeq[S <: Sys[S]](xs: Seq[IAction[S]]) extends IActionImpl[S] {
+    def executeAction()(implicit tx: S#Tx): Unit =
+      xs.foreach(_.executeAction())
+  }
+
+  private final case class SeqImpl(xs: Seq[Act]) extends Act {
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    override def productPrefix = "Act" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new ExpandedSeq(xs.map(_.expand[S]))
+  }
+
   final case class Link[A](source: Trig, sink: Act)
     extends Control {
 
