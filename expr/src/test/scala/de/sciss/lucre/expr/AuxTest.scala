@@ -1,6 +1,5 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.ExOps._
 import de.sciss.lucre.expr.graph.{CaseDef, Quote, Var}
 
 // ensure this compiles

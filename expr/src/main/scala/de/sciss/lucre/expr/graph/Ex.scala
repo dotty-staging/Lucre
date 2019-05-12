@@ -15,13 +15,39 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq}
-import de.sciss.lucre.expr.{Context, Graph, IExpr}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, Graph, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
+import de.sciss.span.SpanLike
 
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
 object Ex {
+  // ---- implicits ----
+
+  implicit def const[A](x: A): Ex[A] = Const(x)
+
+  implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Const(x)
+  implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
+    case Some(ex) => UnaryOp(UnaryOp.OptionSome[A](), ex)
+    case None     => Const(Option.empty[A])
+  }
+
+  implicit def liftSeq[A](x: Seq[A]): Ex[Seq[A]] = Const(x) // immutable(x))
+
+  implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[Seq[A]] =
+    if (x.isEmpty) Const(Nil) else ExSeq(x: _*) // immutable(x): _*)
+
+  implicit def ops      [A](x: Ex[A])           : ExOps       [A] = new ExOps       (x)
+  implicit def seqOps   [A](x: Ex[Seq  [A]])    : ExSeqOps    [A] = new ExSeqOps    (x)
+  implicit def optionOps[A](x: Ex[Option[A]])   : ExOptionOps [A] = new ExOptionOps (x)
+  implicit def booleanOps  (x: Ex[Boolean])     : ExBooleanOps    = new ExBooleanOps(x)
+  implicit def stringOps   (x: Ex[String])      : ExStringOps     = new ExStringOps (x)
+  implicit def spanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A] = new ExSpanOps   (x)
+
+
+  //////////////////////////////
+
   private val anyCanMapExOption     = new CanMapExOption    [Any]
   private val anyCanMapExSeq        = new CanMapExSeq       [Any]
 

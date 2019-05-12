@@ -6,7 +6,6 @@ object LoadBangTest extends App {
   type S = InMemory
 
   val g = Graph {
-    import ExOps._
     import graph._
 
     LoadBang() ---> PrintLn("Henlo")

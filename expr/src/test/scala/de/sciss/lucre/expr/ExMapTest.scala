@@ -7,7 +7,6 @@ object ExMapTest extends App {
   type S = InMemory
 
   val g = Graph {
-    import ExOps._
     import graph.{Ex=> _, _}
 
     val in: Ex[Seq[Double]] = Seq(0.0, 3.0, 6.0)

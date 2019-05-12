@@ -22,7 +22,7 @@ object MapToActTest extends App {
   type S = InMemory
 
   val g = Graph {
-    import ExOps._
+    import ExImport._
     import graph._
 
     val opt: Ex[Option[String]] = "bar".attr[String]

@@ -14,49 +14,11 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Const, Ex, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
 
-object ExOps {
-  implicit def constEx[A](x: A): Ex[A] = Const(x)
-
-//  implicit def constIntEx    (x: Int     ): Ex[Int     ] = Constant(x)
-//  implicit def constDoubleEx (x: Double  ): Ex[Double  ] = Constant(x)
-//  implicit def constBooleanEx(x: Boolean ): Ex[Boolean ] = Constant(x)
-//  implicit def constStringEx (x: String  ): Ex[String  ] = Constant(x)
-
-  implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Const(x)
-  implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
-    case Some(ex) => UnOp(UnOp.OptionSome[A](), ex)
-    case None     => Const(Option.empty[A])
-  }
-
-  implicit def liftSeq[A](x: Seq[A]): Ex[Seq[A]] = Const(x) // immutable(x))
-
-  implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[Seq[A]] =
-    if (x.isEmpty) Const(Nil) else ExSeq(x: _*) // immutable(x): _*)
-
-//  private def immutable[A](in: Seq[A]): ISeq[A] = in match {
-//    case ix: ISeq[A]  => ix
-//    case _            => in.toList
-//  }
-
-  implicit def exOps      [A](x: Ex[A])           : ExOps       [A] = new ExOps       (x)
-  implicit def exSeqOps   [A](x: Ex[Seq  [A]])    : ExSeqOps    [A] = new ExSeqOps    (x)
-  implicit def exOptionOps[A](x: Ex[Option[A]])   : ExOptionOps [A] = new ExOptionOps (x)
-//  implicit def exBooleanOps  (x: Ex[Boolean])   : ExBooleanOps    = new ExBooleanOps(x)
-  implicit def exStringOps   (x: Ex[String])      : ExStringOps     = new ExStringOps (x)
-  implicit def exSpanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A] = new ExSpanOps   (x)
-
-  implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
-
-  implicit def stringToExAttr(x: String): StringToExAttr = new StringToExAttr(x)
-
-  type Span     = _Span
-  type SpanLike = _SpanLike
-}
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
 
@@ -191,9 +153,11 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
 
   // ---- bridge to trigger ----
 
-  def toTrig(implicit ev: Ex[A] =:= Ex[Boolean]): Trig = ToTrig(ev(x))
-
   def changed: Trig = Changed(x)
+}
+
+final class ExBooleanOps(private val x: Ex[Boolean]) extends AnyVal {
+  def toTrig: Trig = ToTrig(x)
 }
 
 final class ExStringOps(private val x: Ex[String]) extends AnyVal {
@@ -258,7 +222,7 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
     fm.flatMap(x, f)
 
   def mkString(sep: Ex[String]): Ex[String] = {
-    import ExOps.constEx
+    import Ex.const
     mkString("", sep, "")
   }
 

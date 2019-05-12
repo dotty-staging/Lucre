@@ -15,11 +15,6 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.graph.{Act, Ex, TBinaryOp, TTBinaryOp, Trig}
 
-import scala.language.implicitConversions
-
-object TrigOps {
-  implicit def trigOps(t: Trig): TrigOps = new TrigOps(t)
-}
 final class TrigOps(private val t: Trig) extends AnyVal {
   def & (that: Trig): Trig = TTBinaryOp(TTBinaryOp.And(), t, that)
   def | (that: Trig): Trig = TTBinaryOp(TTBinaryOp.Or (), t, that)

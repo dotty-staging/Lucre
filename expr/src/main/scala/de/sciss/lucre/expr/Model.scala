@@ -25,7 +25,6 @@ trait Model[A] {
   }
 
   def ---> (attr: Attr.Like[A]): Unit = {
-    import ExOps._
     apply() ---> attr
   }
 

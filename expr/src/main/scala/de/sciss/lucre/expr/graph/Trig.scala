@@ -13,13 +13,15 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.ITrigger
+import de.sciss.lucre.expr.{ITrigger, TrigOps}
 import de.sciss.lucre.stm.Sys
 
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
 object Trig {
   final val Some: Option[Unit] = scala.Some(())
+
+  implicit def ops(t: Trig): TrigOps = new TrigOps(t)
 }
 
 /** A trigger element.

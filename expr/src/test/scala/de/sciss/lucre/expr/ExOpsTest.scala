@@ -1,6 +1,5 @@
 package de.sciss.lucre.expr
 
-import ExOps._
 import de.sciss.lucre.expr.graph.{Act, Ex}
 
 trait ExOpsTest {
