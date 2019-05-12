@@ -22,34 +22,50 @@ import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object TernaryOp {
-  abstract class Op[A, B, C, D] extends ProductWithAux {
+  abstract class Op[A, B, C, D] extends Product {
     def apply(a: A, b: B, c: C): D
-
+  }
+  
+  abstract class NamedOp[A, B, C, D] extends Op[A, B, C, D] {
     override def productPrefix = s"TernaryOp$$$name"
 
     def name: String
 
     override def toString: String = name
   }
+  
+  type AuxL = scala.List[Aux]
 
   // ---- (Num, Num, Num) -> Num --- -
 
-  final case class Clip[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) extends Op[A, B, B, C] {
-    def apply(a: A, b: B, c: B) : C         = num.clip(widen.widen1(a), widen.widen2(b), widen.widen2(c))
-    def name                    : String    = "Clip"
-    def aux                     : scala.List[Aux] = widen :: num :: Nil
+  final case class Clip[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, B, C] with ProductWithAux {
+
+    def apply(a: A, b: B, c: B): C = num.clip(widen.widen1(a), widen.widen2(b), widen.widen2(c))
+
+    def name = "Clip"
+
+    override def aux: AuxL = widen :: num :: Nil
   }
 
-  final case class Fold[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) extends Op[A, B, B, C] {
-    def apply(a: A, b: B, c: B) : C         = num.fold(widen.widen1(a), widen.widen2(b), widen.widen2(c))
-    def name                    : String    = "Fold"
-    def aux                     : scala.List[Aux] = widen :: num :: Nil
+  final case class Fold[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, B, C] with ProductWithAux {
+
+    def apply(a: A, b: B, c: B): C = num.fold(widen.widen1(a), widen.widen2(b), widen.widen2(c))
+
+    def name = "Fold"
+
+    override def aux: AuxL = widen :: num :: Nil
   }
 
-  final case class Wrap[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) extends Op[A, B, B, C] {
-    def apply(a: A, b: B, c: B) : C         = num.wrap(widen.widen1(a), widen.widen2(b), widen.widen2(c))
-    def name                    : String    = "Wrap"
-    def aux                     : scala.List[Aux] = widen :: num :: Nil
+  final case class Wrap[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, B, C] with ProductWithAux {
+
+    def apply(a: A, b: B, c: B): C = num.wrap(widen.widen1(a), widen.widen2(b), widen.widen2(c))
+
+    def name = "Wrap"
+
+    override def aux: AuxL = widen :: num :: Nil
   }
 
   private[graph] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],

@@ -17,8 +17,6 @@ import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord
 import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
-import scala.language.implicitConversions
-
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
 

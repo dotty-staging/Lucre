@@ -11,6 +11,7 @@ lazy val deps = new {
     val scalaSTM  = "0.9.1"
   }
   val expr = new {
+    val fileUtil  = "1.1.3"
     val model     = "0.3.4"
     val numbers   = "0.2.0"
     val span      = "1.4.2"
@@ -130,8 +131,9 @@ lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
-      "de.sciss" %% "model"   % deps.expr.model,
-      "de.sciss" %% "span"    % deps.expr.span,
+      "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
+      "de.sciss" %% "model"     % deps.expr.model,
+      "de.sciss" %% "span"      % deps.expr.span,
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )

@@ -15,7 +15,6 @@ package de.sciss.lucre.expr.graph
 
 import java.util.Locale
 
-import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.event.IPush.Parents
 import de.sciss.lucre.event.impl.{IEventImpl, IGenerator}
 import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
@@ -47,9 +46,7 @@ object TimeStamp {
 //  }
 
   final case class Format[S <: Sys[S]]() extends BinaryOp.Op[Long, String, String] {
-    override def productPrefix = s"TimeStamp$$$name"
-
-    def name: String = "Format"
+    override def productPrefix = s"TimeStamp$$Format" // serialization
 
     def apply(a: Long, b: String): String =
       try {
@@ -59,8 +56,6 @@ object TimeStamp {
         case _: IllegalArgumentException =>
           s"Invalid format '$b'"
       }
-
-    def aux: List[Aux] = Nil
   }
 
 //  trait Expanded[S <: Sys[S]] extends IExpr[S, Long] {
