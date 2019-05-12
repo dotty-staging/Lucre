@@ -24,6 +24,8 @@ import scala.language.implicitConversions
 object ExImport {
   implicit def stringToExAttr(x: String): StringToExAttr = new StringToExAttr(x)
 
+  def any2stringadd: Any = () // yeah, fuck you too
+
   type Span     = _Span
   type SpanLike = _SpanLike
 
