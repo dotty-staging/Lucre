@@ -525,16 +525,16 @@ object BinaryOp {
 
   // ---- File ----
 
-  final case class FileReplaceExt() extends BinaryOp.Op[File, String, File] {
-    override def productPrefix = s"File$$ReplaceExt"  // serialization
-
+  final case class FileReplaceExt() extends NamedOp[File, String, File] {
     def apply(a: File, s: String): File = a.replaceExt(s)
+
+    def name = "FileReplaceExt"
   }
 
-  final case class FileReplaceName() extends BinaryOp.Op[File, String, File] {
-    override def productPrefix = s"File$$ReplaceName"  // serialization
-
+  final case class FileReplaceName() extends NamedOp[File, String, File] {
     def apply(a: File, s: String): File = a.replaceName(s)
+
+    def name: String = "FileReplaceName"
   }
 
   // ---- Impl ----

@@ -495,34 +495,34 @@ object UnaryOp {
 
   // ---- File ----
 
-  final case class FileParentOption() extends UnaryOp.Op[File, Option[File]] {
-    override def productPrefix = s"File$$ParentOption"  // serialization
-
+  final case class FileParentOption() extends NamedOp[File, Option[File]] {
     def apply(a: File): Option[File] = a.parentOption
+
+    def name = "FileParentOption"
   }
 
-  final case class FilePath() extends UnaryOp.Op[File, String] {
-    override def productPrefix = s"File$$Path"  // serialization
-
+  final case class FilePath() extends NamedOp[File, String] {
     def apply(a: File): String = a.path
+
+    def name = "FilePath"
   }
 
-  final case class FileName() extends UnaryOp.Op[File, String] {
-    override def productPrefix = s"File$$Name"  // serialization
-
+  final case class FileName() extends NamedOp[File, String] {
     def apply(a: File): String = a.name
+
+    def name = "FileName"
   }
 
-  final case class FileBase() extends UnaryOp.Op[File, String] {
-    override def productPrefix = s"File$$Base"  // serialization
-
+  final case class FileBase() extends NamedOp[File, String] {
     def apply(a: File): String = a.base
+
+    def name = "FileBase"
   }
 
-  final case class FileExtL() extends UnaryOp.Op[File, String] {
-    override def productPrefix = s"File$$ExtL"  // serialization
-
+  final case class FileExtL() extends NamedOp[File, String] {
     def apply(a: File): String = a.extL
+
+    def name = "FileExtL"
   }
 
   // ---- Impl ----
