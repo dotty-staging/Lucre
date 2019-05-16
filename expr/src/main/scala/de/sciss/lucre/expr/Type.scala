@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.ExAttrBridgeImpl
+import de.sciss.lucre.expr.impl.ExObjBridgeImpl
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{aux, expr, stm}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
@@ -67,7 +67,7 @@ object Type {
     def readIdentifiedAux(in: DataInput): aux.Aux = {
       val typeId  = in.readInt()
       val peer    = Obj.getType(typeId)
-      new ExAttrBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
+      new ExObjBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
 //      (typeId: @switch) match {
 //        case IntObj       .typeId => ExAttrBridgeImpl.int
 //        case LongObj      .typeId => ExAttrBridgeImpl.long

@@ -13,19 +13,17 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.{aux, stm}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate}
-import de.sciss.lucre.expr.impl.{EmptyIAction, ExAttrBridgeImpl}
-import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
+import de.sciss.lucre.expr.impl.EmptyIAction
+import de.sciss.lucre.expr.{CellView, Context, IAction, IControl, IExpr}
+import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
-import de.sciss.span.{Span, SpanLike}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.Ref
 
 object Attr {
@@ -35,7 +33,7 @@ object Attr {
   }
 
   private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
-                                                                bridge: Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
+                                                                bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
     @tailrec
     def loop(objOpt: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
       objOpt match {
@@ -58,10 +56,10 @@ object Attr {
   }
 
   object WithDefault {
-    def apply[A](key: String, default: Ex[A])(implicit bridge: Bridge[A]): WithDefault[A] =
+    def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =
       Impl(key, default)
 
-    private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Bridge[A])
+    private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Obj.Bridge[A])
       extends WithDefault[A] with ProductWithAux {
 
       type Repr[S <: Sys[S]] = IExpr[S, A]
@@ -131,24 +129,6 @@ object Attr {
     def default: Ex[A]
   }
 
-  object Bridge {
-    implicit val int      : Bridge[Int        ] = new ExAttrBridgeImpl(IntObj       )
-    implicit val long     : Bridge[Long       ] = new ExAttrBridgeImpl(LongObj      )
-    implicit val double   : Bridge[Double     ] = new ExAttrBridgeImpl(DoubleObj    )
-    implicit val boolean  : Bridge[Boolean    ] = new ExAttrBridgeImpl(BooleanObj   )
-    implicit val string   : Bridge[String     ] = new ExAttrBridgeImpl(StringObj    )
-    implicit val spanLike : Bridge[SpanLike   ] = new ExAttrBridgeImpl(SpanLikeObj  )
-    implicit val span     : Bridge[Span       ] = new ExAttrBridgeImpl(SpanObj      )
-    implicit val intVec   : Bridge[Vec[Int   ]] = new ExAttrBridgeImpl(IntVector    )
-    implicit val doubleVec: Bridge[Vec[Double]] = new ExAttrBridgeImpl(DoubleVector )
-
-  }
-  trait Bridge[A] extends aux.Aux {
-    // def peer: Obj.Type
-
-    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
-  }
-
   private[graph] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
                                                      (implicit protected val targets: ITargets[S])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
@@ -177,7 +157,7 @@ object Attr {
     }
   }
 
-  final case class Update[A](source: Ex[A], key: String)(implicit bridge: Attr.Bridge[A])
+  final case class Update[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
     extends Control with ProductWithAux {
 
     override def productPrefix: String = s"Attr$$Update"
@@ -194,7 +174,7 @@ object Attr {
     override def aux: scala.List[Aux] = bridge :: Nil
   }
 
-  final case class Set[A](source: Ex[A], key: String)(implicit bridge: Attr.Bridge[A])
+  final case class Set[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
     extends Act with ProductWithAux {
 
     override def productPrefix: String = s"Attr$$Set"
@@ -209,7 +189,7 @@ object Attr {
     override def aux: scala.List[Aux] = bridge :: Nil
   }
 }
-final case class Attr[A](key: String)(implicit val bridge: Attr.Bridge[A])
+final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
   extends Ex[Option[A]] with Attr.Like[A] with ProductWithAux {
 
   type Repr[S <: Sys[S]] = IExpr[S, Option[A]]

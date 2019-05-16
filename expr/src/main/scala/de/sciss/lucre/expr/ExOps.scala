@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Obj, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
@@ -158,6 +158,8 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // ---- bridge to trigger ----
 
   def changed: Trig = Changed(x)
+
+  def mkObj(implicit bridge: Obj.Bridge[A]): Ex[Obj] = Obj.Make(x)
 }
 
 final class ExBooleanOps(private val x: Ex[Boolean]) extends AnyVal {
@@ -253,8 +255,8 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 }
 
 final class StringToExAttr(private val x: String) extends AnyVal {
-  def attr[A](implicit bridge: Attr.Bridge[A]): Attr[A] = Attr(x)
+  def attr[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr(x)
 
-  def attr[A](default: Ex[A])(implicit bridge: Attr.Bridge[A]): Attr.WithDefault[A] =
+  def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
     Attr.WithDefault(x, default)
 }

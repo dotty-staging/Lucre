@@ -24,7 +24,7 @@ object Folder extends Obj.Type {
   override def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
 
-  def apply[S <: Sys[S]](implicit tx: S#Tx): Folder[S] = Impl[S]
+  def apply[S <: Sys[S]]()(implicit tx: S#Tx): Folder[S] = Impl[S]
 
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Folder[S] =
     serializer[S].read(in, access)

@@ -35,7 +35,7 @@ lazy val commonSettings = Seq(
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.12.8",
-  crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0-RC1"),
+  crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0-RC2"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
@@ -45,7 +45,11 @@ lazy val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
   libraryDependencies += {
-    "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
+    if (scalaVersion.value == "2.13.0-RC2") {
+      "org.scalatest" % "scalatest_2.13.0-RC1" % deps.test.scalaTest % Test
+    } else {
+      "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
+    }
   }
 ) ++ publishSettings
 
