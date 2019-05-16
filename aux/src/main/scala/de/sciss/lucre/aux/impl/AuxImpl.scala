@@ -21,6 +21,7 @@ trait SeqLike[A] {
   final type Boolean  = Seq[scala.Boolean ]
   final type Int      = Seq[scala.Int     ]
   final type Double   = Seq[scala.Double  ]
+  final type Long     = Seq[scala.Long    ]
   final type In       = Seq[A]
 
   final protected def unOp[B](a: In)(op: A => B): Seq[B] = a.map(op)
@@ -48,17 +49,17 @@ trait SeqLike[A] {
 trait SeqLikeEq[A] extends SeqLike[A] with Eq[Seq[A]] {
   protected val peer: ScalarEq[A]
 
-  def eq (a: In, b: In): Boolean = binOp(a, b)(peer.eq )
-  def neq(a: In, b: In): Boolean = binOp(a, b)(peer.neq)
+  def eq (a: In, b: In): Boolean = binOp(a, b)(peer.eq ) // IntelliJ highlight bug
+  def neq(a: In, b: In): Boolean = binOp(a, b)(peer.neq) // IntelliJ highlight bug
 }
 
 trait SeqLikeOrd[A] extends SeqLikeEq[A] with Ord[Seq[A]] {
   protected val peer: ScalarOrd[A]
 
-  def lt  (a: In, b: In): Boolean = binOp(a, b)(peer.lt  )
-  def leq (a: In, b: In): Boolean = binOp(a, b)(peer.leq )
-  def gt  (a: In, b: In): Boolean = binOp(a, b)(peer.gt  )
-  def geq (a: In, b: In): Boolean = binOp(a, b)(peer.geq )
+  def lt  (a: In, b: In): Boolean = binOp(a, b)(peer.lt  ) // IntelliJ highlight bug
+  def leq (a: In, b: In): Boolean = binOp(a, b)(peer.leq ) // IntelliJ highlight bug
+  def gt  (a: In, b: In): Boolean = binOp(a, b)(peer.gt  ) // IntelliJ highlight bug
+  def geq (a: In, b: In): Boolean = binOp(a, b)(peer.geq ) // IntelliJ highlight bug
 }
 
 trait SeqLikeNum[A] extends SeqLikeOrd[A] with Num[Seq[A]] {
@@ -147,14 +148,15 @@ trait SeqLikeNumDouble[A] extends SeqLikeNumFrac[A] with NumDouble[Seq[A]] {
   final def hypotApx  (a: In, b: In): In = binOp(a, b)(peer.hypotApx)
   final def pow       (a: In, b: In): In = binOp(a, b)(peer.pow   )
 
-  def coin[Tx](a: In)(implicit r: Random[Tx], tx: Tx): Boolean = unOp(a)(peer.coin[Tx])
+  def coin[Tx](a: In)(implicit r: Random[Tx], tx: Tx): Boolean = unOp(a)(peer.coin[Tx]) // IntelliJ highlight bug
 }
 
 trait SeqLikeToNum[A] extends SeqLike[A] with ToNum[Seq[A]] {
   protected val peer: ScalarToNum[A]
 
-  final def toInt   (a: In): Int     = unOp(a)(peer.toInt   )
-  final def toDouble(a: In): Double  = unOp(a)(peer.toDouble)
+  final def toInt   (a: In): Int    = unOp(a)(peer.toInt    ) // IntelliJ highlight bug
+  final def toDouble(a: In): Double = unOp(a)(peer.toDouble ) // IntelliJ highlight bug
+  final def toLong  (a: In): Long   = unOp(a)(peer.toLong   ) // IntelliJ highlight bug
 
   //  final def int    : NumInt   [Int    ] = IntSeqTop
   //  final def double : NumDouble[Double ] = DoubleSeqTop

@@ -27,6 +27,7 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
 
   def toDouble  (implicit to: ToNum[A]): Ex[to.Double]      = UnOp(UnOp.ToDouble[A, to.Double]()(to), x)
   def toInt     (implicit to: ToNum[A]): Ex[to.Int]         = UnOp(UnOp.ToInt   [A, to.Int   ]()(to), x)
+  def toLong    (implicit to: ToNum[A]): Ex[to.Long]        = UnOp(UnOp.ToLong  [A, to.Long  ]()(to), x)
 
   def ceil      (implicit num: NumFrac[A] ): Ex[A]          = UnOp(UnOp.Ceil    [A](), x)
   def floor     (implicit num: NumFrac[A] ): Ex[A]          = UnOp(UnOp.Floor   [A](), x)
@@ -88,12 +89,17 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def min[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Min[A, A1, A2](), x, that)
   def max[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Max[A, A1, A2](), x, that)
 
-  def &   (that: Ex[A])(implicit num: NumInt[A]): Ex[A] = BinOp(BinOp.BitAnd[A](), x, that)
-  def |   (that: Ex[A])(implicit num: NumInt[A]): Ex[A] = BinOp(BinOp.BitOr [A](), x, that)
-  def ^   (that: Ex[A])(implicit num: NumInt[A]): Ex[A] = BinOp(BinOp.BitXor[A](), x, that)
+  def &   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
+  def |   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
+  def ^   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
 
-  def lcm (that: Ex[A])(implicit num: NumInt[A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
-  def gcd (that: Ex[A])(implicit num: NumInt[A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
+  /** Currently a shortcut for `&`. */
+  def &&  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.And   [A](), x, that)
+  /** Currently a shortcut for `|`. */
+  def ||  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.Or    [A](), x, that)
+
+  def lcm (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
+  def gcd (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
 
   def roundTo   [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundTo  [A, A1, A2](), x, that)
   def roundUpTo [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundUpTo[A, A1, A2](), x, that)

@@ -251,13 +251,19 @@ object Aux {
 
   type ScalarNumFrac[A] = NumFrac[A] with Scalar[A]
 
-  trait NumBool[A] extends Eq[A] {
-    def not(a: A): A
+  trait NumLogic[A] extends Eq[A] {
+    def & (a: A, b: A): A
+    def | (a: A, b: A): A
+    def ^ (a: A, b: A): A
+  }
+
+  trait NumBool[A] extends NumLogic[A] {
+    def unary_!(a: A): A
   }
 
   type ScalarNumBool[A] = NumBool[A] with Scalar[A]
 
-  trait NumInt[A] extends Num[A] {
+  trait NumInt[A] extends Num[A] with NumLogic[A] {
     def unary_~ (a: A): A
 
     def &       (a: A, b: A): A
@@ -340,9 +346,11 @@ object Aux {
   trait ToNum[A] extends Aux {
     type Int
     type Double
+    type Long
 
     def toInt   (a: A): Int
     def toDouble(a: A): Double
+    def toLong  (a: A): Long
 
     //    def int   : NumInt   [Int]
     //    def double: NumDouble[Double]
@@ -392,6 +400,7 @@ object Aux {
     final type Boolean  = scala.Boolean
     final type Int      = scala.Int
     final type Double   = scala.Double
+    final type Long     = scala.Long
   }
 
   type ScalarEq[A] = Eq[A] with Scalar[A]
@@ -433,6 +442,7 @@ object Aux {
 
     def toInt     (a: Int): Int     = a
     def toDouble  (a: Int): Double  = a.toDouble
+    def toLong    (a: Int): Long    = a.toLong
 
     def +(a: Int, b: Int): Int = a + b
     def -(a: Int, b: Int): Int = a - b
@@ -527,8 +537,9 @@ object Aux {
     def zero   : Long = 0L
     def one    : Long = 1L
 
-    def toInt     (a: Long): Int     = a.toInt
-    def toDouble  (a: Long): Double  = a.toDouble
+    def toInt     (a: Long): Int    = a.toInt
+    def toDouble  (a: Long): Double = a.toDouble
+    def toLong    (a: Long): Long   = a
 
     def +(a: Long, b: Long): Long = a + b
     def -(a: Long, b: Long): Long = a - b
@@ -677,6 +688,7 @@ object Aux {
 
     def toInt     (a: In): Int    = a.toInt
     def toDouble  (a: In): Double = a
+    def toLong    (a: In): Long   = a.toLong
 
     def floor     (a: In): In     = rd.floor    (a)
     def ceil      (a: In): In     = rd.ceil     (a)
@@ -749,7 +761,11 @@ object Aux {
 
     final val id = 5
 
-    def not(a: In): In = unOp(a)(!_)
+    def unary_!(a: In): In = unOp(a)(!_)
+
+    def & (a: In, b: In): In = binOp(a, b)(_ & _)
+    def | (a: In, b: In): In = binOp(a, b)(_ | _)
+    def ^ (a: In, b: In): In = binOp(a, b)(_ ^ _)
   }
 
   implicit final object BooleanTop
@@ -761,10 +777,15 @@ object Aux {
 
     final val id = 4
 
-    def toInt   (a: In): Int     = if (a) 1   else 0
-    def toDouble(a: In): Double  = if (a) 1.0 else 0.0
+    def toInt   (a: In): Int    = if (a) 1    else 0
+    def toDouble(a: In): Double = if (a) 1.0  else 0.0
+    def toLong  (a: In): Long   = if (a) 1L   else 0L
 
-    def not(a: In): In = !a
+    def unary_!(a: In): In = !a
+
+    def & (a: In, b: In): In = a & b
+    def | (a: In, b: In): In = a | b
+    def ^ (a: In, b: In): In = a ^ b
 
     // ---- FromAny ----
 

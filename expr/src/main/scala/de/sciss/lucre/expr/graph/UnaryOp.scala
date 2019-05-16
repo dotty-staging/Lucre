@@ -51,7 +51,7 @@ object UnaryOp {
   }
 
   final case class Not[A]()(implicit num: NumBool[A]) extends NamedOp[A, A] with ProductWithAux {
-    def apply(a: A): A = num.not(a)
+    def apply(a: A): A = num.unary_!(a)
     
     override def name = "Not"
     
@@ -86,6 +86,14 @@ object UnaryOp {
     def apply(a: A): B = to.toInt(a)
 
     override def name = "ToInt"
+
+    override def aux: AuxL = to :: Nil
+  }
+
+  final case class ToLong[A, B]()(implicit to: ToNum[A] { type Long = B }) extends NamedOp[A, B] with ProductWithAux {
+    def apply(a: A): B = to.toLong(a)
+
+    override def name = "ToLong"
 
     override def aux: AuxL = to :: Nil
   }

@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.aux.Aux.{Num, NumDouble, NumFrac, NumInt, Ord, Widen2}
+import de.sciss.lucre.aux.Aux.{Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
@@ -192,33 +192,33 @@ object BinaryOp {
     override def aux: AuxL = widen :: num :: Nil
   }
 
-  final case class BitAnd[A]()(implicit num: NumInt[A]) 
+  final case class And[A]()(implicit num: NumLogic[A])
     extends NamedOp[A, A, A] with ProductWithAux {
-    
+
     def apply(a: A, b: A): A = num.&(a, b)
-    
-    def name = "BitAnd"
-    
+
+    def name = "And"
+
     override def aux: AuxL = num :: Nil
   }
 
-  final case class BitOr[A]()(implicit num: NumInt[A]) 
+  final case class Or[A]()(implicit num: NumLogic[A])
     extends NamedOp[A, A, A] with ProductWithAux {
-    
+
     def apply(a: A, b: A): A = num.|(a, b)
-    
-    def name = "BitOr"
-    
+
+    def name = "Or"
+
     override def aux: AuxL = num :: Nil
   }
 
-  final case class BitXor[A]()(implicit num: NumInt[A]) 
+  final case class Xor[A]()(implicit num: NumLogic[A])
     extends NamedOp[A, A, A] with ProductWithAux {
-    
+
     def apply(a: A, b: A): A = num.^(a, b)
-    
-    def name = "BitXor"
-    
+
+    def name = "Xor"
+
     override def aux: AuxL = num :: Nil
   }
 
