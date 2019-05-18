@@ -57,28 +57,19 @@ object Type {
     def registerExtension(ext: Type.Extension1[Repr]): Unit
   }
 
-  private lazy val _init: Unit = aux.Aux.addFactory(Type.Aux)
+  private lazy val _init: Unit = {
+    aux.Aux.addFactory(Type.ObjBridge)
+  }
 
   def init(): Unit = _init
 
-  object Aux extends aux.Aux.Factory {
+  object ObjBridge extends aux.Aux.Factory {
     final val id = 1000
 
     def readIdentifiedAux(in: DataInput): aux.Aux = {
       val typeId  = in.readInt()
       val peer    = Obj.getType(typeId)
       new ExObjBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
-//      (typeId: @switch) match {
-//        case IntObj       .typeId => ExAttrBridgeImpl.int
-//        case LongObj      .typeId => ExAttrBridgeImpl.long
-//        case DoubleObj    .typeId => ExAttrBridgeImpl.double
-//        case BooleanObj   .typeId => ExAttrBridgeImpl.boolean
-//        case StringObj    .typeId => ExAttrBridgeImpl.string
-//        case SpanLikeObj  .typeId => ExAttrBridgeImpl.spanLike
-//        case SpanObj      .typeId => ExAttrBridgeImpl.span
-//        case IntVector    .typeId => ExAttrBridgeImpl.intVec
-//        case DoubleVector .typeId => ExAttrBridgeImpl.doubleVec
-//      }
     }
   }
 

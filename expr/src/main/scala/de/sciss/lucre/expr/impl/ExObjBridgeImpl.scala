@@ -22,19 +22,19 @@ import de.sciss.serial.{DataOutput, Serializer}
 import scala.language.higherKinds
 
 final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
-  extends Obj.Bridge[A] {
+  extends Obj.Bridge[A] with Obj.CanMake[A] {
+
+  def id: Int = Type.ObjBridge.id
 
   type Repr[S <: Sys[S]] = _Ex[S]
 
-  def mkObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): _Ex[S] =
+  def toObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): _Ex[S] =
     peer.newVar(peer.newConst(value))
 
   def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, _Ex[S]] = peer.serializer
 
   def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]] =
     CellView.attr[S, A, _Ex](map = obj.attr, key = key)(tx, peer)
-
-  def id: Int = Type.Aux.id
 
   override def write(out: DataOutput): Unit = {
     super.write(out)

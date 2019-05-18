@@ -33,6 +33,7 @@ import scala.language.higherKinds
 
 object Obj {
   private lazy val _init: Unit =
+    Aux.addFactory(Source.obj)
     Aux.addFactory(Bridge.obj)
 
   def init(): Unit = _init
@@ -51,7 +52,7 @@ object Obj {
   }
 
   private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
-                                                                    bridge: Bridge[A])
+                                                                    cm: CanMake[A])
     extends IExpr[S, Obj]
       with IAction[S]
       with IGenerator       [S, Change[Obj]]
@@ -67,8 +68,8 @@ object Obj {
 
     private def make()(implicit tx: S#Tx): Obj = {
       val v     = ex.value
-      val peer  = bridge.mkObj(v)
-      import bridge.reprSerializer
+      val peer  = cm.toObj(v)
+      import cm.reprSerializer
       new ObjImpl(tx.newHandle(peer), tx.system)
     }
 
@@ -81,12 +82,12 @@ object Obj {
     def changed: IEvent[S, Change[Obj]] = this
   }
 
-  final case class Make[A](ex: Ex[A])(implicit bridge: Bridge[A]) extends Ex[Obj] with Act with ProductWithAux {
+  final case class Make[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Ex[Obj] with Act with ProductWithAux {
     type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
 
     override def productPrefix: String = s"Obj$$Make" // serialization
 
-    def aux: List[Aux] = bridge :: Nil
+    def aux: List[Aux] = cm :: Nil
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       import ctx.targets
@@ -110,11 +111,10 @@ object Obj {
 
       type Repr[S <: Sys[S]] = stm.Obj[S]
 
-      def mkObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] =
-        ??? // IntObj.newConst(0)  // XXX TODO --- this doesn't make sense
+//      def mkObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] = ...
 
-      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
-        stm.Obj.serializer
+//      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
+//        stm.Obj.serializer
 
       def readIdentifiedAux(in: DataInput): Aux = this
 
@@ -131,12 +131,48 @@ object Obj {
   trait Bridge[A] extends Aux {
     type Repr[S <: Sys[S]] <: stm.Obj[S]
 
-    def mkObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): Repr[S]
-
-    implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Repr[S]]
-
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
   }
+
+  object Source {
+    implicit object obj extends Source[Obj] with Aux.Factory {
+      final val id = 1006
+
+      type Repr[S <: Sys[S]] = stm.Obj[S]
+
+      def toObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] =
+        value.peer.getOrElse(throw new IllegalStateException("Object has not yet been instantiated"))
+
+      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
+        stm.Obj.serializer
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+    }
+  }
+
+  /** An `Obj.Source` either has an `stm.Obj` peer, or it can make one.
+    * The latter is represented by sub-trait `CanMake`.
+    */
+  trait Source[A] extends Aux {
+    type Repr[S <: Sys[S]] <: stm.Obj[S]
+
+    def toObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): Repr[S]
+
+    implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Repr[S]]
+  }
+
+  object CanMake {
+    implicit val int      : CanMake[Int        ] = new ExObjBridgeImpl(IntObj       )
+    implicit val long     : CanMake[Long       ] = new ExObjBridgeImpl(LongObj      )
+    implicit val double   : CanMake[Double     ] = new ExObjBridgeImpl(DoubleObj    )
+    implicit val boolean  : CanMake[Boolean    ] = new ExObjBridgeImpl(BooleanObj   )
+    implicit val string   : CanMake[String     ] = new ExObjBridgeImpl(StringObj    )
+    implicit val spanLike : CanMake[SpanLike   ] = new ExObjBridgeImpl(SpanLikeObj  )
+    implicit val span     : CanMake[Span       ] = new ExObjBridgeImpl(SpanObj      )
+    implicit val intVec   : CanMake[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
+    implicit val doubleVec: CanMake[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
+  }
+  trait CanMake[A] extends Source[A]
 
   private final class AttrExpanded[S <: Sys[S], A](obj: IExpr[S, Obj], key: String, tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], bridge: Bridge[A])
