@@ -32,11 +32,12 @@ object Attr {
     def set   (in: Ex[A]): Act
   }
 
-  private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
-                                                                bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
+  private[lucre] def resolveNestedIn[S <: Sys[S], A](objOpt: Option[stm.Obj[S]], key: String)
+                                                    (implicit tx: S#Tx,
+                                                     bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
     @tailrec
-    def loop(objOpt: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
-      objOpt match {
+    def loop(prev: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
+      prev match {
         case Some(obj) =>
           val i = sub.indexOf(':')
           if (i < 0) {
@@ -52,8 +53,12 @@ object Attr {
         case _ => None
       }
 
-    loop(ctx.selfOption, key)
+    loop(objOpt, key)
   }
+
+  private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
+                                                                bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] =
+    resolveNestedIn(ctx.selfOption, key)
 
   object WithDefault {
     def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =
@@ -177,13 +182,13 @@ object Attr {
   final case class Set[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
     extends Act with ProductWithAux {
 
-    override def productPrefix: String = s"Attr$$Set"
+    override def productPrefix: String = s"Attr$$Set"  // serialization
 
     type Repr[S <: Sys[S]] = IAction[S]
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
       resolveNested(key).fold[IAction[S]](new EmptyIAction) { attrView =>
-        new ExpandedAttrSet[S, A](source.expand[S], attrView, tx)
+        new ExpandedAttrSet[S, A](attrView, source.expand[S], tx)
       }
 
     override def aux: scala.List[Aux] = bridge :: Nil
