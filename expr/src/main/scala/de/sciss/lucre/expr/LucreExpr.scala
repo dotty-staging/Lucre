@@ -64,5 +64,6 @@ object LucreExpr {
 
     Type              .init()
     Ex                .init()
+    graph.Obj         .init()
   }
 }

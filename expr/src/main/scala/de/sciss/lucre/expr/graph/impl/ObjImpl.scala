@@ -17,12 +17,19 @@ import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.Sys
 
-final class ObjImpl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In) extends Obj {
-  override def toString = s"ObjImpl@${hashCode().toHexString}"
+import scala.language.higherKinds
 
-  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): stm.Obj[S] = {
+abstract class ObjImplBase[In <: Sys[In], Repr[~ <: Sys[~]] <: stm.Obj[~]](in: stm.Source[In#Tx, Repr[In]], system: In)
+  extends Obj {
+
+  type Peer[~ <: Sys[~]] = Repr[~]
+
+  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Repr[S]] = {
     require (tx.system == system)
-    val out = in.asInstanceOf[stm.Source[S#Tx, stm.Obj[S]]]
-    out()
+    val out = in.asInstanceOf[stm.Source[S#Tx, Repr[S]]]
+    Some(out())
   }
 }
+
+final class ObjImpl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
+  extends ObjImplBase[In, stm.Obj](in, system)

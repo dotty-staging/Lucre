@@ -25,7 +25,7 @@ abstract class MappedIExpr[S <: Base[S], A1, A](in: IExpr[S, A1], tx0: S#Tx)
 
   in.changed.--->(this)(tx0)
 
-  protected def mapValue(inValue: A1): A
+  protected def mapValue(inValue: A1)(implicit tx: S#Tx): A
 
   def value(implicit tx: S#Tx): A = mapValue(in.value)
 

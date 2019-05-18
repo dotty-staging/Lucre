@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.impl.ObjImpl
+import de.sciss.lucre.expr.graph.impl.{ObjCellViewImpl, ObjImpl}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
@@ -24,7 +24,7 @@ import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
-import de.sciss.serial.Serializer
+import de.sciss.serial.{DataInput, Serializer}
 import de.sciss.span.{Span, SpanLike}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -32,6 +32,11 @@ import scala.concurrent.stm.Ref
 import scala.language.higherKinds
 
 object Obj {
+  private lazy val _init: Unit =
+    Aux.addFactory(Bridge.obj)
+
+  def init(): Unit = _init
+
   implicit class ExOps(private val obj: Ex[Obj]) extends AnyVal {
     def attr[A: Bridge](key: String): Obj.Attr[A] = Obj.Attr(obj, key)
 
@@ -39,8 +44,10 @@ object Obj {
   }
 
   private object Empty extends Obj {
-    private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): stm.Obj[S] =
-      throw new IllegalStateException("Object has not been created yet")
+    type Peer[~ <: Sys[~]] = stm.Obj[~]
+
+    private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] =
+      None // throw new IllegalStateException("Object has not been created yet")
   }
 
   private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
@@ -67,7 +74,7 @@ object Obj {
 
     protected def trigReceived()(implicit tx: S#Tx): Option[Change[Obj]] = {
       val now     = make()
-      val before  = ref.swap(now)
+      val before  = ref.swap(now) // needs caching
       Some(Change(before, now))
     }
 
@@ -98,6 +105,28 @@ object Obj {
     implicit val intVec   : Bridge[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
     implicit val doubleVec: Bridge[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
 
+    implicit object obj extends Bridge[Obj] with Aux.Factory {
+      final val id = 1005
+
+      type Repr[S <: Sys[S]] = stm.Obj[S]
+
+      def mkObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] =
+        ??? // IntObj.newConst(0)  // XXX TODO --- this doesn't make sense
+
+      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
+        stm.Obj.serializer
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Obj]] =
+        new ObjCellViewImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
+          protected def lower(peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
+            new ObjImpl[S](tx.newHandle(peer), tx.system)
+
+          implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Obj[S]]] =
+            Serializer.option
+        }
+    }
   }
   trait Bridge[A] extends Aux {
     type Repr[S <: Sys[S]] <: stm.Obj[S]
@@ -129,7 +158,7 @@ object Obj {
 
     private def setObj(newObj: Obj, init: Boolean)(implicit tx: S#Tx): Unit = {
       // println(s"newObj = $newObj, bridge = $bridge, key = $key")
-      val newView = bridge.cellView(newObj.peer, key)
+      val newView = bridge.cellView(??? /* newObj.peer */, key)
       viewRef()   = newView
       val obsNew = newView.react { implicit tx => now =>
         setNewValue(now)
@@ -180,5 +209,7 @@ object Obj {
   }
 }
 trait Obj {
-  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): stm.Obj[S]
+  type Peer[~ <: Sys[~]] <: stm.Obj[~]
+
+  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]]
 }

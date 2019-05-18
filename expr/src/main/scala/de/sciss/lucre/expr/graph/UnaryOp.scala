@@ -541,7 +541,7 @@ object UnaryOp {
 
     override def toString: String = s"UnaryOp($op, $a)"
 
-    protected def mapValue(av: A1): A = op(av)
+    protected def mapValue(av: A1)(implicit tx: S#Tx): A = op(av)
   }
 }
 
