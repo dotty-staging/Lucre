@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, Obj, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Obj, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
@@ -159,7 +159,7 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
 
   def changed: Trig = Changed(x)
 
-  def mkObj(implicit cm: Obj.CanMake[A]): Ex[Obj] with Act = Obj.Make(x)
+  def mkObj(implicit cm: Obj.CanMake[A]): Obj.Make[A] = Obj.Make(x)
 }
 
 final class ExBooleanOps(private val x: Ex[Boolean]) extends AnyVal {

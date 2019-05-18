@@ -82,17 +82,26 @@ object Obj {
     def changed: IEvent[S, Change[Obj]] = this
   }
 
-  final case class Make[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Ex[Obj] with Act with ProductWithAux {
-    type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
+  object Make {
+    def apply[A](ex: Ex[A])(implicit cm: CanMake[A]): Make[A] = Impl(ex)
 
-    override def productPrefix: String = s"Obj$$Make" // serialization
+    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Make[A] with Act with ProductWithAux {
+      type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
 
-    def aux: List[Aux] = cm :: Nil
+      override def productPrefix: String = s"Obj$$Make" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      import ctx.targets
-      new MakeExpanded(ex.expand[S])
+      def make: Act = this
+
+      def aux: List[Aux] = cm :: Nil
+
+      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+        import ctx.targets
+        new MakeExpanded(ex.expand[S])
+      }
     }
+  }
+  trait Make[A] extends Ex[Obj] {
+    def make: Act
   }
 
   object Bridge {
@@ -153,7 +162,7 @@ object Obj {
   /** An `Obj.Source` either has an `stm.Obj` peer, or it can make one.
     * The latter is represented by sub-trait `CanMake`.
     */
-  trait Source[A] extends Aux {
+  trait Source[-A] extends Aux {
     type Repr[S <: Sys[S]] <: stm.Obj[S]
 
     def toObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): Repr[S]
