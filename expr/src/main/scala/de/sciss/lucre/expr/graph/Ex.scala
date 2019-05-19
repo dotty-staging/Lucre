@@ -72,6 +72,7 @@ object Ex {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val inEx = in.expand[S]
       import ctx.targets
+//      new ExpandedMapExOption[S, A, B](inEx, fun, tx)
       new ExpandedMapExOption[S, A, B](inEx, fun, tx)
     }
   }

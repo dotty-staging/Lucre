@@ -16,7 +16,6 @@ import de.sciss.lucre.stm.{InMemory, Obj, Workspace}
   [update] Some(456)
   456
 
-
  */
 object MapToActTest extends App {
   type S = InMemory
