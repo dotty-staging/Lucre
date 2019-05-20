@@ -187,7 +187,7 @@ object Obj {
                                                   (implicit protected val targets: ITargets[S], bridge: Bridge[A])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
 
-    private[this] val viewRef   = Ref.make[CellView.Var[S, Option[A]]]
+    private[this] val viewRef   = Ref(Option.empty[CellView.Var[S, Option[A]]])
     private[this] val valueRef  = Ref.make[Option[A]]
     private[this] val obsRef    = Ref.make[Disposable[S#Tx]]
     private[this] val objObs    = obj.changed.react { implicit tx => upd =>
@@ -203,12 +203,12 @@ object Obj {
 
     private def setObj(newObj: Obj, init: Boolean)(implicit tx: S#Tx): Unit = {
       // println(s"newObj = $newObj, bridge = $bridge, key = $key")
-      val newView = bridge.cellView(??? /* newObj.peer */, key)
+      val newView = newObj.peer.map(p => bridge.cellView(p, key))
       viewRef()   = newView
-      val obsNew = newView.react { implicit tx => now =>
+      val obsNew = newView.fold[Disposable[S#Tx]](Disposable.empty)(_.react { implicit tx => now =>
         setNewValue(now)
-      }
-      val now = newView()
+      })
+      val now: Option[A] = newView.flatMap(_.apply())
       if (init) {
         obsRef  () = obsNew
         valueRef() = now
@@ -221,7 +221,7 @@ object Obj {
     // ---- init ----
     setObj(obj.value(tx0), init = true)(tx0)
 
-    def value(implicit tx: S#Tx): Option[A] = viewRef.get.apply()
+    def value(implicit tx: S#Tx): Option[A] = viewRef().flatMap(_.apply())
 
     private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
       Some(pull.resolve)

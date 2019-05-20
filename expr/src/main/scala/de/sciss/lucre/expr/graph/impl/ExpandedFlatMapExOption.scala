@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.TxnLike.peer
@@ -26,7 +26,7 @@ import scala.concurrent.stm.Ref
 // XXX TODO DRY with ExpandedMapExOption
 final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[Option[B]], tx0: S#Tx)
                                                (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] {
+  extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] with Caching {
 
   in.changed.--->(this)(tx0)
 
