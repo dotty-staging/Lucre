@@ -143,6 +143,7 @@ object TernaryOp {
     def dispose()(implicit tx: S#Tx): Unit = {
       a.changed -/-> changed
       b.changed -/-> changed
+      c.changed -/-> changed
     }
   }
 }

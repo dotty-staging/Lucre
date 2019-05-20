@@ -25,7 +25,7 @@ import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, Serializer}
-import de.sciss.span.{Span, SpanLike}
+import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.Ref
@@ -110,8 +110,8 @@ object Obj {
     implicit val double   : Bridge[Double     ] = new ExObjBridgeImpl(DoubleObj    )
     implicit val boolean  : Bridge[Boolean    ] = new ExObjBridgeImpl(BooleanObj   )
     implicit val string   : Bridge[String     ] = new ExObjBridgeImpl(StringObj    )
-    implicit val spanLike : Bridge[SpanLike   ] = new ExObjBridgeImpl(SpanLikeObj  )
-    implicit val span     : Bridge[Span       ] = new ExObjBridgeImpl(SpanObj      )
+    implicit val spanLike : Bridge[_SpanLike  ] = new ExObjBridgeImpl(SpanLikeObj  )
+    implicit val span     : Bridge[_Span      ] = new ExObjBridgeImpl(SpanObj      )
     implicit val intVec   : Bridge[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
     implicit val doubleVec: Bridge[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
 
@@ -176,8 +176,8 @@ object Obj {
     implicit val double   : CanMake[Double     ] = new ExObjBridgeImpl(DoubleObj    )
     implicit val boolean  : CanMake[Boolean    ] = new ExObjBridgeImpl(BooleanObj   )
     implicit val string   : CanMake[String     ] = new ExObjBridgeImpl(StringObj    )
-    implicit val spanLike : CanMake[SpanLike   ] = new ExObjBridgeImpl(SpanLikeObj  )
-    implicit val span     : CanMake[Span       ] = new ExObjBridgeImpl(SpanObj      )
+    implicit val spanLike : CanMake[_SpanLike  ] = new ExObjBridgeImpl(SpanLikeObj  )
+    implicit val span     : CanMake[_Span      ] = new ExObjBridgeImpl(SpanObj      )
     implicit val intVec   : CanMake[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
     implicit val doubleVec: CanMake[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
   }

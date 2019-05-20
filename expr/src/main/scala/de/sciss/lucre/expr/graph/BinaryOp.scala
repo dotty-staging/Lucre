@@ -26,7 +26,6 @@ import de.sciss.span.SpanLike
 object BinaryOp {
   abstract class Op[A, B, C] extends Product {
     def apply(a: A, b: B): C
-
   }
   
   abstract class NamedOp[A, B, C] extends Op[A, B, C] {

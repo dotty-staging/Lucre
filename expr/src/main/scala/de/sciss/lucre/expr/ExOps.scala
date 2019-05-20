@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Obj, SeqMkString, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
@@ -232,7 +232,8 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
     mkString("", sep, "")
   }
 
-  def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] = SeqMkString(x, start, sep, end)
+  def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] =
+    QuaternaryOp(QuaternaryOp.SeqMkString[A](), x, start, sep, end)
 }
 
 final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {

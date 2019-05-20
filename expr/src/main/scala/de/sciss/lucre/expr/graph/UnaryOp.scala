@@ -23,7 +23,7 @@ import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
 import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
-import de.sciss.span.{Span, SpanLike}
+import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 object UnaryOp {
   abstract class Op[A1, A2] extends Product {
@@ -439,42 +439,42 @@ object UnaryOp {
 
   // ---- SpanLike ----
 
-  final case class SpanLikeIsEmpty() extends NamedOp[SpanLike, Boolean] {
-    def apply(a: SpanLike): Boolean = a.isEmpty
+  final case class SpanLikeIsEmpty() extends NamedOp[_SpanLike, Boolean] {
+    def apply(a: _SpanLike): Boolean = a.isEmpty
 
     override def name = "SpanLikeIsEmpty"
   }
 
-  final case class SpanLikeNonEmpty() extends NamedOp[SpanLike, Boolean] {
-    def apply(a: SpanLike): Boolean = a.nonEmpty
+  final case class SpanLikeNonEmpty() extends NamedOp[_SpanLike, Boolean] {
+    def apply(a: _SpanLike): Boolean = a.nonEmpty
 
     override def name = "SpanLikeNonEmpty"
   }
 
-  final case class SpanLikeClosedOption() extends NamedOp[SpanLike, Option[Span]] {
-    def apply(a: SpanLike): Option[Span] = a match {
-      case sp: Span => Some(sp)
-      case _        => None
+  final case class SpanLikeClosedOption() extends NamedOp[_SpanLike, Option[_Span]] {
+    def apply(a: _SpanLike): Option[_Span] = a match {
+      case sp: _Span  => Some(sp)
+      case _          => None
     }
 
     override def name = "SpanLikeClosedOption"
   }
 
-  final case class SpanLikeStartOption() extends NamedOp[SpanLike, Option[Long]] {
-    def apply(a: SpanLike): Option[Long] = a.startOption
+  final case class SpanLikeStartOption() extends NamedOp[_SpanLike, Option[Long]] {
+    def apply(a: _SpanLike): Option[Long] = a.startOption
 
     override def name = "SpanLikeStartOption"
   }
 
-  final case class SpanLikeStopOption() extends NamedOp[SpanLike, Option[Long]] {
-    def apply(a: SpanLike): Option[Long] = a.stopOption
+  final case class SpanLikeStopOption() extends NamedOp[_SpanLike, Option[Long]] {
+    def apply(a: _SpanLike): Option[Long] = a.stopOption
 
     override def name = "SpanLikeStopOption"
   }
 
-  final case class SpanLikeLengthOption() extends NamedOp[SpanLike, Option[Long]] {
-    def apply(a: SpanLike): Option[Long] = a match {
-      case sp: Span.SpanOrVoid  => Some(sp.length)
+  final case class SpanLikeLengthOption() extends NamedOp[_SpanLike, Option[Long]] {
+    def apply(a: _SpanLike): Option[Long] = a match {
+      case sp: _Span.SpanOrVoid => Some(sp.length)
       case _                    => None
     }
 
@@ -483,20 +483,20 @@ object UnaryOp {
 
   // ---- Span ----
 
-  final case class SpanStart() extends NamedOp[Span, Long] {
-    def apply(a: Span): Long = a.start
+  final case class SpanStart() extends NamedOp[_Span, Long] {
+    def apply(a: _Span): Long = a.start
 
     override def name = "SpanStart"
   }
 
-  final case class SpanStop() extends NamedOp[Span, Long] {
-    def apply(a: Span): Long = a.stop
+  final case class SpanStop() extends NamedOp[_Span, Long] {
+    def apply(a: _Span): Long = a.stop
 
     override def name = "SpanStop"
   }
 
-  final case class SpanLength() extends NamedOp[Span, Long] {
-    def apply(a: Span): Long = a.length
+  final case class SpanLength() extends NamedOp[_Span, Long] {
+    def apply(a: _Span): Long = a.length
 
     override def name = "SpanLength"
   }
