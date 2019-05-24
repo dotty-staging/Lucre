@@ -130,8 +130,7 @@ object ListImpl {
     // protected def reader: evt.Reader[S, List[S, A, U]]
 
     object changed extends Changed
-      with eimpl.Generator[S, List.Update[S, A]]
-      with eimpl.Root[S, List.Update[S, A]]
+      with eimpl.RootGenerator[S, List.Update[S, A]]
 
     final def indexOf(elem: A)(implicit tx: S#Tx): Int = {
       var idx = 0

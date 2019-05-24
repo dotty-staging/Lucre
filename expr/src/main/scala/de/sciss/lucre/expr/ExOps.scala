@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
@@ -158,6 +158,16 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // ---- bridge to trigger ----
 
   def changed: Trig = Changed(x)
+
+  /** Latches the expression based on the trigger argument.
+    * The initial state of the returned expression corresponds to the
+    * initial state of the input expression. Subsequent values are
+    * updated and cached only when a trigger occurs.
+    */
+  def latch(tr: Trig): Ex[A] = Latch(x, tr)
+
+  /** Alias for `latch` */
+  def <| (tr: Trig): Ex[A] = Latch(x, tr)
 
   def mkObj(implicit cm: Obj.CanMake[A]): Obj.Make[A] = Obj.Make(x)
 }

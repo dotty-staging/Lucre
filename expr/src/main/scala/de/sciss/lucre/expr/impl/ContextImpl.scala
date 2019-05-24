@@ -18,7 +18,7 @@ import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, Workspace}
+import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, UndoManager, Workspace}
 
 import scala.annotation.tailrec
 import scala.concurrent.stm.{Ref, TMap}
@@ -105,5 +105,6 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
 }
 
 final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
-                                    (implicit val workspace: Workspace[S], val cursor: Cursor[S])
+                                    (implicit val workspace: Workspace[S], val cursor: Cursor[S],
+                                     val undoManager: UndoManager[S])
   extends ContextMixin[S]

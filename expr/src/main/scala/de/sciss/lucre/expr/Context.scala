@@ -17,17 +17,19 @@ import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, Workspace}
+import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, UndoManager, Workspace}
 
 object Context {
   def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None)
-                        (implicit workspace: Workspace[S], cursor: Cursor[S]): Context[S] =
+                        (implicit workspace: Workspace[S], cursor: Cursor[S],
+                         undoManager: UndoManager[S]): Context[S] =
     new ContextImpl[S](selfH)
 }
 trait Context[S <: Sys[S]] extends Disposable[S#Tx] {
-  implicit def targets  : ITargets  [S]
-  implicit def cursor   : Cursor    [S]
-  implicit def workspace: Workspace [S]
+  implicit def targets    : ITargets    [S]
+  implicit def cursor     : Cursor      [S]
+  implicit def workspace  : Workspace   [S]
+  implicit def undoManager: UndoManager [S]
 
   /** Prepares graph expansion by copying control properties over
     * for subsequent look-up through `getProperty`.

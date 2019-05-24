@@ -106,3 +106,147 @@ because of the multiple expansion of the same pattern (`It`) into streams.
 
 Basically, what we need to copy is the `allocToken`, and a simplified form of it-stream-input, like
 `putItSource` and `popItSource`.
+
+-------
+
+# Notes 190524 - UndoableEdit
+
+Some actions, such as `Attr.Set`, would be susceptible for undo management. The undo manager could
+be either the one of the widget view, or one coming from outside, say from a drag-and-drop operation.
+We can only dynamically look it up, say through `UndoManager.find`, it should not be passed around in
+method signatures. Since the conversion from primitive type `A` to `Obj[S]` only happens within 
+`CellView.attr`, the point of intervention would be the creation of the cell view in
+`ExObjBridgeImpl`, so that a more elaborate cell view could be undo-management conscious.
+`Folder.Append` etc. are a bit more straight forward.
+
+Where does the undo manager come from? First, the "built-in" of the widget view. Say we have:
+
+```
+val a = "foo".attr[Int]
+val b = Bang()
+b ---> a.set(1234)
+b
+```
+
+Clearly at any trigger link, we have a possible point for declaring the undo context.
+The undo context may change, for example if we take it from a drop operation, say we enhance
+
+```
+trait TimelineViewOps(in: Ex[TimelineView]) {
+  def undo: Ex[UndoManager]
+}
+```
+
+If we do asynchronous processing, say FScape, we would have to latch that expression for correct later use.
+It should not matter whether we latch an `Ex[UndoManager]` or an `Ex[TimelineView]`, so semantically clearer would
+be the latter. Say we have stored that somehow now:
+
+```
+val undo: Ex[UndoManager] = UndoManager()  // i.e. the one of the widget view itself
+val a = "foo".attr[Int]
+val b = Bang()
+b ---> undo.edit(a.set(1234))
+b
+```
+
+The `undo` name is weird here. It should be short, though. Perhaps just `edit` directly?
+
+```
+val edit = Edit()
+val a = "foo".attr[Int]
+val b = Bang()
+b ---> edit(a.set(1234))
+b
+```
+
+And we need the option to have a compound edit name, say
+
+```
+val edit = Edit()
+val a = "foo".attr[Int]
+val c = "bar".attr[String]
+val b = Bang()
+b ---> edit("Do stuff")(
+  a.set(1234),
+  c.set("hello")
+)
+b
+```
+
+(So we encapsulate the `Act.Seq` here).
+
+
+```
+val r       = Runner("fsc")
+val tgt     = DropTarget()
+val drop    = tgt.select[TimelineView]
+val tlv     = drop.value
+val timed   = tlv.selectedObjects
+val sr      = tlv.sampleRate
+
+val aIn1    = Artifact("fsc:in1")
+val aOut    = Artifact("fsc:out")
+val ts      = TimeStamp()
+val tsf     = ts.format("'render_'yyMMdd'_'HHmmss'.aif'")
+
+val actRender  = for {
+  t1 <- timed.applyOption(0)
+  c1 <- t1.value.attr[AudioCue]("sig")
+} yield {
+  Act(
+    aIn1 .set(c1.artifact),
+    aOut .set(aOut.replaceName(tsf)),    
+    r.run
+  )
+}
+
+val stopped   = r.state sig_== 0
+val errored   = r.messages.nonEmpty
+val trRender  = drop.received  .filter(stopped)
+val trDone    = r.state.changed.filter(stopped)
+val trOk      = trDone.filter(!errored)
+
+trRender ---> actRender.getOrElse(PrintLn("Incomplete data"))
+val edit      = drop.edit latch trRender   // or tlv.edit
+
+val specOut = AudioFileSpec.read(aOut)
+  .getOrElse(AudioFileSpec.Empty())
+val artOut  = AudioCue(aOut, specOut)
+
+val fResOpt = "results".attr[Timeline]
+val pRes = Proc.Tape(artOut)
+
+val actDone = for {
+  fRes <- fResOpt
+} yield {
+  edit("Paste rendered stuff")(
+    PrintLn(Const("Rendering done. ") ++ artOut.toStr),
+    pRes.make,
+    fRes.add(Span((sr * 4).toLong, (sr * 10).toLong), pRes)
+  )
+}
+
+trOk ---> actDone.getOrElse(PrintLn("Missing results folder"))
+
+tgt
+```
+
+This looks ok. Not sure about `.latch`, it might be a too unfamiliar term.
+Perhaps add a symbol equivalent, like `<|`.
+
+```
+val edit = drop.edit <| trRender
+```
+
+So we have
+
+```
+trait EditOps(in: Ex[Edit]) {
+  def apply(name: Ex[String])(act: Act*): Act
+  def apply(act: Act): Act
+}
+```
+
+We could base our edit implementation on the interface used in Dotterweide, but it lacks transactional support
+(and in Mellite, using `CompoundEdit`, we actually fire up `cursor.step` multiple times, which is not good.)
+

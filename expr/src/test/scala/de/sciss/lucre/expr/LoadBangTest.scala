@@ -1,7 +1,13 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.{InMemory, Workspace}
+import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
 
+/*
+  expected output:
+
+  "Henlo"
+
+ */
 object LoadBangTest extends App {
   type S = InMemory
 
@@ -12,6 +18,7 @@ object LoadBangTest extends App {
   }
 
   implicit val system: S = InMemory()
+  implicit val undo: UndoManager[S] = UndoManager()
 
   import Workspace.Implicits._
 

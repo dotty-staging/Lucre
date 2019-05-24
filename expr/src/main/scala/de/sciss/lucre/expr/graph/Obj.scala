@@ -64,7 +64,7 @@ object Obj {
     def value(implicit tx: S#Tx): Obj = ref()
 
     def executeAction()(implicit tx: S#Tx): Unit =
-      trigReceived().foreach(fire)
+      trigReceived() // .foreach(fire) --- we don't need to fire, there is nobody listening;
 
     private def make()(implicit tx: S#Tx): Obj = {
       val v     = ex.value

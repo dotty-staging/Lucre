@@ -47,6 +47,11 @@ object Latch {
     }
   }
 }
+/** Latches the expression based on the trigger argument.
+  * The initial state of the returned expression corresponds to the
+  * initial state of the input expression. Subsequent values are
+  * updated and cached only when a trigger occurs.
+  */
 final case class Latch[A](in: Ex[A], trig: Trig) extends Ex[A] {
   type Repr[S <: Sys[S]] = IExpr[S, A]
 

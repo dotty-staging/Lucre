@@ -1,8 +1,14 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.graph.Ex
-import de.sciss.lucre.stm.{InMemory, Workspace}
+import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
 
+/*
+  expected output:
+
+  Seq(1.0, 1.41, 2.0)
+
+ */
 object ExMapTest extends App {
   type S = InMemory
 
@@ -21,6 +27,7 @@ object ExMapTest extends App {
   }
 
   implicit val system: S = InMemory()
+  implicit val undo: UndoManager[S] = UndoManager()
 
   import Workspace.Implicits._
 

@@ -1,6 +1,6 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.{InMemory, Obj, Workspace}
+import de.sciss.lucre.stm.{InMemory, Obj, UndoManager, Workspace}
 
 /*
   expected output
@@ -34,6 +34,7 @@ object MapToActTest extends App {
   }
 
   implicit val system: S = InMemory()
+  implicit val undo: UndoManager[S] = UndoManager()
 
   import Workspace.Implicits._
 

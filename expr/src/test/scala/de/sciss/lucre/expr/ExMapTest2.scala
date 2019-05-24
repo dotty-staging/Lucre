@@ -2,8 +2,14 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.ExImport._
 import de.sciss.lucre.expr.graph._
-import de.sciss.lucre.stm.{InMemory, Workspace}
+import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
 
+/*
+  expected output:
+
+  Some(66)
+
+ */
 object ExMapTest2 extends App {
   type S = InMemory
 
@@ -14,6 +20,7 @@ object ExMapTest2 extends App {
   }
 
   implicit val system: S = InMemory()
+  implicit val undo: UndoManager[S] = UndoManager()
 
   import Workspace.Implicits._
 
