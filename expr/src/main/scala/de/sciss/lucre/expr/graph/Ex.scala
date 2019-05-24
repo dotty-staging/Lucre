@@ -108,7 +108,7 @@ object Ex {
     implicit def exOption[B]: CanMap[Option, Ex[B], Ex[Option[B]]]    = anyCanMapExOption .asInstanceOf[CanMapExOption  [B]]
     implicit def exSeq   [B]: CanMap[Seq   , Ex[B], Ex[Seq   [B]]]    = anyCanMapExSeq    .asInstanceOf[CanMapExSeq     [B]]
     implicit def actOption  : CanMap[Option, Act  , Ex[Option[Act]]]  = CanMapActOption
-    implicit def actSeq     : CanMap[Seq   , Act  , Ex[Seq   [Act]]]  = ???
+    // implicit def actSeq     : CanMap[Seq   , Act  , Ex[Seq   [Act]]]  = ...
   }
   trait CanMap[-From[_], -B, +To] extends Aux {
     def map[A](from: Ex[From[A]], fun: Ex[A] => B): To
@@ -116,8 +116,8 @@ object Ex {
 
   object CanFlatMap {
     implicit def exOption [B]: CanFlatMap[Option, Ex[Option[B]], Ex[Option[B]]]  = anyCanFlatMapExOption.asInstanceOf[CanFlatMapExOption[B]]
-    implicit def exSeq    [B]: CanFlatMap[Seq   , Ex[Seq   [B]], Ex[Seq   [B]]]  = ???
-    implicit def exSeqOpt [B]: CanFlatMap[Seq   , Ex[Option[B]], Ex[Seq   [B]]]  = ???
+    // implicit def exSeq    [B]: CanFlatMap[Seq   , Ex[Seq   [B]], Ex[Seq   [B]]]  = ...
+    // implicit def exSeqOpt [B]: CanFlatMap[Seq   , Ex[Option[B]], Ex[Seq   [B]]]  = ...
   }
   trait CanFlatMap[-From[_], -B, +To] {
     def flatMap[A](from: Ex[From[A]], fun: Ex[A] => B): To

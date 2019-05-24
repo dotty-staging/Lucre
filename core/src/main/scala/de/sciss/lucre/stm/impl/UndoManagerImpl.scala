@@ -45,7 +45,24 @@ object UndoManagerImpl {
     // because we do not yet want to purge the redo tree at this stage
     private[this] val pending = Ref(Empty)
 
-    def addEdit(edit: UndoableEdit[S])(implicit tx: S#Tx): Unit = {
+    private[this] val capturing = Ref(Option.empty[Compound[S]])
+
+    def capture[A](name: String)(block: => A)(implicit tx: S#Tx): A = {
+      val c0        = new Compound[S](name, Nil, significant = false)
+      val before    = capturing.swap(Some(c0))
+      val res       = block
+      val Some(now) = capturing.swap(before)
+      if (now.nonEmpty) addEdit(now)
+      res
+    }
+
+    def addEdit(edit: UndoableEdit[S])(implicit tx: S#Tx): Unit =
+      capturing() match {
+        case Some(c)  => capturing() = Some(c.merge(edit))
+        case None     => addRegularEdit(edit)
+      }
+
+    private def addRegularEdit(edit: UndoableEdit[S])(implicit tx: S#Tx): Unit = {
       if (edit.significant) {
         val undoNameOld = _undoName()
         val toUndoOld   = toUndo()

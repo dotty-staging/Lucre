@@ -57,6 +57,15 @@ trait UndoManager[S <: Sys[S]] extends Disposable[S#Tx] with Observable[S#Tx, Un
     */
   def addEdit(edit: UndoableEdit[S])(implicit tx: S#Tx): Unit
 
+  /** Creates a compound capture if during the execution of `block` more than
+    * one edit is added. If exactly one edit is added, it will be directly
+    * added without a wrapping compound.
+    *
+    * '''Note:''' it does not set the temporary global manager,
+    * to do so, `UndoManager.using` must be called additionally!
+    */
+  def capture[A](name: String)(block: => A)(implicit tx: S#Tx): A
+
   /** Disallow the merging of the next edit to be added.
     * This can be used to avoid merging edits if the editor
     * component was temporarily unfocused, for example.

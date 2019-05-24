@@ -20,21 +20,6 @@ import de.sciss.lucre.stm.{Sys, UndoManager}
 object Edit {
   def apply(): Ex[Edit] = Impl()
 
-//  private final class ApplyExpanded[S <: Sys[S]](e: IExpr[S, Edit], act: IAction[S])
-//                                                (implicit protected val targets: ITargets[S])
-//    extends IAction[S] with ITriggerConsumer[S, Unit] with IGenerator[S, Unit] with Caching {
-//
-//    def executeAction()(implicit tx: S#Tx): Unit =
-//      trigReceived() // .foreach(fire) --- we don't need to fire, there is nobody listening;
-//
-//    protected def trigReceived()(implicit tx: S#Tx): Option[Unit] = {
-//
-//      Trig.Some
-//    }
-//
-//    def changed: IEvent[S, Unit] = this
-//  }
-
   private final class ApplyExpanded[S <: Sys[S]](e: IExpr[S, Edit], act: IAction[S])
                                                 (implicit ctx: Context[S])
     extends IActionImpl[S] {
@@ -56,12 +41,28 @@ object Edit {
       new ApplyExpanded(e.expand[S], act.expand[S])
   }
 
+  private final class NamedExpanded[S <: Sys[S]](e: IExpr[S, Edit], name: IExpr[S, String], xs: Seq[IAction[S]])
+                                                (implicit ctx: Context[S])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit = {
+      val undo  = e.value.peer[S]
+      val nameV = name.value
+      UndoManager.using(undo) {
+        undo.capture(nameV) {
+          xs.foreach(_.executeAction())
+        }
+      }
+    }
+  }
+
   final case class Named(e: Ex[Edit], name: Ex[String], act: Act*) extends Act {
     override def productPrefix: String = s"Edit$$Named"  // serialization
 
     type Repr[S <: Sys[S]] = IAction[S]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = ???
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new NamedExpanded(e.expand[S], name.expand[S], act.map(_.expand[S]))
   }
 
   private final class Expanded[In <: Sys[In]](in: UndoManager[In], system: In) extends Edit {

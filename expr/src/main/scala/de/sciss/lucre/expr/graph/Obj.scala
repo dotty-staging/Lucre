@@ -41,7 +41,7 @@ object Obj {
   implicit class ExOps(private val obj: Ex[Obj]) extends AnyVal {
     def attr[A: Bridge](key: String): Obj.Attr[A] = Obj.Attr(obj, key)
 
-    def attr[A: Bridge](key: String, default: Ex[A]): _Attr.WithDefault[A] = ???
+    // def attr[A: Bridge](key: String, default: Ex[A]): _Attr.WithDefault[A] = ...
   }
 
   private object Empty extends Obj {
