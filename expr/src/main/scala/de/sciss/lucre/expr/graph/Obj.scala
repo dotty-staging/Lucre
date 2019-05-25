@@ -16,10 +16,10 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ObjCellViewImpl, ObjImpl}
+import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewImpl, ObjImpl}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
-import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
+import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Sys}
@@ -235,6 +235,20 @@ object Obj {
   }
 
   object Attr {
+    final case class Update[A](obj: Ex[Obj], key: String,value: Ex[A])(implicit bridge: Obj.Bridge[A])
+      extends Control with ProductWithAux {
+
+      override def productPrefix: String = s"Obj$$Attr$$Update"  // serialization
+
+      type Repr[S <: Sys[S]] = IControl[S]
+
+      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+        val peer = new ExpandedAttrUpdateIn[S, A](obj.expand[S], key, value.expand[S], tx)
+        IControl.wrap(peer)
+      }
+
+      override def aux: scala.List[Aux] = bridge :: Nil
+    }
     final case class Set[A](obj: Ex[Obj], key: String, value: Ex[A])(implicit bridge: Obj.Bridge[A])
       extends Act with ProductWithAux {
 
@@ -262,8 +276,8 @@ object Obj {
       new AttrExpanded(obj.expand[S], key, tx)
     }
 
-    def update(in: Ex[A]): Control  = ???
-    def set   (in: Ex[A]): Act      = Obj.Attr.Set(obj, key, in)
+    def update(in: Ex[A]): Control  = Obj.Attr.Update (obj, key, in)
+    def set   (in: Ex[A]): Act      = Obj.Attr.Set    (obj, key, in)
 
     def aux: List[Aux] = bridge :: Nil
   }

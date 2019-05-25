@@ -165,7 +165,7 @@ object Attr {
   final case class Update[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
     extends Control with ProductWithAux {
 
-    override def productPrefix: String = s"Attr$$Update"
+    override def productPrefix: String = s"Attr$$Update"  // serialization
 
     type Repr[S <: Sys[S]] = IControl[S]
 

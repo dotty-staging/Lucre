@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr.graph.impl
 
+import de.sciss.lucre.expr.graph.{Attr, Obj}
 import de.sciss.lucre.expr.{CellView, IExpr}
 import de.sciss.lucre.stm.{Disposable, Sys}
 
@@ -20,8 +21,25 @@ final class ExpandedAttrUpdate[S <: Sys[S], A](source: IExpr[S, A], attrView: Ce
   extends Disposable[S#Tx] {
 
   private[this] val obs = source.changed.react { implicit tx => upd =>
-    val value = Some(upd.now)
-    attrView.update(value)
+    val v = Some(upd.now)
+    attrView.update(v)
+  } (tx0)
+
+  def dispose()(implicit tx: S#Tx): Unit =
+    obs.dispose()
+}
+
+final class ExpandedAttrUpdateIn[S <: Sys[S], A](in: IExpr[S, Obj], key: String, value: IExpr[S, A], tx0: S#Tx)
+                                                (implicit bridge: Obj.Bridge[A])
+  extends Disposable[S#Tx] {
+
+  private[this] val obs = value.changed.react { implicit tx => upd =>
+    val v       = Some(upd.now)
+    val obj     = in.value
+    val viewOpt = Attr.resolveNestedIn[S, A](obj.peer, key)
+    viewOpt.foreach { attrView =>
+      attrView.update(v)
+    }
   } (tx0)
 
   def dispose()(implicit tx: S#Tx): Unit =
