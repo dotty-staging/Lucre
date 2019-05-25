@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewImpl, ObjImpl}
+import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
@@ -44,12 +44,18 @@ object Obj {
     // def attr[A: Bridge](key: String, default: Ex[A]): _Attr.WithDefault[A] = ...
   }
 
-  private object Empty extends Obj {
+  private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
+    new Impl[S](peer, system)
+
+  private[lucre] object Empty extends Obj {
     type Peer[~ <: Sys[~]] = stm.Obj[~]
 
-    private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] =
+    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] =
       None // throw new IllegalStateException("Object has not been created yet")
   }
+
+  final class Impl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
+    extends ObjImplBase[In, stm.Obj](in, system)
 
   private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
                                                                     cm: CanMake[A])
@@ -70,7 +76,7 @@ object Obj {
       val v     = ex.value
       val peer  = cm.toObj(v)
       import cm.reprSerializer
-      new ObjImpl(tx.newHandle(peer), tx.system)
+      wrap(tx.newHandle(peer), tx.system)
     }
 
     protected def trigReceived()(implicit tx: S#Tx): Option[Change[Obj]] = {
@@ -130,7 +136,7 @@ object Obj {
       def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Obj]] =
         new ObjCellViewImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
           protected def lower(peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
-            new ObjImpl[S](tx.newHandle(peer), tx.system)
+            wrap[S](tx.newHandle(peer), tx.system)
 
           implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Obj[S]]] =
             Serializer.option
@@ -288,5 +294,5 @@ object Obj {
 trait Obj {
   type Peer[~ <: Sys[~]] <: stm.Obj[~]
 
-  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]]
+  private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]]
 }

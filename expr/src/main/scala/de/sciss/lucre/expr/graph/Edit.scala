@@ -31,6 +31,10 @@ object Edit {
     }
   }
 
+  private[lucre] object Empty extends Edit {
+    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S] = UndoManager.dummy
+  }
+
   final case class Apply(e: Ex[Edit], act: Act) extends Act {
     override def productPrefix: String = s"Edit$$Apply"  // serialization
 
@@ -64,7 +68,7 @@ object Edit {
   }
 
   private final class Expanded[In <: Sys[In]](in: UndoManager[In], system: In) extends Edit {
-    private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S] = {
+    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S] = {
       require (tx.system == system)
       in.asInstanceOf[UndoManager[S]]
     }
@@ -85,5 +89,5 @@ object Edit {
   }
 }
 trait Edit {
-  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S]
+  private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S]
 }

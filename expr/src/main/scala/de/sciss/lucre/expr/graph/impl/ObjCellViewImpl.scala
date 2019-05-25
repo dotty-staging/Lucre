@@ -1,5 +1,6 @@
 package de.sciss.lucre.expr.graph.impl
 
+import de.sciss.lucre.edit.EditAttrMap
 import de.sciss.lucre.expr.CellView
 import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.expr.impl.CellViewImpl
@@ -24,29 +25,34 @@ abstract class ObjCellViewImpl[S <: Sys[S], Dur[~ <: Sys[~]] <: stm.Obj[~], In <
 
   type Repr = Option[Dur[S]]
 
-  def repr(implicit tx: S#Tx): Repr =
+  final def repr(implicit tx: S#Tx): Repr =
     h().attr.$[Dur](key)
 
-  def repr_=(value: Repr)(implicit tx: S#Tx): Unit = {
+  protected def putImpl(map: AttrMap[S], value: Dur[S])(implicit tx: S#Tx): Unit =
+    EditAttrMap.put(map, key, value)
+
+  protected def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
+    EditAttrMap.remove(map, key)
+
+  final def repr_=(value: Repr)(implicit tx: S#Tx): Unit = {
     val a = h().attr
     value match {
-      case Some(f)  => a.put(key, f)
-      case None     => a.remove(key)
+      case Some(d)  => putImpl(a, d)
+      case None     => removeImpl(a)
     }
   }
 
-  def lift(value: Option[In])(implicit tx: S#Tx): Repr =
+  final def lift(value: Option[In])(implicit tx: S#Tx): Repr =
     value.flatMap(_.peer[S])
 
-  def apply()(implicit tx: S#Tx): Option[In] = repr.map(lower)
+  final def apply()(implicit tx: S#Tx): Option[In] = repr.map(lower)
 
-
-  def update(v: Option[In])(implicit tx: S#Tx): Unit = {
+  final def update(v: Option[In])(implicit tx: S#Tx): Unit = {
     val peer = v.flatMap(_.peer)
     repr = peer
   }
 
-  def react(fun: S#Tx => Option[In] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
+  final def react(fun: S#Tx => Option[In] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
     new Observation(h().attr, fun, tx)
 
   private final class Observation(attr: AttrMap[S], fun: S#Tx => Option[In] => Unit,

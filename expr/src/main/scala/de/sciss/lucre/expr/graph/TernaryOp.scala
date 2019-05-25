@@ -68,7 +68,7 @@ object TernaryOp {
     override def aux: AuxL = widen :: num :: Nil
   }
 
-  private[graph] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
+  private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
                                                                    a: IExpr[S, A1], b: IExpr[S, A2],
                                                                    c: IExpr[S, A3], tx0: S#Tx)
                                                                   (implicit protected val targets: ITargets[S])

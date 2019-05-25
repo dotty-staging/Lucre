@@ -16,6 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.file._
 import de.sciss.lucre.artifact.{ArtifactLocation, Artifact => _Artifact}
 import de.sciss.lucre.aux.Aux
+import de.sciss.lucre.edit.EditAttrMap
 import de.sciss.lucre.expr.impl.CellViewImpl
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.expr.{CellView, Context, IExpr}
@@ -77,15 +78,11 @@ object Artifact {
     def repr(implicit tx: S#Tx): Repr =
       attr.$[_Artifact](key)
 
-    private def putImpl(map: AttrMap[S], value: _Artifact[S])(implicit tx: S#Tx): Unit = {
-      ???
-      map.put(key, value)
-    }
+    private def putImpl(map: AttrMap[S], value: _Artifact[S])(implicit tx: S#Tx): Unit =
+      EditAttrMap.put(map, key, value)
 
-    private def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit = {
-      ???
-      map.remove(key)
-    }
+    private def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
+      EditAttrMap.remove(map, key)
 
     def repr_=(value: Repr)(implicit tx: S#Tx): Unit =
       value match {

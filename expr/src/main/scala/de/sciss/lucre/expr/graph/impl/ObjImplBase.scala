@@ -1,5 +1,5 @@
 /*
- *  ObjImpl.scala
+ *  ObjImplBase.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -24,12 +24,9 @@ abstract class ObjImplBase[In <: Sys[In], Repr[~ <: Sys[~]] <: stm.Obj[~]](in: s
 
   type Peer[~ <: Sys[~]] = Repr[~]
 
-  private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Repr[S]] = {
+  private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Repr[S]] = {
     require (tx.system == system)
     val out = in.asInstanceOf[stm.Source[S#Tx, Repr[S]]]
     Some(out())
   }
 }
-
-final class ObjImpl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
-  extends ObjImplBase[In, stm.Obj](in, system)

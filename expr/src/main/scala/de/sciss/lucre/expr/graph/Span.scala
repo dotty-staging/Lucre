@@ -20,7 +20,7 @@ import de.sciss.span.{Span => _Span}
 object Span {
   def apply(start: Ex[Long], stop: Ex[Long]): Ex[_Span] = Apply(start, stop)
 
-  private[graph] final case class ApplyOp() extends BinaryOp.Op[Long, Long, _Span] {
+  private[lucre] final case class ApplyOp() extends BinaryOp.Op[Long, Long, _Span] {
     override def productPrefix: String = s"Span$$ApplyOp" // serialization
 
     def apply(a: Long, b: Long): _Span = _Span(a, b)

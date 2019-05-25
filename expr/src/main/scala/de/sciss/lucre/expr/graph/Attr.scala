@@ -85,7 +85,7 @@ object Attr {
       override def aux: scala.List[Aux] = bridge :: Nil
     }
 
-    private[graph] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
+    private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
                                                         tx0: S#Tx)
                                                        (implicit protected val targets: ITargets[S])
       extends IExpr[S, A] with IGenerator[S, Change[A]] {
@@ -134,7 +134,7 @@ object Attr {
     def default: Ex[A]
   }
 
-  private[graph] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
+  private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
                                                      (implicit protected val targets: ITargets[S])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
 

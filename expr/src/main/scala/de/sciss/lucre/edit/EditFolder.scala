@@ -29,7 +29,6 @@ object EditFolder {
 
   def appendUndo[S <: Sys[S]](parent: Folder[S], child: Obj[S])
                              (implicit tx: S#Tx, undo: UndoManager[S]): Unit = {
-    appendDo(parent, child)
     val edit = new Append(parent, child, tx)
     undo.addEdit(edit)
   }
@@ -42,6 +41,8 @@ object EditFolder {
 
     private[this] val parentH = tx0.newHandle(parent0)
     private[this] val childH  = tx0.newHandle(child0 )
+
+    appendDo(parent0, child0)(tx0)
 
     protected def undoImpl()(implicit tx: S#Tx): Unit = {
       val p   = parentH()

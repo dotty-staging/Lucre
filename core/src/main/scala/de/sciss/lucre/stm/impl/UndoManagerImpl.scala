@@ -14,16 +14,39 @@
 package de.sciss.lucre.stm.impl
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.event.impl.ObservableImpl
+import de.sciss.lucre.event.impl.{DummyObservableImpl, ObservableImpl}
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.UndoManager.Update
-import de.sciss.lucre.stm.{Sys, UndoManager, UndoableEdit}
+import de.sciss.lucre.stm.UndoManager.{CannotRedoException, CannotUndoException, Update}
+import de.sciss.lucre.stm.{NoSys, Sys, UndoManager, UndoableEdit}
 
 import scala.concurrent.stm.Ref
 
 object UndoManagerImpl {
-  def apply[S <: Sys[S]](): UndoManager[S] =
-    new Impl[S]
+  def apply[S <: Sys[S]](): UndoManager[S] = new Impl[S]
+  def dummy[S <: Sys[S]]  : UndoManager[S] = anyDummy.asInstanceOf[UndoManager[S]]
+
+  private val anyDummy = new Dummy[NoSys]
+
+  private final class Dummy[S <: Sys[S]] extends UndoManager[S] with DummyObservableImpl[S] {
+    def addEdit(edit: UndoableEdit[S])(implicit tx: S#Tx): Unit = ()
+
+    def capture[A](name: String)(block: => A)(implicit tx: S#Tx): A = block
+
+    def blockMerge()(implicit tx: S#Tx): Unit = ()
+
+    private def cannotUndo(): Nothing =  throw new CannotUndoException("Dummy undo manager")
+    private def cannotRedo(): Nothing =  throw new CannotRedoException("Dummy undo manager")
+
+    def canUndo (implicit tx: S#Tx): Boolean  = false
+    def undo()  (implicit tx: S#Tx): Unit     = cannotUndo()
+    def undoName(implicit tx: S#Tx): String   = cannotUndo()
+    def canRedo (implicit tx: S#Tx): Boolean  = false
+    def redo()  (implicit tx: S#Tx): Unit     = cannotRedo()
+    def redoName(implicit tx: S#Tx): String   = cannotRedo()
+
+    def clear   ()(implicit tx: S#Tx): Unit = ()
+    def dispose ()(implicit tx: S#Tx): Unit = ()
+  }
 
   private final class Impl[S <: Sys[S]]
     extends UndoManager[S] with ObservableImpl[S, UndoManager.Update[S]] { impl =>

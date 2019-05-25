@@ -17,11 +17,10 @@ import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.edit.EditFolder
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedObjMakeImpl, ObjImplBase}
-import de.sciss.lucre.expr.impl.{IActionImpl, CellViewImpl => _CellViewImpl}
+import de.sciss.lucre.expr.graph.impl.{ExpandedObjMakeImpl, ObjCellViewImpl, ObjImplBase}
+import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IExpr}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
@@ -37,8 +36,8 @@ object Folder {
 
   def apply(): Ex[Folder] with Obj.Make[Folder] = Apply()
 
-  private object Empty extends Folder {
-    private[graph] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] = None
+  private[lucre] object Empty extends Folder {
+    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] = None
   }
 
   private final class ApplyExpanded[S <: Sys[S]](implicit targets: ITargets[S])
@@ -65,6 +64,9 @@ object Folder {
     }
   }
 
+  private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Folder[S]], system: S): Folder =
+    new Impl[S](peer, system)
+
   private final class Impl[S <: Sys[S]](in: stm.Source[S#Tx, stm.Folder[S]], system: S)
     extends ObjImplBase[S, stm.Folder](in, system) with Folder {
 
@@ -72,95 +74,13 @@ object Folder {
   }
 
   private final class CellViewImpl[S <: Sys[S]](h: stm.Source[S#Tx, stm.Obj[S]], key: String)
-    extends CellView.Var[S, Option[Folder]] with _CellViewImpl.Basic[S#Tx, Option[Folder]] {
+    extends ObjCellViewImpl[S, stm.Folder, Folder](h, key) {
 
-    type Repr = Option[stm.Folder[S]]
-
-    def repr(implicit tx: S#Tx): Option[stm.Folder[S]] =
-      h().attr.$[stm.Folder](key)
+    protected def lower(peer: stm.Folder[S])(implicit tx: S#Tx): Folder =
+      new Impl(tx.newHandle(peer), tx.system)
 
     implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Folder[S]]] =
       Serializer.option
-
-    def repr_=(value: Option[stm.Folder[S]])(implicit tx: S#Tx): Unit = {
-      val a = h().attr
-      value match {
-        case Some(f)  => a.put(key, f)
-        case None     => a.remove(key)
-      }
-    }
-
-    def lift(value: Option[Folder])(implicit tx: S#Tx): Option[stm.Folder[S]] =
-      value.flatMap(_.peer)
-
-    def apply()(implicit tx: S#Tx): Option[Folder] = repr.map(lower)
-
-    private def lower(peer: stm.Folder[S])(implicit tx: S#Tx): Folder =
-      new Impl(tx.newHandle(peer), tx.system)
-
-    def update(v: Option[Folder])(implicit tx: S#Tx): Unit = {
-      val peer = v.flatMap(_.peer)
-      repr = peer
-    }
-
-    def react(fun: S#Tx => Option[Folder] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
-      new Observation[S](h().attr, key, fun, tx)
-  }
-
-  private final class Observation[S <: Sys[S]](attr: AttrMap[S], key: String, fun: S#Tx => Option[Folder] => Unit,
-                                               tx0: S#Tx) extends Disposable[S#Tx] {
-    private[this] val ref = Ref(Option.empty[(stm.Folder[S], Disposable[S#Tx])])
-
-    private def mkFObs(f: stm.Folder[S])(implicit tx: S#Tx): Disposable[S#Tx] =
-      f.changed.react { implicit tx => _ =>
-        val ex = lower(f)
-        fun(tx)(Some(ex))
-      }
-
-    private def setObj(fOpt: Option[stm.Folder[S]])(implicit tx: S#Tx): Boolean =
-      (ref(), fOpt) match {
-        case (None, Some(fNew))  =>
-          val newObs = mkFObs(fNew)
-          ref() = Some((fNew, newObs))
-          true
-        case (Some((_, oldObs)), None) =>
-          oldObs.dispose()
-          ref() = None
-          true
-        case (Some((fOld, oldObs)), Some(fNew)) if fOld != fNew =>
-          val newObs = mkFObs(fNew)
-          ref() = Some((fNew, newObs))
-          oldObs.dispose()
-          true
-        case _ => false
-      }
-
-    private def setObjAndFire(fOpt: Option[stm.Folder[S]])(implicit tx: S#Tx): Unit =
-      if (setObj(fOpt)) fun(tx)(fOpt.map(lower))
-
-    private def init()(implicit tx: S#Tx): Unit =
-      setObj(attr.$[stm.Folder](key))
-
-    init()(tx0)
-
-    private def lower(peer: stm.Folder[S])(implicit tx: S#Tx): Folder =
-      new Impl(tx.newHandle(peer), tx.system)
-
-    private[this] val attrObs = attr.changed.react { implicit tx => upd =>
-      upd.changes.foreach {
-        case stm.Obj.AttrAdded    (`key`    , f: stm.Folder[S]) => setObjAndFire(Some(f))
-        case stm.Obj.AttrAdded    (`key`    , _)                => setObjAndFire(None)
-        case stm.Obj.AttrRemoved  (`key`    , _: stm.Folder[S]) => setObjAndFire(None)
-        case stm.Obj.AttrReplaced (`key`, _ , f: stm.Folder[S]) => setObjAndFire(Some(f))
-        case stm.Obj.AttrReplaced (`key`, _ , _)                => setObjAndFire(None)
-        case _ =>
-      }
-    } (tx0)
-
-    def dispose()(implicit tx: S#Tx): Unit = {
-      attrObs.dispose()
-      ref.swap(None).foreach(_._2.dispose())
-    }
   }
 
   implicit object Bridge extends Obj.Bridge[Folder] with Aux.Factory {

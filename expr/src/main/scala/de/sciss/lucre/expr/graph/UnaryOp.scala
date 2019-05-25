@@ -535,7 +535,7 @@ object UnaryOp {
 
   // ---- Impl ----
 
-  private[graph] final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
+  private[lucre] final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
                                                           (implicit targets: ITargets[S])
     extends MappedIExpr[S, A1, A](a, tx0) with IEventImpl[S, Change[A]] {
 

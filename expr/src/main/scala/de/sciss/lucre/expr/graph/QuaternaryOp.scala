@@ -44,7 +44,7 @@ object QuaternaryOp {
     def name = "SeqMkString"
   }
 
-  private[graph] final class Expanded[S <: Base[S], A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3, A4, A],
+  private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3, A4, A],
                                                                        a: IExpr[S, A1], b: IExpr[S, A2],
                                                                        c: IExpr[S, A3], d: IExpr[S, A4],
                                                                        tx0: S#Tx)
