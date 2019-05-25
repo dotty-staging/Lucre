@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr
 package impl
 
+import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Obj, Sys}
 import de.sciss.lucre.{expr, stm, event => evt}
@@ -313,31 +314,37 @@ object CellViewImpl {
     }
   }
 
-  //  // actually unused, because obj.attr is always modifiable
-  //  private[gui] final class Impl[S <: Sys[S], A, E[~ <: Sys[~]] <: Elem[~] { type Peer = Expr[~, A] }](
-  //         protected val h: stm.Source[S#Tx, Obj[S]],
-  //         protected val key: String)(implicit protected val companion: Elem.Companion[E])
-  //    extends Basic[S, A, E]
-
-  private[lucre] final class AttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
-                                                                                  protected val h: stm.Source[S#Tx, Obj.AttrMap[S]],
-                                                                                  protected val key: String)(implicit val tpe: Type.Expr[A, E])
+  private[lucre] abstract class AttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
+      protected val h: stm.Source[S#Tx, Obj.AttrMap[S]],
+      protected val key: String)(implicit val tpe: Type.Expr[A, E]
+  )
     extends AttrBasic[S, A, E] with CellView.Var[S, Option[A]] {
 
-    def serializer: Serializer[S#Tx, S#Acc, Repr] = {
+    final type EVar[~ <: Sys[~]] = tpe.Var[~]
+
+    // ---- abstract ----
+
+    protected def putImpl   (map: Obj.AttrMap[S], value: E[S])(implicit tx: S#Tx): Unit
+    protected def removeImpl(map: Obj.AttrMap[S]             )(implicit tx: S#Tx): Unit
+    protected def updateVarImpl(vr: EVar[S]     , value: E[S])(implicit tx: S#Tx): Unit
+
+    // ---- impl ----
+
+    final def serializer: Serializer[S#Tx, S#Acc, Repr] = {
       implicit val exSer: Serializer[S#Tx, S#Acc, E[S]] = tpe.serializer[S]
       Serializer.option[S#Tx, S#Acc, E[S]]
     }
 
-    protected def mapUpdate(ch: Change[A]): Option[A] = if (ch.isSignificant) Some(ch.now) else None
+    protected final def mapUpdate(ch: Change[A]): Option[A] = if (ch.isSignificant) Some(ch.now) else None
 
     private def overwrite(map: Obj.AttrMap[S], value: E[S])(implicit tx: S#Tx): Unit = {
       val aObj = tpe.Var.unapply[S](value).getOrElse(tpe.newVar(value))
-      map.put(key, aObj)
+      putImpl(map, aObj)
     }
 
     def repr_=(value: Repr)(implicit tx: S#Tx): Unit = value.fold[Unit] {
-      h().remove(key)
+      val map = h()
+      removeImpl(map)
     } { ex =>
       val map = h()
       val opt = map.get(key)
@@ -345,7 +352,7 @@ object CellViewImpl {
         case Some(v) if v.tpe.typeId == tpe.typeId =>
           val vt = v.asInstanceOf[E[S]]
           vt match {
-            case tpe.Var(vr) => vr() = ex
+            case tpe.Var(vr) => updateVarImpl(vr, ex)
             case _ => overwrite(map, ex)
           }
 
@@ -357,5 +364,35 @@ object CellViewImpl {
       value.map(v => tpe.newConst[S](v))
 
     def update(v: Option[A])(implicit tx: S#Tx): Unit = repr_=(lift(v))
+  }
+
+  // plain mutating implementation (no undo support)
+  private[lucre] final class PlainAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
+                                                                                               h: stm.Source[S#Tx, Obj.AttrMap[S]], key: String)(implicit tpe: Type.Expr[A, E])
+    extends AttrImpl[S, A, E](h, key) {
+
+    protected def putImpl(map: AttrMap[S], value: E[S])(implicit tx: S#Tx): Unit =
+      map.put(key, value)
+
+    protected def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
+      map.remove(key)
+
+    protected def updateVarImpl(vr: EVar[S], value: E[S])(implicit tx: S#Tx): Unit =
+      vr() = value    // IntelliJ highlight bug
+  }
+
+  // adding optional undo support (when present)
+  private[lucre] final class UndoAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
+      h: stm.Source[S#Tx, Obj.AttrMap[S]], key: String)(implicit tpe: Type.Expr[A, E])
+    extends AttrImpl[S, A, E](h, key) {
+
+    protected def putImpl(map: AttrMap[S], value: E[S])(implicit tx: S#Tx): Unit =
+      map.put(key, value)
+
+    protected def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
+      map.remove(key)
+
+    protected def updateVarImpl(vr: EVar[S], value: E[S])(implicit tx: S#Tx): Unit =
+      vr() = value    // IntelliJ highlight bug
   }
 }

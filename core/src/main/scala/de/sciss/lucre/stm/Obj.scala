@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.{event => evt}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
@@ -52,7 +53,7 @@ object Obj {
 
     final override def readObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
       val tpe = in.readInt()
-      if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
+      if (tpe !== typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in, access)
     }
 

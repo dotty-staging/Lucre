@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.event
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.stm.{Disposable, Elem, NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Writable}
@@ -124,7 +125,7 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
   }
 
   override def equals(that: Any): Boolean = that match {
-    case thatEvent: Event[_, _] => slot == thatEvent.slot && node == thatEvent.node
+    case thatEvent: Event[_, _] => slot === thatEvent.slot && node === thatEvent.node
     case _ => super.equals(that)
   }
 

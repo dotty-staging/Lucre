@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.stm.impl
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.event.impl.ObservableImpl
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.UndoManager.Update
@@ -123,7 +124,7 @@ object UndoManagerImpl {
               }
             }
 
-            val _fire = !canUndoNew || !canRedoOld || _undoName() != undoNameOld || _redoName() != redoNameOld
+            val _fire = !canUndoNew || !canRedoOld || (_undoName() !== undoNameOld) || (_redoName() !== redoNameOld)
             blockMerge()
             if (_fire) fire(Update(impl, undoName = _undoName(), redoName = _redoName()))
 
@@ -160,7 +161,7 @@ object UndoManagerImpl {
             }
           }
 
-          val _fire = !canRedoNew || !canUndoOld || _undoName() != undoNameOld || _redoName() != redoNameOld
+          val _fire = !canRedoNew || !canUndoOld || (_undoName() !== undoNameOld) || (_redoName() !== redoNameOld)
           blockMerge()
           if (_fire) fire(Update(impl, undoName = _undoName(), redoName = _redoName()))
 

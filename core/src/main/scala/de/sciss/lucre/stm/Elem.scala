@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.event.{Publisher, Event}
 import de.sciss.lucre.stm.impl.{ElemImpl => Impl}
 import de.sciss.serial
@@ -32,7 +33,7 @@ object Elem {
 
     def readObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = {
       val tpe = in.readInt()
-      if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
+      if (tpe !== typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in, access)
     }
 

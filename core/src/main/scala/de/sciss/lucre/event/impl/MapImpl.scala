@@ -11,9 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.event
-package impl
+package de.sciss.lucre.event.impl
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.data.{Ordering, SkipList}
 import de.sciss.lucre.event.Map.{Key, Modifiable}
 import de.sciss.lucre.stm.impl.ObjSerializer
@@ -33,22 +33,22 @@ object MapImpl {
     }
   }
 
-  def serializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
+  def serializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, evt.Map[S, K, Repr]] =
     new Ser[S, K, Repr]
 
   def modSerializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
     new ModSer[S, K, Repr]
 
   private class Ser[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])
-    extends ObjSerializer[S, Map[S, K, Repr]] {
+    extends ObjSerializer[S, evt.Map[S, K, Repr]] {
 
-    def tpe: Obj.Type = Map
+    def tpe: Obj.Type = evt.Map
   }
 
   private class ModSer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjSerializer[S, Modifiable[S, K, Repr]] {
 
-    def tpe: Obj.Type = Map
+    def tpe: Obj.Type = evt.Map
   }
 
   def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
@@ -70,10 +70,10 @@ object MapImpl {
  
   private abstract class Impl[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](protected val targets: evt.Targets[S])
                                                           (implicit val keyType: Key[K])
-    extends Modifiable[S, K, Repr] with evt.impl.SingleNode[S, Map.Update[S, K, Repr]] {
+    extends Modifiable[S, K, Repr] with evt.impl.SingleNode[S, evt.Map.Update[S, K, Repr]] {
     map =>
 
-    final def tpe: Obj.Type = Map
+    final def tpe: Obj.Type = evt.Map
 
     // ---- abstract ----
 
@@ -82,7 +82,7 @@ object MapImpl {
     // ---- implemented ----
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
-      val res = Map.Modifiable[Out, K, Elem /* Repr */]
+      val res = evt.Map.Modifiable[Out, K, Elem /* Repr */]
       iterator.foreach { case (k, v) =>
         res.put(k, context(v))
       }
@@ -110,10 +110,10 @@ object MapImpl {
       }
     }
 
-    final def contains(key: K)(implicit tx: S#Tx): Boolean    = peer.get(key).exists(vec => vec.exists(_.key == key))
+    final def contains(key: K)(implicit tx: S#Tx): Boolean    = peer.get(key).exists(vec => vec.exists(_.key === key))
     final def get     (key: K)(implicit tx: S#Tx): Option[V]  = peer.get(key).flatMap { vec =>
       vec.collectFirst {
-        case entry if entry.key == key => entry.value
+        case entry if entry.key === key => entry.value
       }
     }
 
@@ -126,7 +126,7 @@ object MapImpl {
     final def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] =
       peer.get(key).flatMap { vec =>
         vec.collectFirst {
-          case entry if entry.key == key && ct.runtimeClass.isAssignableFrom(entry.value.getClass) =>
+          case entry if entry.key === key && ct.runtimeClass.isAssignableFrom(entry.value.getClass) =>
             entry.value.asInstanceOf[R[S]]
         }
       }
@@ -155,16 +155,16 @@ object MapImpl {
       peer.valuesIterator.foreach(_.foreach(fun))
 
     object changed extends Changed
-      with evt.impl.Generator[S, Map.Update[S, K, Repr]] with evt.impl.Root[S, Map.Update[S, K, Repr]]
+      with evt.impl.Generator[S, evt.Map.Update[S, K, Repr]] with evt.impl.Root[S, evt.Map.Update[S, K, Repr]]
 
     private[this] def fireAdded(key: K, value: V)(implicit tx: S#Tx): Unit =
-      changed.fire(Map.Update[S, K, Repr](map, Map.Added[S, K, V](key, value) :: Nil))
+      changed.fire(evt.Map.Update[S, K, Repr](map, evt.Map.Added[S, K, V](key, value) :: Nil))
 
     private[this] def fireRemoved(key: K, value: V)(implicit tx: S#Tx): Unit =
-      changed.fire(Map.Update[S, K, Repr](map, Map.Removed[S, K, V](key, value) :: Nil))
+      changed.fire(evt.Map.Update[S, K, Repr](map, evt.Map.Removed[S, K, V](key, value) :: Nil))
 
     private[this] def fireReplaced(key: K, before: V, now: V)(implicit tx: S#Tx): Unit =
-      changed.fire(Map.Update[S, K, Repr](map, Map.Replaced[S, K, V](key, before = before, now = now) :: Nil))
+      changed.fire(evt.Map.Update[S, K, Repr](map, evt.Map.Replaced[S, K, V](key, before = before, now = now) :: Nil))
 
     final def +=(kv: (K, V))(implicit tx: S#Tx): this.type = {
       put(kv._1, kv._2)
@@ -179,7 +179,7 @@ object MapImpl {
     final def put(key: K, value: V)(implicit tx: S#Tx): Option[V] = {
       val entry     = new Entry[K, V](key, value)
       val oldVec    = peer.get(key).getOrElse(Nil)
-      val idx       = oldVec.indexWhere(_.key == key)
+      val idx       = oldVec.indexWhere(_.key === key)
       val found     = idx >= 0
       val newVec    = if (found) oldVec.updated(idx, entry) else oldVec :+ entry
       peer.put(key, newVec)
@@ -196,7 +196,7 @@ object MapImpl {
 
     final def remove(key: K)(implicit tx: S#Tx): Option[V] = {
       val oldVec  = peer.get(key).getOrElse(Nil)
-      val idx     = oldVec.indexWhere(_.key == key)
+      val idx     = oldVec.indexWhere(_.key === key)
       if (idx < 0) return None
 
       val entry   = oldVec(idx)

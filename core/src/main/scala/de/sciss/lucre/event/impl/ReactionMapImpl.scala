@@ -11,9 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.event
-package impl
+package de.sciss.lucre.event.impl
 
+import de.sciss.equal.Implicits._
+import de.sciss.lucre.event.{Event, Observer, ReactionMap}
 import de.sciss.lucre.stm.{IdentifierMap, Sys}
 
 import scala.collection.immutable.{Map => IMap}
@@ -49,7 +50,7 @@ object ReactionMapImpl {
       val slot  = event.slot
       val map0  = eventMap.getOrElse(id  , throw new NoSuchElementException(s"Node $id"))
       val list0 = map0    .getOrElse(slot, throw new NoSuchElementException(s"slot $slot"))
-      val list1 = list0.filterNot(_ == observer)
+      val list1 = list0.filterNot(_ === observer)
       val map1  = if (list1.isEmpty) map0 - slot else map0 + (slot -> list1)
       if (map1.isEmpty) {
         eventMap.remove(id)

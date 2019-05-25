@@ -48,7 +48,7 @@ object CellView {
 
   def attr[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
                                                         (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] { type Repr = Option[E[S]] } = {
-    new Impl.AttrImpl[S, A, E](tx.newHandle(map), key)
+    new Impl.PlainAttrImpl[S, A, E](tx.newHandle(map), key)
   }
 
   def name[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): CellView[S#Tx, String] = {

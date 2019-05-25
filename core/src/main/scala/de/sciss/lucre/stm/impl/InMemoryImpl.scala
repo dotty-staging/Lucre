@@ -11,12 +11,13 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm.InMemoryLike.Var
+import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Obj, Source, TxnLike}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -75,7 +76,7 @@ object InMemoryImpl {
     override def hashCode: Int    = id.##
 
     override def equals(that: Any): Boolean = that match {
-      case thatId: InMemoryLike.Id[_] => thatId.id == id
+      case thatId: InMemoryLike.Id[_] => thatId.id === id
       case _ => false
     }
   }

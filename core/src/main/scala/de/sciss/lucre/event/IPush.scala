@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.event
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.stm.Base
 
 import scala.annotation.elidable
@@ -65,7 +66,7 @@ object IPush {
       try {
         val childEvents = targets.children(parent) // parent.node._targets.children
         childEvents.foreach { /* case (inlet2, */ child /* ) */ =>
-//          if (inlet2 == inlet) {
+//          if (inlet2 === inlet) {
             visit(child, parent)
 //          }
         }
@@ -80,7 +81,7 @@ object IPush {
 
     def contains(source: IEvent[S, Any]): Boolean     = pushMap.contains(source)
 
-    def isOrigin(that  : IEvent[S, Any]): Boolean     = that == origin
+    def isOrigin(that  : IEvent[S, Any]): Boolean     = that === origin
     def parents (child : IEvent[S, Any]): Parents[S]  = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {

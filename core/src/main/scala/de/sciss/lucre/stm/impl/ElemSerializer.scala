@@ -11,9 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.stm
-package impl
+package de.sciss.lucre.stm.impl
 
+import de.sciss.equal.Implicits._
+import de.sciss.lucre.stm.{Elem, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput}
 
@@ -26,7 +27,7 @@ trait ElemSerializer[S <: Sys[S], Repr <: Elem[S]]
 
   final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
     val tpe0 = in.readInt()
-    if (tpe0 != tpe.typeId) sys.error(s"Type mismatch, expected ${tpe.typeId}, found $tpe0")
+    if (tpe0 !== tpe.typeId) sys.error(s"Type mismatch, expected ${tpe.typeId}, found $tpe0")
     tpe.readIdentifiedObj(in, access).asInstanceOf[Repr]
   }
 }

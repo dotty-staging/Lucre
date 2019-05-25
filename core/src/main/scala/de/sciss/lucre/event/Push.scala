@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.event
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.stm.Sys
 
 import scala.annotation.elidable
@@ -63,7 +64,7 @@ object Push {
       try {
         val childEvents = parent.node._targets.children
         childEvents.foreach { case (inlet2, child) =>
-          if (inlet2 == inlet) {
+          if (inlet2.toInt === inlet) {
             visit(child, parent)
           }
         }
@@ -82,7 +83,7 @@ object Push {
       case _ => false
     }
 
-    def isOrigin(that  : EventLike[S, Any]): Boolean    = that == origin
+    def isOrigin(that  : EventLike[S, Any]): Boolean    = that === origin
     def parents (child : Event    [S, Any]): Parents[S] = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {

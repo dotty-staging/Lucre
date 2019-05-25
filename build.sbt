@@ -8,6 +8,7 @@ lazy val deps = new {
     val serial    = "1.1.1"
   }
   val core = new {
+    val equal     = "0.1.4"
     val scalaSTM  = "0.9.1"
   }
   val expr = new {
@@ -115,6 +116,7 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   .settings(
     licenses := Seq(lgpl),
     libraryDependencies ++= Seq(
+      "de.sciss"      %% "equal"     % deps.core.equal,   // to-do: compile-only
       "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM
     ),
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,

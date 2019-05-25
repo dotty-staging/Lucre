@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.event
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Elem, NoSys, Mutable, Sys}
 import de.sciss.serial
@@ -37,7 +38,7 @@ object Targets {
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Children[S] = {
       val sz = in./* PACKED */ readInt()
-      if (sz == 0) Vector.empty else Vector.fill(sz) {
+      if (sz === 0) Vector.empty else Vector.fill(sz) {
         val slot  = in.readByte()
         val event = Event.read(in, access)
         (slot, event)
@@ -89,7 +90,7 @@ object Targets {
       val seq = childrenVar() // .get // .getFresh
       logEvent(s"$this - old children = $seq")
       childrenVar() = seq :+ tup
-      !seq.exists(_._1 == slot)
+      !seq.exists(_._1.toInt === slot)
     }
 
     private[event] def remove(slot: Int, sel: Event[S, Any])(implicit tx: S#Tx): Boolean = {
@@ -101,7 +102,7 @@ object Targets {
       if (i >= 0) {
         val xs1 = xs.patch(i, Vector.empty, 1) // XXX crappy way of removing a single element
         childrenVar() = xs1
-        !xs1.exists(_._1 == slot)
+        !xs1.exists(_._1.toInt === slot)
       } else {
         logEvent(s"$this - selector not found")
         false

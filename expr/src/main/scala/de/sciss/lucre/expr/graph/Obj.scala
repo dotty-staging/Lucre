@@ -140,6 +140,9 @@ object Obj {
   trait Bridge[A] extends Aux {
     type Repr[S <: Sys[S]] <: stm.Obj[S]
 
+    /** Creates a bidirectional view between `stm.Obj` and the expression side representation type `A`.
+      * If possible, implementations should look at `UndoManager.find` when updating values.
+      */
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
   }
 

@@ -11,9 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.event
-package impl
+package de.sciss.lucre.event.impl
 
+import de.sciss.equal.Implicits._
+import de.sciss.lucre.event.Observable
 import de.sciss.lucre.stm.{Disposable, Sys}
 
 import scala.concurrent.stm.Ref
@@ -31,7 +32,7 @@ trait ObservableImpl[S <: Sys[S], U] extends Observable[S#Tx, U] {
   }
 
   private[this] def removeObservation(obs: Observation)(implicit tx: S#Tx): Unit =
-    obsRef.transform(_.filterNot(_ == obs))(tx.peer)
+    obsRef.transform(_.filterNot(_ === obs))(tx.peer)
 
   final def react(fun: S#Tx => U => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
     val obs = new Observation(fun)
