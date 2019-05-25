@@ -14,7 +14,7 @@
 package de.sciss.lucre.edit
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.stm.UndoManager.CannotUndoException
+import de.sciss.lucre.stm.UndoManager.{CannotRedoException, CannotUndoException}
 import de.sciss.lucre.stm.impl.BasicUndoableEdit
 import de.sciss.lucre.stm.{Folder, Obj, Sys, UndoManager}
 
@@ -32,6 +32,38 @@ object EditFolder {
     val edit = new Append(parent, child, tx)
     undo.addEdit(edit)
   }
+
+  def prepend[S <: Sys[S]](parent: Folder[S], child: Obj[S])
+                         (implicit tx: S#Tx): Unit =
+    UndoManager.find[S].fold(
+      prependDo  (parent, child)
+    ) { implicit undo =>
+      prependUndo(parent, child)
+    }
+
+  def prependUndo[S <: Sys[S]](parent: Folder[S], child: Obj[S])
+                             (implicit tx: S#Tx, undo: UndoManager[S]): Unit = {
+    val edit = new Prepend(parent, child, tx)
+    undo.addEdit(edit)
+  }
+
+  def removeAt[S <: Sys[S]](parent: Folder[S], index: Int)
+                           (implicit tx: S#Tx): Obj[S] =
+    UndoManager.find[S].fold(
+      removeAtDo  (parent, index)
+    ) { implicit undo =>
+      removeAtUndo(parent, index)
+    }
+
+  def removeAtUndo[S <: Sys[S]](parent: Folder[S], index: Int)
+                               (implicit tx: S#Tx, undo: UndoManager[S]): Obj[S] = {
+    val res   = parent(index)
+    val edit  = new RemoveAt(parent, index, tx)
+    undo.addEdit(edit)
+    res
+  }
+
+  // ---- private: append ----
 
   private def appendDo[S <: Sys[S]](parent: Folder[S], child: Obj[S])(implicit tx: S#Tx): Unit =
     parent.addLast(child)
@@ -55,5 +87,60 @@ object EditFolder {
       appendDo(parentH(), childH())
 
     def name: String = "Append to Folder"
+  }
+
+  // ---- private: prepend ----
+
+  private def prependDo[S <: Sys[S]](parent: Folder[S], child: Obj[S])(implicit tx: S#Tx): Unit =
+    parent.addHead(child)
+
+  private final class Prepend[S <: Sys[S]](parent0: Folder[S], child0: Obj[S], tx0: S#Tx)
+    extends BasicUndoableEdit[S] {
+
+    private[this] val parentH = tx0.newHandle(parent0)
+    private[this] val childH  = tx0.newHandle(child0 )
+
+    prependDo(parent0, child0)(tx0)
+
+    protected def undoImpl()(implicit tx: S#Tx): Unit = {
+      val p   = parentH()
+      val c   = childH ()
+      val old = p.removeHead()
+      if (old !== c) throw new CannotUndoException(s"$name: last element is not $c")
+    }
+
+    protected def redoImpl()(implicit tx: S#Tx): Unit =
+      prependDo(parentH(), childH())
+
+    def name: String = "Prepend to Folder"
+  }
+
+  // ---- private: removeAt ----
+
+  private def removeAtDo[S <: Sys[S]](parent: Folder[S], index: Int)(implicit tx: S#Tx): Obj[S] =
+    parent.removeAt(index)
+
+  private final class RemoveAt[S <: Sys[S]](parent0: Folder[S], index: Int, tx0: S#Tx)
+    extends BasicUndoableEdit[S] {
+
+    private[this] val parentH = tx0.newHandle(parent0)
+    private[this] val childH  = tx0.newHandle(removeAtDo(parent0, index)(tx0))
+    private[this] val size    = parent0.size(tx0) // _after_ the removal!
+
+    protected def undoImpl()(implicit tx: S#Tx): Unit = {
+      val p   = parentH()
+      val c   = childH ()
+      val sz  = p.size
+      if (sz !== size) throw new CannotUndoException(s"$name: contents has changed")
+      p.insert(index, c)
+    }
+
+    protected def redoImpl()(implicit tx: S#Tx): Unit = {
+      val found = removeAtDo(parentH(), index)
+      val c     = childH()
+      if (found !== c) throw new CannotRedoException(s"$name: element at given index is not $c")
+    }
+
+    def name: String = "Remove from Folder"
   }
 }

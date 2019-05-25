@@ -363,12 +363,17 @@ object BiGroupImpl {
     }
 
     final def recoverSpan(spanVal: SpanLike, elem: A)(implicit tx: S#Tx): Option[SpanLikeObj[S]] = {
-      val point     = spanToPoint(spanVal)
+      val point = spanToPoint(spanVal)
       tree.get(point).flatMap { case (_, vec) =>
         vec.collectFirst {
           case e if e.value === elem => e.span
         }
       }
+    }
+
+    final def get(spanVal: SpanLike)(implicit tx: S#Tx): Vec[BiGroup.Entry[S, A]] = {
+      val point = spanToPoint(spanVal)
+      tree.get(point).fold[Vec[BiGroup.Entry[S, A]]](Vector.empty)(_._2)
     }
 
     final def remove(span: SpanLikeObj[S], elem: A)(implicit tx: S#Tx): Boolean = {

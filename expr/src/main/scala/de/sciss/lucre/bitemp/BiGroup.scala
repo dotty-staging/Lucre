@@ -196,6 +196,9 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     */
   def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[Leaf[S, A]], Iterator[Leaf[S, A]])
 
+  /** Finds the leaf for a given span value (if it exists). */
+  def get(span: SpanLike)(implicit tx: S#Tx): Vec[BiGroup.Entry[S, A]]
+
   /** Tries to recover the actual object of an element's position, given only
     * an evaluated span. The result may for example be used in a subsequent removal of the element.
     */

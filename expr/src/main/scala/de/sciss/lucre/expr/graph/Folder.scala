@@ -221,7 +221,7 @@ object Folder {
       in.value.peer.foreach { f =>
         val v   = elem.value
         val obj = source.toObj(v)
-        f.addHead(obj)
+        EditFolder.prepend(f, obj)
       }
     }
   }
@@ -255,7 +255,6 @@ object Folder {
   implicit final class Ops(private val f: Ex[Folder]) extends AnyVal {
     def prepend[A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Prepend(f, elem)
     def append [A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Append (f, elem)
-    def +=     [A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = append(elem)
 
     def size    : Ex[Int    ] = Size    (f)
     def isEmpty : Ex[Boolean] = IsEmpty (f)
