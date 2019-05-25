@@ -152,7 +152,7 @@ object BiPinImpl {
   private val anySer = new Ser[NoSys, Obj[NoSys], BiPin[NoSys, Obj[NoSys]]]
 
   private def readImpl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                                (implicit tx: S#Tx): Impl[S, E] =
+                                                (implicit tx: S#Tx): Impl1[S, E] =
     new Impl1[S, E](targets) {
       val tree: Tree[S, A] = readTree(in, access)
     }
@@ -163,11 +163,9 @@ object BiPinImpl {
     def tpe: Obj.Type = BiPin
   }
 
-  final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](in: Tree[In, E[In]], out: Tree[Out, E[Out]],
-                                                                                outImpl: Impl[Out, E])
-                                                                               (implicit txIn: In#Tx, txOut: Out#Tx, 
-                                                                                context: Copy[In, Out]): Unit = {
-
+  final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~], Repr <: Impl[Out, E, Repr]](
+      in: Tree[In, E[In]], out: Tree[Out, E[Out]], outImpl: Repr)(implicit txIn: In#Tx, txOut: Out#Tx,
+                                                                  context: Copy[In, Out]): Unit = {
     type EntryAux[~ <: Sys[~]] = Entry[~, E[~]]
     in.iterator.foreach { case (time, xsIn) =>
       val xsOut = xsIn.map(e => context[EntryAux](e))
@@ -178,10 +176,11 @@ object BiPinImpl {
     }
   }
 
-  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
+  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~], Repr <: Modifiable[S, E[S]]]
     extends Modifiable[S, E[S]]
-    with evt.impl.SingleNode[S, Update[S, E[S]]] {
-    pin =>
+    with evt.impl.SingleNode[S, Update[S, E[S], Repr]] {
+
+    pin: Repr =>
 
     type A = E[S]
 
@@ -203,11 +202,11 @@ object BiPinImpl {
 
     // ---- event behaviour ----
 
-    object changed extends Changed with evt.impl.Generator[S, Update[S, A]] with evt.Caching {
+    object changed extends Changed with evt.impl.Generator[S, Update[S, A, Repr]] with evt.Caching {
       def += (elem: Entry[S, A])(implicit tx: S#Tx): Unit = elem.changed ---> this
       def -= (elem: Entry[S, A])(implicit tx: S#Tx): Unit = elem.changed -/-> this
 
-      def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Update[S, A]] = {
+      def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Update[S, A, Repr]] = {
         if (pull.isOrigin(this)) return Some(pull.resolve)
 
         val changes: List[Moved[S, A]] = pull.parents(this).iterator.flatMap { evt =>
@@ -227,7 +226,7 @@ object BiPinImpl {
                 addNoFire (timeChange.now   , entry)
               }
           }
-          Some(Update[S, A](pin, changes))
+          Some(Update[S, A, Repr](pin, changes))
         }
       }
     }
@@ -342,7 +341,7 @@ object BiPinImpl {
   }
 
   private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: Targets[S])
-    extends Impl[S, E] { in =>
+    extends Impl[S, E, Impl1[S, E]] { in =>
 
     def tpe: Obj.Type = BiPin
 
@@ -354,7 +353,7 @@ object BiPinImpl {
                                                      context: Copy[S, Out]): Elem[Out] =
       new Impl1[Out, E](evt.Targets[Out]) { out =>
         val tree: Tree[Out, A] = out.newTree()
-        context.defer[PinAux](in, out)(copyTree(in.tree, out.tree, out))
+        context.defer[PinAux](in, out)(copyTree[S, Out, E, Impl1[Out, E]](in.tree, out.tree, out))
         // out.connect()
       }
   }

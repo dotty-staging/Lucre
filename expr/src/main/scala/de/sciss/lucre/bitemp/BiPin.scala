@@ -14,7 +14,7 @@
 package de.sciss.lucre.bitemp
 
 import de.sciss.lucre.bitemp.impl.{BiPinImpl => Impl}
-import de.sciss.lucre.event.Publisher
+import de.sciss.lucre.event.{EventLike, Publisher}
 import de.sciss.lucre.expr.LongObj
 import de.sciss.lucre.stm.{Elem, Obj, Sys}
 import de.sciss.{model => m}
@@ -31,7 +31,7 @@ object BiPin extends Obj.Type {
     Entry.init()
   }
 
-  final case class Update[S <: Sys[S], A](pin: BiPin[S, A], changes: List[Change[S, A]])
+  final case class Update[S <: Sys[S], A, +Repr <: BiPin[S, A]](pin: Repr, changes: List[Change[S, A]])
 
   object Entry extends Elem.Type {
     final val typeId = 26
@@ -94,6 +94,8 @@ object BiPin extends Obj.Type {
     def add   (key: LongObj[S], value: A)(implicit tx: S#Tx): Unit
     def remove(key: LongObj[S], value: A)(implicit tx: S#Tx): Boolean
     def clear()(implicit tx: S#Tx): Unit
+
+    override def changed: EventLike[S, Update[S, A, Modifiable[S, A]]]
   }
 
   def read[S <: Sys[S], A <: Elem[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): BiPin[S, A] =
@@ -106,7 +108,7 @@ object BiPin extends Obj.Type {
     Impl.readIdentifiedObj(in, access)
 }
 
-trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A]] {
+trait BiPin[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiPin.Update[S, A, BiPin[S, A]]] {
   import BiPin.{Entry, Leaf}
 
   def modifiableOption: Option[BiPin.Modifiable[S, A]]

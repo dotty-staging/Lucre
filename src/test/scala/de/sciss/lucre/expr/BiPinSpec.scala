@@ -40,8 +40,8 @@ class BiPinSpec extends ConfluentEventSpec {
   case class Update1(bip: BiPin[S, IE], changes: scala.List[Change1])
 
   def mapUpdate(in: Any /* BiPin.Update[S, IE] */): Update1 = in match {
-    case u0: BiPin.Update[_, _] =>
-      val u = u0.asInstanceOf[BiPin.Update[S, IE]]
+    case u0: BiPin.Update[_, _, _] =>
+      val u = u0.asInstanceOf[BiPin.Update[S, IE, BiPin[S, IE]]]
       Update1(u.pin, u.changes.map {
         case BiPin.Added  (time, BiPin.Entry(k, v)) => Added  (time, (k, v))
         case BiPin.Removed(time, BiPin.Entry(k, v)) => Removed(time, (k, v))
