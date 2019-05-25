@@ -43,10 +43,10 @@ object UndoManager {
   private val current = TxnLocal[UndoManager[_]]()
 
   final class CannotUndoException(message: String) extends RuntimeException(message) {
-    def this() = this(null)
+//    def this() = this(null)
   }
   final class CannotRedoException(message: String) extends RuntimeException(message) {
-    def this() = this(null)
+//    def this() = this(null)
   }
 }
 trait UndoManager[S <: Sys[S]] extends Disposable[S#Tx] with Observable[S#Tx, UndoManager.Update[S]] {

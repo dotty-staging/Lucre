@@ -11,17 +11,16 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr
-import de.sciss.lucre.stm.{Elem, Copy, Obj, NoSys, Sys}
+import de.sciss.lucre.expr.{Expr, Type}
+import de.sciss.lucre.stm.{Copy, Elem, NoSys, Obj, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
-import scala.language.higherKinds
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 
 trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, Repr] with TypeImpl1[Repr] { self =>
   // ---- public ----

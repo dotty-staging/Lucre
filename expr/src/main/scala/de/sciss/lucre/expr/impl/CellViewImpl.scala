@@ -11,9 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
+import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
+import de.sciss.lucre.expr.{CellView, Type}
 import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Obj, Sys}
@@ -48,7 +49,7 @@ object CellViewImpl {
   }
 
   private[this] final class ExprMapLikeObs[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A], U](
-                                                                                                      map: evt.Map[S, K, _Ex], key: K, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)
+      map: evt.Map[S, K, _Ex], key: K, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)
     extends Disposable[S#Tx] {
 
     private val valObs = Ref(null: Disposable[S#Tx])
@@ -95,8 +96,8 @@ object CellViewImpl {
   }
 
   private[lucre] final class ExprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A] /* , U */](
-                                                                                                       protected val h: stm.Source[S#Tx, evt.Map[S, K, _Ex]],
-                                                                                                       protected val key: K /* , val updFun: U => Option[A] */)
+      protected val h: stm.Source[S#Tx, evt.Map[S, K, _Ex]],
+      protected val key: K /* , val updFun: U => Option[A] */)
     extends ExprMapLike[S, K, A, _Ex /* , U */] {
 
     override def repr(implicit tx: S#Tx): Repr = h().get(key)
@@ -105,9 +106,9 @@ object CellViewImpl {
   }
 
   private[lucre] final class ExprModMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
-                                                                                                protected val h: stm.Source[S#Tx, evt.Map.Modifiable[S, K, _Ex]],
-                                                                                                protected val key: K)
-                                                                                              (implicit tpe: Type.Expr[A, _Ex])
+      protected val h: stm.Source[S#Tx, evt.Map.Modifiable[S, K, _Ex]],
+      protected val key: K)
+     (implicit tpe: Type.Expr[A, _Ex])
     extends ExprMapLike[S, K, A, _Ex /* , Change[A] */] with CellView.Var[S, Option[A]] {
 
     def serializer: Serializer[S#Tx, S#Acc, Repr] = {
@@ -368,7 +369,7 @@ object CellViewImpl {
 
   // plain mutating implementation (no undo support)
   private[lucre] final class PlainAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
-                                                                                               h: stm.Source[S#Tx, Obj.AttrMap[S]], key: String)(implicit tpe: Type.Expr[A, E])
+      h: stm.Source[S#Tx, Obj.AttrMap[S]], key: String)(implicit tpe: Type.Expr[A, E])
     extends AttrImpl[S, A, E](h, key) {
 
     protected def putImpl(map: AttrMap[S], value: E[S])(implicit tx: S#Tx): Unit =
@@ -387,12 +388,12 @@ object CellViewImpl {
     extends AttrImpl[S, A, E](h, key) {
 
     protected def putImpl(map: AttrMap[S], value: E[S])(implicit tx: S#Tx): Unit =
-      map.put(key, value)
+      EditAttrMap.put(map, key, value)
 
     protected def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
-      map.remove(key)
+      EditAttrMap.remove(map, key)
 
     protected def updateVarImpl(vr: EVar[S], value: E[S])(implicit tx: S#Tx): Unit =
-      vr() = value    // IntelliJ highlight bug
+      EditExprVar.apply[S, A, E](vr, value)  // IntelliJ highlight bug
   }
 }

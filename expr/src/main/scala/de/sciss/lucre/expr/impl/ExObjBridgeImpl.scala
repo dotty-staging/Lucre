@@ -11,10 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.expr.graph.Obj
+import de.sciss.lucre.expr.{CellView, Type}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.{expr, stm}
 import de.sciss.serial.{DataOutput, Serializer}
@@ -34,7 +34,7 @@ final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.E
   def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, _Ex[S]] = peer.serializer
 
   def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]] =
-    CellView.attr[S, A, _Ex](map = obj.attr, key = key)(tx, peer)
+    CellView.attrUndoOpt[S, A, _Ex](map = obj.attr, key = key)(tx, peer)
 
   override def write(out: DataOutput): Unit = {
     super.write(out)

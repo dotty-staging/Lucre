@@ -19,6 +19,8 @@ import de.sciss.lucre.stm
 import de.sciss.model.Change
 
 object Expr {
+  // XXX TODO -- we need to rethink this type
+//  trait Var[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]] extends Expr[S, A] with stm.Var[S#Tx, E[S]]
   trait Var[S <: Sys[S], A] extends Expr[S, A] with stm.Var[S#Tx, Expr[S, A]]
 
   object Const {

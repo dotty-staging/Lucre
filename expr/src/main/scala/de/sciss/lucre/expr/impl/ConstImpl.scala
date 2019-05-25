@@ -11,9 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
+import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change

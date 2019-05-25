@@ -11,11 +11,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.Control
+import de.sciss.lucre.expr.{Context, Graph}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, UndoManager, Workspace}

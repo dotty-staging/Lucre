@@ -76,7 +76,8 @@ object Type {
   trait Expr[A1, Repr[~ <: Sys[~]] <: expr.Expr[~, A1]] extends Obj.Type {
     type A = A1
     type _Ex   [S <: Sys[S]] = Repr[S] // yeah, well, we're waiting for Dotty
-    // type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A]
+    // N.B.: this causes trouble:
+//     type Var  [S <: Sys[S]] = Repr[S] with expr.Expr.Var  [S, A, _Ex]
     type Var  [S <: Sys[S]] = Repr[S] with stm.Var[S#Tx, Repr[S]]
     type Const[S <: Sys[S]] = Repr[S] with expr.Expr.Const[S, A]
 

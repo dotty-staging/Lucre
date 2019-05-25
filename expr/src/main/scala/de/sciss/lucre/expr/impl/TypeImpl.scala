@@ -11,10 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.event.Targets
+import de.sciss.lucre.expr.Type
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.DataInput
 

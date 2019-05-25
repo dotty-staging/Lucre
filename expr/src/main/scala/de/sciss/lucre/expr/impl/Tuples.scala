@@ -11,9 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
+import de.sciss.lucre.expr.Expr
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
@@ -37,7 +37,7 @@ trait Tuple1Op[A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] <: E
 }
 
 trait Tuple1[S <: Sys[S], A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] <: Expr[~, T1]]
-  extends impl.NodeImpl[S, A] {
+  extends NodeImpl[S, A] {
   _: ReprA[S] =>
 
   def op: Tuple1Op[A, T1, ReprA, ReprT1]
@@ -94,7 +94,7 @@ trait Tuple2Op[A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] 
 
 trait Tuple2[S <: Sys[S], A, T1, T2, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] <: Expr[~, T1],
   ReprT2[~ <: Sys[~]] <: Expr[~, T2]]
-  extends impl.NodeImpl[S, A] {
+  extends NodeImpl[S, A] {
   _: ReprA[S] =>
 
   def op: Tuple2Op[A, T1, T2, ReprA, ReprT1, ReprT2]

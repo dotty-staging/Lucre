@@ -11,11 +11,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-package impl
+package de.sciss.lucre.expr.impl
 
 import java.util
 
+import de.sciss.lucre.expr.Graph
 import de.sciss.lucre.expr.graph.{Control, It}
 
 import scala.collection.immutable.{IndexedSeq => Vec}

@@ -44,10 +44,10 @@ object EditFolder {
     private[this] val childH  = tx0.newHandle(child0 )
 
     protected def undoImpl()(implicit tx: S#Tx): Unit = {
-      val p = parentH()
-      val c = childH ()
-      val e = p.removeLast()
-      if (e !== c) throw new CannotUndoException(s"$name: last element is not $c")
+      val p   = parentH()
+      val c   = childH ()
+      val old = p.removeLast()
+      if (old !== c) throw new CannotUndoException(s"$name: last element is not $c")
     }
 
     protected def redoImpl()(implicit tx: S#Tx): Unit =

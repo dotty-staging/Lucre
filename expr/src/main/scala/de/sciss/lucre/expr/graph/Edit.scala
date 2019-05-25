@@ -21,7 +21,6 @@ object Edit {
   def apply(): Ex[Edit] = Impl()
 
   private final class ApplyExpanded[S <: Sys[S]](e: IExpr[S, Edit], act: IAction[S])
-                                                (implicit ctx: Context[S])
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {
@@ -42,7 +41,6 @@ object Edit {
   }
 
   private final class NamedExpanded[S <: Sys[S]](e: IExpr[S, Edit], name: IExpr[S, String], xs: Seq[IAction[S]])
-                                                (implicit ctx: Context[S])
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {

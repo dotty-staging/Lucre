@@ -51,6 +51,12 @@ object CellView {
     new Impl.PlainAttrImpl[S, A, E](tx.newHandle(map), key)
   }
 
+  /** Additionally uses undo manager when present. */
+  def attrUndoOpt[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
+                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] { type Repr = Option[E[S]] } = {
+    new Impl.UndoAttrImpl[S, A, E](tx.newHandle(map), key)
+  }
+
   def name[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): CellView[S#Tx, String] = {
     implicit val stringEx: Type.Expr[String, StringObj] = StringObj
     attr[S, String, StringObj](obj.attr, Obj.attrName).map(_.getOrElse("<unnamed>"))
