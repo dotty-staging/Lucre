@@ -14,6 +14,7 @@
 package de.sciss.lucre
 package bitemp.impl
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.bitemp.BiGroup
 import de.sciss.lucre.data.{DeterministicSkipOctree, SkipOctree}
 import de.sciss.lucre.event.{Targets, impl => evti}
@@ -84,7 +85,7 @@ object BiGroupImpl {
 
   final def rangeSearch[S <: Sys[S], A](tree: Tree[S, A])(start: SpanLike, stop: SpanLike)
                                            (implicit tx: S#Tx): Iterator[A] = {
-    if (start == Span.Void || stop == Span.Void) return Iterator.empty
+    if (start === Span.Void || stop === Span.Void) return Iterator.empty
 
     val startP = searchSpanToPoint(start)
     val stopP  = searchSpanToPoint(stop)
@@ -156,7 +157,7 @@ object BiGroupImpl {
   def verifyConsistency[S <: Sys[S], A](group: BiGroup[S, A], reportOnly: Boolean)
                                        (implicit tx: S#Tx): Vec[String] =
     group match {
-      case impl: Impl[S, _] => impl.treeHandle match {
+      case impl: Impl[S, _, _] => impl.treeHandle match {
         case t: DeterministicSkipOctree[S, _, _] =>
           t.verifyConsistency(reportOnly)
         case _ => sys.error("Not a deterministic octree implementation")
@@ -239,8 +240,8 @@ object BiGroupImpl {
     def tpe: Obj.Type = Entry
   }
 
-  final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~]](
-      in: TreeImpl[In, E], out: TreeImpl[Out, E], outImpl: Impl[Out, E])
+  final def copyTree[In <: Sys[In], Out <: Sys[Out], E[~ <: Sys[~]] <: Elem[~], Repr <: Impl[Out, E, Repr]](
+      in: TreeImpl[In, E], out: TreeImpl[Out, E], outImpl: Repr)
      (implicit txIn: In#Tx, txOut: Out#Tx, context: Copy[In, Out]): Unit = {
 
     type EntryAux[~ <: Sys[~]] = Entry[~, E[~]]
@@ -253,11 +254,11 @@ object BiGroupImpl {
     }
   }
 
-  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
+  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~], Repr <: BiGroup.Modifiable[S, E[S]]]
     extends Modifiable[S, E[S]]
-    with evt.impl.SingleNode[S, BiGroup.Update[S, E[S]]] {
+    with evt.impl.SingleNode[S, BiGroup.Update[S, E[S], Repr]] {
 
-    group =>
+    group: Repr =>
 
     type A = E[S]
 
@@ -288,11 +289,13 @@ object BiGroupImpl {
 
     // ---- event behaviour ----
 
-    object changed extends Changed with evt.impl.Generator[S, BiGroup.Update[S, A]] with evt.Caching {
+    object changed extends Changed with evt.impl.Generator[S, BiGroup.Update[S, A, Repr]]
+      with evt.Caching {
+
       def += (entry: Entry[S, A])(implicit tx: S#Tx): Unit = entry.changed ---> this
       def -= (entry: Entry[S, A])(implicit tx: S#Tx): Unit = entry.changed -/-> this
 
-      def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[BiGroup.Update[S, A]] = {
+      def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[BiGroup.Update[S, A, Repr]] = {
         if (pull.isOrigin(this)) return Some(pull.resolve)
 
         val par = pull.parents(this)
@@ -359,19 +362,28 @@ object BiGroupImpl {
       }
     }
 
+    final def recoverSpan(spanVal: SpanLike, elem: A)(implicit tx: S#Tx): Option[SpanLikeObj[S]] = {
+      val point     = spanToPoint(spanVal)
+      tree.get(point).flatMap { case (_, vec) =>
+        vec.collectFirst {
+          case e if e.value === elem => e.span
+        }
+      }
+    }
+
     final def remove(span: SpanLikeObj[S], elem: A)(implicit tx: S#Tx): Boolean = {
       val spanVal   = span.value
       val point     = spanToPoint(spanVal)
       val entryOpt  = tree.get(point).flatMap {
         case (_, Vec(single)) =>
-          if (single.span == span && single.value == elem) {
+          if (single.span === span && single.value === elem) {
             tree.removeAt(point)
             Some(single)
           } else {
             None
           }
         case (_, seq) =>
-          val (equal, diff) = seq.partition(entry => entry.span == span && entry.value == elem)
+          val (equal, diff) = seq.partition(entry => entry.span === span && entry.value === elem)
           if (equal.nonEmpty) {
             tree.add((spanVal, diff))
             equal.headOption
@@ -394,15 +406,15 @@ object BiGroupImpl {
       val found = tree.get(point)
       found match {
         case Some((_, Vec(single))) =>
-          if (single == entry) {
+          if (single === entry) {
             assert(tree.removeAt(point).isDefined)
             true
           } else {
             false
           }
         case Some((_, seq)) =>
-          val seqNew = seq.filterNot(_ == entry)
-          if (seqNew.size != seq.size) {
+          val seqNew = seq.filterNot(_ === entry)
+          if (seqNew.size !== seq.size) {
             assert(tree.add((spanVal, seqNew)))
             true
           } else {
@@ -455,13 +467,13 @@ object BiGroupImpl {
     }
 
   private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
-                                            (implicit tx: S#Tx): Impl[S, E] =
+                                            (implicit tx: S#Tx): Impl[S, E, Impl1[S, E]] =
     new Impl1[S, E](_targets) {
       val tree: TreeImpl[S, E] = readTree(in, access)
     }
 
   private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](protected val targets: Targets[S])
-    extends Impl[S, E] { in =>
+    extends Impl[S, E, Impl1[S, E]] { in =>
 
     final def tpe: Obj.Type = BiGroup
 
@@ -472,7 +484,7 @@ object BiGroupImpl {
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
       new Impl1[Out, E](Targets[Out]) { out =>
         val tree: TreeImpl[Out, E] = out.newTree()
-        context.defer[GroupAux](in, out)(copyTree(in.tree, out.tree, out))
+        context.defer[GroupAux](in, out)(copyTree[S, Out, E, Impl1[Out, E]](in.tree, out.tree, out))
         // connect()
       }
   }

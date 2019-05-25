@@ -41,7 +41,7 @@ object BiGroup extends Obj.Type {
 
   // ---- updates ----
 
-  final case class Update[S <: Sys[S], A](group: BiGroup[S, A], changes: List[Change[S, A]])
+  final case class Update[S <: Sys[S], A, +Repr <: BiGroup[S, A]](group: Repr, changes: List[Change[S, A]])
 
   sealed trait Change[S <: Sys[S], +A] {
     def elem: Entry[S, A]
@@ -100,7 +100,7 @@ object BiGroup extends Obj.Type {
 
     def clear()(implicit tx: S#Tx): Unit
 
-    override def changed: EventLike[S, BiGroup.Update[S, A]]
+    override def changed: EventLike[S, BiGroup.Update[S, A, Modifiable[S, A]]]
   }
 
   implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] =
@@ -110,7 +110,7 @@ object BiGroup extends Obj.Type {
     Impl.readIdentifiedObj(in, access)
 }
 
-trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S, A]] {
+trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S, A, BiGroup[S, A]]] {
 
   import BiGroup.Leaf
 
@@ -195,6 +195,11 @@ trait BiGroup[S <: Sys[S], A] extends Obj[S] with Publisher[S, BiGroup.Update[S,
     *          stop at the query time
     */
   def eventsAt(time: Long)(implicit tx: S#Tx): (Iterator[Leaf[S, A]], Iterator[Leaf[S, A]])
+
+  /** Tries to recover the actual object of an element's position, given only
+    * an evaluated span. The result may for example be used in a subsequent removal of the element.
+    */
+  def recoverSpan(span: SpanLike, elem: A)(implicit tx: S#Tx): Option[SpanLikeObj[S]]
 
   def debugList(implicit tx: S#Tx): List[(SpanLike, A)]
 
