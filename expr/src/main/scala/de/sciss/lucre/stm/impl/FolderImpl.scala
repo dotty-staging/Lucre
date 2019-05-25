@@ -59,7 +59,7 @@ object FolderImpl {
     }
 
   private abstract class Impl1[S <: Sys[S]]
-    extends ListImpl.Impl[S, Obj] with Folder[S] {
+    extends ListImpl.Impl[S, Obj, Impl1[S]] with Folder[S] {
 
     in =>
 

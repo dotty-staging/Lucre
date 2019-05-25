@@ -13,13 +13,13 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.lucre.event.EventLike
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{FolderImpl => Impl}
 import de.sciss.serial.{DataInput, Serializer}
 
 object Folder extends Obj.Type {
   final val typeId = 0x10000
-
 
   override def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
@@ -29,7 +29,7 @@ object Folder extends Obj.Type {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Folder[S] =
     serializer[S].read(in, access)
 
-  type Update [S <: Sys[S]]           = stm.List.Update [S, Obj[S]]
+  type Update [S <: Sys[S]]           = stm.List.Update [S, Obj[S], Folder[S]]
   type Change [S <: Sys[S]]           = stm.List.Change [S, Obj[S]]
   type Added  [S <: Sys[S]]           = stm.List.Added  [S, Obj[S]]
   val Added  : stm.List.Added   .type = stm.List.Added
@@ -42,4 +42,6 @@ object Folder extends Obj.Type {
 trait Folder[S <: Sys[S]] extends stm.List.Modifiable[S, Obj[S]] {
   /** This is simply because we inherit from `stm.List`. We refine the return type here. */
   override def modifiableOption: Option[Folder[S]]
+
+  override def changed: EventLike[S, List.Update[S, Obj[S], Folder[S]]]
 }

@@ -56,7 +56,7 @@ object ListImpl {
   }
 
   private def read[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
-                                               (implicit tx: S#Tx): Impl[S, E] =
+                                               (implicit tx: S#Tx): Impl1[S, E] =
     new Impl1[S, E] {
       protected val targets: Targets[S] = _targets
       protected val sizeRef: S#Var[Int] = tx.readIntVar(id, in)
@@ -90,8 +90,10 @@ object ListImpl {
     }
   }
 
-  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]]
-    extends Modifiable[S, E[S]] with eimpl.SingleNode[S, List.Update[S, E[S]]] { list =>
+  abstract class Impl[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~], Repr <: Modifiable[S, E[S]]]
+    extends Modifiable[S, E[S]] with eimpl.SingleNode[S, List.Update[S, E[S], Repr]] {
+
+    list: Repr =>
 
     type A = E[S]
     protected type ListAux[~ <: Sys[~]] = List[~, E[~]]
@@ -130,7 +132,7 @@ object ListImpl {
     // protected def reader: evt.Reader[S, List[S, A, U]]
 
     object changed extends Changed
-      with eimpl.RootGenerator[S, List.Update[S, A]]
+      with eimpl.RootGenerator[S, List.Update[S, A, Repr]]
 
     final def indexOf(elem: A)(implicit tx: S#Tx): Int = {
       var idx = 0
@@ -356,7 +358,7 @@ object ListImpl {
     final def iterator(implicit tx: S#Tx): Iterator[A] = new Iter[S, A](headRef())
   }
 
-  private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]] extends Impl[S, E] {
+  private abstract class Impl1[S <: Sys[S], E[~ <: Sys[~]] <: Elem[~]] extends Impl[S, E, Impl1[S, E]] {
     in =>
 
     final def tpe: Obj.Type = List

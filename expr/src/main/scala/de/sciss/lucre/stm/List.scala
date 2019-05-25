@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.stm
 
-import de.sciss.lucre.event.Publisher
+import de.sciss.lucre.event.{EventLike, Publisher}
 import de.sciss.lucre.stm.impl.{ListImpl => Impl}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
@@ -24,7 +24,7 @@ import scala.language.higherKinds
 object List extends Obj.Type {
   final val typeId  = 23
 
-  final case class Update[S <: Sys[S], A](list: List[S, A], changes: Vec[Change[S, A]])
+  final case class Update[S <: Sys[S], A, +Repr <: List[S, A]](list: Repr, changes: Vec[Change[S, A]])
 
   sealed trait Change[S <: Sys[S], A] {
     def index: Int
@@ -65,6 +65,8 @@ object List extends Obj.Type {
     def removeAt(index: Int)(implicit tx: S#Tx): A
 
     def clear()(implicit tx: S#Tx): Unit
+
+    override def changed: EventLike[S, Update[S, A, Modifiable[S, A]]]
   }
 
   implicit def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, List[S, A]] =
@@ -84,7 +86,7 @@ object List extends Obj.Type {
   *
   * @tparam A      the element type of the list
   */
-trait List[S <: Sys[S], A] extends Obj[S] with Publisher[S, List.Update[S, A]] {
+trait List[S <: Sys[S], A] extends Obj[S] with Publisher[S, List.Update[S, A, List[S, A]]] {
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
   def size    (implicit tx: S#Tx): Int
