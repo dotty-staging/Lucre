@@ -17,7 +17,7 @@ import java.util.Locale
 
 import de.sciss.lucre.event.IPush.Parents
 import de.sciss.lucre.event.impl.{IEventImpl, IGenerator}
-import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.{Context, IAction, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
@@ -103,7 +103,8 @@ object TimeStamp {
       } else None
     }
 
-    def value(implicit tx: S#Tx): Long = ref()
+    def value(implicit tx: S#Tx): Long =
+      IPush.tryPull(this).fold(ref())(_.now)
 
     def changed: IEvent[S, Change[Long]] = this
 

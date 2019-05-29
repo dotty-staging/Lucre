@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.TxnLike.peer
@@ -32,7 +32,8 @@ final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], 
 
   private[this] val ref = Ref(valueOf(in.value(tx0))(tx0))
 
-  def value(implicit tx: S#Tx): Option[B] = ref()._1
+  def value(implicit tx: S#Tx): Option[B] = // ref()._1
+    IPush.tryPull(this).fold(ref()._1)(_.now)
 
   private def valueOf(inOption: Option[A])(implicit tx: S#Tx): (Option[B], Disposable[S#Tx]) =
     if (inOption.isEmpty) (None, Disposable.empty[S#Tx]) else {

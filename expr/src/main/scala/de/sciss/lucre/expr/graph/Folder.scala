@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.edit.EditFolder
 import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedObjMakeImpl, ObjCellViewImpl, ObjImplBase}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IExpr}
@@ -105,7 +105,7 @@ object Folder {
     extends IExpr[S, A] with IGenerator[S, Change[A]] with Caching {
 
     private[this] val obs   = Ref[Disposable[S#Tx]](Disposable.empty)
-    private[this] val cache = Ref(init)
+    private[this] val ref   = Ref(init)
 
     protected def mapValue(f: stm.List[S, stm.Obj[S]])(implicit tx: S#Tx): A
 
@@ -115,12 +115,12 @@ object Folder {
       v.peer.flatMap { f =>
         val newObs = f.changed.react { implicit tx => upd =>
           val now     = mapValue(upd.list)
-          val before  = cache.swap(now)
+          val before  = ref.swap(now)
           if (before != now) fire(Change(before, now))
         }
         obs() = newObs
         val now     = mapValue(f)
-        val before  = cache.swap(now)
+        val before  = ref.swap(now)
         if (before != now) Some(Change(before, now)) else None
       }
     }
@@ -128,7 +128,8 @@ object Folder {
     in.changed.--->(this)(tx0)
     setObj(in.value(tx0))(tx0)
 
-    def value(implicit tx: S#Tx): A = cache()
+    def value(implicit tx: S#Tx): A =
+      IPush.tryPull(this).fold(ref())(_.now)
 
     def changed: IEvent[S, Change[A]] = this
 

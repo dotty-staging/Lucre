@@ -17,8 +17,8 @@ import de.sciss.lucre.aux.Aux.{FromAny, HasDefault}
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.Context
-import de.sciss.lucre.expr.{IExpr, graph}
+import de.sciss.lucre.expr.impl.IActionImpl
+import de.sciss.lucre.expr.{Context, IAction, IExpr, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change
@@ -78,7 +78,36 @@ object Var {
   def apply[A]()(implicit from: FromAny[A], default: HasDefault[A]): Var[A] =
     Impl(Const(default.defaultValue))
 
+  implicit final class Ops[A](private val x: Var[A]) extends AnyVal {
+    def set(in: Ex[A]): Act = Set(x, in)
+  }
+
+  final case class Set[A](vr: Var[A], in: Ex[A]) extends Act {
+    override def productPrefix: String = s"Var$$Set"  // serialization
+
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new SetExpanded(vr.expand[S], in.expand[S])
+  }
+
   trait Expanded[S <: Sys[S], A] extends CaseDef.Expanded[S, A] with IExpr.Var[S, A]
+
+  // ---- private ----
+
+  private final class SetExpanded[S <: Sys[S], A](vr: Var.Expanded[S, A], in: IExpr[S, A])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit = {
+      // If the 'set' action is interpreted correctly, it should
+      // mean that we latch the value; if otherwise we would just
+      // use `vr.update(in)`, then we could as well just
+      // refer to `in` directly and the operation would not
+      // make much sense. And so `Var.Set` works like `ExpandedAttrSet`.
+      val v = in.value
+      vr.update(new Const.Expanded(v))
+    }
+  }
 
   private final class ExpandedImpl[S <: Sys[S], A](init: IExpr[S, A], tx0: S#Tx)
                                               (implicit protected val targets: ITargets[S], val fromAny: FromAny[A])
@@ -108,7 +137,7 @@ object Var {
 
     private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
       if (pull.isOrigin(this)) {
-        Some(pull.resolve[Change[A]])
+        Some(pull.resolve)
       } else {
         pull(ref().changed)
       }

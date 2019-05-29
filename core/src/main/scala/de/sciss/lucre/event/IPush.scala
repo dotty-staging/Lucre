@@ -85,23 +85,23 @@ object IPush {
     def parents (child : IEvent[S, Any]): Parents[S]  = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {
-      var reactCache  = List.empty[Reaction[S, Any]]
-      var reactObs    = List.empty[Reaction[S, Any]]
-
-      pushMap.foreach { case (event, _) =>
-        val observers: List[Observer[S, Any]] = targets.getEventReactions(event)
-        val isCache = event.isInstanceOf[Caching]
-
-        if (observers.nonEmpty || isCache)
-          apply[Any](event).foreach { v =>
-            val r = new Reaction(v, observers)
-            if (isCache) reactCache ::= r else reactObs ::= r
-          }
+      val m0    = currentPull.get()
+      val isNew = !m0.contains(tx)
+      if (isNew) currentPull.set(m0 + (tx -> this))
+      try {
+        val reactions: List[Reaction[S, Any]] = pushMap.iterator.flatMap { case (event, _) =>
+          val observers: List[Observer[S, Any]] = targets.getEventReactions(event) // tx.reactionMap.getEventReactions(event)
+          val hasObs = observers.nonEmpty
+          if (hasObs || event.isInstanceOf[Caching]) {
+            val opt = apply[Any](event)
+            if (hasObs) opt.map(new Reaction(_, observers)) else None
+          } else None
+        } .toList
+        logEvent(s"numReactions = ${reactions.size}")
+        reactions.foreach(_.apply())
+      } finally {
+        if (isNew) currentPull.set(m0)
       }
-
-      logEvent(s"reactCache.size = ${reactCache.size}; reactObs.size = ${reactObs.size}")
-      reactCache.reverse.foreach(_.apply())
-      reactObs  .reverse.foreach(_.apply())
     }
 
     def resolve[A]: A = {
@@ -128,6 +128,16 @@ object IPush {
       }
     }
   }
+
+  private val currentPull = new ThreadLocal[IMap[Any, IPull[_]]]() {
+    override def initialValue(): IMap[Any, IPull[_]] = IMap.empty
+  }
+
+  def tryPull[S <: Base[S], A](source: IEvent[S, A])(implicit tx: S#Tx): Option[A] =
+    currentPull.get().get(tx).flatMap { p =>
+      val pc = p.asInstanceOf[IPull[S]]
+      if (pc.contains(source)) pc(source) else None
+    }
 }
 
 trait IPull[S <: Base[S]] {

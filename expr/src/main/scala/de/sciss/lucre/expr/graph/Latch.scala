@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.{Context, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
@@ -31,7 +31,8 @@ object Latch {
 
     trig.changed.--->(this)(tx0)
 
-    def value(implicit tx: S#Tx): A = ref()
+    def value(implicit tx: S#Tx): A =
+      IPush.tryPull(this).fold(ref())(_.now)
 
     def dispose()(implicit tx: S#Tx): Unit =
       trig.changed.-/->(this)

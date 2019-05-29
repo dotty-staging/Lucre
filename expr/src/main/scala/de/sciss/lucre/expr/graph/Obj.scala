@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{Caching, IEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
@@ -67,7 +67,8 @@ object Obj {
 
     private[this] val ref = Ref[Obj](Empty)
 
-    def value(implicit tx: S#Tx): Obj = ref()
+    def value(implicit tx: S#Tx): Obj =
+      IPush.tryPull(this).fold(ref())(_.now)
 
     def executeAction()(implicit tx: S#Tx): Unit =
       trigReceived() // .foreach(fire) --- we don't need to fire, there is nobody listening;
@@ -195,6 +196,8 @@ object Obj {
   private final class AttrExpanded[S <: Sys[S], A](obj: IExpr[S, Obj], key: String, tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], bridge: Bridge[A])
     extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
+
+    override def toString: String = s"graph.Obj.AttrExpanded($obj, $key)@${hashCode().toHexString}"
 
     private[this] val viewRef   = Ref(Option.empty[CellView.Var[S, Option[A]]])
     private[this] val valueRef  = Ref.make[Option[A]]

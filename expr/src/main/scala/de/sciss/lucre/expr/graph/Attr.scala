@@ -114,7 +114,7 @@ object Attr {
         if (pull.contains(dch) && ref.get(tx.peer).isEmpty) {
           pull(dch)
         } else if (pull.isOrigin(this)) {
-          Some(pull.resolve[Change[A]])
+          Some(pull.resolve)
         } else {
           None
         }
@@ -152,7 +152,7 @@ object Attr {
     def value(implicit tx: S#Tx): Option[A] = attrView()
 
     private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
-      Some(pull.resolve[Change[Option[A]]])
+      Some(pull.resolve)
 
     def changed: IEvent[S, Change[Option[A]]] = this
 

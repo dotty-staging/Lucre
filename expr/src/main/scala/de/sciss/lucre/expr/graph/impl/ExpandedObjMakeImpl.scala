@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{Caching, IEvent, ITargets}
+import de.sciss.lucre.event.{Caching, IEvent, IPush, ITargets}
 import de.sciss.lucre.expr.impl.ITriggerConsumer
 import de.sciss.lucre.expr.{IAction, IExpr}
 import de.sciss.lucre.stm.Sys
@@ -38,7 +38,8 @@ abstract class ExpandedObjMakeImpl[S <: Sys[S], A](implicit protected val target
 
   private[this] val ref = Ref[A](empty)
 
-  def value(implicit tx: S#Tx): A = ref()
+  def value(implicit tx: S#Tx): A =
+    IPush.tryPull(this).fold(ref())(_.now)
 
   def executeAction()(implicit tx: S#Tx): Unit =
     trigReceived().foreach(fire)
