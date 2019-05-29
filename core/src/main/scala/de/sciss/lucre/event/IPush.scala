@@ -85,13 +85,23 @@ object IPush {
     def parents (child : IEvent[S, Any]): Parents[S]  = pushMap.getOrElse(child, NoParents)
 
     def pull(): Unit = {
-      val reactions: List[Reaction[S, Any]] = pushMap.iterator.flatMap { case (event, _) =>
-        val observers: List[Observer[S, Any]] = targets.getEventReactions(event) // tx.reactionMap.getEventReactions(event)
-        if (observers.nonEmpty || event.isInstanceOf[Caching])
-          apply[Any](event).map(new Reaction(_, observers)) else None
-      } .toList
-      logEvent(s"numReactions = ${reactions.size}")
-      reactions.foreach(_.apply())
+      var reactCache  = List.empty[Reaction[S, Any]]
+      var reactObs    = List.empty[Reaction[S, Any]]
+
+      pushMap.foreach { case (event, _) =>
+        val observers: List[Observer[S, Any]] = targets.getEventReactions(event)
+        val isCache = event.isInstanceOf[Caching]
+
+        if (observers.nonEmpty || isCache)
+          apply[Any](event).foreach { v =>
+            val r = new Reaction(v, observers)
+            if (isCache) reactCache ::= r else reactObs ::= r
+          }
+      }
+
+      logEvent(s"reactCache.size = ${reactCache.size}; reactObs.size = ${reactObs.size}")
+      reactCache.reverse.foreach(_.apply())
+      reactObs  .reverse.foreach(_.apply())
     }
 
     def resolve[A]: A = {
