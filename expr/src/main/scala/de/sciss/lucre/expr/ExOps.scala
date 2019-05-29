@@ -184,8 +184,48 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   def nonEmpty: Ex[Boolean] = UnOp(UnOp.StringNonEmpty(), x)
 
   def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
+  
+  def take(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringTake(), x, n)
+  def drop(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringDrop(), x, n)
+  
+  def slice(from: Ex[Int], until: Ex[Int]): Ex[String] = TernOp(TernOp.StringSlice(), x, from, until)
 
   // def format(args: Ex[Any]*): Ex[String] = ...
+}
+
+final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
+  //  def apply(index: Ex[Int]): Ex[A] = ...
+
+  def applyOption(index: Ex[Int]): Ex[Option[A]] = BinOp(BinOp.SeqApplyOption[A](), x, index)
+
+  def headOption: Ex[Option[A]] = UnOp(UnOp.SeqHeadOption[A](), x)
+  def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
+
+  def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
+
+  def isEmpty : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
+  def nonEmpty: Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
+
+  def ++ [B >: A](that: Ex[Seq[B]]): Ex[Seq[B]] = BinOp(BinOp.SeqConcat[B](), x, that)
+
+  def take(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqTake[A](), x, n)
+  def drop(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqDrop[A](), x, n)
+
+  def slice(from: Ex[Int], until: Ex[Int]): Ex[Seq[A]] = TernOp(TernOp.SeqSlice[A](), x, from, until)
+
+  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
+    m.map(x, f)
+
+  def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Seq, B, To]): To =
+    fm.flatMap(x, f)
+
+  def mkString(sep: Ex[String]): Ex[String] = {
+    import Ex.const
+    mkString("", sep, "")
+  }
+
+  def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] =
+    QuaternaryOp(QuaternaryOp.SeqMkString[A](), x, start, sep, end)
 }
 
 final class ExSpanOps[A <: _SpanLike](private val x: Ex[A]) extends AnyVal {
@@ -217,33 +257,6 @@ final class ExSpanOps[A <: _SpanLike](private val x: Ex[A]) extends AnyVal {
   def start (implicit ev: Ex[A] =:= Ex[_Span]): Ex[Long] = UnOp(UnOp.SpanStart (), ev(x))
   def stop  (implicit ev: Ex[A] =:= Ex[_Span]): Ex[Long] = UnOp(UnOp.SpanStop  (), ev(x))
   def length(implicit ev: Ex[A] =:= Ex[_Span]): Ex[Long] = UnOp(UnOp.SpanLength(), ev(x))
-}
-final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
-//  def apply(index: Ex[Int]): Ex[A] = ...
-
-  def applyOption(index: Ex[Int]): Ex[Option[A]] = BinOp(BinOp.SeqApplyOption[A](), x, index)
-
-  def headOption: Ex[Option[A]] = UnOp(UnOp.SeqHeadOption[A](), x)
-  def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
-
-  def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
-
-  def isEmpty : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
-  def nonEmpty: Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
-
-  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
-    m.map(x, f)
-
-  def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Seq, B, To]): To =
-    fm.flatMap(x, f)
-
-  def mkString(sep: Ex[String]): Ex[String] = {
-    import Ex.const
-    mkString("", sep, "")
-  }
-
-  def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] =
-    QuaternaryOp(QuaternaryOp.SeqMkString[A](), x, start, sep, end)
 }
 
 final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {

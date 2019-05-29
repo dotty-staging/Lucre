@@ -470,12 +470,42 @@ object BinaryOp {
     def name = "SeqApplyOption"
   }
 
+  final case class SeqConcat[A]() extends NamedOp[Seq[A], Seq[A], Seq[A]] {
+    def apply(a: Seq[A], b: Seq[A]): Seq[A] = a ++ b
+
+    def name = "SeqConcat"
+  }
+
+  final case class SeqTake[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
+    def apply(a: Seq[A], b: Int): Seq[A] = a.take(b)
+
+    def name = "SeqTake"
+  }
+
+  final case class SeqDrop[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
+    def apply(a: Seq[A], b: Int): Seq[A] = a.drop(b)
+
+    def name = "SeqDrop"
+  }
+
   // ---- String ----
 
   final case class StringConcat() extends NamedOp[String, String, String] {
     def apply(a: String, b: String): String = a + b
 
     def name = "StringConcat"
+  }
+
+  final case class StringTake() extends NamedOp[String, Int, String] {
+    def apply(a: String, b: Int): String = a.take(b)
+
+    def name = "StringTake"
+  }
+
+  final case class StringDrop() extends NamedOp[String, Int, String] {
+    def apply(a: String, b: Int): String = a.drop(b)
+
+    def name = "StringDrop"
   }
 
   // ---- SpanLike ----

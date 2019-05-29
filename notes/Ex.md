@@ -250,3 +250,44 @@ trait EditOps(in: Ex[Edit]) {
 We could base our edit implementation on the interface used in Dotterweide, but it lacks transactional support
 (and in Mellite, using `CompoundEdit`, we actually fire up `cursor.step` multiple times, which is not good.)
 
+----
+
+# Caching Trouble
+
+So depending on the indeterminate order of event push, we may end up with `drop.received` arriving earlier to
+a latch, for example, than to the latch's cached input, such as `drop.value`. And even if we change the reaction
+`Set` to an ordered sequence, that would not guarantee correct ordering per se; after all the user sees a
+"logical" program, not a procedural one. Another observation is that _every_ instance that mixes in `Caching`
+ultimately is an `IExpr` with a `value` method referring to the cached reference.
+
+There could be two approaches:
+
+- change the `value` implementation by dynamically looking up an ongoing pull phase, "fast tracking" its resolution
+  and providing ad-hoc the `Option[A]` to `IPull`. This is a bit ugly, but should certainly work
+- change the ordering of reactions in the pull phase by ensuring that `Caching` objects are pulled first.
+  It is unclear, though, if this guarantees that no stale values are retrieved from a caching object's dependents.
+  
+Let's validate the second option. Two caching expressions, `A` and `B`, with `B` depending on `A`. If the reaction
+set is still a `Set`, there is no guarantee that `A` is pulled before `B`, thus is could fail. If we change that
+to guarantee order, it should be correct, because `B#expand` must necessarily call `A#expand` first, so any
+event listening of `A` is necessarily registered before the event listening of `B`. With perhaps one exception:
+Late expansion of expression as "closures" inside `map`, `flatMap` etc.? Well these closures cannot meaningfully
+react to triggers any way, they will only be invoked for their `value` things, so probably these are not causing
+trouble.
+
+So the second route is "nicer" for the `Caching` instances, but makes the event reaction maintenance more difficult,
+because we might still want "fast" removal, so we need a structure that is both fast in look-up and removal, and
+still ordered:
+
+- `append`: O(1) or O(logN)
+- `removal`: O(logN)
+
+Actually... looking at `ITargets`, we already use `List` and no `Set`, so the only `Set` in the event system is
+`Parents` in `IPull`. That's used in some action implementations in terms of `parents.exists(pull(_).isDefined`,
+and not in terms of `contains`, so we could even make this a `List` if necessary.
+
+So what we can do is implement the second path, as it's transparent to the expressions; and if we find that it
+still has trouble correctly resolving the order of cached values, then we'll have to go for the first path.
+
+The that worries me is that I get random problems with `Timeline.Empty` in the drop example. If the above observation
+is correct, the case should either always succeed or always fail? So it must be related to `pull.parents`?

@@ -36,7 +36,7 @@ object TernaryOp {
   
   type AuxL = scala.List[Aux]
 
-  // ---- (Num, Num, Num) -> Num --- -
+  // ---- (Num, Num, Num) -> Num ----
 
   final case class Clip[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
     extends NamedOp[A, B, B, C] with ProductWithAux {
@@ -66,6 +66,22 @@ object TernaryOp {
     def name = "Wrap"
 
     override def aux: AuxL = widen :: num :: Nil
+  }
+
+  // ---- String ----
+
+  final case class StringSlice() extends NamedOp[String, Int, Int, String] {
+    def apply(a: String, b: Int, c: Int): String = a.slice(b, c)
+
+    def name = "StringSlice"
+  }
+
+  // ---- Seq ----
+
+  final case class SeqSlice[A]() extends NamedOp[Seq[A], Int, Int, Seq[A]] {
+    def apply(a: Seq[A], b: Int, c: Int): Seq[A] = a.slice(b, c)
+
+    def name = "SeqSlice"
   }
 
   private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
