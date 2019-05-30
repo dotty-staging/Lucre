@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.13.1-SNAPSHOT"
+lazy val projectVersion   = "3.13.1"
 lazy val mimaVersion      = "3.13.0"
 
 lazy val deps = new {
@@ -26,7 +26,7 @@ lazy val deps = new {
     val sleepy7   = "7.4.5"   // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest = "3.0.8-RC2"
+    val scalaTest = "3.0.8-RC4"
   }
 }
 
@@ -46,11 +46,11 @@ lazy val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
   libraryDependencies += {
-    if (scalaVersion.value == "2.13.0-RC2") {
-      "org.scalatest" % "scalatest_2.13.0-RC1" % deps.test.scalaTest % Test
-    } else {
+    // if (scalaVersion.value == "2.13.0-RC2") {
+    //   "org.scalatest" % "scalatest_2.13.0-RC1" % deps.test.scalaTest % Test
+    // } else {
       "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
-    }
+    // }
   }
 ) ++ publishSettings
 
