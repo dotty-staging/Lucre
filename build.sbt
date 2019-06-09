@@ -26,7 +26,7 @@ lazy val deps = new {
     val sleepy7   = "7.4.5"   // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest = "3.0.8-RC4"
+    val scalaTest = "3.0.8-RC5"
   }
 }
 
@@ -36,7 +36,7 @@ lazy val commonSettings = Seq(
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.12.8",
-  crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0-RC2"),
+  crossScalaVersions  := Seq("2.12.8", "2.11.12", "2.13.0"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
@@ -46,11 +46,11 @@ lazy val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
   libraryDependencies += {
-    // if (scalaVersion.value == "2.13.0-RC2") {
-    //   "org.scalatest" % "scalatest_2.13.0-RC1" % deps.test.scalaTest % Test
-    // } else {
+    if (scalaVersion.value == "2.13.0") {
+      "org.scalatest" % "scalatest_2.13.0-RC3" % deps.test.scalaTest % Test
+    } else {
       "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
-    // }
+    }
   }
 ) ++ publishSettings
 

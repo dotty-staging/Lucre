@@ -25,7 +25,7 @@ Further reading:
 
 ## requirements / installation
 
-Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.12, 2.11.
+Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12, 2.11.
 
 ## linking to Lucre
 
