@@ -203,7 +203,7 @@ object BiGroupImpl {
     object changed extends Changed with evti.Root[S, Change[SpanLike]]
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new EntryImpl(Targets[Out], context(span), context(value)).connect()
+      new EntryImpl(Targets[Out], context(span), context[Elem](value)).connect()
 
     protected def writeData(out: DataOutput): Unit = {
       span .write(out)

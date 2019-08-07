@@ -25,7 +25,7 @@ Further reading:
 
 ## requirements / installation
 
-Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12, 2.11.
+Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12 (last version to support Scala 2.11 is 3.13.1).
 
 ## linking to Lucre
 
@@ -56,10 +56,9 @@ Where `{module}` is any of the above names. And for the database backend:
     "de.sciss" %% "lucre-bdb"  % v   // BDB JE v5
     "de.sciss" %% "lucre-bdb6" % v   // BDB JE v6
     
-Note that the file format of BDB JE v6 is not backward compatible with v5. Also BDB JE v6 requires Java 1.7, 
-whereas BDB v5 works with Java 1.6.
+Note that the file format of BDB JE v6 is not backward compatible with v5.
 
-The current version `v` is `"3.13.1"`.
+The current version `v` is `"3.13.2"`.
 
 ## contributing
 

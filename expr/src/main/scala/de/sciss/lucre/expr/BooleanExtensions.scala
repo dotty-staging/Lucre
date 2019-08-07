@@ -112,7 +112,7 @@ object BooleanExtensions  {
     extends impl.Tuple1Op[Boolean, T1, BooleanObj, ReprT1] {
 
     final def apply[S <: Sys[S]](_1: ReprT1[S])(implicit tx: S#Tx): _Ex[S] = _1 match {
-      case Expr.Const(a: T1) => BooleanObj.newConst[S](value(a))
+      case Expr.Const(a) => BooleanObj.newConst[S](value(a))  // IntelliJ highlight error
       case _ =>
         new Tuple1[S, T1, ReprT1](Targets[S], this, _1).connect()
     }

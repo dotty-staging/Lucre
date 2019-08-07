@@ -88,7 +88,7 @@ object BiPinImpl {
     def changed: EventLike[S, Change[Long]] = evt.Dummy[S, Change[Long]]
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      ConstEntry(context(key), context(value))
+      ConstEntry(context(key), context[Elem](value))
   }
 
   private final class NodeEntry[S <: Sys[S], A <: Elem[S]](protected val targets: Targets[S],
@@ -99,7 +99,7 @@ object BiPinImpl {
     object changed extends Changed with evt.impl.Root[S, Change[Long]]
 
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new NodeEntry(Targets[Out], context(key), context(value)).connect()
+      new NodeEntry(Targets[Out], context(key), context[Elem](value)).connect()
 
     protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
 

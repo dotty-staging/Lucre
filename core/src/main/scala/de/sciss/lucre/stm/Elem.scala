@@ -47,7 +47,7 @@ object Elem {
 /** An `Elem` is any type that is globally registered
   * via `Elem.addType` and can be de-serialized through `Elem.read`.
   */
-trait Elem[S <: Sys[S]] extends Writable with Disposable[S#Tx] with Publisher[S, Any] {
+trait Elem[S <: Sys[S]] extends Form[S] with Writable with Disposable[S#Tx] with Publisher[S, Any] {
   def tpe: Elem.Type
 
   /** Selects an event during dispatch. Elements that do not provide events

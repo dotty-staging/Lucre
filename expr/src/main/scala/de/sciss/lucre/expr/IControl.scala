@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.{Base, Disposable}
+import de.sciss.lucre.stm.{Base, Disposable, Form}
 
 object IControl {
   def wrap[S <: Base[S]](peer: Disposable[S#Tx]): IControl[S] = new Wrap(peer)
@@ -32,6 +32,6 @@ object IControl {
     def dispose()(implicit tx: S#Tx): Unit = ()
   }
 }
-trait IControl[S <: Base[S]] extends Disposable[S#Tx] {
+trait IControl[S <: Base[S]] extends Form[S] with Disposable[S#Tx] {
   def initControl()(implicit tx: S#Tx): Unit
 }
