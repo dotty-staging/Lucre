@@ -13,6 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
+import java.io.File
+
 import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, Graph, IExpr}
@@ -25,15 +27,46 @@ import scala.language.{higherKinds, implicitConversions}
 object Ex {
   // ---- implicits ----
 
-  implicit def const[A](x: A): Ex[A] = Const(x)
+  implicit def const[A: Value](x: A): Ex[A] = Const(x)
 
-  implicit def liftOption  [A](x: Option[A])    : Ex[Option[A]] = Const(x)
+  object Value {
+    implicit object anyVal    extends Value[AnyVal  ]
+    implicit object string    extends Value[String  ]
+    implicit object file      extends Value[File    ]
+    implicit object spanLike  extends Value[SpanLike]
+
+    implicit def tuple  [A: Value, B: Value]: Value[(A, B)] = null
+
+    implicit def option [A: Value]: Value[Option[A]] = null
+    implicit def seq    [A: Value]: Value[Seq   [A]] = null
+  }
+  trait Value[-A]
+
+//  implicit def const(x: Int     ): Ex[Int     ] = Const(x)
+//  implicit def const(x: Long    ): Ex[Long    ] = Const(x)
+//  implicit def const(x: Double  ): Ex[Double  ] = Const(x)
+//  implicit def const(x: Boolean ): Ex[Boolean ] = Const(x)
+//  implicit def const(x: String  ): Ex[String  ] = Const(x)
+//  implicit def const(x: File    ): Ex[File    ] = Const(x)
+//
+//  implicit def const[A <: SpanLike](x: A): Ex[A] = Const(x)
+
+//  implicit def liftTuple[A: Value, B: Value](x: (A, B)): Ex[(A, B)] = Const(x)
+
+  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ???
+  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ???
+
+//  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ???
+//  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ???
+
+//  implicit def liftOption[A: Value](x: Option[A]): Ex[Option[A]] = Const(x)
+
   implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
     case Some(ex) => UnaryOp(UnaryOp.OptionSome[A](), ex)
     case None     => Const(Option.empty[A])
   }
 
-  implicit def liftSeq[A](x: Seq[A]): Ex[Seq[A]] = Const(x) // immutable(x))
+//  implicit def liftSeq[A: Value](x: Seq[A]): Ex[Seq[A]] = Const(x) // immutable(x))
 
   implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[Seq[A]] =
     if (x.isEmpty) Const(Nil) else ExSeq(x: _*) // immutable(x): _*)
@@ -44,7 +77,6 @@ object Ex {
   implicit def booleanOps  (x: Ex[Boolean])     : ExBooleanOps    = new ExBooleanOps(x)
   implicit def stringOps   (x: Ex[String])      : ExStringOps     = new ExStringOps (x)
   implicit def spanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A] = new ExSpanOps   (x)
-
 
   //////////////////////////////
 
