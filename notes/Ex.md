@@ -291,3 +291,16 @@ still has trouble correctly resolving the order of cached values, then we'll hav
 
 The that worries me is that I get random problems with `Timeline.Empty` in the drop example. If the above observation
 is correct, the case should either always succeed or always fail? So it must be related to `pull.parents`?
+
+-------
+
+# Notes 190811 - runWith
+
+Right now, `"key".attr[A]` (in `ExOps`) requires an `Obj.Bridge[A]` which describes one method:
+
+    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
+
+and the implementation then relying on `obj.attr` and an instance of `Type.Expr` for matching. When the `Attr` is
+used as an `Ex`, we only care for `CellView[S#Tx, Option[A]]` with `value` and `react`. If we introduced an
+extension method `orElse` for a cell-view representing an option, we just need to introduce a cell-view
+representation for `Context.Attr` or `MapLike[S, String, Form]`.
