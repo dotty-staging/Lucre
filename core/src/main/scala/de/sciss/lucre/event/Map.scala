@@ -98,17 +98,17 @@ object Map extends Obj.Type {
 
   final case class Update[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]](map: Map[S, K, Repr],
                                                                         changes: List[Change[S, K, Repr[S]]])
+    extends MapLike.Update[S, K, Repr]
 
-  sealed trait Change[S <: Sys[S], K, V] {
-    def key  : K
-    def value: V
-  }
+  type Change[S <: Sys[S], K, V] = MapLike.Change[S, K, V]
+  
+  type Added    [S <: Sys[S], K, V]     = MapLike.Added[S, K, V]
+  type Removed  [S <: Sys[S], K, V]     = MapLike.Removed[S, K, V]
+  type Replaced [S <: Sys[S], K, V]     = MapLike.Removed[S, K, V]
 
-  final case class Added   [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
-  final case class Removed [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
-  final case class Replaced[S <: Sys[S], K, V](key: K, before: V, now: V) extends Change[S, K, V] {
-    def value: V = now
-  }
+  val  Added    : MapLike.Added   .type = MapLike.Added
+  val  Removed  : MapLike.Removed .type = MapLike.Removed
+  val  Replaced : MapLike.Replaced.type = MapLike.Replaced
 }
 trait Map[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]]
   extends MapLike[S, K, Repr] with Obj[S] with Publisher[S, Map.Update[S, K, Repr]] {

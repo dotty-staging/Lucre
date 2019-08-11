@@ -13,9 +13,27 @@
 
 package de.sciss.lucre.stm
 
+import de.sciss.lucre.event.Observable
+
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
+object MapLike {
+  trait Update[S <: Sys[S], K, Repr[~ <: Sys[~]]] {
+    def changes: List[Change[S, K, Repr[S]]]
+  }
+
+  sealed trait Change[S <: Sys[S], K, V] {
+    def key  : K
+    def value: V
+  }
+
+  final case class Added   [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
+  final case class Removed [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
+  final case class Replaced[S <: Sys[S], K, V](key: K, before: V, now: V) extends Change[S, K, V] {
+    def value: V = now
+  }
+}
 // XXX TODO why scalac does not let us use `Base` (problem in evt.Map)?
 trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] {
 
@@ -23,6 +41,8 @@ trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] {
 
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
+
+  def changed: Observable[S#Tx, MapLike.Update[S, K, Repr]]
 
 //  /** Reports the number of entries in the map.
 //    * This operation may take up to O(n) time, depending on the implementation.

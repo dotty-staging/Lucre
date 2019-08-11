@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.ITargets
+import de.sciss.lucre.event.{ITargets, Observable}
 import de.sciss.lucre.expr.graph.Control
 import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
@@ -38,6 +38,9 @@ object Context {
     def get(key: String)(implicit tx: S#Tx): Option[V] = None
 
     def $[R[~ <: Sys[~]] <: Form[~]](key: String)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] = None
+
+    def changed: Observable[S#Tx, MapLike.Update[S, String, Form]] =
+      Observable.empty
   }
 
   def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None, attr: Attr[S] = emptyAttr[S])
