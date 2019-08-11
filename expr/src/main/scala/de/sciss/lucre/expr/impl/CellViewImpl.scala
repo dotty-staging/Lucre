@@ -26,12 +26,12 @@ import scala.concurrent.stm.Ref
 import scala.language.higherKinds
 
 object CellViewImpl {
-  trait Basic[Tx, A] extends CellView[Tx, A] {
-    def map[B](f: A => B): CellView[Tx, B] = new MapImpl(this, f)
-  }
+//  trait Basic[Tx, A] extends CellView[Tx, A] {
+//    def map[B](f: A => B): CellView[Tx, B] = new MapImpl(this, f)
+//  }
 
   private[lucre] trait ExprMapLike[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A] /* , U */]
-    extends Basic[S#Tx, Option[A]] {
+    extends CellView[S#Tx, Option[A]] {
 
     protected def h: stm.Source[S#Tx, evt.Map[S, K, _Ex]]
     protected val key: K
@@ -146,7 +146,7 @@ object CellViewImpl {
   }
 
   private[lucre] trait ExprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]]
-    extends Basic[S#Tx, A] {
+    extends CellView[S#Tx, A] {
 
     type Repr = _Ex[S]
 
@@ -185,7 +185,7 @@ object CellViewImpl {
     def serializer: Serializer[S#Tx, S#Acc, Repr] = tpe.serializer
   }
 
-  private[lucre] sealed trait NoVar[Tx, A] extends Basic[Tx, A] {
+  private[lucre] sealed trait NoVar[Tx, A] extends CellView[Tx, A] {
     type Repr = Unit
 
     final def repr(implicit tx: Tx): Unit = ()
@@ -213,7 +213,7 @@ object CellViewImpl {
   }
 
   private[lucre] trait AttrBasic[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]]
-    extends Basic[S#Tx, Option[A]] {
+    extends CellView[S#Tx, Option[A]] {
 
     protected def h: stm.Source[S#Tx, Obj.AttrMap[S]]
     protected val key: String

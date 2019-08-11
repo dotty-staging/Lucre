@@ -17,7 +17,6 @@ import de.sciss.file._
 import de.sciss.lucre.artifact.{ArtifactLocation, Artifact => _Artifact}
 import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.edit.EditAttrMap
-import de.sciss.lucre.expr.impl.CellViewImpl
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.expr.{CellView, Context, IExpr}
 import de.sciss.lucre.stm
@@ -67,7 +66,7 @@ object Artifact {
   }
 
   private final class CellViewImpl[S <: Sys[S]](attrH: stm.Source[S#Tx, AttrMap[S]], key: String)
-    extends CellView.Var[S, Option[File]] with CellViewImpl.Basic[S#Tx, Option[File]] {
+    extends CellView.Var[S, Option[File]] {
 
     private def attr(implicit tx: S#Tx): AttrMap[S] = attrH()
 

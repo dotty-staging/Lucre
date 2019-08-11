@@ -17,7 +17,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 // XXX TODO why scalac does not let us use `Base` (problem in evt.Map)?
-trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]] {
+trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] {
 
   type V = Repr[S]
 

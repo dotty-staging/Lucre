@@ -17,7 +17,7 @@ import de.sciss.equal.Implicits._
 import de.sciss.lucre.data.{Ordering, SkipList}
 import de.sciss.lucre.event.Map.{Key, Modifiable}
 import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Copy, Elem, Form, Obj, Sys}
+import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 

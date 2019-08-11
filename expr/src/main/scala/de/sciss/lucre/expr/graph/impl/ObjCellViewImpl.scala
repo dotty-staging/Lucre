@@ -3,7 +3,6 @@ package de.sciss.lucre.expr.graph.impl
 import de.sciss.lucre.edit.EditAttrMap
 import de.sciss.lucre.expr.CellView
 import de.sciss.lucre.expr.graph.Obj
-import de.sciss.lucre.expr.impl.CellViewImpl
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.TxnLike.peer
@@ -15,7 +14,7 @@ import scala.reflect.ClassTag
 
 abstract class ObjCellViewImpl[S <: Sys[S], Dur[~ <: Sys[~]] <: stm.Obj[~], In <: Obj { type Peer[~ <: Sys[~]] <: Dur[~] }](
     h: stm.Source[S#Tx, stm.Obj[S]], key: String)(implicit ct: ClassTag[Dur[S]])
-  extends CellView.Var[S, Option[In]] with CellViewImpl.Basic[S#Tx, Option[In]] {
+  extends CellView.Var[S, Option[In]] {
 
   // ---- abstract ----
 

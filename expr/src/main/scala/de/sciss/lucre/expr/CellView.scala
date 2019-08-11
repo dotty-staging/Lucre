@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Observable
+import de.sciss.lucre.expr.impl.CellViewImpl.MapImpl
 import de.sciss.lucre.expr.impl.{CellViewImpl => Impl}
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{stm, event => evt, expr => _expr}
@@ -82,10 +83,12 @@ object CellView {
 
     implicit def serializer: Serializer[S#Tx, S#Acc, Repr]
   }
+
+  implicit final class Ops[Tx, A](private val in: CellView[Tx, A]) extends AnyVal {
+    def map[B](f: A => B): CellView[Tx, B] = new MapImpl(in, f)
+  }
 }
 trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A] {
-  def map[B](f: A => B): CellView[Tx, B]
-
   type Repr
 
   def repr(implicit tx: Tx): Repr

@@ -104,7 +104,8 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   }
 }
 
-final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]])
+final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]],
+                                     val attr: Context.Attr[S])
                                     (implicit val workspace: Workspace[S], val cursor: Cursor[S],
                                      val undoManager: UndoManager[S])
   extends ContextMixin[S]
