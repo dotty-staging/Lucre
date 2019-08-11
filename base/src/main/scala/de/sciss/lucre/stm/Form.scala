@@ -5,4 +5,4 @@ package de.sciss.lucre.stm
   * heterogeneous objects whose only common feature
   * is that they share the system.
   */
-trait Form[S <: Base[S]]
+trait Form[S]
