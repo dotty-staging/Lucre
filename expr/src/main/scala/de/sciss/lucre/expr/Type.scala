@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.LegacyObjBridgeImpl
+import de.sciss.lucre.expr.impl.ExObjBridgeImpl
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{aux, expr, stm}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
@@ -69,7 +69,7 @@ object Type {
     def readIdentifiedAux(in: DataInput): aux.Aux = {
       val typeId  = in.readInt()
       val peer    = Obj.getType(typeId)
-      new LegacyObjBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
+      new ExObjBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
     }
   }
 
@@ -107,5 +107,7 @@ object Type {
 
     def readConst[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Const[S]
     def readVar  [S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Var  [S]
+
+    def tryParse(value: Any): Option[A]
   }
 }

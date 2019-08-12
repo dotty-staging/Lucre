@@ -13,7 +13,6 @@
 
 package de.sciss.lucre.expr.impl
 
-import de.sciss.lucre.aux.Aux.FromAny
 import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.expr.{CellView, Context, ExprLike, Type}
 import de.sciss.lucre.stm.{Disposable, Form, Sys}
@@ -33,22 +32,21 @@ abstract class AbstractExObjCanMakeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
   def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, _Ex[S]] = peer.serializer
 }
 
-final class ExObjCanMakeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
-  extends AbstractExObjCanMakeImpl[A, _Ex](peer) {
+//final class ExObjCanMakeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
+//  extends AbstractExObjCanMakeImpl[A, _Ex](peer) {
+//
+//  def id: Int = Type.ObjBridge.id
+//
+//  override def write(out: DataOutput): Unit = {
+//    super.write(out)
+//    out.writeInt(peer.typeId)
+//  }
+//}
 
-  def id: Int = Type.ObjBridge.id
-
-  override def write(out: DataOutput): Unit = {
-    super.write(out)
-    out.writeInt(peer.typeId)
-  }
-}
-
-abstract class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
-                                                                      (implicit fa: FromAny[A])
+final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
   extends AbstractExObjCanMakeImpl[A, _Ex](peer) with Obj.Bridge[A] {
 
-//  def id: Int = Type.ObjBridge.id
+  def id: Int = Type.ObjBridge.id
 
   def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]] =
     CellView.attrUndoOpt[S, A, _Ex](map = obj.attr, key = key)(tx, peer)
@@ -84,8 +82,8 @@ abstract class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Typ
       val disp2 = new CellViewImpl.MapLikeExprObs(map = attr, key = key, fun = outer, tx0 = tx) {
         protected def compareTpe(in: Form[S]): Boolean = in match {
           case ex: ExprLike[S, _] =>
-            val tr = fa.fromAny(ex.value)
-              tr.isSuccess
+            val tr = peer.tryParse(ex.value) // fa.fromAny(ex.value)
+              tr.isDefined
           case _ => false
         }
       }
@@ -97,8 +95,8 @@ abstract class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Typ
       val formOpt: Option[Form[S]] = attr.get(key)
       formOpt match {
         case Some(ex: ExprLike[S, _]) =>
-          val tr = fa.fromAny(ex.value)
-            tr.toOption
+          val tr = peer.tryParse(ex.value) // fa.fromAny(ex.value)
+            tr
         case _ => None
       }
     }
@@ -111,15 +109,13 @@ abstract class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Typ
   }
 }
 
-final class LegacyObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
-  extends ExObjBridgeImpl[A, _Ex](peer)(FromAny.empty[A]) with Obj.Bridge[A] {
-
-  def id: Int = Type.ObjBridge.id
-
-  def fromAny(value: Any): Option[A] = None
-
-  override def write(out: DataOutput): Unit = {
-    super.write(out)
-    out.writeInt(peer.typeId)
-  }
-}
+//final class LegacyObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.Expr[A, _Ex])
+//  extends ExObjBridgeImpl[A, _Ex](peer)(FromAny.empty[A]) with Obj.Bridge[A] {
+//
+//  def id: Int = Type.ObjBridge.id
+//
+//  override def write(out: DataOutput): Unit = {
+//    super.write(out)
+//    out.writeInt(peer.typeId)
+//  }
+//}

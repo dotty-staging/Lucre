@@ -15,12 +15,10 @@ package de.sciss.lucre.aux
 
 import de.sciss.lucre.aux.impl.{ScalarEqImpl, ScalarToNumImpl, SeqLikeEq, SeqLikeNum, SeqLikeNumDouble, SeqLikeNumFrac, SeqLikeToNum}
 import de.sciss.lucre.stm.Random
-import de.sciss.serial.{DataInput, DataOutput, Writable}
 import de.sciss.numbers.{DoubleFunctions => rd, IntFunctions => ri, IntFunctions2 => ri2, LongFunctions => rl, LongFunctions2 => rl2}
+import de.sciss.serial.{DataInput, DataOutput, Writable}
 
 import scala.annotation.switch
-import scala.util.{Failure, Success, Try}
-import scala.util.control.NoStackTrace
 
 /** These are basically our "type classes" with the ability to serialize and deserialize.
   * They are supported through `ProductHasAux` which is recognized in serialization.
@@ -357,7 +355,7 @@ object Aux {
   }
 
   object FromAny {
-    val Unsupported: Try[Nothing] = Failure(new NoStackTrace {})
+//    val Unsupported: Try[Nothing] = Failure(new NoStackTrace {})
 
     // So this is all a bit nasty. Trying to remember why `IntTop` is not
     // an implicit object, but `BooleanTop` is. I think it has to do with
@@ -373,7 +371,7 @@ object Aux {
     private val anyEmpty = new Empty[Any]
 
     private final class Empty[A] extends FromAny[A] {
-      def fromAny(in: Any): Try[A] = Unsupported
+      def fromAny(in: Any): Option[A] = None
 
       def id: Int = throw new UnsupportedOperationException // XXX TODO --- do we may to store this instance?
     }
@@ -387,7 +385,7 @@ object Aux {
       * should not try to parse a string, nor should it cast a `Long` to an `Int`.
       * On the other hand, a `FromAny[Double]` should accept a `Float` as input.
       */
-    def fromAny(in: Any): Try[A]
+    def fromAny(in: Any): Option[A]
   }
 
   object HasDefault {
@@ -525,9 +523,9 @@ object Aux {
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Try[Int] = in match {
-      case i: Int => Success(i)
-      case _      => FromAny.Unsupported
+    def fromAny(in: Any): Option[Int] = in match {
+      case i: Int => Some(i)  // Success(i)
+      case _      => None     // FromAny.Unsupported
     }
 
     // ---- HasDefault ----
@@ -610,10 +608,10 @@ object Aux {
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Try[Long] = in match {
-      case n: Long  => Success(n)
-      case i: Int   => Success(i.toLong)
-      case _        => FromAny.Unsupported
+    def fromAny(in: Any): Option[Long] = in match {
+      case n: Long  => Some(n)        //  Success(n)
+      case i: Int   => Some(i.toLong) // Success(i.toLong)
+      case _        => None           //  FromAny.Unsupported
     }
 
     // ---- HasDefault ----
@@ -750,11 +748,11 @@ object Aux {
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Try[Double] = in match {
-      case d: Double  => Success(d)
-      case f: Float   => Success(f.toDouble)
-      case i: Int     => Success(i.toDouble)
-      case _          => FromAny.Unsupported
+    def fromAny(in: Any): Option[Double] = in match {
+      case d: Double  => Some(d)
+      case f: Float   => Some(f.toDouble)
+      case i: Int     => Some(i.toDouble)
+      case _          => None
     }
 
     // ---- HasDefault ----
@@ -799,9 +797,9 @@ object Aux {
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Try[Boolean] = in match {
-      case b: Boolean => Success(b)
-      case _          => FromAny.Unsupported
+    def fromAny(in: Any): Option[Boolean] = in match {
+      case b: Boolean => Some(b)
+      case _          => None
     }
 
     // ---- HasDefault ----
@@ -818,9 +816,9 @@ object Aux {
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Try[String] = in match {
-      case s: String  => Success(s)
-      case _          => FromAny.Unsupported
+    def fromAny(in: Any): Option[String] = in match {
+      case s: String  => Some(s)
+      case _          => None
     }
 
     // ---- HasDefault ----

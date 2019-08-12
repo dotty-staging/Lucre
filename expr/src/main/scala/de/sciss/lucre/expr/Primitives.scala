@@ -39,6 +39,11 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
 
   override def toString = "IntObj"
 
+  def tryParse(value: Any): Option[Int] = value match {
+    case x: Int => Some(x)
+    case _      => None
+  }
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -63,6 +68,12 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
   final val valueSerializer = Serializer.Long
 
   override def toString = "LongObj"
+
+  def tryParse(value: Any): Option[Long] = value match {
+    case x: Long  => Some(x)
+    case x: Int   => Some(x.toLong)
+    case _        => None
+  }
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -89,6 +100,13 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
 
   override def toString = "DoubleObj"
 
+  def tryParse(in: Any): Option[Double] = in match {
+    case d: Double  => Some(d)
+    case f: Float   => Some(f.toDouble)
+    case i: Int     => Some(i.toDouble)
+    case _          => None
+  }
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -113,6 +131,11 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
   final val valueSerializer = Serializer.Boolean
 
   override def toString = "BooleanObj"
+
+  def tryParse(in: Any): Option[Boolean] = in match {
+    case x: Boolean => Some(x)
+    case _          => None
+  }
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -139,6 +162,11 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
 
   override def toString = "StringObj"
 
+  def tryParse(in: Any): Option[String] = in match {
+    case x: String  => Some(x)
+    case _          => None
+  }
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -163,6 +191,11 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
   final val valueSerializer: ImmutableSerializer[SpanLike] = SpanLike.serializer
 
   override def toString = "SpanLikeObj"
+
+  def tryParse(in: Any): Option[SpanLike] = in match {
+    case x: SpanLike  => Some(x)
+    case _            => None
+  }
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
@@ -189,6 +222,11 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
 
   override def toString = "SpanObj"
 
+  def tryParse(in: Any): Option[Span] = in match {
+    case x: Span  => Some(x)
+    case _        => None
+  }
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -214,6 +252,16 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
 
   override def toString = "IntVector"
 
+  def tryParse(in: Any): Option[Vec[Int]] = in match {
+    case xs: Vec[_] =>
+      val ok = xs.forall {
+        case _: Int => true
+      }
+      if (ok) Some(xs.asInstanceOf[Vec[Int]]) else None
+
+    case _ => None
+  }
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 
@@ -238,6 +286,16 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   final val valueSerializer: ImmutableSerializer[Vec[Double]] = ImmutableSerializer.indexedSeq
 
   override def toString = "DoubleVector"
+
+  def tryParse(in: Any): Option[Vec[Double]] = in match {
+    case xs: Vec[_] =>
+      val ok = xs.forall {
+        case _: Double => true  // don't bother looking for `Float` now
+      }
+      if (ok) Some(xs.asInstanceOf[Vec[Double]]) else None
+
+    case _ => None
+  }
 
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)

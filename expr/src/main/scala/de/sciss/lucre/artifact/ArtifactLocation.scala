@@ -37,6 +37,11 @@ object ArtifactLocation extends expr.impl.ExprTypeImpl[File, ArtifactLocation] {
   
   implicit def valueSerializer: ImmutableSerializer[File] = Serializer.File
 
+  def tryParse(value: Any): Option[File] = value match {
+    case loc: File  => Some(loc)
+    case _          => None
+  }
+
   protected def mkConst[S <: Sys[S]](id: S#Id, value: A)(implicit tx: S#Tx): Const[S] =
     new _Const[S](id, value)
 

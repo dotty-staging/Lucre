@@ -19,9 +19,6 @@ import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Cursor, Disposable, Form, MapLike, NoSys, Obj, Sys, UndoManager, Workspace}
 
-import scala.language.higherKinds
-import scala.reflect.ClassTag
-
 object Context {
   type Attr[S <: Sys[S]] = MapLike[S, String, Form]
 
@@ -39,7 +36,7 @@ object Context {
 
     def get(key: String)(implicit tx: S#Tx): Option[V] = None
 
-    def $[R[~ <: Sys[~]] <: Form[~]](key: String)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] = None
+//    def $[R[~ <: Sys[~]] <: Form[~]](key: String)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] = None
 
     def changed: Observable[S#Tx, MapLike.Update[S, String, Form]] =
       Observable.empty

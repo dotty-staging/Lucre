@@ -25,7 +25,6 @@ import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
 import scala.language.higherKinds
-import scala.util.Success
 
 object CaseDef {
   sealed trait Expanded[S <: Sys[S], A] extends IExpr[S, A] {
@@ -48,8 +47,8 @@ object Quote {
 
     def select(value: Any)(implicit tx: S#Tx): Boolean =
       fromAny.fromAny(value) match {
-        case Success(v) if v == in.value  => true
-        case _                            => false
+        case Some(v) if v == in.value  => true
+        case _                         => false
       }
 
     def commit()(implicit tx: S#Tx): Unit = ()
@@ -144,7 +143,7 @@ object Var {
 
     def select(value: Any)(implicit tx: S#Tx): Boolean =
       fromAny.fromAny(value) match {
-        case Success(v) =>
+        case Some(v) =>
           selRef() = v
           true
         case _ =>
