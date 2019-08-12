@@ -386,6 +386,26 @@ object UnaryOp {
     override def name = "OptionToList"
   }
 
+  // ---- Tuple2 ----
+
+  final case class Tuple2_1[A, B]() extends NamedOp[(A, B), A] {
+    def apply(a: (A, B)): A = a._1
+
+    override def name = "Tuple2_1"
+  }
+
+  final case class Tuple2_2[A, B]() extends NamedOp[(A, B), B] {
+    def apply(a: (A, B)): B = a._2
+
+    override def name = "Tuple2_2"
+  }
+
+  final case class Tuple2Swap[A, B]() extends NamedOp[(A, B), (B, A)] {
+    def apply(a: (A, B)): (B, A) = a.swap
+
+    override def name = "Tuple2Swap"
+  }
+
   // ---- Seq ----
 
   final case class SeqSize[A]() extends NamedOp[Seq[A], Int] {
@@ -543,6 +563,12 @@ object UnaryOp {
 
     protected def mapValue(av: A1)(implicit tx: S#Tx): A = op(av)
   }
+
+  // XXX TODO: let's do this at another point when `Const` is no longer `Lazy`
+//  def apply1[A1, A](op: Op[A1, A], a: Ex[A1]): Ex[A] = a match {
+//    case Const(av)  => Const(op.apply(av))
+//    case _          => UnaryOp[A1, A](op, a)
+//  }
 }
 
 final case class UnaryOp[A1, A](op: Op[A1, A], a: Ex[A1])

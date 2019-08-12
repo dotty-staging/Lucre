@@ -58,7 +58,7 @@ Where `{module}` is any of the above names. And for the database backend:
     
 Note that the file format of BDB JE v6 is not backward compatible with v5.
 
-The current version `v` is `"3.13.2"`.
+The current version `v` is `"3.14.0"`.
 
 ## contributing
 

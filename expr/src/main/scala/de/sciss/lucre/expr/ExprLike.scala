@@ -1,5 +1,5 @@
 /*
- *  IEvent.scala
+ *  ExprLike.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -13,13 +13,15 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.IPublisher
-import de.sciss.lucre.stm.{Base, Disposable, Ref}
+import de.sciss.lucre.event.Observable
+import de.sciss.lucre.stm.{Base, Form}
 import de.sciss.model.Change
 
-object IExpr {
-  trait Var[S <: Base[S], A] extends IExpr[S, A] with Ref[S#Tx, IExpr[S, A]]
-}
-trait IExpr[S <: Base[S], +A] extends ExprLike[S, A] with IPublisher[S, Change[A]] with Disposable[S#Tx] {
+/** This is the current compromise for unifying `Ex`/`IExpr` and `Expr`
+  * in terms of their usability through `runWith` vs. `obj.attr`.
+  */
+trait ExprLike[S <: Base[S], +A] extends Form[S] {
+  def changed: Observable[S#Tx, Change[A]]
+
   def value(implicit tx: S#Tx): A
 }

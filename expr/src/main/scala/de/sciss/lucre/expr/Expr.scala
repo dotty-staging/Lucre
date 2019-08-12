@@ -43,7 +43,7 @@ object Expr {
 }
 
 /** An expression is a computation that reduces to a single value of type `A`.
-  * Expressions can be understood as dataflow variables. When a tree is
+  * Expressions can be understood as data-flow variables. When a tree is
   * composed, a change in the root of the tree propagates through to the leaves
   * in the form of an emitted `Change` event that carries the old and new
   * value (according to the particular node of the tree).
@@ -56,6 +56,6 @@ object Expr {
   * as a binary operator (e.g., an integer expression that sums two input
   * integer expressions).
   */
-trait Expr[S <: Sys[S], +A] extends /* ExprLike[S, A] with */ Obj[S] with Publisher[S, Change[A]] {
+trait Expr[S <: Sys[S], +A] extends ExprLike[S, A] with Obj[S] with Publisher[S, Change[A]] {
   def value(implicit tx: S#Tx): A
 }

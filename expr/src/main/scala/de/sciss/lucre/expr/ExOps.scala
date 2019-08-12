@@ -17,6 +17,7 @@ import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord
 import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
+// XXX TODO --- use constant optimizations
 final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   // unary element-wise
 
@@ -283,4 +284,11 @@ final class StringToExAttr(private val x: String) extends AnyVal {
 
   def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
     Attr.WithDefault(x, default)
+}
+
+final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {
+  def _1: Ex[A] = UnOp(UnOp.Tuple2_1[A, B](), x)
+  def _2: Ex[B] = UnOp(UnOp.Tuple2_2[A, B](), x)
+
+  def swap: Ex[(B, A)] = UnOp(UnOp.Tuple2Swap[A, B](), x)
 }

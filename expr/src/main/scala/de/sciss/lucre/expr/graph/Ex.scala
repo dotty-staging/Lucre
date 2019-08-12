@@ -17,7 +17,7 @@ import java.io.File
 
 import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, Graph, IExpr}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 import de.sciss.span.SpanLike
@@ -35,7 +35,7 @@ object Ex {
     implicit object file      extends Value[File    ]
     implicit object spanLike  extends Value[SpanLike]
 
-    implicit def tuple  [A: Value, B: Value]: Value[(A, B)] = null
+    implicit def tuple2 [A: Value, B: Value]: Value[(A, B)] = null
 
     implicit def option [A: Value]: Value[Option[A]] = null
     implicit def seq    [A: Value]: Value[Seq   [A]] = null
@@ -53,8 +53,8 @@ object Ex {
 
 //  implicit def liftTuple[A: Value, B: Value](x: (A, B)): Ex[(A, B)] = Const(x)
 
-  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ???
-  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ???
+  implicit def liftTuple2_1[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ExTuple2(x._1, Const(x._2))
+  implicit def liftTuple2_2[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ExTuple2(Const(x._1), x._2)
 
 //  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ???
 //  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ???
@@ -71,12 +71,13 @@ object Ex {
   implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[Seq[A]] =
     if (x.isEmpty) Const(Nil) else ExSeq(x: _*) // immutable(x): _*)
 
-  implicit def ops      [A](x: Ex[A])           : ExOps       [A] = new ExOps       (x)
-  implicit def seqOps   [A](x: Ex[Seq  [A]])    : ExSeqOps    [A] = new ExSeqOps    (x)
-  implicit def optionOps[A](x: Ex[Option[A]])   : ExOptionOps [A] = new ExOptionOps (x)
-  implicit def booleanOps  (x: Ex[Boolean])     : ExBooleanOps    = new ExBooleanOps(x)
-  implicit def stringOps   (x: Ex[String])      : ExStringOps     = new ExStringOps (x)
-  implicit def spanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A] = new ExSpanOps   (x)
+  implicit def ops      [A]   (x: Ex[A])        : ExOps       [A]     = new ExOps       (x)
+  implicit def seqOps   [A]   (x: Ex[Seq  [A]]) : ExSeqOps    [A]     = new ExSeqOps    (x)
+  implicit def optionOps[A]   (x: Ex[Option[A]]): ExOptionOps [A]     = new ExOptionOps (x)
+  implicit def tuple2Ops[A, B](x: Ex[(A, B)])   : ExTuple2Ops [A, B]  = new ExTuple2Ops (x)
+  implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
+  implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
+  implicit def spanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A]     = new ExSpanOps   (x)
 
   //////////////////////////////
 

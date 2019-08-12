@@ -35,7 +35,7 @@ object MapLike {
   }
 }
 // XXX TODO why scalac does not let us use `Base` (problem in evt.Map)?
-trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] {
+trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] extends Disposable[S#Tx] {
 
   type V = Repr[S]
 
@@ -67,5 +67,5 @@ trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] {
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
 
-  def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
+//  def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
 }

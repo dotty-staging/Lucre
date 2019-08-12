@@ -41,6 +41,8 @@ object Context {
 
     def changed: Observable[S#Tx, MapLike.Update[S, String, Form]] =
       Observable.empty
+
+    def dispose()(implicit tx: S#Tx): Unit = ()
   }
 
   def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None, attr: Attr[S] = emptyAttr[S])

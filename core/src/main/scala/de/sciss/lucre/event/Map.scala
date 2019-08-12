@@ -19,6 +19,7 @@ import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.annotation.switch
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 object Map extends Obj.Type {
   final val typeId = 24
@@ -120,4 +121,6 @@ trait Map[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]]
   def iterator      (implicit tx: S#Tx): Iterator[(K, V)]
   def keysIterator  (implicit tx: S#Tx): Iterator[K]
   def valuesIterator(implicit tx: S#Tx): Iterator[V]
+
+  def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
 }
