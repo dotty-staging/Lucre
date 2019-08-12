@@ -13,12 +13,13 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.aux.Aux.FromAny
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
-import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
+import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExObjCanMakeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
@@ -35,6 +36,15 @@ object Obj {
   private lazy val _init: Unit =
     Aux.addFactory(Source.obj)
     Aux.addFactory(Bridge.obj)
+    Aux.addFactory(Bridge.int)
+    Aux.addFactory(Bridge.intVec)
+    Aux.addFactory(Bridge.double)
+    Aux.addFactory(Bridge.doubleVec)
+    Aux.addFactory(Bridge.boolean)
+    Aux.addFactory(Bridge.long)
+    Aux.addFactory(Bridge.spanLike)
+    Aux.addFactory(Bridge.span)
+    Aux.addFactory(Bridge.string)
 
   def init(): Unit = _init
 
@@ -112,25 +122,15 @@ object Obj {
   }
 
   object Bridge {
-    implicit val int      : Bridge[Int        ] = new ExObjBridgeImpl(IntObj       )
-    implicit val long     : Bridge[Long       ] = new ExObjBridgeImpl(LongObj      )
-    implicit val double   : Bridge[Double     ] = new ExObjBridgeImpl(DoubleObj    )
-    implicit val boolean  : Bridge[Boolean    ] = new ExObjBridgeImpl(BooleanObj   )
-    implicit val string   : Bridge[String     ] = new ExObjBridgeImpl(StringObj    )
-    implicit val spanLike : Bridge[_SpanLike  ] = new ExObjBridgeImpl(SpanLikeObj  )
-    implicit val span     : Bridge[_Span      ] = new ExObjBridgeImpl(SpanObj      )
-    implicit val intVec   : Bridge[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
-    implicit val doubleVec: Bridge[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
-
     implicit object obj extends Bridge[Obj] with Aux.Factory {
       final val id = 1005
 
       type Repr[S <: Sys[S]] = stm.Obj[S]
 
-//      def mkObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] = ...
+      //      def mkObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] = ...
 
-//      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
-//        stm.Obj.serializer
+      //      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
+      //        stm.Obj.serializer
 
       def readIdentifiedAux(in: DataInput): Aux = this
 
@@ -142,6 +142,152 @@ object Obj {
           implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Obj[S]]] =
             Serializer.option
         }
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = ???
+    }
+
+    implicit object int extends Bridge[Int] with Aux.Factory { factory =>
+      final val id = 1010
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Int]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Int]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(IntObj) {
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object intVec extends Bridge[Vec[Int]] with Aux.Factory { factory =>
+      final val id = 1011
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Vec[Int]]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Vec[Int]]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(IntVector)(FromAny.empty) { // XXX TODO --- FromAny
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object double extends Bridge[Double] with Aux.Factory { factory =>
+      final val id = 1012
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Double]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Double]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(DoubleObj) {
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object doubleVec extends Bridge[Vec[Double]] with Aux.Factory { factory =>
+      final val id = 1013
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Vec[Double]]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Vec[Double]]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(DoubleVector)(FromAny.empty) { // XXX TODO --- FromAny
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object boolean extends Bridge[Boolean] with Aux.Factory { factory =>
+      final val id = 1014
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Boolean]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Boolean]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(BooleanObj) {
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object long extends Bridge[Long] with Aux.Factory { factory =>
+      final val id = 1016
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Long]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Long]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(LongObj) {
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object spanLike extends Bridge[_SpanLike] with Aux.Factory { factory =>
+      final val id = 1018
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[_SpanLike]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[_SpanLike]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(SpanLikeObj)(FromAny.empty) { // XXX TODO --- FromAny
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object span extends Bridge[_Span] with Aux.Factory { factory =>
+      final val id = 1019
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[_Span]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[_Span]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(SpanObj)(FromAny.empty) { // XXX TODO --- FromAny
+        def id: Int = factory.id
+      }
+    }
+
+    implicit object string extends Bridge[String] with Aux.Factory { factory =>
+      final val id = 1020
+
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[String]] =
+        Impl.cellView(obj, key)
+
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[String]] =
+        Impl.cellView(key)
+
+      def readIdentifiedAux(in: DataInput): Aux = this
+
+      private object Impl extends ExObjBridgeImpl(StringObj) {
+        def id: Int = factory.id
+      }
     }
   }
   trait Bridge[A] extends Aux {
@@ -151,6 +297,11 @@ object Obj {
       * If possible, implementations should look at `UndoManager.find` when updating values.
       */
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
+
+    /** Creates a unidirectional view between a context's attribute or self object and the expression side
+      * representation type `A`.
+      */
+    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]]
   }
 
   object Source {
@@ -181,15 +332,15 @@ object Obj {
   }
 
   object CanMake {
-    implicit val int      : CanMake[Int        ] = new ExObjBridgeImpl(IntObj       )
-    implicit val long     : CanMake[Long       ] = new ExObjBridgeImpl(LongObj      )
-    implicit val double   : CanMake[Double     ] = new ExObjBridgeImpl(DoubleObj    )
-    implicit val boolean  : CanMake[Boolean    ] = new ExObjBridgeImpl(BooleanObj   )
-    implicit val string   : CanMake[String     ] = new ExObjBridgeImpl(StringObj    )
-    implicit val spanLike : CanMake[_SpanLike  ] = new ExObjBridgeImpl(SpanLikeObj  )
-    implicit val span     : CanMake[_Span      ] = new ExObjBridgeImpl(SpanObj      )
-    implicit val intVec   : CanMake[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
-    implicit val doubleVec: CanMake[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
+    implicit val int      : CanMake[Int        ] = new ExObjCanMakeImpl(IntObj       )
+    implicit val long     : CanMake[Long       ] = new ExObjCanMakeImpl(LongObj      )
+    implicit val double   : CanMake[Double     ] = new ExObjCanMakeImpl(DoubleObj    )
+    implicit val boolean  : CanMake[Boolean    ] = new ExObjCanMakeImpl(BooleanObj   )
+    implicit val string   : CanMake[String     ] = new ExObjCanMakeImpl(StringObj    )
+    implicit val spanLike : CanMake[_SpanLike  ] = new ExObjCanMakeImpl(SpanLikeObj  )
+    implicit val span     : CanMake[_Span      ] = new ExObjCanMakeImpl(SpanObj      )
+    implicit val intVec   : CanMake[Vec[Int   ]] = new ExObjCanMakeImpl(IntVector    )
+    implicit val doubleVec: CanMake[Vec[Double]] = new ExObjCanMakeImpl(DoubleVector )
   }
   trait CanMake[A] extends Source[A]
 

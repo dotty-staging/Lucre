@@ -38,16 +38,13 @@ object Artifact {
 
     def readIdentifiedAux(in: DataInput): Aux = this
 
-    //    def mkObj[S <: Sys[S]](f: File)(implicit tx: S#Tx): _Artifact[S] = {
-    //      val loc = defaultLocation(f)
-    //      makeArtifact(loc, f)
-    //    }
-
-    //    implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, _Artifact[S]] =
-    //      _Artifact.serializer
-
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[File]] =
-      new CellViewImpl(tx.newHandle(obj.attr), key = key)
+      new ObjCellViewImpl(tx.newHandle(obj.attr), key = key)
+
+    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[File]] = {
+      println("Warning: Artifact.cellView not yet implemented for context. Using fall-back")
+      context.selfOption.fold(CellView.const[S, Option[File]](None))(cellView(_, key))
+    }
   }
 
   private def tryRelativize[S <: Sys[S]](loc: ArtifactLocation[S], f: File)(implicit tx: S#Tx): Try[_Artifact.Child] =
@@ -65,7 +62,7 @@ object Artifact {
     art
   }
 
-  private final class CellViewImpl[S <: Sys[S]](attrH: stm.Source[S#Tx, AttrMap[S]], key: String)
+  private final class ObjCellViewImpl[S <: Sys[S]](attrH: stm.Source[S#Tx, AttrMap[S]], key: String)
     extends CellView.Var[S, Option[File]] {
 
     private def attr(implicit tx: S#Tx): AttrMap[S] = attrH()

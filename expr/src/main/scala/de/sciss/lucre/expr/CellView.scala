@@ -77,6 +77,10 @@ object CellView {
     }
   }
   trait Var[S <: Sys[S], A] extends CellView[S#Tx, A] with stm.Sink[S#Tx, A] {
+    type Repr
+
+    def repr(implicit tx: S#Tx): Repr
+
     def repr_=(value: Repr)(implicit tx: S#Tx): Unit
 
     def lift(value: A)(implicit tx: S#Tx): Repr
@@ -89,7 +93,7 @@ object CellView {
   }
 }
 trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A] {
-  type Repr
-
-  def repr(implicit tx: Tx): Repr
+//  type Repr
+//
+//  def repr(implicit tx: Tx): Repr
 }

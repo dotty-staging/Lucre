@@ -367,6 +367,16 @@ object Aux {
     implicit def longTop    : LongTop   .type = LongTop
 //    implicit def booleanTop : BooleanTop.type = BooleanTop
 //    implicit def stringTop  : StringTop .type = StringTop
+
+    def empty[A]: FromAny[A] = anyEmpty.asInstanceOf[FromAny[A]]
+
+    private val anyEmpty = new Empty[Any]
+
+    private final class Empty[A] extends FromAny[A] {
+      def fromAny(in: Any): Try[A] = Unsupported
+
+      def id: Int = throw new UnsupportedOperationException // XXX TODO --- do we may to store this instance?
+    }
   }
   trait FromAny[A] extends Aux {
     /** Tries to extract a value of type `A` from an unknown input value.
@@ -374,7 +384,7 @@ object Aux {
       * return value is `Unsupported`.
       *
       * The extraction should be direct and lossless. For example, a `FromAny[Int]`
-      * should not try to parse a string, nor should it case a `Long` to an `Int`.
+      * should not try to parse a string, nor should it cast a `Long` to an `Int`.
       * On the other hand, a `FromAny[Double]` should accept a `Float` as input.
       */
     def fromAny(in: Any): Try[A]

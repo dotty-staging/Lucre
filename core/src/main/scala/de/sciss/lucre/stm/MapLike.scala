@@ -16,7 +16,6 @@ package de.sciss.lucre.stm
 import de.sciss.lucre.event.Observable
 
 import scala.language.higherKinds
-import scala.reflect.ClassTag
 
 object MapLike {
   trait Update[S <: Sys[S], K, Repr[~ <: Sys[~]]] {

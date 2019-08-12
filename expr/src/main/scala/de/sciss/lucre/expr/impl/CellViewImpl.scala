@@ -17,7 +17,7 @@ import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
 import de.sciss.lucre.expr.{CellView, Type}
 import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Disposable, Obj, Sys}
+import de.sciss.lucre.stm.{Disposable, Form, MapLike, Obj, Sys}
 import de.sciss.lucre.{expr, stm, event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.Serializer
@@ -228,14 +228,6 @@ object CellViewImpl {
     def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
       new AttrMapExprObs[S, A](map = h(), key = key, fun = fun, tx0 = tx)
 
-//    def repr(implicit tx: S#Tx): Repr = {
-//      val opt = h().$[E](key)
-//      opt.map {
-//        case tpe.Var(vr) => vr()
-//        case other => other
-//      }
-//    }
-
     def repr(implicit tx: S#Tx): Repr = {
       val opt = h().get(key)
       opt match {
@@ -254,15 +246,25 @@ object CellViewImpl {
     def apply()(implicit tx: S#Tx): Option[A] = repr.map(_.value)
   }
 
-  // XXX TODO --- lot's of overlap with CellViewImpl
+  final class AttrMapExprObs[S <: Sys[S], A](map: Obj.AttrMap[S], key: String, fun: S#Tx => Option[A] => Unit,
+                                             tx0: S#Tx)(implicit tpe: Obj.Type)
+    extends MapLikeExprObs[S, A, Obj](map, key, fun, tx0) {
+
+    protected def compareTpe(value: Obj[S]): Boolean =
+      value.tpe == tpe
+  }
+
+    // XXX TODO --- lot's of overlap with CellViewImpl
   /** N.B.: `tpe` must denote objects that extend `Expr`, otherwise we get class-cast exceptions. */
-  final class AttrMapExprObs[S <: Sys[S], A](
-      map: Obj.AttrMap[S], key: String, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)(implicit tpe: Obj.Type)
+  abstract class MapLikeExprObs[S <: Sys[S], A, Repr[~ <: Sys[~]] <: Form[~]](
+      map: MapLike[S, String, Repr], key: String, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)
     extends Disposable[S#Tx] {
 
     private[this] val valObs = Ref(null: Disposable[S#Tx])
 
-    private[this] def obsAdded(value: Obj[S])(implicit tx: S#Tx): Unit = {
+    protected def compareTpe(in: Repr[S]): Boolean
+
+    private[this] def obsAdded(value: Repr[S])(implicit tx: S#Tx): Unit = {
       val valueT = value.asInstanceOf[expr.Expr[S, A]]
       valueAdded(valueT)
       // XXX TODO -- if we moved this into `valueAdded`, the contract
@@ -277,20 +279,20 @@ object CellViewImpl {
 
     private[this] val mapObs = map.changed.react { implicit tx => u =>
       u.changes.foreach {
-        case Obj.AttrAdded   (`key`, value) if value.tpe == tpe => obsAdded  (value)
-        case Obj.AttrRemoved (`key`, value) if value.tpe == tpe => obsRemoved()
+        case Obj.AttrAdded   (`key`, value) if compareTpe(value) => obsAdded  (value)
+        case Obj.AttrRemoved (`key`, value) if compareTpe(value) => obsRemoved()
         case Obj.AttrReplaced(`key`, before, now) =>
-          if      (now   .tpe == tpe) obsAdded(now)
-          else if (before.tpe == tpe) obsRemoved()
+          if      (compareTpe(now    )) obsAdded(now)
+          else if (compareTpe(before )) obsRemoved()
         case _ =>
       }
     } (tx0)
 
     map.get(key)(tx0).foreach { value =>
-      if (value.tpe == tpe) valueAdded(value.asInstanceOf[expr.Expr[S, A]])(tx0)
+      if (compareTpe(value)) valueAdded(value.asInstanceOf[expr.ExprLike[S, A]])(tx0)
     }
 
-    private[this] def valueAdded(value: expr.Expr[S, A])(implicit tx: S#Tx): Unit = {
+    private[this] def valueAdded(value: expr.ExprLike[S, A])(implicit tx: S#Tx): Unit = {
       val res = value.changed.react { implicit tx => {
         case Change(_, now) =>
           fun(tx)(Some(now))

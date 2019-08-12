@@ -30,6 +30,8 @@ object Context {
   private val anyEmptyAttr = new EmptyAttr[NoSys]
 
   private final class EmptyAttr[S <: Sys[S]] extends Attr[S] {
+    override def toString = "empty"
+
     def isEmpty (implicit tx: S#Tx): Boolean = true
     def nonEmpty(implicit tx: S#Tx): Boolean = false
 

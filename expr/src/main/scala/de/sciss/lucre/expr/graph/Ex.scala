@@ -56,8 +56,8 @@ object Ex {
   implicit def liftTuple2_1[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ExTuple2(x._1, Const(x._2))
   implicit def liftTuple2_2[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ExTuple2(Const(x._1), x._2)
 
-//  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ???
-//  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ???
+//  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ...
+//  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ...
 
 //  implicit def liftOption[A: Value](x: Option[A]): Ex[Option[A]] = Const(x)
 

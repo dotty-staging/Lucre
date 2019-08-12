@@ -88,16 +88,12 @@ object Folder {
 
     type Repr[S <: Sys[S]] = stm.Folder[S]
 
-    //    def mkObj[S <: Sys[S]](value: Folder)(implicit tx: S#Tx): stm.Folder[S] =
-    //      stm.Folder()
-
     def readIdentifiedAux(in: DataInput): Aux = this
-
-    //    implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Folder[S]] =
-    //      stm.Folder.serializer
 
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Folder]] =
       new CellViewImpl(tx.newHandle(obj), key)
+
+    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = ???
   }
 
   private abstract class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, Folder], init: A, tx0: S#Tx)

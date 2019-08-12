@@ -76,8 +76,12 @@ object Attr {
 
       protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
         val defaultEx: Repr[S] = default.expand[S]
-        resolveNested(key).fold(defaultEx) { attrView =>
-          import ctx.targets
+        val isNested = key.contains(":")
+        import ctx.targets
+        if (!isNested) {  // XXX TODO --- cheesy constraint; context-view should work also with nested keys
+          val attrView = bridge.cellView(key)
+          new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
+        } else resolveNested(key).fold(defaultEx) { attrView =>
           new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
         }
       }
@@ -203,9 +207,12 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
   def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-    ctx.selfOption.fold(Const(Option.empty[A]).expand[S]) { self =>
-      import ctx.targets
-      val attrView = bridge.cellView[S](self, key)
+    val isNested = key.contains(":")
+    import ctx.targets
+    if (!isNested) {  // XXX TODO --- cheesy constraint; context-view should work also with nested keys
+      val attrView = bridge.cellView(key)
+      new Attr.Expanded[S, A](attrView, tx)
+    } else Attr.resolveNested(key).fold(Const(Option.empty[A]).expand[S]) { attrView =>
       new Attr.Expanded[S, A](attrView, tx)
     }
   }
