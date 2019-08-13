@@ -52,11 +52,11 @@ final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.E
     CellView.attrUndoOpt[S, A, _Ex](map = obj.attr, key = key)(tx, peer)
 
   def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]] = {
-    val fallBack = context.selfOption match {
+    val fallback = context.selfOption match {
       case Some(obj)  => cellView(obj, key)
       case None       => CellView.const[S, Option[A]](None)
     }
-    new CtxView[S](key, context.attr, fallBack)
+    new CtxView[S](key, context.attr, fallback)
   }
 
   override def write(out: DataOutput): Unit = {
@@ -67,11 +67,11 @@ final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.E
   // a hierarchical cell view, first looking at the context attributes, then
   // falling back to another given view (typically from the self's object attributes)
   private final class CtxView[S <: Sys[S]](key: String, attr: Context.Attr[S],
-                                           fallBack: CellView[S#Tx, Option[A]])
+                                           fallback: CellView[S#Tx, Option[A]])
     extends CellView[S#Tx, Option[A]] {
 
     def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
-      val disp1 = fallBack.react { implicit tx => _ =>
+      val disp1 = fallback.react { implicit tx => _ =>
         fun(tx)(apply())
       }
 
@@ -102,7 +102,7 @@ final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](peer: Type.E
     }
 
     private def innerApply()(implicit tx: S#Tx): Option[A] =
-      fallBack()
+      fallback()
 
     def apply()(implicit tx: S#Tx): Option[A] =
       outerApply() orElse innerApply()

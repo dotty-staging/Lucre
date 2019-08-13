@@ -144,7 +144,10 @@ object Obj {
             Serializer.option
         }
 
-      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = ???
+      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
+//      println("Warning: Obj.cellView not yet implemented for context. Using fall-back")
+        context.selfOption.fold(CellView.const[S, Option[Obj]](None))(cellView(_, key))
+      }
     }
   }
   trait Bridge[A] extends Aux {

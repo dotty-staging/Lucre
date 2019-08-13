@@ -37,7 +37,7 @@ object Workspace {
 
       def name: String = "dummy"
 
-//      def close(): Unit = ()
+      def close(): Unit = ()
 
       def dispose()(implicit tx: S#Tx): Unit = ()
 
@@ -55,9 +55,8 @@ trait Workspace[S <: Sys[S]] extends Disposable[S#Tx] {
 
   def name: String
 
-//  /** Issues a transaction that closes and disposes the workspace.
-//    */
-//  def close(): Unit
+  /** Issues a transaction that closes and disposes the workspace. */
+  def close(): Unit
 
   /** Adds a dependent which is disposed just before the workspace is disposed.
     *

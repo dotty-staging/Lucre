@@ -53,7 +53,8 @@ object Obj {
 
     final override def readObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
       val tpe = in.readInt()
-      if (tpe !== typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
+      if (tpe !== typeId) sys.error(
+        s"Type mismatch, expected $typeId (0x${typeId.toHexString}) but found $tpe (0x${tpe.toHexString})")
       readIdentifiedObj(in, access)
     }
 
@@ -65,14 +66,14 @@ object Obj {
 
   // ---- attributes ----
 
-  type AttrMap    [S <: Sys[S]] = evt.Map.Modifiable[S, String, Obj]
-  type AttrUpdate [S <: Sys[S]] = evt.Map.Update [S, String, Obj]
-  val  AttrAdded                = evt.Map.Added
-  type AttrAdded  [S <: Sys[S]] = evt.Map.Added  [S, String, Obj[S]]
-  val  AttrRemoved              = evt.Map.Removed
-  type AttrRemoved[S <: Sys[S]] = evt.Map.Removed[S, String, Obj[S]]
-  val  AttrReplaced             = evt.Map.Replaced
-  type AttrReplaced[S <: Sys[S]]= evt.Map.Replaced[S, String, Obj[S]]
+  type AttrMap    [S <: Sys[S]]             = evt.Map.Modifiable[S, String, Obj]
+  type AttrUpdate [S <: Sys[S]]             = evt.Map.Update [S, String, Obj]
+  val  AttrAdded    : evt.Map.Added.type    = evt.Map.Added
+  type AttrAdded  [S <: Sys[S]]             = evt.Map.Added  [S, String, Obj[S]]
+  val  AttrRemoved  : evt.Map.Removed.type  = evt.Map.Removed
+  type AttrRemoved[S <: Sys[S]]             = evt.Map.Removed[S, String, Obj[S]]
+  val  AttrReplaced : evt.Map.Replaced.type = evt.Map.Replaced
+  type AttrReplaced[S <: Sys[S]]            = evt.Map.Replaced[S, String, Obj[S]]
 
   /* implicit */ def attrMapSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, AttrMap[S]] =
     anyAttrMapSer.asInstanceOf[Serializer[S#Tx, S#Acc, AttrMap[S]]]

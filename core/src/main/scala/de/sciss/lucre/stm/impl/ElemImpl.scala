@@ -37,13 +37,14 @@ object ElemImpl {
   def addType(tpe: Elem.Type): Unit = sync.synchronized {
     val typeId = tpe.typeId
     if (map.contains(typeId))
-      throw new IllegalArgumentException(s"Element type $typeId was already registered ($tpe overrides ${map(typeId)})")
+      throw new IllegalArgumentException(
+        s"Element type $typeId (0x${typeId.toHexString}) was already registered ($tpe overrides ${map(typeId)})")
 
     map += typeId -> tpe
   }
 
   @inline
-  def getType(id: Int): Elem.Type = map.getOrElse(id, sys.error(s"Unknown element type $id"))
+  def getType(id: Int): Elem.Type = map.getOrElse(id, sys.error(s"Unknown element type $id (0x${id.toHexString})"))
 
   private final class Ser[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, Elem[S]] {
     def write(obj: Elem[S], out: DataOutput): Unit = obj.write(out)

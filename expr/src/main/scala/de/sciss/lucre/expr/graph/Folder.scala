@@ -93,7 +93,10 @@ object Folder {
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Folder]] =
       new CellViewImpl(tx.newHandle(obj), key)
 
-    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = ???
+    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = {
+//      println("Warning: Folder.cellView not yet implemented for context. Using fall-back")
+      context.selfOption.fold(CellView.const[S, Option[Folder]](None))(cellView(_, key))
+    }
   }
 
   private abstract class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, Folder], init: A, tx0: S#Tx)
@@ -258,6 +261,12 @@ object Folder {
     def nonEmpty: Ex[Boolean] = NonEmpty(f)
   }
 }
+/** The representation of a folder within an expression program.
+  * It allows to refer to existing folders through `"key".attr[Folder]`
+  * or to create a prototype `Folder()` which has a `make` action.
+  *
+  * '''Note:''' passing a folder with `runWith` is not yet implemented.
+  */
 trait Folder extends Obj {
   type Peer[~ <: Sys[~]] = stm.Folder[~]
 }
