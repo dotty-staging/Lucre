@@ -120,6 +120,22 @@ object Act {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
       new ExpandedFlatten(in.expand[S])
   }
+
+  private final class ExpandedNop[S <: Sys[S]](implicit ctx: Context[S])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit = ()
+  }
+
+  final case class Nop() extends Act {
+
+    override def productPrefix = s"Act$$Nop" // serialization
+
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new ExpandedNop
+  }
 }
 trait Act extends Lazy {
   type Repr[S <: Sys[S]] <: IAction[S]
