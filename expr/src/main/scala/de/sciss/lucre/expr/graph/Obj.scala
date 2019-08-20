@@ -48,7 +48,11 @@ object Obj {
   private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
     new Impl[S](peer, system)
 
-  private[lucre] object Empty extends Obj {
+  def empty: Ex[Obj] = Const(Empty)
+
+  private[lucre] case object Empty extends Obj {
+    override def productPrefix: String = s"Obj$$Empty$$"  // serialization
+
     type Peer[~ <: Sys[~]] = stm.Obj[~]
 
     private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] =

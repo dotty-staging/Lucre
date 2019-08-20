@@ -566,6 +566,12 @@ object BinaryOp {
     def name: String = "FileReplaceName"
   }
 
+  final case class FileChild() extends NamedOp[File, String, File] {
+    def apply(a: File, s: String): File = a./(s)
+
+    def name: String = "FileChild"
+  }
+
   // ---- Impl ----
 
   private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],

@@ -59,5 +59,8 @@ object ExImport {
     /** Replaces the name part of this file, keeping the parent directory. */
     def replaceName(s: Ex[String]): Ex[File] =
       BinOp(BinOp.FileReplaceName(), x, s)
+
+    def / (child: Ex[String]): Ex[File] =
+      BinOp(BinOp.FileChild(), x, child)
   }
 }
