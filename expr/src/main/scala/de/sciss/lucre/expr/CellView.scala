@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Observable
-import de.sciss.lucre.expr.impl.CellViewImpl.MapImpl
+import de.sciss.lucre.expr.impl.CellViewImpl.{FlatMapImpl, MapImpl, OptionOrElseImpl}
 import de.sciss.lucre.expr.impl.{CellViewImpl => Impl}
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{stm, event => evt, expr => _expr}
@@ -24,7 +24,7 @@ import scala.language.higherKinds
 
 object CellView {
   def expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])(implicit tx: S#Tx,
-                                                                    tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] { type Repr = _Ex[S] } = {
+                                                                    tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] = {
     import tpe.{serializer, varSerializer}
     x match {
       case tpe.Var(vr) =>
@@ -37,9 +37,9 @@ object CellView {
 
   def exprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _expr.Expr[~, A]](map: evt.Map[S, K, _Ex], key: K)
                                                                      (implicit tx: S#Tx, tpe: Type.Expr[A, _Ex], keyType: evt.Map.Key[K])
-  : CellView[S#Tx, Option[A]] { type Repr = Option[_Ex[S]] } = {
+  : CellView[S#Tx, Option[A]] = {
     // import tpe.serializer
-    map.modifiableOption.fold[CellView[S#Tx, Option[A]] { type Repr = Option[_Ex[S]] }] {
+    map.modifiableOption.fold[CellView[S#Tx, Option[A]]] {
       new Impl.ExprMap[S, K, A, _Ex  /* , Change[A] */](tx.newHandle(map), key /* , ch =>
         if (ch.isSignificant) Some(ch.now) else None */)
     } { mv =>
@@ -48,13 +48,13 @@ object CellView {
   }
 
   def attr[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] { type Repr = Option[E[S]] } = {
+                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] = {
     new Impl.PlainAttrImpl[S, A, E](tx.newHandle(map), key)
   }
 
   /** Additionally uses undo manager when present. */
   def attrUndoOpt[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] { type Repr = Option[E[S]] } = {
+                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] = {
     new Impl.UndoAttrImpl[S, A, E](tx.newHandle(map), key)
   }
 
@@ -65,7 +65,7 @@ object CellView {
 
   def exprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])
                                                              (implicit tx: S#Tx,
-                                                              serializer: Serializer[S#Tx, S#Acc, _Ex[S]]): CellView[S#Tx, A] { type Repr = _Ex[S] } =
+                                                              serializer: Serializer[S#Tx, S#Acc, _Ex[S]]): CellView[S#Tx, A] =
     new Impl.Expr[S, A, _Ex](tx.newHandle(x))
 
   def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] = new Impl.Const(value)
@@ -89,11 +89,16 @@ object CellView {
   }
 
   implicit final class Ops[Tx, A](private val in: CellView[Tx, A]) extends AnyVal {
-    def map[B](f: A => B): CellView[Tx, B] = new MapImpl(in, f)
+    def map[B](f: A => B): CellView[Tx, B] =
+      new MapImpl(in, f)
+  }
+
+  implicit final class OptionOps[Tx, A](private val in: CellView[Tx, Option[A]]) extends AnyVal {
+    def orElse[B >: A](that: CellView[Tx, Option[B]]): CellView[Tx, Option[B]] =
+      new OptionOrElseImpl(in, that)
+
+    def flatMap[B](f: A => Option[B]): CellView[Tx, Option[B]] =
+      new FlatMapImpl(in, f)
   }
 }
-trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A] {
-//  type Repr
-//
-//  def repr(implicit tx: Tx): Repr
-}
+trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A]

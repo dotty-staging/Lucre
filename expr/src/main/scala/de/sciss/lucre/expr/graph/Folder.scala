@@ -17,7 +17,7 @@ import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.edit.EditFolder
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedObjMakeImpl, ObjCellViewImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{ExpandedObjMakeImpl, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IExpr}
 import de.sciss.lucre.stm
@@ -74,10 +74,10 @@ object Folder {
   }
 
   private final class CellViewImpl[S <: Sys[S]](h: stm.Source[S#Tx, stm.Obj[S]], key: String)
-    extends ObjCellViewImpl[S, stm.Folder, Folder](h, key) {
+    extends ObjCellViewVarImpl[S, stm.Folder, Folder](h, key) {
 
     protected def lower(peer: stm.Folder[S])(implicit tx: S#Tx): Folder =
-      new Impl(tx.newHandle(peer), tx.system)
+      wrap(tx.newHandle(peer), tx.system)
 
     implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Folder[S]]] =
       Serializer.option
@@ -94,9 +94,14 @@ object Folder {
       new CellViewImpl(tx.newHandle(obj), key)
 
     def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = {
-//      println("Warning: Folder.cellView not yet implemented for context. Using fall-back")
+      println(s"Warning: Folder.cellView($key) not yet implemented for context. Using fall-back")
       context.selfOption.fold(CellView.const[S, Option[Folder]](None))(cellView(_, key))
     }
+
+    def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Folder] =
+      obj.attr.$[stm.Folder](key).map { peer =>
+        wrap[S](tx.newHandle(peer), tx.system)
+      }
   }
 
   private abstract class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, Folder], init: A, tx0: S#Tx)

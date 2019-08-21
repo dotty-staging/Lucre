@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate}
+import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
 import de.sciss.lucre.expr.impl.EmptyIAction
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl, IExpr}
 import de.sciss.lucre.stm
@@ -32,8 +32,9 @@ object Attr {
     def set   (in: Ex[A]): Act
   }
 
-  private[lucre] def resolveNestedIn[S <: Sys[S], A](objOpt: Option[stm.Obj[S]], key: String)
-                                                    (implicit tx: S#Tx,
+  @deprecated("does not take care of ctx.attr", since = "3.14.0")
+  private[lucre] def resolveNestedInBAD[S <: Sys[S], A](objOpt: Option[stm.Obj[S]], key: String)
+                                                       (implicit tx: S#Tx,
                                                      bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
     @tailrec
     def loop(prev: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
@@ -56,9 +57,51 @@ object Attr {
     loop(objOpt, key)
   }
 
+  @deprecated("does not take care of ctx.attr", since = "3.14.0")
+  private[lucre] def resolveNestedBAD[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
+                                                                   bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] =
+    resolveNestedInBAD(ctx.selfOption, key)
+
   private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
-                                                                bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] =
-    resolveNestedIn(ctx.selfOption, key)
+                                                                bridge: Obj.Bridge[A]): CellView[S#Tx, Option[A]] = {
+    val isNested = key.contains(":")
+
+    if (isNested) {
+      val head :: firstSub :: tail = key.split(":").toList
+
+      @tailrec
+      def loop(parent: CellView[S#Tx, Option[stm.Obj[S]]], sub: String, rem: List[String]): CellView[S#Tx, Option[A]] =
+        rem match {
+          case Nil =>
+            parent.flatMap(child => bridge.cellValue(child, sub))
+
+          case next :: tail =>
+            val childView = parent.flatMap(child => child.attr.get(key))
+            loop(childView, next, tail)
+        }
+
+      val ctxHead   = new StmObjCtxCellView[S](ctx.attr, head)
+      val ctxFull   = loop(ctxHead, firstSub, tail)
+      ctx.selfOption match {
+        case Some(self) =>
+          val objHead   = new StmObjAttrMapCellView[S](self.attr, head, tx)
+          val objFull   = loop(objHead, firstSub, tail)
+          ctxFull orElse objFull
+        case None =>
+          ctxFull
+      }
+
+    } else {
+      val ctxFull = bridge.cellView(key)
+      ctx.selfOption match {
+        case Some(self) =>
+          val objFull = bridge.cellView(self, key)
+          ctxFull orElse objFull
+        case None =>
+          ctxFull
+      }
+    }
+  }
 
   object WithDefault {
     def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =
@@ -76,14 +119,9 @@ object Attr {
 
       protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
         val defaultEx: Repr[S] = default.expand[S]
-        val isNested = key.contains(":")
         import ctx.targets
-        if (!isNested) {  // XXX TODO --- cheesy constraint; context-view should work also with nested keys
-          val attrView = bridge.cellView(key)
-          new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
-        } else resolveNested(key).fold(defaultEx) { attrView =>
-          new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
-        }
+        val attrView = resolveNested(key)
+        new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
       }
 
       override def aux: scala.List[Aux] = bridge :: Nil
@@ -174,7 +212,7 @@ object Attr {
     type Repr[S <: Sys[S]] = IControl[S]
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val peer = resolveNested(key).fold(Disposable.empty[S#Tx]) { attrView =>
+      val peer = resolveNestedBAD(key).fold(Disposable.empty[S#Tx]) { attrView =>
         new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       }
       IControl.wrap(peer)
@@ -191,7 +229,7 @@ object Attr {
     type Repr[S <: Sys[S]] = IAction[S]
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      resolveNested(key).fold[IAction[S]](new EmptyIAction) { attrView =>
+      resolveNestedBAD(key).fold[IAction[S]](new EmptyIAction) { attrView =>
         new ExpandedAttrSet[S, A](attrView, source.expand[S], tx)
       }
 
@@ -207,14 +245,9 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
   def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-    val isNested = key.contains(":")
     import ctx.targets
-    if (!isNested) {  // XXX TODO --- cheesy constraint; context-view should work also with nested keys
-      val attrView = bridge.cellView(key)
-      new Attr.Expanded[S, A](attrView, tx)
-    } else Attr.resolveNested(key).fold(Const(Option.empty[A]).expand[S]) { attrView =>
-      new Attr.Expanded[S, A](attrView, tx)
-    }
+    val attrView = Attr.resolveNested(key)
+    new Attr.Expanded[S, A](attrView, tx)
   }
 
   override def aux: scala.List[Aux] = bridge :: Nil

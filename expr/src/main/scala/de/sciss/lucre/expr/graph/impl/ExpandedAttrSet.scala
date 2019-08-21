@@ -34,7 +34,7 @@ final class ExpandedAttrSetIn[S <: Sys[S], A](in: IExpr[S, Obj], key: String, va
   def executeAction()(implicit tx: S#Tx): Unit = {
     val v       = value.value
     val obj     = in.value
-    val viewOpt = Attr.resolveNestedIn[S, A](obj.peer, key)
+    val viewOpt = Attr.resolveNestedInBAD[S, A](obj.peer, key)
     viewOpt.foreach { attrView =>
       attrView.update(Some(v))
     }

@@ -304,3 +304,45 @@ and the implementation then relying on `obj.attr` and an instance of `Type.Expr`
 used as an `Ex`, we only care for `CellView[S#Tx, Option[A]]` with `value` and `react`. If we introduced an
 extension method `orElse` for a cell-view representing an option, we just need to introduce a cell-view
 representation for `Context.Attr` or `MapLike[S, String, Form]`.
+
+# Notes 190821 - nested keys
+
+If we had a `CellView[S#Tx, Option[stm.Obj[S]]]`, we could start from the head sub-key with that, and then
+introduce a `flatMap` foreach next sub-key which is either producing another `Option[stm.Obj[S]]` if it is in
+inner position, or the final `Option[A]` if it is in last position. It requires a change in `Bridge`, where
+`cellView(obj, key)` does not yet define a bidirectional constraint. (Or perhaps that doesn't even matter for the
+`flatMap`).
+
+Something along the lines of
+
+```
+
+if (isNested) {
+  val head :: tail = key.split(":").toList
+ 
+  def loop(parent: CellView[S#Tx, Option[stm.Obj[S]]], rem: List[String]): CellView[S#Tx, Option[A]] =
+    rem match {
+      case last :: Nil => 
+        parent.flatMap(child => CellView.attrMap[A](child, last))
+      
+      case sub :: tail => 
+        val childView = parent.flatMap(child => CellView.attrMap[stm.Obj[S]](child, sub))
+        loop(childView, tail)
+
+      case Nil => throw new IllegalArgumentException    // can we avoid this?
+    }
+
+  val ctxHead: CellView[S#Tx, Option[stm.Obj[S]]] = ???
+  val objHead: CellView[S#Tx, Option[stm.Obj[S]]] = ???
+  val ctxFull = loop(ctxHead, tail)
+  val objFull = loop(objHead, tail)
+  ctxFull orElse objFull
+
+} else {
+  // and again here we could implement the logic in the caller,
+  // like `bridge.ctxCellView() orElse ctx.selfOption.fold(CellView.empty)(bridge.objCellView))`
+  bridge.cellView()
+}
+
+
+```

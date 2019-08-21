@@ -42,8 +42,7 @@ object CellViewImpl {
     def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
       new ExprMapLikeObs(h(), key, fun, tx)
 
-    // XXX TODO -- remove in next major version
-    def repr(implicit tx: S#Tx): Repr = throw new Exception("Subclass responsibility")
+    protected def repr(implicit tx: S#Tx): Repr
 
     def apply()(implicit tx: S#Tx): Option[A] = repr.map(_.value)
   }
@@ -185,14 +184,8 @@ object CellViewImpl {
     def serializer: Serializer[S#Tx, S#Acc, Repr] = tpe.serializer
   }
 
-  private[lucre] sealed trait NoVar[Tx, A] extends CellView[Tx, A] {
-    type Repr = Unit
-
-    final def repr(implicit tx: Tx): Unit = ()
-  }
-
   private[lucre] final class MapImpl[Tx, A, B](in: CellView[Tx, A], f: A => B)
-    extends NoVar[Tx, B] {
+    extends CellView[Tx, B] {
 
     def react(fun: Tx => B => Unit)(implicit tx: Tx): Disposable[Tx] =
       in.react { implicit tx => a => fun(tx)(f(a)) }
@@ -200,12 +193,34 @@ object CellViewImpl {
     def apply()(implicit tx: Tx): B = f(in())
   }
 
-//  object DummyDisposable extends Disposable[Any] {
-//    def dispose()(implicit tx: Any): Unit = ()
-//  }
+  private[lucre] final class OptionOrElseImpl[Tx, A](first : CellView[Tx, Option[A]],
+                                                     second: CellView[Tx, Option[A]])
+    extends CellView[Tx, Option[A]] {
+
+    def apply()(implicit tx: Tx): Option[A] =
+      first() orElse second()
+
+    def react(fun: Tx => Option[A] => Unit)(implicit tx: Tx): Disposable[Tx] = {
+      val r1 = first  .react { implicit tx => opt => fun(tx)(opt      orElse second() ) }
+      val r2 = second .react { implicit tx => opt => fun(tx)(first()  orElse opt      ) }
+      Disposable.seq(r1, r2)
+    }
+  }
+
+  private[lucre] final class FlatMapImpl[Tx, A, B](in:CellView[Tx, Option[A]], f: A => Option[B])
+    extends CellView[Tx, Option[B]] {
+
+    def apply()(implicit tx: Tx): Option[B] =
+      in().flatMap(f)
+
+    def react(fun: Tx => Option[B] => Unit)(implicit tx: Tx): Disposable[Tx] =
+      in.react { implicit tx => aOpt =>
+        fun(tx)(aOpt.flatMap(f))
+      }
+  }
 
   private[lucre] final class Const[Tx, A](value: A)
-    extends NoVar[Tx, A] {
+    extends CellView[Tx, A] {
 
     def react(fun: Tx => A => Unit)(implicit tx: Tx): Disposable[Tx] = Disposable.empty
 

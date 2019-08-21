@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
@@ -59,7 +59,7 @@ object Obj {
       None // throw new IllegalStateException("Object has not been created yet")
   }
 
-  final class Impl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
+  private final class Impl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
     extends ObjImplBase[In, stm.Obj](in, system)
 
   private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
@@ -140,7 +140,7 @@ object Obj {
       def readIdentifiedAux(in: DataInput): Aux = this
 
       def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Obj]] =
-        new ObjCellViewImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
+        new ObjCellViewVarImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
           protected def lower(peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
             wrap[S](tx.newHandle(peer), tx.system)
 
@@ -149,9 +149,14 @@ object Obj {
         }
 
       def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
-//      println("Warning: Obj.cellView not yet implemented for context. Using fall-back")
+        println(s"Warning: Obj.cellView($key) not yet implemented for context. Using fall-back")
         context.selfOption.fold(CellView.const[S, Option[Obj]](None))(cellView(_, key))
       }
+
+      def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Obj] =
+        obj.attr.get(key).map { peer =>
+          wrap[S](tx.newHandle(peer), tx.system)
+        }
     }
   }
   trait Bridge[A] extends Aux {
@@ -166,6 +171,8 @@ object Obj {
       * representation type `A`.
       */
     def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]]
+
+    def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[A]
   }
 
   object Source {
