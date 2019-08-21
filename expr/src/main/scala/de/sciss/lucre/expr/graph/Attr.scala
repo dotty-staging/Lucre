@@ -92,7 +92,7 @@ object Attr {
       }
 
     } else {
-      val ctxFull = bridge.cellView(key)
+      val ctxFull = bridge.contextCellView(key)
       ctx.selfOption match {
         case Some(self) =>
           val objFull = bridge.cellView(self, key)

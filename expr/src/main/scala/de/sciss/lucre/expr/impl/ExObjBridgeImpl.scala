@@ -41,7 +41,7 @@ final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](tpe: Type.Ex
   def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]] =
     CellView.attrUndoOpt[S, A, _Ex](map = obj.attr, key = key)(tx, tpe)
 
-  def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]] =
+  def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]] =
     new AbstractCtxCellView[S, A](context.attr, key) {
       protected def tryParse(value: Any)(implicit tx: S#Tx): Option[A] =
         tpe.tryParse(value)

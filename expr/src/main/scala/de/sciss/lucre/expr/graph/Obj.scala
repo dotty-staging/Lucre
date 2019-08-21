@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewVarImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
@@ -148,9 +148,15 @@ object Obj {
             Serializer.option
         }
 
-      def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
-        println(s"Warning: Obj.cellView($key) not yet implemented for context. Using fall-back")
-        context.selfOption.fold(CellView.const[S, Option[Obj]](None))(cellView(_, key))
+      def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
+//        println(s"Warning: Obj.cellView($key) not yet implemented for context. Using fall-back")
+//        context.selfOption.fold(CellView.const[S, Option[Obj]](None))(cellView(_, key))
+        new AbstractCtxCellView[S, Obj](context.attr, key) {
+          protected def tryParse(value: Any)(implicit tx: S#Tx): Option[Obj] = value match {
+            case obj: Obj => Some(obj)
+            case _        => None
+          }
+        }
       }
 
       def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Obj] =
@@ -170,7 +176,7 @@ object Obj {
     /** Creates a unidirectional view between a context's attribute or self object and the expression side
       * representation type `A`.
       */
-    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]]
+    def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]]
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[A]
   }

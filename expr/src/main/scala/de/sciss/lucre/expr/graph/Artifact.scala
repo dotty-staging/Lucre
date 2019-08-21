@@ -43,7 +43,7 @@ object Artifact {
 
     // Note: Artifact does not expose an implicit `Obj.Bridge[File]`, for now, so currently
     // we cannot write `"key".attr[File]` anyway!
-    def cellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[File]] = {
+    def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[File]] = {
       println(s"Warning: Artifact.cellView($key) not yet implemented for context. Using fall-back")
       context.selfOption.fold(CellView.const[S, Option[File]](None))(cellView(_, key))
     }
