@@ -170,7 +170,7 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   /** Alias for `latch` */
   def <| (tr: Trig): Ex[A] = Latch(x, tr)
 
-  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make[A] = Obj.Make(x)
+  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
 }
 
 final class ExBooleanOps(private val x: Ex[Boolean]) extends AnyVal {

@@ -34,7 +34,7 @@ object Folder {
 
   def init(): Unit = _init
 
-  def apply(): Ex[Folder] with Obj.Make[Folder] = Apply()
+  def apply(): Ex[Folder] with Obj.Make = Apply()
 
   private[lucre] object Empty extends Folder {
     private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] = None
@@ -51,7 +51,7 @@ object Folder {
     }
   }
 
-  private final case class Apply() extends Ex[Folder] with Act with Obj.Make[Folder] {
+  private final case class Apply() extends Ex[Folder] with Act with Obj.Make {
     override def productPrefix: String = "Folder" // serialization
 
     type Repr[S <: Sys[S]] = IExpr[S, Folder] with IAction[S]

@@ -43,10 +43,15 @@ object Obj {
     def attr[A: Bridge](key: String): Obj.Attr[A] = Obj.Attr(obj, key)
 
     // def attr[A: Bridge](key: String, default: Ex[A]): _Attr.WithDefault[A] = ...
+
+    def copy: Copy = Obj.Copy(obj)
   }
 
-  private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
-    new Impl[S](peer, system)
+//  private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
+//    new Impl[S](peer, system)
+
+  private[lucre] def wrap[S <: Sys[S]](peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
+    new Impl[S](tx.newHandle(peer), tx.system)
 
   def empty: Ex[Obj] = Const(Empty)
 
@@ -62,42 +67,54 @@ object Obj {
   private final class Impl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
     extends ObjImplBase[In, stm.Obj](in, system)
 
-  private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
-                                                                    cm: CanMake[A])
+  private abstract class AbstractMakeExpanded[S <: Sys[S]]
     extends IExpr[S, Obj]
       with IAction[S]
       with IGenerator       [S, Change[Obj]]
       with ITriggerConsumer [S, Change[Obj]]
       with Caching {
 
+    // ---- abstract ----
+
+    protected def make()(implicit tx: S#Tx): Obj
+
+    // ---- impl ----
+
     private[this] val ref = Ref[Obj](Empty)
 
-    def value(implicit tx: S#Tx): Obj =
+    final def value(implicit tx: S#Tx): Obj =
       IPush.tryPull(this).fold(ref())(_.now)
 
-    def executeAction()(implicit tx: S#Tx): Unit =
+    final def executeAction()(implicit tx: S#Tx): Unit =
       trigReceived() // .foreach(fire) --- we don't need to fire, there is nobody listening;
 
-    private def make()(implicit tx: S#Tx): Obj = {
-      val v     = ex.value
-      val peer  = cm.toObj(v)
-      import cm.reprSerializer
-      wrap(tx.newHandle(peer), tx.system)
-    }
-
-    protected def trigReceived()(implicit tx: S#Tx): Option[Change[Obj]] = {
+    final protected def trigReceived()(implicit tx: S#Tx): Option[Change[Obj]] = {
       val now     = make()
       val before  = ref.swap(now) // needs caching
-      Some(Change(before, now))
+      if (before == now)
+        None
+      else
+        Some(Change(before, now))
     }
 
-    def changed: IEvent[S, Change[Obj]] = this
+    final def changed: IEvent[S, Change[Obj]] = this
+  }
+
+  private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
+                                                                    cm: CanMake[A])
+    extends AbstractMakeExpanded[S] {
+
+    protected def make()(implicit tx: S#Tx): Obj = {
+      val v     = ex.value
+      val peer  = cm.toObj(v)
+      wrap(peer)
+    }
   }
 
   object Make {
-    def apply[A](ex: Ex[A])(implicit cm: CanMake[A]): Make[A] = Impl(ex)
+    def apply[A](ex: Ex[A])(implicit cm: CanMake[A]): Make = Impl(ex)
 
-    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Make[A] with Act with ProductWithAux {
+    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Make with Act with ProductWithAux {
       type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
 
       override def productPrefix: String = s"Obj$$Make" // serialization
@@ -112,7 +129,7 @@ object Obj {
       }
     }
   }
-  trait Make[A] extends Ex[Obj] {
+  trait Make extends Ex[Obj] {
     def make: Act
   }
 
@@ -142,7 +159,7 @@ object Obj {
       def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Obj]] =
         new ObjCellViewVarImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
           protected def lower(peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
-            wrap[S](tx.newHandle(peer), tx.system)
+            wrap(peer)
 
           implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Obj[S]]] =
             Serializer.option
@@ -160,9 +177,7 @@ object Obj {
       }
 
       def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Obj] =
-        obj.attr.get(key).map { peer =>
-          wrap[S](tx.newHandle(peer), tx.system)
-        }
+        obj.attr.get(key).map(wrap(_))
     }
   }
   trait Bridge[A] extends Aux {
@@ -321,6 +336,42 @@ object Obj {
 
     def aux: List[Aux] = bridge :: Nil
   }
+
+  private final class CopyExpanded[S <: Sys[S]](ex: IExpr[S, Obj])(implicit protected val targets: ITargets[S])
+    extends AbstractMakeExpanded[S] {
+
+    protected def make()(implicit tx: S#Tx): Obj = {
+      val v = ex.value
+      v.peer match {
+        case Some(orig) =>
+          val cpy: stm.Obj[S] = stm.Obj.copy(orig)
+          wrap(cpy)
+
+        case None => Empty
+      }
+    }
+  }
+
+  object Copy {
+    def apply(obj: Ex[Obj]): Copy = Impl(obj)
+
+    private final case class Impl(obj: Ex[Obj])
+      extends Copy with Act {
+
+      type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
+
+      def make: Act = this
+
+      override def productPrefix: String = s"Obj$$Copy" // serialization
+
+      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+        import ctx.targets
+        new CopyExpanded[S](obj.expand[S])
+      }
+    }
+  }
+  type Copy = Make
+  // trait Copy extends Make
 }
 trait Obj {
   type Peer[~ <: Sys[~]] <: stm.Obj[~]
