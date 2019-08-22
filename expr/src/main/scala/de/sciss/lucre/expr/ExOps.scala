@@ -13,6 +13,8 @@
 
 package de.sciss.lucre.expr
 
+import java.io.File
+
 import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
 import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
@@ -279,7 +281,7 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
     fm.flatMap(x, f)
 }
 
-final class StringToExAttr(private val x: String) extends AnyVal {
+final class StringLiteralExOps(private val x: String) extends AnyVal {
   def attr[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr(x)
 
   def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
@@ -297,4 +299,39 @@ final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {
   def _2: Ex[B] = UnOp(UnOp.Tuple2_2[A, B](), x)
 
   def swap: Ex[(B, A)] = UnOp(UnOp.Tuple2Swap[A, B](), x)
+}
+
+final class ExFileOps(private val x: Ex[File]) extends AnyVal {
+  /** Returns the parent directory if it exists. */
+  def parentOption: Ex[Option[File]] =
+    UnOp(UnOp.FileParentOption(), x)
+
+  /** Returns the string representation of the file's path. */
+  def path: Ex[String] =
+    UnOp(UnOp.FilePath(), x)
+
+  /** Returns the name part of the file. */
+  def name: Ex[String] =
+    UnOp(UnOp.FileName(), x)
+
+  /** Returns the name part of the file and drops the extension (if any). */
+  def base: Ex[String] =
+    UnOp(UnOp.FileBase(), x)
+
+  /** Returns the extension of the file (lower-cased, period dropped). Returns and empty string
+    * if no extension is given.
+    */
+  def ext: Ex[String] =
+    UnOp(UnOp.FileExtL(), x)  // ! simplify and use lower case here
+
+  /** Replaces the extension part of this file. Parameter `s` may or may not contain a leading period. */
+  def replaceExt(s: Ex[String]): Ex[File] =
+    BinOp(BinOp.FileReplaceExt(), x, s)
+
+  /** Replaces the name part of this file, keeping the parent directory. */
+  def replaceName(s: Ex[String]): Ex[File] =
+    BinOp(BinOp.FileReplaceName(), x, s)
+
+  def / (child: Ex[String]): Ex[File] =
+    BinOp(BinOp.FileChild(), x, child)
 }

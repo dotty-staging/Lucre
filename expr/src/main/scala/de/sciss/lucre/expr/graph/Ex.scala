@@ -17,7 +17,7 @@ import java.io.File
 
 import de.sciss.lucre.aux.Aux
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IExpr}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 import de.sciss.span.SpanLike
@@ -79,6 +79,7 @@ object Ex {
   implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
   implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
   implicit def spanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A]     = new ExSpanOps   (x)
+  implicit def fileOps        (x: Ex[File])     : ExFileOps           = new ExFileOps   (x)
 
   //////////////////////////////
 
