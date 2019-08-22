@@ -34,6 +34,7 @@ object Ex {
     implicit object string    extends Value[String  ]
     implicit object file      extends Value[File    ]
     implicit object spanLike  extends Value[SpanLike]
+    implicit object act       extends Value[Act     ]
 
     implicit def tuple2 [A: Value, B: Value]: Value[(A, B)] = null
 

@@ -284,6 +284,12 @@ final class StringToExAttr(private val x: String) extends AnyVal {
 
   def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
     Attr.WithDefault(x, default)
+
+  /** The concatenation method is here again, so that we can
+    * use it on plain string literals, without requiring an
+    * explicit wrap such as `Const("x")` first.
+    */
+  def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
 }
 
 final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {
