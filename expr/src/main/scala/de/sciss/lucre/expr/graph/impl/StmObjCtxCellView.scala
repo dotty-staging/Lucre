@@ -26,39 +26,34 @@ abstract class AbstractCtxCellView[S <: Sys[S], A](attr: Context.Attr[S], key: S
 
   // ---- abstract ----
 
-  protected def tryParse(value: Any)(implicit tx: S#Tx): Option[A]
+  protected def tryParseValue(value: Any        )(implicit tx: S#Tx): Option[A]
+  protected def tryParseObj  (obj  : stm.Obj[S] )(implicit tx: S#Tx): Option[A]
 
   // ---- impl ----
 
   final def apply()(implicit tx: S#Tx): Option[A] =
-    attr.get(key) match {
-      case Some(ex: ExprLike[S, _]) => exVal(ex)
-      case _                        => None
-    }
+    attr.get(key).flatMap(formValue)
 
-  @inline
-  private def exVal(ex: ExprLike[S, _])(implicit tx: S#Tx): Option[A] =
-    tryParse(ex.value)
-
-  private def exValForm(f: Form[S])(implicit tx: S#Tx): Option[A] = f match {
-    case ex: ExprLike[S, _] => exVal(ex)
+  private def formValue(f: Form[S])(implicit tx: S#Tx): Option[A] = f match {
+    case ex: ExprLike[S, _] => tryParseValue(ex.value)
+    case obj: stm.Obj[S]    => tryParseObj  (obj)
     case _                  => None
   }
 
   final def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
     attr.changed.react { implicit tx => upd =>
       upd.changes.foreach {
-        case MapLike.Added  (`key`, ex: ExprLike[S, _]) =>
-          val opt = exVal(ex)
+        case MapLike.Added  (`key`, f) =>
+          val opt = formValue(f)
           if (opt.isDefined) fun(tx)(opt)
 
-        case MapLike.Removed(`key`, ex: ExprLike[S, _]) =>
-          val opt = exVal(ex)
+        case MapLike.Removed(`key`, f) =>
+          val opt = formValue(f)
           if (opt.isDefined) fun(tx)(None)
 
         case MapLike.Replaced(`key`, before, now) =>
-          val optB = exValForm(before)
-          val optN = exValForm(now  )
+          val optB = formValue(before)
+          val optN = formValue(now  )
           if (optB != optN) fun(tx)(optN)
 
         case _ => // ignore
@@ -71,8 +66,10 @@ abstract class AbstractCtxCellView[S <: Sys[S], A](attr: Context.Attr[S], key: S
 final class StmObjCtxCellView[S <: Sys[S]](attr: Context.Attr[S], key: String)
   extends AbstractCtxCellView[S, stm.Obj[S]](attr, key) {
 
-  protected def tryParse(value: Any)(implicit tx: S#Tx): Option[stm.Obj[S]] = value match {
+  protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[stm.Obj[S]] = value match {
     case obj: Obj => obj.peer
     case _        => None
   }
+
+  protected def tryParseObj(obj: stm.Obj[S])(implicit tx: S#Tx): Option[stm.Obj[S]] = Some(obj)
 }

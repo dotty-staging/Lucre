@@ -169,10 +169,13 @@ object Obj {
 //        println(s"Warning: Obj.cellView($key) not yet implemented for context. Using fall-back")
 //        context.selfOption.fold(CellView.const[S, Option[Obj]](None))(cellView(_, key))
         new AbstractCtxCellView[S, Obj](context.attr, key) {
-          protected def tryParse(value: Any)(implicit tx: S#Tx): Option[Obj] = value match {
+          protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[Obj] = value match {
             case obj: Obj => Some(obj)
             case _        => None
           }
+
+          protected def tryParseObj(peer: stm.Obj[S])(implicit tx: S#Tx): Option[Obj] =
+            Some(wrap(peer))
         }
       }
 

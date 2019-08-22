@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr.impl
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.{CellView, Context, Type}
@@ -43,14 +44,17 @@ final class ExObjBridgeImpl[A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](tpe: Type.Ex
 
   def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]] =
     new AbstractCtxCellView[S, A](context.attr, key) {
-      protected def tryParse(value: Any)(implicit tx: S#Tx): Option[A] =
+      protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[A] =
         tpe.tryParse(value)
+
+      protected def tryParseObj(obj: stm.Obj[S])(implicit tx: S#Tx): Option[A] =
+        if (obj.tpe === tpe) Some(obj.asInstanceOf[_Ex[S]].value) else None
     }
 
   def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[A] = {
     val opt = obj.attr.get(key)
     opt match {
-      case Some(v) if v.tpe.typeId == tpe.typeId =>
+      case Some(v) if v.tpe.typeId === tpe.typeId =>
         val vt = v.asInstanceOf[_Ex[S]]
         Some(vt.value)
 
