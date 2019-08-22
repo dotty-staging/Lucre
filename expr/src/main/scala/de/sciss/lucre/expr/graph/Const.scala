@@ -19,7 +19,7 @@ import de.sciss.lucre.stm.{Base, Sys}
 import de.sciss.model.Change
 
 object Const {
-  private[lucre] final class Expanded[S <: Base[S], A](peer: A)
+  private[sciss] final class Expanded[S <: Base[S], A](peer: A)
     extends IExpr[S, A] {
 
     override def toString: String = peer.toString
