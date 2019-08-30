@@ -23,7 +23,7 @@ lazy val deps = new {
   val bdb = new {
     val sleepy5   = "5.0.104" // = Berkeley DB Java Edition; sleepycat license, compatible to GPL 2 // Java 6+ required
     val sleepy6   = "6.4.25"  // AGPL 3 or now Apache as well? Java 7+ required
-    val sleepy7   = "7.4.5"   // Apache // Java 8+ required
+    val sleepy7   = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
     val scalaTest = "3.0.8"
@@ -58,7 +58,7 @@ lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
   .aggregate(base, geom, aux, data, core, expr, confluent, bdb, bdb6, bdb7)
-  .dependsOn(base, geom, aux, data, core, expr, confluent, bdb /* , bdb6 */)
+  .dependsOn(base, geom, aux, data, core, expr, confluent, bdb7 /*bdb*/ /* , bdb6 */)
   .settings(commonSettings)
   .settings(
     licenses := Seq(gpl2),
@@ -177,8 +177,9 @@ lazy val bdb7 = project.withId(s"$baseNameL-bdb7").in(file("bdb7"))
   .settings(commonSettings)
   .settings(
     licenses := Seq(lgpl),
-    resolvers += "Oracle Repository" at "http://download.oracle.com/maven",
-    libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy7,
+    // resolvers += "Oracle Repository" at "http://download.oracle.com/maven",
+    // libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy7,
+    libraryDependencies += "de.sciss" % "bdb-je" % deps.bdb.sleepy7,
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb7" % mimaVersion)
   )
 

@@ -47,8 +47,9 @@ object Obj {
     def copy: Copy = Obj.Copy(obj)
   }
 
-//  private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
-//    new Impl[S](peer, system)
+  // used by Mellite (no transaction available)
+  private[lucre] def wrapH[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
+    new Impl[S](peer, system)
 
   private[lucre] def wrap[S <: Sys[S]](peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
     new Impl[S](tx.newHandle(peer), tx.system)
