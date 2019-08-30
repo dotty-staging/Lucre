@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -37,17 +37,17 @@ object IntDistanceMeasure3D {
   val euclideanSq: MS = EuclideanSq
 
   /**
-   * A chebychev distance measure, based on the maximum of the absolute
+   * A chebyshev distance measure, based on the maximum of the absolute
    * distances across the first two dimensions. The 3rd dimension is ignored!
    */
   val chebyshevXY: ML = ChebyshevXY
 
     /**
-     * An 'inverted' chebychev distance measure, based on the *minimum* of the absolute
+     * An 'inverted' chebyshev distance measure, based on the *minimum* of the absolute
      * distances across the first two dimensions. The 3rd dimension is ignored!
      * This is, strictly speaking, only a semi metric.
      */
-    val vehsybehcXY: ML = VehsybehcXY
+    val invertedChebyshevXY: ML = InvertedChebyshevXY
 
   private object EuclideanSq extends SqrImpl {
     override def toString = "IntDistanceMeasure3D.euclideanSq"
@@ -159,8 +159,8 @@ object IntDistanceMeasure3D {
     protected def applyMax(dx: Long, dy: Long): Long = math.max(dx, dy)
   }
 
-  private object VehsybehcXY extends ChebyshevXYLike {
-    override def toString = "IntDistanceMeasure3D.vehsybehcXY"
+  private object InvertedChebyshevXY extends ChebyshevXYLike {
+    override def toString = "IntDistanceMeasure3D.invertedChebyshevXY"
 
     protected def apply   (dx: Long, dy: Long): Long = math.min(dx, dy)
     protected def applyMin(dx: Long, dy: Long): Long = math.min(dx, dy)

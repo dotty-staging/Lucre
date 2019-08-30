@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -35,15 +35,15 @@ object LongDistanceMeasure2D {
     */
   val euclideanSq: MS = EuclideanSq
 
-  /** A Chebychev distance measure, based on the maximum of the absolute
+  /** A Chebyshev distance measure, based on the maximum of the absolute
     * distances across all dimensions.
     */
   val chebyshev: ML = Chebyshev
 
-  /**  An 'inverted' Chebychev distance measure, based on the *minimum* of the absolute
+  /**  An 'inverted' Chebyshev distance measure, based on the *minimum* of the absolute
     * distances across all dimensions. This is, strictly speaking, only a semi metric.
     */
-  val vehsybehc: ML = Vehsybehc
+  val invertedChebyshev: ML = InvertedChebyshev
 
   private object Chebyshev extends ChebyshevLike {
     override def toString = "LongDistanceMeasure2D.chebyshev"
@@ -53,8 +53,8 @@ object LongDistanceMeasure2D {
     protected def applyMax(dx: Long, dy: Long): Long = math.max(dx, dy)
   }
 
-  private object Vehsybehc extends ChebyshevLike {
-    override def toString = "LongDistanceMeasure2D.vehsybehc"
+  private object InvertedChebyshev extends ChebyshevLike {
+    override def toString = "LongDistanceMeasure2D.invertedChebyshev"
 
     protected def apply   (dx: Long, dy: Long): Long = math.min(dx, dy)
     protected def applyMin(dx: Long, dy: Long): Long = math.min(dx, dy)

@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -44,12 +44,8 @@ object UndoManager {
 
   private val current = TxnLocal[UndoManager[_]]()
 
-  final class CannotUndoException(message: String) extends RuntimeException(message) {
-//    def this() = this(null)
-  }
-  final class CannotRedoException(message: String) extends RuntimeException(message) {
-//    def this() = this(null)
-  }
+  final class CannotUndoException(message: String) extends RuntimeException(message)
+  final class CannotRedoException(message: String) extends RuntimeException(message)
 }
 trait UndoManager[S <: Sys[S]] extends Disposable[S#Tx] with Observable[S#Tx, UndoManager.Update[S]] {
   /** Add another edit to the history.

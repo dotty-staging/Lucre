@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -52,7 +52,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Sys[~]] <: Expr[~, A1]] extends Type.Expr[A1, R
     * By default this throws an exception. Sub-classes may use a cookie greater
     * than `3` for other constant types.
     */
-  protected def readCookie[S <: Sys[S]](in: DataInput, access: S#Acc, cookie: Byte)(implicit tx: S#Tx): _Ex[S] =
+  protected def readCookie[S <: Sys[S]](in: DataInput, access: S#Acc, cookie: Byte)(implicit tx: S#Tx): _Ex[S] =  // sub-class may need tx
     sys.error(s"Unexpected cookie $cookie")
 
   implicit final def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, _Ex[S]] /* EventLikeSerializer[S, Repr[S]] */ =

@@ -47,7 +47,7 @@ object MapToActTest extends App {
     _ctl.initControl()
 
     val view = CellView.attr[S, String, StringObj](self.attr, "bar")
-    view.react { implicit tx => upd =>
+    view.react { _ => upd =>
       println(s"[update] $upd")
     }
 

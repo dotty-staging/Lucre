@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -400,7 +400,7 @@ object DeterministicSkipOctree {
     protected object LeafOrdering extends Ordering[S#Tx, Leaf] {
       /** Leafs are ordered by the tree's in-order traversal,
         * where the quadrants I+II and III+IV can be thought
-        * of as dummy nodes to binarize the octree. That is
+        * of as dummy nodes to make the octree binary. That is
         * to say, in a node, the child order corresponds to
         * their quadrant indices (I < II < III < IV).
         */
@@ -875,8 +875,8 @@ object DeterministicSkipOctree {
      */
     private[this] def findP0(point: D#PointLike)(implicit tx: S#Tx): LeftBranch = {
       @tailrec def stepLeft(lb: LeftBranch): LeftBranch = {
-        val qidx = lb.hyperCube.indexOf(point)
-        lb.child(qidx) match {
+        val qIdx = lb.hyperCube.indexOf(point)
+        lb.child(qIdx) match {
           case _: LeafOrEmpty => lb
           case cb: LeftBranch =>
             if (!cb.hyperCube.contains(point)) lb else stepLeft(cb)
@@ -907,7 +907,7 @@ object DeterministicSkipOctree {
 
     final def iterator(implicit tx: S#Tx): Iterator[A] = skipList.iterator.map(_.value)
 
-    private[this] final class NNIter[M](val bestLeaf: LeafOrEmpty, val bestDist: M, val rmax: M)
+    private[this] final class NNIteration[M](val bestLeaf: LeafOrEmpty, val bestDist: M, val rMax: M)
 
     private[this] final class NN[M](point: D#PointLike, metric: DistanceMeasure[M, D])
       extends scala.math.Ordering[VisitedNode[M]] {
@@ -918,23 +918,23 @@ object DeterministicSkipOctree {
       // scala's specialization blows up
       protected val sz: Int = numOrthants
       private[this] val acceptedChildren = new Array[Branch](sz)
-      //      private val acceptedDists     = {
+      //      private val acceptedDistances   = {
       //         implicit val mf = metric.manifest
       //         new Array[ M ]( sz )
       //      }
-      private[this] val acceptedMinDists = metric.newArray(sz)
-      // private val acceptedMaxDists = metric.newArray(sz)
+      private[this] val acceptedMinDistances = metric.newArray(sz)
+      // private val acceptedMaxDistances = metric.newArray(sz)
 
     /* @tailrec */ private[this] def findNNTailOLD(n0: /* Left */ Branch, pri: MPriorityQueue[VisitedNode[M]],
-                                    _bestLeaf: LeafOrEmpty, _bestDist: M, _rmax: M)
-                                   (implicit tx: S#Tx): NNIter[M] = {
-      stat_rounds1(_rmax)
+                                    _bestLeaf: LeafOrEmpty, _bestDist: M, _rMax: M)
+                                   (implicit tx: S#Tx): NNIteration[M] = {
+      stat_rounds1(_rMax)
       var numAccepted   = 0
-      var acceptedQidx  = 0
+      var acceptedQIdx  = 0
 
       var bestLeaf  = _bestLeaf
       var bestDist  = _bestDist
-      var rmax      = _rmax
+      var rMax      = _rMax
 
       var i = 0
       while (i < sz) {
@@ -944,43 +944,43 @@ object DeterministicSkipOctree {
             if (metric.isMeasureGreater(bestDist, lDist)) {   // found a point that is closer than previously known best result
               bestDist = lDist
               bestLeaf = l
-              if (metric.isMeasureGreater(rmax, bestDist)) {  // update minimum required distance if necessary
-                rmax = bestDist // note: we'll re-check acceptedChildren at the end of the loop
+              if (metric.isMeasureGreater(rMax, bestDist)) {  // update minimum required distance if necessary
+                rMax = bestDist // note: we'll re-check acceptedChildren at the end of the loop
               }
             }
           case c: LeftBranch =>
             val cq = c.hyperCube
             val cMinDist = metric.minDistance(point, cq)
-            if (!metric.isMeasureGreater(cMinDist, rmax)) {   // is less than or equal to minimum required distance
+            if (!metric.isMeasureGreater(cMinDist, rMax)) {   // is less than or equal to minimum required distance
                                                               // (otherwise we're out already)
               val cMaxDist = metric.maxDistance(point, cq)
-              if (metric.isMeasureGreater(rmax, cMaxDist)) {
-                rmax = cMaxDist                               // found a new minimum required distance
+              if (metric.isMeasureGreater(rMax, cMaxDist)) {
+                rMax = cMaxDist                               // found a new minimum required distance
               }
               acceptedChildren(numAccepted) = c
-              acceptedMinDists(numAccepted) = cMinDist
-              // acceptedMaxDists(numAccepted) = cMaxDist
+              acceptedMinDistances(numAccepted) = cMinDist
+              // acceptedMaxDistances(numAccepted) = cMaxDist
               numAccepted += 1
-              acceptedQidx = i                                // this will be used only if numAccepted == 1
+              acceptedQIdx = i                                // this will be used only if numAccepted == 1
             }
           case _ => // ignore empty orthants
         }
         i += 1
       }
 
-      if (rmax != _rmax) {
+      if (rMax != _rMax) {
         // recheck
         var j = 0
         while (j < numAccepted) {
-          if (metric.isMeasureGreater(acceptedMinDists(j), rmax)) {
+          if (metric.isMeasureGreater(acceptedMinDistances(j), rMax)) {
             // immediately kick it out
             numAccepted -= 1
             var k = j
             while (k < numAccepted) {
               val k1 = k + 1
               acceptedChildren(k) = acceptedChildren(k1)
-              acceptedMinDists(k) = acceptedMinDists(k1)
-              // acceptedMaxDists(k) = acceptedMaxDists(k1)
+              acceptedMinDistances(k) = acceptedMinDistances(k1)
+              // acceptedMaxDistances(k) = acceptedMaxDistances(k1)
               k = k1
             }
           }
@@ -992,18 +992,18 @@ object DeterministicSkipOctree {
   //      if (numAccepted != 1) {
         /* var */ i = 0
         while (i < numAccepted) { // ...and the children are added to the priority queue
-          val vn = new VisitedNode[M](acceptedChildren(i), acceptedMinDists(i) /*, acceptedMaxDists(i) */)
+          val vn = new VisitedNode[M](acceptedChildren(i), acceptedMinDistances(i) /*, acceptedMaxDistances(i) */)
           stat_pq_add1(vn)
           pri += vn
           i += 1
         }
-        new NNIter[M](bestLeaf, bestDist, rmax)
+        new NNIteration[M](bestLeaf, bestDist, rMax)
       }
 
       def find()(implicit tx: S#Tx): LeafOrEmpty = {
         val pri = MPriorityQueue.empty[VisitedNode[M]](this)
-        @tailrec def step(p0: Branch, pMinDist: M, bestLeaf: LeafOrEmpty, bestDist: M, rmax: M): LeafOrEmpty = {
-          val res = findNNTailOLD(p0, /* pMinDist, */ pri, bestLeaf, bestDist, rmax)
+        @tailrec def step(p0: Branch, pMinDist: M, bestLeaf: LeafOrEmpty, bestDist: M, rMax: M): LeafOrEmpty = {
+          val res = findNNTailOLD(p0, /* pMinDist, */ pri, bestLeaf, bestDist, rMax)
           if (metric.isMeasureZero(res.bestDist)) {
             res.bestLeaf   // found a point exactly at the query position, so stop right away
           } else {
@@ -1011,15 +1011,15 @@ object DeterministicSkipOctree {
             else {
               val vis = pri.dequeue()
               stat_pq_rem1(vis.n.hyperCube)
-              // if (!metric.isMeasureGreater(vis.minDist, res.rmax)) vis.n else pop()
+              // if (!metric.isMeasureGreater(vis.minDist, res.rMax)) vis.n else pop()
 
               // because the queue is sorted by smallest minDist, if we find an element
               // whose minimum distance is greater than the maximum distance allowed,
               // we are done and do not need to process the remainder of the priority queue.
 
-              if (metric.isMeasureGreater(vis.minDist, res.rmax)) res.bestLeaf else {
+              if (metric.isMeasureGreater(vis.minDist, res.rMax)) res.bestLeaf else {
                 val lb = vis.n
-                step(lb, vis.minDist, res.bestLeaf, res.bestDist, res.rmax)
+                step(lb, vis.minDist, res.bestLeaf, res.bestDist, res.rMax)
               }
             }
           }
@@ -1063,7 +1063,8 @@ object DeterministicSkipOctree {
       // "At each square q ∈ Qi we either go to a child square in Qi
       // that covers the same area of R ∪ A as p does, if such a child
       // square exists, or jump to the next level q ∈ Qi−1."
-      @tailrec private[this] def findEquiStabbingTail(node: Branch, area: Area)(implicit tx: S#Tx): LeftBranch = {
+      @tailrec private[this] def findEquidistantStabbingTail(node: Branch, area: Area)
+                                                            (implicit tx: S#Tx): LeftBranch = {
         var pi = node
         var i = 0
         while (i < sz) {
@@ -1082,7 +1083,7 @@ object DeterministicSkipOctree {
         // ... or jump to the next (previous) level
         pi match {
           case lb: LeftBranch => lb
-          case rb: RightBranch => findEquiStabbingTail(rb.prev, area)
+          case rb: RightBranch => findEquidistantStabbingTail(rb.prev, area)
         }
       }
 
@@ -1093,8 +1094,8 @@ object DeterministicSkipOctree {
       // definition of critical square:
       // "a stabbing node of Qi whose child nodes are either not stabbing, or still
       // stabbing but cover less volume of R than p does."
-      // ; bzw. umgedreht: eine unkritische node ist eine, in der es mindestens eine stabbing node
-      // mit derselben ueberlappungsflaeche gibt!
+      // ; or rather inverted: an uncritical node is one, in which exists at least one stabbing node
+      // with the same overlapping area!
       //
       // definition stabbing: 0 < overlap-area < area-of-p
       @tailrec def findHighestUncritical(p0: Branch, area: Area)(implicit tx: S#Tx): Branch = {
@@ -1130,7 +1131,7 @@ object DeterministicSkipOctree {
             val ns  = tup._1 // stabbing node
             val as  = tup._2 // overlapping area with query shape
             val hi  = findHighestUncritical(ns, as) // find highest uncritical hyper-cube of the stabbing node
-            val nc  = findEquiStabbingTail (hi, as) // now traverse towards Q0 to find the critical square
+            val nc  = findEquidistantStabbingTail (hi, as) // now traverse towards Q0 to find the critical square
 
             var i = 0
             while (i < sz) {
@@ -1167,7 +1168,7 @@ object DeterministicSkipOctree {
                 var i = 0
                 while (i < sz) {
                   n.child(i) match {
-                    case cc: NonEmptyChild => in += cc // sucky `enqueue` creates intermediate Seq because of varargs
+                    case cc: NonEmptyChild => in += cc // `enqueue` would create intermediate Seq because of varargs
                     case _ =>
                   }
                   i += 1
@@ -1273,7 +1274,7 @@ object DeterministicSkipOctree {
        * sub-node whose parent is this node, and which should be
        * ordered according to its position in this node.
        *
-       * @param   qidx  the orthant index of the new node in this (parent) node
+       * @param   qIdx  the orthant index of the new node in this (parent) node
        * @param   iq    the hyper-cube of the new node
        * @return  the new node which has already assigned this node as
        *          parent and is already stored in this node's children
@@ -1486,12 +1487,13 @@ object DeterministicSkipOctree {
         case b: Branch  => Some(b)
       }
 
-      final def union(mq: D#HyperCube, point2: D#PointLike)(implicit tx: S#Tx): D#HyperCube = {
+      final override def union(mq: D#HyperCube, point2: D#PointLike)(implicit tx: S#Tx): D#HyperCube = {  // scalac warning bug
         val q = thisBranch.hyperCube
         mq.greatestInteresting(q, point2)
       }
 
-      final def orthantIndexIn(iq: D#HyperCube)(implicit tx: S#Tx): Int = iq.indexOf(thisBranch.hyperCube)
+      final def orthantIndexIn(iq: D#HyperCube)(implicit tx: S#Tx): Int =  // scalac warning bug
+        iq.indexOf(thisBranch.hyperCube)
 
       protected final def shortString = s"$nodeName($thisBranch.hyperCube)"
     }
@@ -1819,8 +1821,8 @@ object DeterministicSkipOctree {
     }
 
     def debugPrint()(implicit tx: S#Tx): String = {
-      val baos  = new ByteArrayOutputStream()
-      val ps    = new PrintStream(baos)
+      val bs  = new ByteArrayOutputStream()
+      val ps  = new PrintStream(bs)
       import ps._
 
       println(s"Debug print for $this")
@@ -1857,11 +1859,11 @@ object DeterministicSkipOctree {
 
       dumpTrees(headTree, 0)
       ps.close()
-      new String(baos.toByteArray, "UTF-8")
+      new String(bs.toByteArray, "UTF-8")
     }
 
 
-    /* A debugging facility to inpect an octree only (not the skip list) for internal structural consistency.
+    /* A debugging facility to inspect an octree only (not the skip list) for internal structural consistency.
      *
      * @param tree       the tree to inspect.
      * @param reportOnly if `true`, merely reports anomalies but does not try to resolve them. If `false` attempts to
@@ -1914,7 +1916,7 @@ object DeterministicSkipOctree {
                 }
                 cb.nextOption match {
                   case Some(next) =>
-                    if (next.prevOption != Some(cb)) {
+                    if (!next.prevOption.contains(cb)) {
                       errors :+= s"Asymmetric next link $cq $assertInfo"
                     }
                     if (next.hyperCube != cq) {
@@ -1927,7 +1929,7 @@ object DeterministicSkipOctree {
                 }
                 cb.prevOption match {
                   case Some(prev) =>
-                    if (prev.nextOption != Some(cb)) {
+                    if (!prev.nextOption.contains(cb)) {
                       errors :+= s"Asymmetric prev link $cq $assertInfo"
                     }
                     if (prev.hyperCube != cq) {
@@ -1953,7 +1955,7 @@ object DeterministicSkipOctree {
           if (repair && level == 1) {
             assert(h.prevOption.isEmpty)
 
-            def newNode(b: LeftBranch, qidx: Int, iq: D#HyperCube)(implicit tx: S#Tx): LeftChildBranch = {
+            def newNode(b: LeftBranch, qIdx: Int, iq: D#HyperCube)(implicit tx: S#Tx): LeftChildBranch = {
               val sz  = numOrthants // b.children.length
               val ch  = tx.newVarArray[LeftChild](sz)
               val cid = tx.newId()
@@ -1967,7 +1969,7 @@ object DeterministicSkipOctree {
               val n           = new LeftChildBranchImpl(
                 cid, parentRef, iq, children = ch, nextRef = rightRef
               )
-              b.updateChild(qidx, n)
+              b.updateChild(qIdx, n)
               n
             }
 
@@ -1979,7 +1981,7 @@ object DeterministicSkipOctree {
 
                 case old: LeftNonEmptyChild =>
                   // define the greatest interesting square for the new node to insert
-                  // in this node at qidx:
+                  // in this node at qIdx:
                   val qn2 = old.union(b.hyperCube.orthant(qIdx), point)
                   // create the new node (this adds it to the children!)
                   val n2 = newNode(b, qIdx, qn2)
@@ -2005,6 +2007,7 @@ object DeterministicSkipOctree {
                 pointsOnlyInNext.foreach { leaf =>
                   val point = pointView(leaf.value, tx)
 
+                  @tailrec
                   def goDown(b: LeftBranch): Unit = {
                     val idx   = b.hyperCube.indexOf(point)
                     if (idx < 0) {
@@ -2084,7 +2087,7 @@ object DeterministicSkipOctree {
                 skipList.remove(leaf)
               } finally {
                 DeterministicSkipOctree.sanitizing = false
-                return errors // hacky!!! skipList iterator possibly invalid, thus abort straight after removal
+                return errors // hackish!!! skipList iterator possibly invalid, thus abort straight after removal
               }
             }
 
@@ -2133,7 +2136,7 @@ object DeterministicSkipOctree {
                 b.demoteLeaf(pointView(l.value, tx), l)
                 println(s"\n============== AFTER REMOVING $l ==============")
                 println(debugPrint())
-                return  // XXX dirty - but if there is more than one wrong leaf, continuing may reinstall a lonley parent
+                return  // XXX dirty - but if there is more than one wrong leaf, continuing may reinstall a lonely parent
               }
 
             case cb: Branch =>

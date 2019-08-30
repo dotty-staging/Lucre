@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -81,7 +81,7 @@ object HASkipList {
   }
 
   def debugFindLevel[S <: Base[S], A](list: SkipList[S, A, _], key: A)(implicit tx: S#Tx): Int = list match {
-    case impl0: Impl[S, A, _] =>
+    case impl0: Impl[S, A, _] =>  // wrong warning
       val h = impl0.height
 
       @tailrec
@@ -1185,12 +1185,12 @@ object HASkipList {
       copy(lSib.entries.last +: entries)
     }
 
-    private[HASkipList] final def insert(idx: Int, entry: E)(implicit list: Impl[S, A, E]): Leaf[S, A, E] = {
+    private[HASkipList] final def insert(idx: Int, entry: E)/*(implicit list: Impl[S, A, E])*/: Leaf[S, A, E] = {
       val newEntries = entries.patch(idx, Vector(entry), 0)
       copy(newEntries)
     }
 
-    private[HASkipList] final def update(idx: Int, entry: E)(implicit list: Impl[S, A, E]): Leaf[S, A, E] = {
+    private[HASkipList] final def update(idx: Int, entry: E)/*(implicit list: Impl[S, A, E])*/: Leaf[S, A, E] = {
       val newEntries = entries.patch(idx, Vector(entry), 1)
       copy(newEntries)
     }
@@ -1325,7 +1325,7 @@ object HASkipList {
 
      def down(i: Int)(implicit tx: S#Tx): Node[S, A, B] = downs(i)()
 
-     private[HASkipList] def split(implicit tx: S#Tx, list: Impl[S, A, B]): (Branch[S, A, B], Branch[S, A, B]) = {
+     private[HASkipList] def split(implicit /*tx: S#Tx,*/ list: Impl[S, A, B]): (Branch[S, A, B], Branch[S, A, B]) = {
        val lsz = list.arrMinSz
        val (lKeys , rKeys ) = keys .splitAt(lsz)
        val (lDowns, rDowns) = downs.splitAt(lsz)
@@ -1343,7 +1343,7 @@ object HASkipList {
        new Branch[S, A, B](newKeys, newDowns)
      }
 
-     private[HASkipList] def updateKey(idx: Int, key: A)(implicit tx: S#Tx, list: Impl[S, A, B]): Branch[S, A, B] = {
+     private[HASkipList] def updateKey(idx: Int, key: A)/*(implicit tx: S#Tx, list: Impl[S, A, B])*/: Branch[S, A, B] = {
        val newKeys = keys.updated(idx, key)
        new Branch[S, A, B](newKeys, downs)
      }

@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -209,10 +209,10 @@ object Ancestor {
 
   private type MarkOrder[S <: Base[S], Version, A] = TotalOrder.Map.Entry[S, Mark[S, Version, A]]
 
-  private final val chebyMetric = IntDistanceMeasure3D.chebyshevXY
+  private final val chebyshevMetric = IntDistanceMeasure3D.chebyshevXY
   // left-bottom-front
   // = left in pre-order list, right in post-order list, smaller in version
-  private final val metric = chebyMetric.orthant(2)
+  private final val metric = chebyshevMetric.orthant(2)
 
   private final class FilterMetric(pred: Int => Boolean) extends IntDistanceMeasure3D.LongImpl {
     import IntSpace.ThreeDim.{HyperCube, PointLike}
@@ -221,7 +221,7 @@ object Ancestor {
 
     def distance(a: PointLike, b: PointLike): Long = {
       if (b.x <= a.x && b.y >= a.y && pred(b.z)) {
-        chebyMetric.distance(a, b)
+        chebyshevMetric.distance(a, b)
       } else maxValue
     }
 
@@ -230,7 +230,7 @@ object Ancestor {
       val qem1 = qe - 1
 
       if (q.cx - qe <= p.x && q.cy + qem1 >= p.y && pred(q.cz - qe)) {
-        chebyMetric.minDistance(p, q)
+        chebyshevMetric.minDistance(p, q)
       } else maxValue
     }
 
@@ -239,7 +239,7 @@ object Ancestor {
       val qem1 = qe - 1
 
       if (q.cx + qem1 <= p.x && q.cy - qe >= p.y && pred(q.cz + qem1)) {
-        chebyMetric.maxDistance(p, q)
+        chebyshevMetric.maxDistance(p, q)
       } else maxValue
     }
   }
@@ -511,11 +511,11 @@ object Ancestor {
     }
 
     // ---- RelabelObserver ----
-    final def beforeRelabeling(iter: Iterator[M])(implicit tx: S#Tx): Unit =
-      iter.foreach(skip -= _)
+    final def beforeRelabeling(iterator: Iterator[M])(implicit tx: S#Tx): Unit =
+      iterator.foreach(skip -= _)
 
-    final def afterRelabeling(iter: Iterator[M])(implicit tx: S#Tx): Unit =
-      iter.foreach(skip += _)
+    final def afterRelabeling(iterator: Iterator[M])(implicit tx: S#Tx): Unit =
+      iterator.foreach(skip += _)
 
     final def debugPrint(implicit tx: S#Tx): String = {
       val s = skip.toList.map { m =>

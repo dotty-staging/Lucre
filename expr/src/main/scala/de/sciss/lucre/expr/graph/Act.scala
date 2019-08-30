@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -121,7 +121,7 @@ object Act {
       new ExpandedFlatten(in.expand[S])
   }
 
-  private final class ExpandedNop[S <: Sys[S]](implicit ctx: Context[S])
+  private final class ExpandedNop[S <: Sys[S]]/*(implicit ctx: Context[S])*/
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = ()

@@ -24,7 +24,7 @@ object NNPerf extends App {
       //val ins   = Vector.fill(j)(IntPoint2D(r.nextInt(j), r.nextInt(j)))
       ins.foreach(tree += _)
       println(s"\nSize = $j")
-      val res = tree.nearestNeighbor(v, IntDistanceMeasure2D.vehsybehc)
+      val res = tree.nearestNeighbor(v, IntDistanceMeasure2D.invertedChebyshev)
       val manual = ins.minBy(p => p.distanceSq(v))
       assert(res == manual, s"NN yields $res but manual is $manual")
     }

@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -43,15 +43,6 @@ trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] extends Disposab
 
   def changed: Observable[S#Tx, MapLike.Update[S, K, Repr]]
 
-//  /** Reports the number of entries in the map.
-//    * This operation may take up to O(n) time, depending on the implementation.
-//    */
-//  def size(implicit tx: S#Tx): Int
-//
-//  def iterator      (implicit tx: S#Tx): Iterator[(K, V)]
-//  def keysIterator  (implicit tx: S#Tx): Iterator[K]
-//  def valuesIterator(implicit tx: S#Tx): Iterator[V]
-
   /** Searches for the map for a given key.
     *
     * @param   key   the key to search for
@@ -65,6 +56,4 @@ trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] extends Disposab
     * @return     the value if it was found at the key, otherwise `None`
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
-
-//  def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
 }

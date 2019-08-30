@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -29,17 +29,17 @@ object IntDistanceMeasure2D {
   final val euclideanSq: M = EuclideanSq
 
   /**
-   * A chebychev distance measure, based on the maximum of the absolute
+   * A chebyshev distance measure, based on the maximum of the absolute
    * distances across all dimensions.
    */
   final val chebyshev: M = Chebyshev
 
   /**
-   * An 'inverted' chebychev distance measure, based on the *minimum* of the absolute
+   * An 'inverted' chebyshev distance measure, based on the *minimum* of the absolute
    * distances across all dimensions. This is, strictly speaking, only a semi metric,
    * and probably totally **useless**.
    */
-  final val vehsybehc: M = Vehsybehc
+  final val invertedChebyshev: M = InvertedChebyshev
 
   /**
    * A 'next event' search when the quadtree is used to store spans (intervals).
@@ -175,8 +175,8 @@ object IntDistanceMeasure2D {
       } else Long.MaxValue
   }
 
-  private object Vehsybehc extends ChebyshevLike {
-    override def toString = "IntDistanceMeasure2D.vehsybehc"
+  private object InvertedChebyshev extends ChebyshevLike {
+    override def toString = "IntDistanceMeasure2D.invertedChebyshev"
 
     protected def apply   (dx: Long, dy: Long): Long = math.min(dx, dy)
     protected def applyMin(dx: Long, dy: Long): Long = math.min(dx, dy)

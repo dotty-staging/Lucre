@@ -12,7 +12,7 @@ class TimeStampSpec extends ConfluentSpec {
   def sleep(): Unit = Thread.sleep(10)
 
   "Time stamps and version info" should "work in a non-melded graph" in { system =>
-    val (access, cursor) = system.cursorRoot { implicit tx => 0
+    val (access, cursor) = system.cursorRoot { _ => 0
     } { implicit tx => _ => system.newCursor() }
 
     //      sleep()

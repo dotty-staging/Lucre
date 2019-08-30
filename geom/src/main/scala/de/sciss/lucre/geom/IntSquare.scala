@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -262,7 +262,7 @@ trait IntSquareLike extends HyperCube[IntSpace.TwoDim] with QueryShape[Long, Int
       x1 = bkx + 1
       x2 = akx
     }
-    val mx = IntSpace.binSplit(x1, x2)  // bitmask for x coordinate
+    val mx = IntSpace.binSplit(x1, x2)  // bit-mask for x coordinate
 
     var y0 = 0
     var y1 = 0
@@ -278,7 +278,7 @@ trait IntSquareLike extends HyperCube[IntSpace.TwoDim] with QueryShape[Long, Int
     }
     val my = IntSpace.binSplit(y1, y2)
 
-    // a smaller mask means that more lsb's are zero, hence it's a coarser mask
+    // a smaller mask means that more lsb are zero, hence it's a coarser mask
     if (mx <= my) {
       // IntSquare(tlx + (x2 & mx),             tly + (y0 & (mx << 1)) - mx, -mx)
       val mx2 = mx << 1

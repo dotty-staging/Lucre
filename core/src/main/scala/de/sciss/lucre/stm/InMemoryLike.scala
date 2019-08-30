@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -30,21 +30,14 @@ object InMemoryLike {
   trait Var[S <: Sys[S], A] extends stm.Var[S#Tx, A] {
     private[stm] def peer: STMRef[A]
   }
-
-//  trait Context[S <: InMemoryLike[S]] {
-//    def get[A](vr: Var[S, A])(implicit tx: S#Tx): A
-//    def put[A](vr: Var[S, A], value: A)(implicit tx: S#Tx): Unit
-//  }
 }
 trait InMemoryLike[S <: InMemoryLike[S]] extends Sys[S] with Cursor[S] {
   final type Var[A]   = InMemoryLike.Var[S, A]
   final type Id       = InMemoryLike.Id[S]
   final type Acc      = Unit
-//  final type Context  = InMemoryLike.Context[S]
 
   type Tx <: InMemoryLike.Txn[S]
 
-  // private[lucre] def attrMap: IdentifierMap[S#Id, S#Tx, Map[String, Obj[S]]]
   private[lucre] def attrMap: IdentifierMap[S#Id, S#Tx, Obj.AttrMap[S]]
 
   private[lucre] def newIdValue()(implicit tx: S#Tx): Int

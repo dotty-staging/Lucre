@@ -1,15 +1,11 @@
 /*
  *  BerkeleyDB.scala
- *  (Lucre-bdb)
+ *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  Note that depending on which BDB JE edition you are linking to,
- *  more restrictive licenses may apply:
+ *  This software is published under the GNU Lesser General Public License v2.1+
  *
- *  - BDB 5 requires GPL 2+
- *  - BDB 6 requires AGPL 3+
- *  - BDB 7 is Apache licensed, combined license with Lucre is LGPL v2.1+
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de

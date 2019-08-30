@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -38,18 +38,18 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
       // XXX TODO --- ok, this is the first test for this idea
       // so we just expand and dispose locally. Later we could
       // optimise to avoid re-expansion for non-empty input sequences.
-      val iter  = inSeq.iterator
-      val v0    = iter.next()
+      val iterator  = inSeq.iterator
+      val v0        = iterator.next()
       it.setValue(v0 /*, dispatch = false*/ )  // make sure we have the first value ready
-      val (outSeq, funDisp) = ctx.nested {
+      val (outSeq, funDisposable) = ctx.nested {
         val b     = Seq.newBuilder[B]
         val funEx = fun.expand[S]  // ...which might be read here
         // it.setValue(v0, dispatch = true)
         b += funEx.value
 
         // now iterate over the tail
-        while (iter.hasNext) {
-          val vn = iter.next()
+        while (iterator.hasNext) {
+          val vn = iterator.next()
           it.setValue(vn /*, dispatch = true*/)
           b += funEx.value
         }
@@ -57,7 +57,7 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
         b.result()
       }
 
-      funDisp.dispose()
+      funDisposable.dispose()
       outSeq
     }
 

@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -121,8 +121,8 @@ object ListImpl {
         (in.readByte: @switch) match {
           case 1 =>
             val elem = Elem.read(in, access).asInstanceOf[A]
-            val pred = tx.readVar[C](id, in)
-            val succ = tx.readVar[C](id, in)
+            val pred = tx.readVar[C](id, in)  // IntelliJ highlight bug
+            val succ = tx.readVar[C](id, in)  // IntelliJ highlight bug
             new Cell[S, A](elem, pred, succ)
           case 0 => null
           case cookie => sys.error(s"Unexpected cookie $cookie")

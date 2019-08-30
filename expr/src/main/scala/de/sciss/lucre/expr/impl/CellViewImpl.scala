@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -155,17 +155,11 @@ object CellViewImpl {
       h().changed.react { implicit tx => ch => fun(tx)(ch.now) }
 
     def apply()(implicit tx: S#Tx): A = h().value
-
-    // XXX TODO -- remove in next major version
-    def repr(implicit tx: S#Tx): Repr = throw new Exception("Subclass responsibility")
   }
 
   private[lucre] final class Expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
                                                                                        protected val h: stm.Source[S#Tx, _Ex[S]])
-    extends ExprLike[S, A, _Ex] {
-
-    override def repr(implicit tx: S#Tx): Repr = h()
-  }
+    extends ExprLike[S, A, _Ex]
 
   private[lucre] final class ExprVar[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
                                                                                           protected val h: stm.Source[S#Tx, _Ex[S] with stm.Var[S#Tx, _Ex[S]]])

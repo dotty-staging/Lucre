@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -335,7 +335,7 @@ object TotalOrder {
       * a subsequence with sufficiently low density, at which point
       * we space the tags evenly throughout the available values.
       *
-      * The multiplier controls the growth of the threshhold density;
+      * The multiplier controls the growth of the threshold density;
       * it is 2/T for the T parameter described by Bender et al.
       * Large multipliers lead to fewer relabels, while small items allow
       * us to handle more items with machine integer tags, so we vary the
@@ -554,7 +554,7 @@ object TotalOrder {
 
     def get: A = throw new NoSuchElementException("EmptyKey.get")
 
-    def tag(implicit tx: S#Tx): Int = Int.MaxValue
+//    def tag(implicit tx: S#Tx): Int = Int.MaxValue
 
     def orNull: Map.Entry[S, A] = null
 
@@ -891,12 +891,12 @@ object TotalOrder {
           if (inc >= thresh) {
             // found rebalanceable range
             val numM1 = num - 1
-            val relabelIter = if (recOff == 0) {
+            val relabelIterator = if (recOff == 0) {
               new RelabelIterator(-1, numM1, recE, firstE.next, entryView)
             } else {
               new RelabelIterator(recOff, numM1, recE, new DefinedKey(this, firstK), entryView)
             }
-            observer.beforeRelabeling(/* recK, */ relabelIter)
+            observer.beforeRelabeling(/* recK, */ relabelIterator)
 
             // Note: this was probably a bug in Eppstein's code
             // -- it ran for one iteration less which made
@@ -913,8 +913,8 @@ object TotalOrder {
               curr      = if (cnt == recOff) recE else entryView(nextK)
             }
             curr.updateTag(base) // last one
-            relabelIter.reset()
-            observer.afterRelabeling(/* recK, */ relabelIter)
+            relabelIterator.reset()
+            observer.afterRelabeling(/* recK, */ relabelIterator)
             return
           }
         }

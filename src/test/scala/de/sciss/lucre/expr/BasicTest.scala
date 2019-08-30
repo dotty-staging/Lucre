@@ -43,7 +43,7 @@ object BasicTest {
       val c = b - a
 
 
-      c.changed.react { implicit tx => {
+      c.changed.react { _ => {
         case Change(_, now) => observations :+= now // println(s"c = $now")
       }}
 

@@ -21,8 +21,6 @@ lazy val deps = new {
     val finger    = "1.5.4"
   }
   val bdb = new {
-    val sleepy5   = "5.0.104" // = Berkeley DB Java Edition; sleepycat license, compatible to GPL 2 // Java 6+ required
-    val sleepy6   = "6.4.25"  // AGPL 3 or now Apache as well? Java 7+ required
     val sleepy7   = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
@@ -51,17 +49,15 @@ lazy val commonSettings = Seq(
   }
 ) ++ publishSettings
 
-lazy val lgpl = "LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")
-lazy val gpl2 = "GPL v2+"    -> url("http://www.gnu.org/licenses/gpl-2.0.txt" )
-lazy val gpl3 = "GPL v3+"    -> url("http://www.gnu.org/licenses/gpl-3.0.txt" )
+lazy val agpl = "AGPL v3+" -> url("http://www.gnu.org/licenses/agpl-3.0.txt")
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
-  .aggregate(base, geom, aux, data, core, expr, confluent, bdb, bdb6, bdb7)
-  .dependsOn(base, geom, aux, data, core, expr, confluent, bdb7 /*bdb*/ /* , bdb6 */)
+  .aggregate(base, geom, aux, data, core, expr, confluent, bdb)
+  .dependsOn(base, geom, aux, data, core, expr, confluent, bdb)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(gpl2),
+    licenses := Seq(agpl),
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
     publishArtifact in (Compile, packageSrc) := false  // there are no sources
@@ -70,7 +66,7 @@ lazy val root = project.withId(baseNameL).in(file("."))
 lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "serial" % deps.base.serial
     ),
@@ -80,7 +76,7 @@ lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
 lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "serial" % deps.base.serial
     ),
@@ -91,7 +87,7 @@ lazy val aux = project.withId(s"$baseNameL-aux").in(file("aux"))
   .dependsOn(base)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "numbers" % deps.expr.numbers
     ),
@@ -102,7 +98,7 @@ lazy val data = project.withId(s"$baseNameL-data").in(file("data"))
   .dependsOn(base, geom)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-data" % mimaVersion)
   )
 
@@ -111,7 +107,7 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss"      %% "equal"     % deps.core.equal,   // to-do: compile-only
       "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM
@@ -132,7 +128,7 @@ lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
   .dependsOn(core, aux)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
       "de.sciss" %% "model"     % deps.expr.model,
@@ -145,7 +141,7 @@ lazy val confluent = project.withId(s"$baseNameL-confluent").in(file("confluent"
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(lgpl),
+    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "fingertree" % deps.confluent.finger
     ),
@@ -156,31 +152,9 @@ lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(gpl2),
-    resolvers += "Oracle Repository" at "http://download.oracle.com/maven", // required for sleepycat
-    libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy5,
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
-  )
-
-lazy val bdb6 = project.withId(s"$baseNameL-bdb6").in(file("bdb6"))
-  .dependsOn(core)
-  .settings(commonSettings)
-  .settings(
-    licenses := Seq(gpl3),
-    resolvers += "Oracle Repository" at "http://download.oracle.com/maven",
-    libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy6,
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb6" % mimaVersion)
-  )
-
-lazy val bdb7 = project.withId(s"$baseNameL-bdb7").in(file("bdb7"))
-  .dependsOn(core)
-  .settings(commonSettings)
-  .settings(
-    licenses := Seq(lgpl),
-    // resolvers += "Oracle Repository" at "http://download.oracle.com/maven",
-    // libraryDependencies += "com.sleepycat" % "je" % deps.bdb.sleepy7,
+    licenses := Seq(agpl),
     libraryDependencies += "de.sciss" % "bdb-je" % deps.bdb.sleepy7,
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb7" % mimaVersion)
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
   )
 
 lazy val loggingEnabled = true  // only effective for snapshot versions

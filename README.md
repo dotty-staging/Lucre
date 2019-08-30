@@ -10,12 +10,8 @@ of the computer music framework [SoundProcesses](https://git.iem.at/sciss/SoundP
 interface front-end [Mellite](https://git.iem.at/sciss/Mellite).
 
 Lucre is (C)opyright 2009&ndash;2019 by Hanns Holger Rutz. All rights reserved. 
-All modules but the BerkeleyDB bindings are released under 
-the [GNU Lesser General Public License](https://git.iem.at/sciss/Lucre/raw/master/licenses/Lucre-License.txt), 
-whereas the `bdb` backend module for Berkeley DB JE 5 (itself governed by the Sleepycat License) is released under 
-the [GNU General Public License v2+](https://git.iem.at/sciss/Lucre/raw/master/licenses/Lucre-BDB-License.txt), 
-and the `bdb6` backend module for Berkeley DB JE 6 (itself governed by the AGPL 3 License) is released under 
-the [GNU General Public License v3+](https://git.iem.at/sciss/Lucre/raw/master/licenses/Lucre-BDB6-License.txt). 
+All modules are released under 
+the [GNU Affero General Public License](https://git.iem.at/sciss/Lucre/raw/master/licenses/Lucre-License.txt).
 The software comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
 Further reading:
@@ -39,7 +35,7 @@ Lucre comes with multiple modules:
   event reaction layer; it contains in-memory and durable systems.
 - `expr` introduces expressions
 - `confluent` contains a confluently persistent system
-- `bdb` and `bdb6` contain database back-ends (GPL), based on Oracle BerkeleyDB Java Edition 5 (`bdb`) or 6 (`bdb6`)
+- `bdb` contains a database back-end based on Oracle BerkeleyDB Java Edition 7.
 
 The following dependency is necessary:
 
@@ -49,14 +45,7 @@ Or just for a selected module:
 
     "de.sciss" %% "lucre-{module}" % v
 
-Where `{module}` is any of the above names. And for the database backend:
-
-    resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
-    
-    "de.sciss" %% "lucre-bdb"  % v   // BDB JE v5
-    "de.sciss" %% "lucre-bdb6" % v   // BDB JE v6
-    
-Note that the file format of BDB JE v6 is not backward compatible with v5.
+Where `{module}` is any of the above names.
 
 The current version `v` is `"3.14.0"`.
 

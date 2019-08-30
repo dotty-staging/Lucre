@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -25,32 +25,32 @@ trait TypeImplLike[Ext >: Null <: Type.Extension] extends Obj.Type {
 
   protected def mkExtArray(size: Int): Array[Ext]
 
-  final protected def addExtension(exts: Array[Ext], ext: Ext): Array[Ext] = {
+  final protected def addExtension(extensions: Array[Ext], ext: Ext): Array[Ext] = {
     val opLo = ext.opLo
     val opHi = ext.opHi
     require (opLo <= opHi, s"Lo ($opLo) must be less than or equal hi ($opHi)")
-    val idx0  = exts.indexWhere(_.opLo > opHi)
-    val idx   = if (idx0 < 0) exts.length else idx0
+    val idx0  = extensions.indexWhere(_.opLo > opHi)
+    val idx   = if (idx0 < 0) extensions.length else idx0
     if (idx > 0) {
-      val pred = exts(idx - 1)
+      val pred = extensions(idx - 1)
       require(pred.opHi < opLo, s"Extension overlap for $pred versus $ext")
     }
-    val len   = exts.length
-    val exts1 = mkExtArray(len + 1) // new Array[Ext](len + 1)
-    System.arraycopy(exts, 0, exts1, 0, len)
-    exts1(len) = ext
-    exts1
+    val len   = extensions.length
+    val extensions1 = mkExtArray(len + 1) // new Array[Ext](len + 1)
+    System.arraycopy(extensions, 0, extensions1, 0, len)
+    extensions1(len) = ext
+    extensions1
   }
 
-  final protected def findExt(exts: Array[Ext], op: Int): Ext = {
+  final protected def findExt(extensions: Array[Ext], op: Int): Ext = {
     var index = 0
     var low   = 0
-    var high  = exts.length - 1
+    var high  = extensions.length - 1
     while ({
       index = (high + low) >> 1
       low  <= high
     }) {
-      val ext = exts(index)
+      val ext = extensions(index)
       if (ext.opLo <= op) {
         if (ext.opHi >= op) return ext
         low = index + 1
@@ -62,11 +62,11 @@ trait TypeImplLike[Ext >: Null <: Type.Extension] extends Obj.Type {
   }
 }
 trait TypeImpl[Ext >: Null <: Type.Extension] extends TypeImplLike[Ext] {
-  private[this] var exts = mkExtArray(0) // new Array[Ext](0)
+  private[this] var extensions = mkExtArray(0) // new Array[Ext](0)
 
-  final def registerExtension(ext: Ext): Unit = exts = addExtension(exts, ext)
+  final def registerExtension(ext: Ext): Unit = extensions = addExtension(extensions, ext)
 
-  final protected def findExt(op: Int): Ext = findExt(exts, op)
+  final protected def findExt(op: Int): Ext = findExt(extensions, op)
 }
 
 trait TypeImpl1[Repr[~ <: Sys[~]]] extends TypeImpl[Type.Extension1[Repr]] with Type._1[Repr] {

@@ -4,8 +4,8 @@
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU Lesser General Public License v2.1+
- *
+ *  This software is published under the GNU Affero General Public License v3+
+*
  *
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
@@ -157,11 +157,12 @@ object BiGroupImpl {
   def verifyConsistency[S <: Sys[S], A](group: BiGroup[S, A], reportOnly: Boolean)
                                        (implicit tx: S#Tx): Vec[String] =
     group match {
-      case impl: Impl[S, _, _] => impl.treeHandle match {
-        case t: DeterministicSkipOctree[S, _, _] =>
-          t.verifyConsistency(reportOnly)
-        case _ => sys.error("Not a deterministic octree implementation")
-      }
+      case impl: Impl[S, _, _] =>   // wrong warning
+        impl.treeHandle match {
+          case t: DeterministicSkipOctree[S, _, _] =>
+            t.verifyConsistency(reportOnly)
+          case _ => sys.error("Not a deterministic octree implementation")
+        }
     }
 
   def serializer[S <: Sys[S], A <: Elem[S]]: Serializer[S#Tx, S#Acc, BiGroup[S, A]] = anySer.asInstanceOf[Ser[S, A]]
