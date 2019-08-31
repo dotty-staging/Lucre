@@ -1,5 +1,5 @@
 /*
- *  Artifact.scala
+ *  ArtifactLocation.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -14,9 +14,9 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.file._
-import de.sciss.lucre.artifact.{Artifact => _Artifact, ArtifactLocation => _ArtifactLocation}
+import de.sciss.lucre.artifact.{ArtifactLocation => _ArtifactLocation}
 import de.sciss.lucre.aux.Aux
-import de.sciss.lucre.edit.{EditArtifact, EditAttrMap}
+import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.expr.{CellView, Context, IExpr}
@@ -25,15 +25,13 @@ import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.serial.DataInput
 
-import scala.util.{Failure, Success, Try}
-
-object Artifact {
+object ArtifactLocation {
   private lazy val _init: Unit = Aux.addFactory(Bridge)
 
   def init(): Unit = _init
 
   private final object Bridge extends Obj.Bridge[File] with Aux.Factory {
-    final val id = 2000
+    final val id = 2003
 
     def readIdentifiedAux(in: DataInput): Aux = this
 
@@ -48,28 +46,13 @@ object Artifact {
         }
 
         protected def tryParseObj(obj: stm.Obj[S])(implicit tx: S#Tx): Option[File] = obj match {
-          case a: _Artifact[S] => Some(a .value)
-          case _               => None
+          case a: _ArtifactLocation[S]  => Some(a .value)
+          case _                        => None
         }
       }
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[File] =
-      obj.attr.$[_Artifact](key).map(_.value)
-  }
-
-  private def tryRelativize[S <: Sys[S]](loc: _ArtifactLocation[S], f: File)(implicit tx: S#Tx): Try[_Artifact.Child] =
-    Try(_Artifact.relativize(loc.directory, f))
-
-  private def defaultLocation[S <: Sys[S]](f: File)(implicit tx: S#Tx): _ArtifactLocation[S] =
-    _ArtifactLocation.newVar(f.absolute.parent)
-
-  private def makeArtifact[S <: Sys[S]](loc: _ArtifactLocation[S], f: File)(implicit tx: S#Tx): _Artifact[S] = {
-    val art = tryRelativize(loc, f).toOption.fold[_Artifact[S]]({ // Try#fold not available in Scala 2.11
-      _Artifact(defaultLocation(f), f)
-    }) { child =>
-      _Artifact(loc, child)
-    }
-    art
+      obj.attr.$[_ArtifactLocation](key).map(_.value)
   }
 
   private final class ObjCellViewImpl[S <: Sys[S]](attrH: stm.Source[S#Tx, AttrMap[S]], key: String)
@@ -77,14 +60,12 @@ object Artifact {
 
     private def attr(implicit tx: S#Tx): AttrMap[S] = attrH()
 
-    private type Repr = Option[_Artifact[S]]
-
-//    def serializer: Serializer[S#Tx, S#Acc, Repr] = Serializer.option
+    private type Repr = Option[_ArtifactLocation[S]]
 
     private def repr(implicit tx: S#Tx): Repr =
-      attr.$[_Artifact](key)
+      attr.$[_ArtifactLocation](key)
 
-    private def putImpl(map: AttrMap[S], value: _Artifact[S])(implicit tx: S#Tx): Unit =
+    private def putImpl(map: AttrMap[S], value: _ArtifactLocation[S])(implicit tx: S#Tx): Unit =
       EditAttrMap.put(map, key, value)
 
     private def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
@@ -99,9 +80,8 @@ object Artifact {
     private def lift(v: Option[File])(implicit tx: S#Tx): Repr =
       v match {
         case Some(f) if f.path.nonEmpty =>
-          val loc = repr.fold[_ArtifactLocation[S]](defaultLocation(f))(_.location)
-          val art = makeArtifact(loc, f)
-          Some(art)
+          val loc = _ArtifactLocation.newVar[S](f)
+          Some(loc)
 
         case _ => None
       }
@@ -114,11 +94,8 @@ object Artifact {
       v match {
         case Some(f) if f.path.nonEmpty =>
           repr match {
-            case Some(am: _Artifact.Modifiable[S]) =>
-              tryRelativize(am.location, f) match {
-                case Success(child) => EditArtifact.updateChild(am, child)
-                case Failure(_)     => fallback()
-              }
+            case Some(_ArtifactLocation.Var(am)) =>
+              EditExprVar[S, File, _ArtifactLocation](am, f)
             case _ => fallback()
           }
         case _ => fallback()
@@ -126,10 +103,10 @@ object Artifact {
     }
 
     def react(fun: S#Tx => Option[File] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
-      new AttrMapExprObs[S, File](map = attr, key = key, fun = fun, tx0 = tx)(_Artifact)
+      new AttrMapExprObs[S, File](map = attr, key = key, fun = fun, tx0 = tx)(_ArtifactLocation)
   }
 }
-final case class Artifact(key: String, default: Ex[File] = file(""))
+final case class ArtifactLocation(key: String, default: Ex[File] = file(""))
   extends Attr.WithDefault[File] {
 
   type Repr[S <: Sys[S]] = IExpr[S, File]
@@ -144,7 +121,7 @@ final case class Artifact(key: String, default: Ex[File] = file(""))
   def update(in: Ex[File]): Control = Attr.Update (in, key)
   def set   (in: Ex[File]): Act     = Attr.Set    (in, key)
 
-  implicit private def bridge: Obj.Bridge[File] = Artifact.Bridge
+  implicit private def bridge: Obj.Bridge[File] = ArtifactLocation.Bridge
 
   def aux: List[Aux] = Nil
 }

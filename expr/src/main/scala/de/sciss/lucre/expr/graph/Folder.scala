@@ -17,7 +17,7 @@ import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.edit.EditFolder
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.impl.{ExpandedObjMakeImpl, ObjCellViewVarImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedObjMakeImpl, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IExpr}
 import de.sciss.lucre.stm
@@ -64,8 +64,11 @@ object Folder {
     }
   }
 
-  private[lucre] def wrap[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Folder[S]], system: S): Folder =
+  private[lucre] def wrapH[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Folder[S]], system: S): Folder =
     new Impl[S](peer, system)
+
+  private[lucre] def wrap[S <: Sys[S]](peer: stm.Folder[S])(implicit tx: S#Tx): Folder =
+    new Impl[S](tx.newHandle(peer), tx.system)
 
   private final class Impl[S <: Sys[S]](in: stm.Source[S#Tx, stm.Folder[S]], system: S)
     extends ObjImplBase[S, stm.Folder](in, system) with Folder {
@@ -77,7 +80,7 @@ object Folder {
     extends ObjCellViewVarImpl[S, stm.Folder, Folder](h, key) {
 
     protected def lower(peer: stm.Folder[S])(implicit tx: S#Tx): Folder =
-      wrap(tx.newHandle(peer), tx.system)
+      wrap(peer)
 
     implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Folder[S]]] =
       Serializer.option
@@ -93,16 +96,21 @@ object Folder {
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Folder]] =
       new CellViewImpl(tx.newHandle(obj), key)
 
-    def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = {
-      ???
-      println(s"Warning: Folder.cellView($key) not yet implemented for context. Using fall-back")
-      context.selfOption.fold(CellView.const[S, Option[Folder]](None))(cellView(_, key))
-    }
+    def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] =
+      new AbstractCtxCellView[S, Folder](context.attr, key) {
+        protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[Folder] = value match {
+          case f: Folder  => Some(f)
+          case _          => None
+        }
+
+        protected def tryParseObj(obj: stm.Obj[S])(implicit tx: S#Tx): Option[Folder] = obj match {
+          case f: stm.Folder[S] => Some(wrap(f))
+          case _                => None
+        }
+      }
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Folder] =
-      obj.attr.$[stm.Folder](key).map { peer =>
-        wrap[S](tx.newHandle(peer), tx.system)
-      }
+      obj.attr.$[stm.Folder](key).map(wrap(_))
   }
 
   private abstract class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, Folder], init: A, tx0: S#Tx)
