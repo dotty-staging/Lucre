@@ -60,7 +60,8 @@ object BiGroup extends Obj.Type {
 
   type Leaf[S <: Sys[S], +A] = (SpanLike /* Span.HasStart */ , Vec[Entry[S, A]])
 
-  // XXX TODO --- eventually we might drop Obj in favour of Elem
+  // Note: we use `Obj` instead of `Elem` because views may need to
+  // store an `.id`!
   object Entry extends Obj.Type {
     final val typeId = 28
 
