@@ -22,7 +22,7 @@ import de.sciss.lucre.expr.{CellView, Context, IExpr}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.{Disposable, Sys}
-import de.sciss.serial.{DataInput, Serializer}
+import de.sciss.serial.DataInput
 
 import scala.util.{Failure, Success, Try}
 
@@ -34,8 +34,6 @@ object Artifact {
   private final object Bridge extends Obj.Bridge[File] with Aux.Factory {
     final val id = 2000
 
-    type Repr[S <: Sys[S]] = _Artifact[S]
-
     def readIdentifiedAux(in: DataInput): Aux = this
 
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[File]] =
@@ -44,6 +42,7 @@ object Artifact {
     // Note: Artifact does not expose an implicit `Obj.Bridge[File]`, for now, so currently
     // we cannot write `"key".attr[File]` anyway!
     def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[File]] = {
+      ???
       println(s"Warning: Artifact.cellView($key) not yet implemented for context. Using fall-back")
       context.selfOption.fold(CellView.const[S, Option[File]](None))(cellView(_, key))
     }
@@ -72,11 +71,11 @@ object Artifact {
 
     private def attr(implicit tx: S#Tx): AttrMap[S] = attrH()
 
-    type Repr = Option[_Artifact[S]]
+    private type Repr = Option[_Artifact[S]]
 
-    def serializer: Serializer[S#Tx, S#Acc, Repr] = Serializer.option
+//    def serializer: Serializer[S#Tx, S#Acc, Repr] = Serializer.option
 
-    def repr(implicit tx: S#Tx): Repr =
+    private def repr(implicit tx: S#Tx): Repr =
       attr.$[_Artifact](key)
 
     private def putImpl(map: AttrMap[S], value: _Artifact[S])(implicit tx: S#Tx): Unit =
@@ -85,13 +84,13 @@ object Artifact {
     private def removeImpl(map: AttrMap[S])(implicit tx: S#Tx): Unit =
       EditAttrMap.remove(map, key)
 
-    def repr_=(value: Repr)(implicit tx: S#Tx): Unit =
+    private def repr_=(value: Repr)(implicit tx: S#Tx): Unit =
       value match {
         case Some(a)  => putImpl(attr, a)
         case None     => removeImpl(attr)
       }
 
-    def lift(v: Option[File])(implicit tx: S#Tx): Repr =
+    private def lift(v: Option[File])(implicit tx: S#Tx): Repr =
       v match {
         case Some(f) if f.path.nonEmpty =>
           val loc = repr.fold[ArtifactLocation[S]](defaultLocation(f))(_.location)
@@ -139,7 +138,7 @@ final case class Artifact(key: String, default: Ex[File] = file(""))
   def update(in: Ex[File]): Control = Attr.Update (in, key)
   def set   (in: Ex[File]): Act     = Attr.Set    (in, key)
 
-  implicit def bridge: Obj.Bridge[File] = Artifact.Bridge
+  implicit private def bridge: Obj.Bridge[File] = Artifact.Bridge
 
   def aux: List[Aux] = Nil
 }

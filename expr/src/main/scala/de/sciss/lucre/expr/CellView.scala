@@ -25,47 +25,23 @@ import scala.language.higherKinds
 object CellView {
   def empty[Tx, A]: CellView[Tx, Option[A]] = Empty.asInstanceOf[CellView[Tx, Option[A]]]
 
-  private object Empty extends CellView[Any, Option[Nothing]] {
-    def react(fun: Any => Option[Nothing] => Unit)(implicit tx: Any): Disposable[Any] =
-      Disposable.empty
-
-    def apply()(implicit tx: Any): Option[Nothing] = None
-  }
-
   def expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])(implicit tx: S#Tx,
-                                                                    tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] = {
-    import tpe.{serializer, varSerializer}
-    x match {
-      case tpe.Var(vr) =>
-        new Impl.ExprVar[S, A, _Ex](tx.newHandle(vr))
-
-      case _ =>
-        new Impl.Expr[S, A, _Ex](tx.newHandle(x))
-    }
-  }
+                                                                    tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] =
+    Impl.expr[S, A, _Ex](x)
 
   def exprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _expr.Expr[~, A]](map: evt.Map[S, K, _Ex], key: K)
-                                                                     (implicit tx: S#Tx, tpe: Type.Expr[A, _Ex], keyType: evt.Map.Key[K])
-  : CellView[S#Tx, Option[A]] = {
-    // import tpe.serializer
-    map.modifiableOption.fold[CellView[S#Tx, Option[A]]] {
-      new Impl.ExprMap[S, K, A, _Ex  /* , Change[A] */](tx.newHandle(map), key /* , ch =>
-        if (ch.isSignificant) Some(ch.now) else None */)
-    } { mv =>
-      new Impl.ExprModMap[S, K, A, _Ex](tx.newHandle(mv), key)
-    }
-  }
+                                                                     (implicit tx: S#Tx, tpe: Type.Expr[A, _Ex],
+                                                                      keyType: evt.Map.Key[K]): CellView[S#Tx, Option[A]] =
+    Impl.exprMap[S, K, A, _Ex](map, key)
 
   def attr[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] = {
-    new Impl.PlainAttrImpl[S, A, E](tx.newHandle(map), key)
-  }
+                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] =
+    Impl.attr[S, A, E](map, key)
 
   /** Additionally uses undo manager when present. */
   def attrUndoOpt[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] = {
-    new Impl.UndoAttrImpl[S, A, E](tx.newHandle(map), key)
-  }
+                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] =
+    Impl.attrUndoOpt[S, A, E](map, key)
 
   def name[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): CellView[S#Tx, String] = {
     implicit val stringEx: Type.Expr[String, StringObj] = StringObj
@@ -75,9 +51,10 @@ object CellView {
   def exprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])
                                                              (implicit tx: S#Tx,
                                                               serializer: Serializer[S#Tx, S#Acc, _Ex[S]]): CellView[S#Tx, A] =
-    new Impl.Expr[S, A, _Ex](tx.newHandle(x))
+    Impl.exprLike[S, A, _Ex](x)
 
-  def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] = new Impl.Const(value)
+  def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] =
+    Impl.const[S, A](value)
 
   object Var {
     def unapply[Tx, A](view: CellView[Tx, A]): Option[Var[Tx, A]] = view match {
@@ -129,6 +106,15 @@ object CellView {
     def flatMap[B](f: A => Option[B]): CellView[Tx, Option[B]] =
       new FlatMapImpl(in, f)
   }
+
+  // ---- impl ----
+  private object Empty extends CellView[Any, Option[Nothing]] {
+    def react(fun: Any => Option[Nothing] => Unit)(implicit tx: Any): Disposable[Any] =
+      Disposable.empty
+
+    def apply()(implicit tx: Any): Option[Nothing] = None
+  }
 }
+
 /** A `CellView` is an in-memory view of a transactional object that fires updates when the object changes. */
 trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A]

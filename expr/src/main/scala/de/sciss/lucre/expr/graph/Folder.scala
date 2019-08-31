@@ -94,6 +94,7 @@ object Folder {
       new CellViewImpl(tx.newHandle(obj), key)
 
     def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = {
+      ???
       println(s"Warning: Folder.cellView($key) not yet implemented for context. Using fall-back")
       context.selfOption.fold(CellView.const[S, Option[Folder]](None))(cellView(_, key))
     }

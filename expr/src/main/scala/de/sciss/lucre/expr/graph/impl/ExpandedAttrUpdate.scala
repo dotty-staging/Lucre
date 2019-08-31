@@ -36,7 +36,7 @@ final class ExpandedAttrUpdateIn[S <: Sys[S], A](in: IExpr[S, Obj], key: String,
   private[this] val obs = value.changed.react { implicit tx => upd =>
     val v       = Some(upd.now)
     val obj     = in.value
-    val viewOpt = Attr.resolveNestedInBAD[S, A](obj.peer, key)
+    val viewOpt = Attr.resolveNestedIn[S, A](obj.peer, key)
     viewOpt.foreach { attrView =>
       attrView.update(v)
     }

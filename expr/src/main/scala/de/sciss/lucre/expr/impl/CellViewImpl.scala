@@ -14,11 +14,11 @@
 package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
-import de.sciss.lucre.expr.{CellView, Type}
+import de.sciss.lucre.expr.{CellView, Type, Expr => _Expr, ExprLike => _ExprLike}
 import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Form, MapLike, Obj, Sys}
-import de.sciss.lucre.{expr, stm, event => evt}
+import de.sciss.lucre.{stm, event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.Serializer
 
@@ -26,11 +26,49 @@ import scala.concurrent.stm.Ref
 import scala.language.higherKinds
 
 object CellViewImpl {
-//  trait Basic[Tx, A] extends CellView[Tx, A] {
-//    def map[B](f: A => B): CellView[Tx, B] = new MapImpl(this, f)
-//  }
+  def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] = new Const(value)
 
-  private[lucre] trait ExprMapLike[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A] /* , U */]
+  def expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: _Expr[~, A]](x: _Ex[S])(implicit tx: S#Tx,
+                                                                       tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] = {
+    import tpe.{serializer, varSerializer}
+    x match {
+      case tpe.Var(vr) =>
+        new ExprVar[S, A, _Ex](tx.newHandle(vr))
+
+      case _ =>
+        new Expr[S, A, _Ex](tx.newHandle(x))
+    }
+  }
+
+  def exprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _Expr[~, A]](map: evt.Map[S, K, _Ex], key: K)
+                                                                     (implicit tx: S#Tx, tpe: Type.Expr[A, _Ex], keyType: evt.Map.Key[K])
+  : CellView[S#Tx, Option[A]] = {
+    // import tpe.serializer
+    map.modifiableOption.fold[CellView[S#Tx, Option[A]]] {
+      new ExprMap[S, K, A, _Ex  /* , Change[A] */](tx.newHandle(map), key /* , ch =>
+        if (ch.isSignificant) Some(ch.now) else None */)
+    } { mv =>
+      new ExprModMap[S, K, A, _Ex](tx.newHandle(mv), key)
+    }
+  }
+
+  def attr[S <: Sys[S], A, E[~ <: Sys[~]] <: _Expr[~, A]](map: Obj.AttrMap[S], key: String)
+                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] =
+    new PlainAttrImpl[S, A, E](tx.newHandle(map), key)
+
+  /** Additionally uses undo manager when present. */
+  def attrUndoOpt[S <: Sys[S], A, E[~ <: Sys[~]] <: _Expr[~, A]](map: Obj.AttrMap[S], key: String)
+                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] =
+    new UndoAttrImpl[S, A, E](tx.newHandle(map), key)
+
+  def exprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: _Expr[~, A]](x: _Ex[S])
+                                                              (implicit tx: S#Tx,
+                                                               serializer: Serializer[S#Tx, S#Acc, _Ex[S]]): CellView[S#Tx, A] =
+    new Expr[S, A, _Ex](tx.newHandle(x))
+
+  // ---- impl ----
+
+  private[lucre] trait ExprMapLike[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _Expr[~, A] /* , U */]
     extends CellView[S#Tx, Option[A]] {
 
     protected def h: stm.Source[S#Tx, evt.Map[S, K, _Ex]]
@@ -47,7 +85,7 @@ object CellViewImpl {
     def apply()(implicit tx: S#Tx): Option[A] = repr.map(_.value)
   }
 
-  private[this] final class ExprMapLikeObs[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A], U](
+  private final class ExprMapLikeObs[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _Expr[~, A], U](
       map: evt.Map[S, K, _Ex], key: K, fun: S#Tx => Option[A] => Unit, tx0: S#Tx)
     extends Disposable[S#Tx] {
 
@@ -94,7 +132,7 @@ object CellViewImpl {
     }
   }
 
-  private[lucre] final class ExprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A] /* , U */](
+  private final class ExprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _Expr[~, A] /* , U */](
       protected val h: stm.Source[S#Tx, evt.Map[S, K, _Ex]],
       protected val key: K /* , val updFun: U => Option[A] */)
     extends ExprMapLike[S, K, A, _Ex /* , U */] {
@@ -104,7 +142,7 @@ object CellViewImpl {
     // protected def mapUpdate(u: U): Option[A] = updFun(u)
   }
 
-  private[lucre] final class ExprModMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
+  private final class ExprModMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _Expr[~, A]](
       protected val h: stm.Source[S#Tx, evt.Map.Modifiable[S, K, _Ex]],
       protected val key: K)
      (implicit tpe: Type.Expr[A, _Ex])
@@ -144,7 +182,7 @@ object CellViewImpl {
     def update(v: Option[A])(implicit tx: S#Tx): Unit = repr_=(lift(v))
   }
 
-  private[lucre] trait ExprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]]
+  private[lucre] trait ExprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: _Expr[~, A]]
     extends CellView[S#Tx, A] {
 
     type Repr = _Ex[S]
@@ -157,11 +195,11 @@ object CellViewImpl {
     def apply()(implicit tx: S#Tx): A = h().value
   }
 
-  private[lucre] final class Expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
+  private final class Expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: _Expr[~, A]](
                                                                                        protected val h: stm.Source[S#Tx, _Ex[S]])
     extends ExprLike[S, A, _Ex]
 
-  private[lucre] final class ExprVar[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
+  private final class ExprVar[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: _Expr[~, A]](
                                                                                           protected val h: stm.Source[S#Tx, _Ex[S] with stm.Var[S#Tx, _Ex[S]]])
                                                                                         (implicit tpe: Type.Expr[A, _Ex])
     extends ExprLike[S, A, _Ex] with CellView.VarR[S, A] {
@@ -201,7 +239,7 @@ object CellViewImpl {
     }
   }
 
-  private[lucre] final class FlatMapImpl[Tx, A, B](in:CellView[Tx, Option[A]], f: A => Option[B])
+  private[lucre] final class FlatMapImpl[Tx, A, B](in: CellView[Tx, Option[A]], f: A => Option[B])
     extends CellView[Tx, Option[B]] {
 
     def apply()(implicit tx: Tx): Option[B] =
@@ -213,7 +251,22 @@ object CellViewImpl {
       }
   }
 
-  private[lucre] final class Const[Tx, A](value: A)
+  private[lucre] final class CatVarImpl[Tx, A, B](in: CellView[Tx, Option[A]], cat: A => CellView.Var[Tx, Option[B]])
+    extends CellView.Var[Tx, Option[B]] {
+
+    def apply()(implicit tx: Tx): Option[B] =
+      in().flatMap(cat(_).apply())
+
+    def update(v: Option[B])(implicit tx: Tx): Unit =
+      in().foreach(cat(_).update(v))
+
+    def react(fun: Tx => Option[B] => Unit)(implicit tx: Tx): Disposable[Tx] =
+      in.react { implicit tx => aOpt =>
+        fun(tx)(aOpt.flatMap(cat(_).apply()))
+      }
+  }
+
+  private final class Const[Tx, A](value: A)
     extends CellView[Tx, A] {
 
     def react(fun: Tx => A => Unit)(implicit tx: Tx): Disposable[Tx] = Disposable.empty
@@ -221,7 +274,7 @@ object CellViewImpl {
     def apply()(implicit tx: Tx): A = value
   }
 
-  private[lucre] trait AttrBasic[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]]
+  private[lucre] trait AttrBasic[S <: Sys[S], A, E[~ <: Sys[~]] <: _Expr[~, A]]
     extends CellView[S#Tx, Option[A]] {
 
     protected def h: stm.Source[S#Tx, Obj.AttrMap[S]]
@@ -274,7 +327,7 @@ object CellViewImpl {
     protected def compareTpe(in: Repr[S]): Boolean
 
     private[this] def obsAdded(value: Repr[S])(implicit tx: S#Tx): Unit = {
-      val valueT = value.asInstanceOf[expr.Expr[S, A]]
+      val valueT = value.asInstanceOf[_Expr[S, A]]
       valueAdded(valueT)
       // XXX TODO -- if we moved this into `valueAdded`, the contract
       // could be that initially the view is updated
@@ -298,10 +351,10 @@ object CellViewImpl {
     } (tx0)
 
     map.get(key)(tx0).foreach { value =>
-      if (compareTpe(value)) valueAdded(value.asInstanceOf[expr.ExprLike[S, A]])(tx0)
+      if (compareTpe(value)) valueAdded(value.asInstanceOf[_ExprLike[S, A]])(tx0)
     }
 
-    private[this] def valueAdded(value: expr.ExprLike[S, A])(implicit tx: S#Tx): Unit = {
+    private[this] def valueAdded(value: _ExprLike[S, A])(implicit tx: S#Tx): Unit = {
       val res = value.changed.react { implicit tx => {
         case Change(_, now) =>
           fun(tx)(Some(now))
@@ -326,7 +379,7 @@ object CellViewImpl {
     }
   }
 
-  private[lucre] abstract class AttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
+  private[lucre] abstract class AttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: _Expr[~, A]](
       protected val h: stm.Source[S#Tx, Obj.AttrMap[S]],
       protected val key: String)(implicit val tpe: Type.Expr[A, E]
   )
@@ -379,7 +432,7 @@ object CellViewImpl {
   }
 
   // plain mutating implementation (no undo support)
-  private[lucre] final class PlainAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
+  private final class PlainAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: _Expr[~, A]](
       h: stm.Source[S#Tx, Obj.AttrMap[S]], key: String)(implicit tpe: Type.Expr[A, E])
     extends AttrImpl[S, A, E](h, key) {
 
@@ -394,7 +447,7 @@ object CellViewImpl {
   }
 
   // adding optional undo support (when present)
-  private[lucre] final class UndoAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: expr.Expr[~, A]](
+  private final class UndoAttrImpl[S <: Sys[S], A, E[~ <: Sys[~]] <: _Expr[~, A]](
       h: stm.Source[S#Tx, Obj.AttrMap[S]], key: String)(implicit tpe: Type.Expr[A, E])
     extends AttrImpl[S, A, E](h, key) {
 

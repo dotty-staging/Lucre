@@ -150,11 +150,6 @@ object Obj {
 
       type Repr[S <: Sys[S]] = stm.Obj[S]
 
-      //      def mkObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] = ...
-
-      //      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
-      //        stm.Obj.serializer
-
       def readIdentifiedAux(in: DataInput): Aux = this
 
       def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Obj]] =
@@ -164,8 +159,6 @@ object Obj {
         }
 
       def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
-//        println(s"Warning: Obj.cellView($key) not yet implemented for context. Using fall-back")
-//        context.selfOption.fold(CellView.const[S, Option[Obj]](None))(cellView(_, key))
         new AbstractCtxCellView[S, Obj](context.attr, key) {
           protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[Obj] = value match {
             case obj: Obj => Some(obj)
@@ -182,8 +175,6 @@ object Obj {
     }
   }
   trait Bridge[A] extends Aux {
-//    type Repr[S <: Sys[S]] <: stm.Obj[S]
-
     /** Creates a bidirectional view between `stm.Obj` and the expression side representation type `A`.
       * If possible, implementations should look at `UndoManager.find` when updating values.
       */

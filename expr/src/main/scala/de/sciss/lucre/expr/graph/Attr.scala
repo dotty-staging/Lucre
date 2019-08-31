@@ -17,7 +17,7 @@ import de.sciss.lucre.aux.{Aux, ProductWithAux}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
-import de.sciss.lucre.expr.impl.EmptyIAction
+import de.sciss.lucre.expr.impl.CellViewImpl.CatVarImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl, IExpr}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Disposable, Sys}
@@ -32,9 +32,8 @@ object Attr {
     def set   (in: Ex[A]): Act
   }
 
-  @deprecated("does not take care of ctx.attr", since = "3.14.0")
-  private[lucre] def resolveNestedInBAD[S <: Sys[S], A](objOpt: Option[stm.Obj[S]], key: String)
-                                                       (implicit tx: S#Tx,
+  private[lucre] def resolveNestedIn[S <: Sys[S], A](objOpt: Option[stm.Obj[S]], key: String)
+                                                    (implicit tx: S#Tx,
                                                      bridge: Obj.Bridge[A]): Option[CellView.Var[S#Tx, Option[A]]] = {
     @tailrec
     def loop(prev: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S#Tx, Option[A]]] =
@@ -56,11 +55,6 @@ object Attr {
 
     loop(objOpt, key)
   }
-
-  @deprecated("does not take care of ctx.attr", since = "3.14.0")
-  private[lucre] def resolveNestedBAD[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
-                                                                   bridge: Obj.Bridge[A]): Option[CellView.Var[S#Tx, Option[A]]] =
-    resolveNestedInBAD(ctx.selfOption, key)
 
   private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
                                                                 bridge: Obj.Bridge[A]): CellView[S#Tx, Option[A]] = {
@@ -103,46 +97,76 @@ object Attr {
     }
   }
 
-//  private[lucre] def resolveNestedVar[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
-//                                                                   bridge: Obj.Bridge[A]): CellView.Var[S#Tx, Option[A]] = {
-//    val isNested = key.contains(":")
-//
-//    if (isNested) {
-//      val head :: firstSub :: tail = key.split(":").toList
-//
-//      @tailrec
-//      def loop(parent: CellView[S#Tx, Option[stm.Obj[S]]], sub: String, rem: List[String]): CellView.Var[S#Tx, Option[A]] =
-//        rem match {
-//          case Nil =>
-//            ??? // parent.flatMap(child => bridge.cellValue(child, sub))
-//
-//          case next :: tail =>
-//            val childView = parent.flatMap(child => child.attr.get(key))
-//            loop(childView, next, tail)
-//        }
-//
-//      val ctxHead   = new StmObjCtxCellView[S](ctx.attr, head)
-//      val ctxFull   = loop(ctxHead, firstSub, tail)
-//      ctx.selfOption match {
-//        case Some(self) =>
-//          val objHead   = new StmObjAttrMapCellView[S](self.attr, head, tx)
-//          val objFull   = loop(objHead, firstSub, tail)
-//          ctxFull orElse objFull
-//        case None =>
-//          ctxFull
-//      }
-//
-//    } else {
-//      val ctxFull = bridge.contextCellView(key)
-//      ctx.selfOption match {
-//        case Some(self) =>
-//          val objFull = bridge.cellView(self, key)
-//          ctxFull orElse objFull
-//        case None =>
-//          CellView.emptyVar // ??? // ctxFull
-//      }
-//    }
-//  }
+  // similar to `CellViewImpl.OptionOrElseImpl` but adding `.Var` support
+  private final class NestedVarCellView[S <: Sys[S], A](firstP  : CellView[S#Tx, Option[stm.Obj[S]]],
+                                                        secondP : CellView[S#Tx, Option[stm.Obj[S]]],
+                                                        lastSub : String)(implicit bridge: Obj.Bridge[A])
+    extends CellView.Var[S#Tx, Option[A]] {
+
+    def apply()(implicit tx: S#Tx): Option[A] = {
+      val parOpt = firstP() orElse secondP()
+      parOpt match {
+        case Some(par)  => bridge.cellValue(par, lastSub)
+        case None       => None
+      }
+    }
+
+    def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
+      val f: S#Tx => Option[stm.Obj[S]] => Unit = { implicit tx => _ => fun(tx)(apply()) }
+      val r1 = firstP .react(f)
+      val r2 = secondP.react(f)
+      Disposable.seq(r1, r2)
+    }
+
+    def update(v: Option[A])(implicit tx: S#Tx): Unit = {
+      val parOpt = firstP() orElse secondP()
+      parOpt match {
+        case Some(par)  => bridge.cellView(par, lastSub).update(v)
+        case None       =>
+      }
+    }
+  }
+
+  private[lucre] def resolveNestedVar[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
+                                                                   bridge: Obj.Bridge[A]): CellView.Var[S#Tx, Option[A]] = {
+    val isNested = key.contains(":")
+
+    if (isNested) {
+      val head :: firstSub :: tail = key.split(":").toList
+
+      @tailrec
+      def loop(parent: CellView[S#Tx, Option[stm.Obj[S]]], sub: String, rem: List[String]): (CellView[S#Tx, Option[stm.Obj[S]]], String) =
+        rem match {
+          case Nil =>
+            // new CatVarImpl[S#Tx, stm.Obj[S], A](parent, child => bridge.cellView(child, sub))
+            (parent, sub)
+
+          case next :: tail =>
+            val childView = parent.flatMap(child => child.attr.get(key))
+            loop(childView, next, tail)
+        }
+
+      val ctxHead             = new StmObjCtxCellView[S](ctx.attr, head)
+      val (ctxFullP, lastSub) = loop(ctxHead, firstSub, tail)
+      ctx.selfOption match {
+        case Some(self) =>
+          val objHead       = new StmObjAttrMapCellView[S](self.attr, head, tx)
+          val (objFullP, _) = loop(objHead, firstSub, tail)
+          new NestedVarCellView(ctxFullP, objFullP, lastSub)
+
+        case None =>
+          new CatVarImpl[S#Tx, stm.Obj[S], A](ctxFullP, child => bridge.cellView(child, lastSub))
+      }
+
+    } else {
+      ctx.selfOption match {
+        case Some(self) =>
+          bridge.cellView(self, key)
+        case None =>
+          CellView.Var.empty
+      }
+    }
+  }
 
   object WithDefault {
     def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =
@@ -253,9 +277,8 @@ object Attr {
     type Repr[S <: Sys[S]] = IControl[S]
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val peer = resolveNestedBAD(key).fold(Disposable.empty[S#Tx]) { attrView =>
-        new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
-      }
+      val attrView  = resolveNestedVar(key)
+      val peer      = new ExpandedAttrUpdate[S, A](source.expand[S], attrView, tx)
       IControl.wrap(peer)
     }
 
@@ -269,10 +292,10 @@ object Attr {
 
     type Repr[S <: Sys[S]] = IAction[S]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      resolveNestedBAD(key).fold[IAction[S]](new EmptyIAction) { attrView =>
-        new ExpandedAttrSet[S, A](attrView, source.expand[S], tx)
-      }
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val attrView = resolveNestedVar(key)
+      new ExpandedAttrSet[S, A](attrView, source.expand[S], tx)
+    }
 
     override def aux: scala.List[Aux] = bridge :: Nil
   }
