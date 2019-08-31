@@ -90,7 +90,7 @@ object Folder {
 
     def readIdentifiedAux(in: DataInput): Aux = this
 
-    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Folder]] =
+    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Folder]] =
       new CellViewImpl(tx.newHandle(obj), key)
 
     def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Folder]] = {

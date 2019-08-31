@@ -35,9 +35,9 @@ object Attr {
   @deprecated("does not take care of ctx.attr", since = "3.14.0")
   private[lucre] def resolveNestedInBAD[S <: Sys[S], A](objOpt: Option[stm.Obj[S]], key: String)
                                                        (implicit tx: S#Tx,
-                                                     bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] = {
+                                                     bridge: Obj.Bridge[A]): Option[CellView.Var[S#Tx, Option[A]]] = {
     @tailrec
-    def loop(prev: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S, Option[A]]] =
+    def loop(prev: Option[stm.Obj[S]], sub: String): Option[CellView.Var[S#Tx, Option[A]]] =
       prev match {
         case Some(obj) =>
           val i = sub.indexOf(':')
@@ -59,7 +59,7 @@ object Attr {
 
   @deprecated("does not take care of ctx.attr", since = "3.14.0")
   private[lucre] def resolveNestedBAD[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
-                                                                   bridge: Obj.Bridge[A]): Option[CellView.Var[S, Option[A]]] =
+                                                                   bridge: Obj.Bridge[A]): Option[CellView.Var[S#Tx, Option[A]]] =
     resolveNestedInBAD(ctx.selfOption, key)
 
   private[lucre] def resolveNested[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
@@ -102,6 +102,47 @@ object Attr {
       }
     }
   }
+
+//  private[lucre] def resolveNestedVar[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
+//                                                                   bridge: Obj.Bridge[A]): CellView.Var[S#Tx, Option[A]] = {
+//    val isNested = key.contains(":")
+//
+//    if (isNested) {
+//      val head :: firstSub :: tail = key.split(":").toList
+//
+//      @tailrec
+//      def loop(parent: CellView[S#Tx, Option[stm.Obj[S]]], sub: String, rem: List[String]): CellView.Var[S#Tx, Option[A]] =
+//        rem match {
+//          case Nil =>
+//            ??? // parent.flatMap(child => bridge.cellValue(child, sub))
+//
+//          case next :: tail =>
+//            val childView = parent.flatMap(child => child.attr.get(key))
+//            loop(childView, next, tail)
+//        }
+//
+//      val ctxHead   = new StmObjCtxCellView[S](ctx.attr, head)
+//      val ctxFull   = loop(ctxHead, firstSub, tail)
+//      ctx.selfOption match {
+//        case Some(self) =>
+//          val objHead   = new StmObjAttrMapCellView[S](self.attr, head, tx)
+//          val objFull   = loop(objHead, firstSub, tail)
+//          ctxFull orElse objFull
+//        case None =>
+//          ctxFull
+//      }
+//
+//    } else {
+//      val ctxFull = bridge.contextCellView(key)
+//      ctx.selfOption match {
+//        case Some(self) =>
+//          val objFull = bridge.cellView(self, key)
+//          ctxFull orElse objFull
+//        case None =>
+//          CellView.emptyVar // ??? // ctxFull
+//      }
+//    }
+//  }
 
   object WithDefault {
     def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =

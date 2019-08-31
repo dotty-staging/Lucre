@@ -18,7 +18,7 @@ import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, IExpr}
 import de.sciss.lucre.stm.Sys
 
-final class ExpandedAttrSet[S <: Sys[S], A](attrView: CellView.Var[S, Option[A]], value: IExpr[S, A], tx0: S#Tx)
+final class ExpandedAttrSet[S <: Sys[S], A](attrView: CellView.Var[S#Tx, Option[A]], value: IExpr[S, A], tx0: S#Tx)
   extends IActionImpl[S] {
 
   def executeAction()(implicit tx: S#Tx): Unit = {

@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
 abstract class ObjCellViewVarImpl[S <: Sys[S], Dur[~ <: Sys[~]] <: stm.Obj[~],
   In <: Obj { type Peer[~ <: Sys[~]] <: Dur[~] }](
     h: stm.Source[S#Tx, stm.Obj[S]], key: String)(implicit ct: ClassTag[Dur[S]])
-  extends CellView.Var[S, Option[In]] {
+  extends CellView.Var[S#Tx, Option[In]] {
 
   // ---- abstract ----
 

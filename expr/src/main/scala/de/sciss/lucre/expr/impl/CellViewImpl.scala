@@ -108,7 +108,7 @@ object CellViewImpl {
       protected val h: stm.Source[S#Tx, evt.Map.Modifiable[S, K, _Ex]],
       protected val key: K)
      (implicit tpe: Type.Expr[A, _Ex])
-    extends ExprMapLike[S, K, A, _Ex /* , Change[A] */] with CellView.Var[S, Option[A]] {
+    extends ExprMapLike[S, K, A, _Ex /* , Change[A] */] with CellView.VarR[S, Option[A]] {
 
     def serializer: Serializer[S#Tx, S#Acc, Repr] = {
       implicit val exSer: Serializer[S#Tx, S#Acc, _Ex[S]] = tpe.serializer[S]
@@ -164,7 +164,7 @@ object CellViewImpl {
   private[lucre] final class ExprVar[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: expr.Expr[~, A]](
                                                                                           protected val h: stm.Source[S#Tx, _Ex[S] with stm.Var[S#Tx, _Ex[S]]])
                                                                                         (implicit tpe: Type.Expr[A, _Ex])
-    extends ExprLike[S, A, _Ex] with CellView.Var[S, A] {
+    extends ExprLike[S, A, _Ex] with CellView.VarR[S, A] {
 
     // ! important to unwrap, otherwise we get infinite recursion with `repr = repr` !
     override def repr(implicit tx: S#Tx): Repr = h().apply()
@@ -330,7 +330,7 @@ object CellViewImpl {
       protected val h: stm.Source[S#Tx, Obj.AttrMap[S]],
       protected val key: String)(implicit val tpe: Type.Expr[A, E]
   )
-    extends AttrBasic[S, A, E] with CellView.Var[S, Option[A]] {
+    extends AttrBasic[S, A, E] with CellView.Var[S#Tx, Option[A]] {
 
     final type EVar[~ <: Sys[~]] = tpe.Var[~]
 

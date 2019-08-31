@@ -17,7 +17,7 @@ import de.sciss.lucre.expr.graph.{Attr, Obj}
 import de.sciss.lucre.expr.{CellView, IExpr}
 import de.sciss.lucre.stm.{Disposable, Sys}
 
-final class ExpandedAttrUpdate[S <: Sys[S], A](source: IExpr[S, A], attrView: CellView.Var[S, Option[A]], tx0: S#Tx)
+final class ExpandedAttrUpdate[S <: Sys[S], A](source: IExpr[S, A], attrView: CellView.Var[S#Tx, Option[A]], tx0: S#Tx)
   extends Disposable[S#Tx] {
 
   private[this] val obs = source.changed.react { implicit tx => upd =>

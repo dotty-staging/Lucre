@@ -157,13 +157,10 @@ object Obj {
 
       def readIdentifiedAux(in: DataInput): Aux = this
 
-      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[Obj]] =
+      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Obj]] =
         new ObjCellViewVarImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
           protected def lower(peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
             wrap(peer)
-
-          implicit def serializer: Serializer[S#Tx, S#Acc, Option[stm.Obj[S]]] =
-            Serializer.option
         }
 
       def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
@@ -190,7 +187,7 @@ object Obj {
     /** Creates a bidirectional view between `stm.Obj` and the expression side representation type `A`.
       * If possible, implementations should look at `UndoManager.find` when updating values.
       */
-    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[A]]
+    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[A]]
 
     /** Creates a unidirectional view between a context's attribute or self object and the expression side
       * representation type `A`.
@@ -246,7 +243,7 @@ object Obj {
 
     override def toString: String = s"graph.Obj.AttrExpanded($obj, $key)@${hashCode().toHexString}"
 
-    private[this] val viewRef   = Ref(Option.empty[CellView.Var[S, Option[A]]])
+    private[this] val viewRef   = Ref(Option.empty[CellView.Var[S#Tx, Option[A]]])
     private[this] val valueRef  = Ref.make[Option[A]]
     private[this] val obsRef    = Ref.make[Disposable[S#Tx]]
     private[this] val objObs    = obj.changed.react { implicit tx => upd =>

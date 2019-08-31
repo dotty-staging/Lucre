@@ -16,13 +16,22 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.Observable
 import de.sciss.lucre.expr.impl.CellViewImpl.{FlatMapImpl, MapImpl, OptionOrElseImpl}
 import de.sciss.lucre.expr.impl.{CellViewImpl => Impl}
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Disposable, Obj, Sys}
 import de.sciss.lucre.{stm, event => evt, expr => _expr}
 import de.sciss.serial.Serializer
 
 import scala.language.higherKinds
 
 object CellView {
+  def empty[Tx, A]: CellView[Tx, Option[A]] = Empty.asInstanceOf[CellView[Tx, Option[A]]]
+
+  private object Empty extends CellView[Any, Option[Nothing]] {
+    def react(fun: Any => Option[Nothing] => Unit)(implicit tx: Any): Disposable[Any] =
+      Disposable.empty
+
+    def apply()(implicit tx: Any): Option[Nothing] = None
+  }
+
   def expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])(implicit tx: S#Tx,
                                                                     tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] = {
     import tpe.{serializer, varSerializer}
@@ -48,13 +57,13 @@ object CellView {
   }
 
   def attr[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] = {
+                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] = {
     new Impl.PlainAttrImpl[S, A, E](tx.newHandle(map), key)
   }
 
   /** Additionally uses undo manager when present. */
   def attrUndoOpt[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S, Option[A]] = {
+                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] = {
     new Impl.UndoAttrImpl[S, A, E](tx.newHandle(map), key)
   }
 
@@ -71,12 +80,32 @@ object CellView {
   def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] = new Impl.Const(value)
 
   object Var {
-    def unapply[S <: Sys[S], A](view: CellView[S#Tx, A]): Option[Var[S, A]] = view match {
-      case vr: Var[S, A] => Some(vr)
-      case _ => None
+    def unapply[Tx, A](view: CellView[Tx, A]): Option[Var[Tx, A]] = view match {
+      case vr: Var[Tx, A] => Some(vr)
+      case _              => None
+    }
+
+    def empty[Tx, A]: Var[Tx, Option[A]] = Empty.asInstanceOf[Var[Tx, Option[A]]]
+
+    private object Empty extends Var[Any, Option[Nothing]] {
+      def react(fun: Any => Option[Nothing] => Unit)(implicit tx: Any): Disposable[Any] =
+        Disposable.empty
+
+      def apply()(implicit tx: Any): Option[Nothing] = None
+
+      def update(v: Option[Nothing])(implicit tx: Any): Unit = ()
     }
   }
-  trait Var[S <: Sys[S], A] extends CellView[S#Tx, A] with stm.Sink[S#Tx, A] {
+  trait Var[Tx, A] extends CellView[Tx, A] with stm.Sink[Tx, A]
+
+  object VarR {
+    def unapply[S <: Sys[S], A](view: CellView[S#Tx, A]): Option[VarR[S, A]] = view match {
+      case vr: VarR[S, A] => Some(vr)
+      case _              => None
+    }
+  }
+  /** A mutable cell view representing serializable elements. */
+  trait VarR[S <: Sys[S], A] extends Var[S#Tx, A] {
     type Repr
 
     def repr(implicit tx: S#Tx): Repr
@@ -101,4 +130,5 @@ object CellView {
       new FlatMapImpl(in, f)
   }
 }
+/** A `CellView` is an in-memory view of a transactional object that fires updates when the object changes. */
 trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A]

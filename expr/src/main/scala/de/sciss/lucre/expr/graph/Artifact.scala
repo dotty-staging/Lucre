@@ -38,7 +38,7 @@ object Artifact {
 
     def readIdentifiedAux(in: DataInput): Aux = this
 
-    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S, Option[File]] =
+    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[File]] =
       new ObjCellViewImpl(tx.newHandle(obj.attr), key = key)
 
     // Note: Artifact does not expose an implicit `Obj.Bridge[File]`, for now, so currently
@@ -68,7 +68,7 @@ object Artifact {
   }
 
   private final class ObjCellViewImpl[S <: Sys[S]](attrH: stm.Source[S#Tx, AttrMap[S]], key: String)
-    extends CellView.Var[S, Option[File]] {
+    extends CellView.Var[S#Tx, Option[File]] {
 
     private def attr(implicit tx: S#Tx): AttrMap[S] = attrH()
 
