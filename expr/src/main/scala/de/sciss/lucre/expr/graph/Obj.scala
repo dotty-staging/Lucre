@@ -58,6 +58,7 @@ object Obj {
 
   private[lucre] case object Empty extends Obj {
     override def productPrefix: String = s"Obj$$Empty$$"  // serialization
+    override def toString     : String = "Obj<empty>"
 
     type Peer[~ <: Sys[~]] = stm.Obj[~]
 
@@ -66,7 +67,10 @@ object Obj {
   }
 
   private final class Impl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
-    extends ObjImplBase[In, stm.Obj](in, system)
+    extends ObjImplBase[In, stm.Obj](in, system) {
+
+    override def toString: String = s"Obj($in)"
+  }
 
   private abstract class AbstractMakeExpanded[S <: Sys[S]]
     extends IExpr[S, Obj]

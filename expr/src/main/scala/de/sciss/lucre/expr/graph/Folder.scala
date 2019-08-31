@@ -38,6 +38,8 @@ object Folder {
 
   private[lucre] object Empty extends Folder {
     private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] = None
+
+    override def toString: String = "Folder<empty>"
   }
 
   private final class ApplyExpanded[S <: Sys[S]](implicit targets: ITargets[S])
@@ -74,6 +76,8 @@ object Folder {
     extends ObjImplBase[S, stm.Folder](in, system) with Folder {
 
     override type Peer[~ <: Sys[~]] = stm.Folder[~]
+
+    override def toString: String = s"Folder($in)"
   }
 
   private final class CellViewImpl[S <: Sys[S]](h: stm.Source[S#Tx, stm.Obj[S]], key: String)
