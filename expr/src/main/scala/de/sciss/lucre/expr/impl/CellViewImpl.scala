@@ -239,30 +239,30 @@ object CellViewImpl {
     }
   }
 
-  private[lucre] final class FlatMapImpl[Tx, A, B](in: CellView[Tx, Option[A]], f: A => Option[B])
+  private[lucre] final class FlatMapImpl[Tx, A, B](in: CellView[Tx, Option[A]], f: Tx => A => Option[B])
     extends CellView[Tx, Option[B]] {
 
     def apply()(implicit tx: Tx): Option[B] =
-      in().flatMap(f)
+      in().flatMap(f(tx)(_))
 
     def react(fun: Tx => Option[B] => Unit)(implicit tx: Tx): Disposable[Tx] =
       in.react { implicit tx => aOpt =>
-        fun(tx)(aOpt.flatMap(f))
+        fun(tx)(aOpt.flatMap(f(tx)(_)))
       }
   }
 
-  private[lucre] final class CatVarImpl[Tx, A, B](in: CellView[Tx, Option[A]], cat: A => CellView.Var[Tx, Option[B]])
+  private[lucre] final class CatVarImpl[Tx, A, B](in: CellView[Tx, Option[A]])(cat: Tx => A => CellView.Var[Tx, Option[B]])
     extends CellView.Var[Tx, Option[B]] {
 
     def apply()(implicit tx: Tx): Option[B] =
-      in().flatMap(cat(_).apply())
+      in().flatMap(cat(tx)(_).apply())
 
     def update(v: Option[B])(implicit tx: Tx): Unit =
-      in().foreach(cat(_).update(v))
+      in().foreach(cat(tx)(_).update(v))
 
     def react(fun: Tx => Option[B] => Unit)(implicit tx: Tx): Disposable[Tx] =
       in.react { implicit tx => aOpt =>
-        fun(tx)(aOpt.flatMap(cat(_).apply()))
+        fun(tx)(aOpt.flatMap(cat(tx)(_).apply()))
       }
   }
 

@@ -67,10 +67,10 @@ object Attr {
       def loop(parent: CellView[S#Tx, Option[stm.Obj[S]]], sub: String, rem: List[String]): CellView[S#Tx, Option[A]] =
         rem match {
           case Nil =>
-            parent.flatMap(child => bridge.cellValue(child, sub))
+            parent.flatMapTx { implicit tx => child => bridge.cellValue(child, sub) }
 
           case next :: tail =>
-            val childView = parent.flatMap(child => child.attr.get(key))
+            val childView = parent.flatMapTx { implicit tx => child => child.attr.get(key) }
             loop(childView, next, tail)
         }
 
@@ -142,7 +142,9 @@ object Attr {
             (parent, sub)
 
           case next :: tail =>
-            val childView = parent.flatMap(child => child.attr.get(key))
+            val childView = parent.flatMapTx { implicit tx =>  child =>
+              child.attr.get(key)
+            }
             loop(childView, next, tail)
         }
 
@@ -155,7 +157,9 @@ object Attr {
           new NestedVarCellView(ctxFullP, objFullP, lastSub)
 
         case None =>
-          new CatVarImpl[S#Tx, stm.Obj[S], A](ctxFullP, child => bridge.cellView(child, lastSub))
+          new CatVarImpl[S#Tx, stm.Obj[S], A](ctxFullP)({ implicit tx => child =>
+            bridge.cellView(child, lastSub)
+          })
       }
 
     } else {

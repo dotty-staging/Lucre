@@ -103,7 +103,7 @@ object CellView {
     def orElse[B >: A](that: CellView[Tx, Option[B]]): CellView[Tx, Option[B]] =
       new OptionOrElseImpl(in, that)
 
-    def flatMap[B](f: A => Option[B]): CellView[Tx, Option[B]] =
+    def flatMapTx[B](f: Tx => A => Option[B]): CellView[Tx, Option[B]] =
       new FlatMapImpl(in, f)
   }
 
