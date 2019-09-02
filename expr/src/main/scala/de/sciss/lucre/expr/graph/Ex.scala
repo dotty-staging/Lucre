@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import java.io.File
 
-import de.sciss.lucre.aux.Aux
+import de.sciss.lucre.adjunct.Adjunct
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IExpr}
 import de.sciss.lucre.stm.Sys
@@ -89,10 +89,10 @@ object Ex {
   private val anyCanFlatMapExOption = new CanFlatMapExOption[Any]
 
   private lazy val _init: Unit = {
-    Aux.addFactory(anyCanMapExOption    )
-    Aux.addFactory(anyCanMapExSeq       )
-    Aux.addFactory(CanMapActOption      )
-    Aux.addFactory(anyCanFlatMapExOption)
+    Adjunct.addFactory(anyCanMapExOption    )
+    Adjunct.addFactory(anyCanMapExSeq       )
+    Adjunct.addFactory(CanMapActOption      )
+    Adjunct.addFactory(anyCanFlatMapExOption)
   }
 
   def init(): Unit = _init
@@ -145,7 +145,7 @@ object Ex {
     implicit def actOption  : CanMap[Option, Act  , Ex[Option[Act]]]  = CanMapActOption
     // implicit def actSeq     : CanMap[Seq   , Act  , Ex[Seq   [Act]]]  = ...
   }
-  trait CanMap[-From[_], -B, +To] extends Aux {
+  trait CanMap[-From[_], -B, +To] extends Adjunct {
     def map[A](from: Ex[From[A]], fun: Ex[A] => B): To
   }
 
@@ -161,7 +161,7 @@ object Ex {
   // --------------------- impl ---------------------
 
   // common to all type classes
-  private abstract class MapSupport extends Aux with Aux.Factory {
+  private abstract class MapSupport extends Adjunct with Adjunct.Factory {
     def mkClosure[A, B](fun: Ex[A] => B): (It[A], Graph, B) = {
       val b     = Graph.builder
       val it    = b.allocToken[A]()
@@ -171,7 +171,7 @@ object Ex {
       (it, c, r)
     }
 
-    def readIdentifiedAux(in: DataInput): Aux = this
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
   }
 
   private final class CanMapExOption[B] extends MapSupport

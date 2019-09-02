@@ -15,8 +15,8 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.aux.Aux.{Num, NumBool, NumFrac, NumInt, ToNum, Widen, WidenToDouble}
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.Adjunct.{Num, NumBool, NumFrac, NumInt, ToNum, Widen, WidenToDouble}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.expr.graph.UnaryOp.Op
@@ -38,296 +38,296 @@ object UnaryOp {
     def name: String
   }
   
-  type AuxL = scala.List[Aux]
+  type Adjuncts = scala.List[Adjunct]
 
   // ---- analogous to UGens ----
 
-  final case class Neg[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Neg[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.negate(a)
 
     override def name = "Neg"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Not[A]()(implicit num: NumBool[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Not[A]()(implicit num: NumBool[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.unary_!(a)
-    
+
     override def name = "Not"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class BitNot[A]()(implicit num: NumInt[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class BitNot[A]()(implicit num: NumInt[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.unary_~(a)
-    
+
     override def name = "BitNot"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Abs[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Abs[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.abs(a)
-    
+
     override def name = "Abs"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class ToDouble[A, B]()(implicit to: ToNum[A] { type Double = B }) extends NamedOp[A, B] with ProductWithAux {
+  final case class ToDouble[A, B]()(implicit to: ToNum[A] { type Double = B }) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = to.toDouble(a)
-    
+
     override def name = "ToDouble"
-    
-    override def aux: AuxL = to :: Nil
+
+    override def adjuncts: Adjuncts = to :: Nil
   }
 
-  final case class ToInt[A, B]()(implicit to: ToNum[A] { type Int = B }) extends NamedOp[A, B] with ProductWithAux {
+  final case class ToInt[A, B]()(implicit to: ToNum[A] { type Int = B }) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = to.toInt(a)
 
     override def name = "ToInt"
 
-    override def aux: AuxL = to :: Nil
+    override def adjuncts: Adjuncts = to :: Nil
   }
 
-  final case class ToLong[A, B]()(implicit to: ToNum[A] { type Long = B }) extends NamedOp[A, B] with ProductWithAux {
+  final case class ToLong[A, B]()(implicit to: ToNum[A] { type Long = B }) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = to.toLong(a)
 
     override def name = "ToLong"
 
-    override def aux: AuxL = to :: Nil
+    override def adjuncts: Adjuncts = to :: Nil
   }
 
-  final case class Ceil[A]()(implicit num: NumFrac[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Ceil[A]()(implicit num: NumFrac[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.ceil(a)
-    
+
     override def name = "Ceil"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Floor[A]()(implicit num: NumFrac[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Floor[A]()(implicit num: NumFrac[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.floor(a)
 
     override def name = "Floor"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Frac[A]()(implicit num: NumFrac[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Frac[A]()(implicit num: NumFrac[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.frac(a)
 
     override def name = "Frac"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Signum[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Signum[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.signum(a)
 
     override def name = "Signum"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Squared[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Squared[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.squared(a)
 
     override def name = "Squared"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Cubed[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAux {
+  final case class Cubed[A]()(implicit num: Num[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
     def apply(a: A): A = num.cubed(a)
 
     override def name = "Cubed"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Sqrt[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Sqrt[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.sqrt(wd.widen1(a))
 
     override def name = "Sqrt"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Exp[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Exp[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.exp(wd.widen1(a))
 
     override def name = "Exp"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Reciprocal[A, B]()(implicit w: Widen[A, B], num: NumFrac[B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Reciprocal[A, B]()(implicit w: Widen[A, B], num: NumFrac[B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = num.reciprocal(w.widen1(a))
 
     override def name = "Reciprocal"
 
-    override def aux: AuxL = w :: num :: Nil
+    override def adjuncts: Adjuncts = w :: num :: Nil
   }
 
-  final case class Midicps[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Midicps[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.midiCps(wd.widen1(a))
 
     override def name = "Midicps"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Cpsmidi[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Cpsmidi[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.cpsMidi(wd.widen1(a))
 
     override def name = "Cpsmidi"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Midiratio[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Midiratio[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.midiRatio(wd.widen1(a))
 
     override def name = "Midiratio"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Ratiomidi[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Ratiomidi[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.ratioMidi(wd.widen1(a))
 
     override def name = "Ratiomidi"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Dbamp[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Dbamp[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.dbAmp(wd.widen1(a))
 
     override def name = "Dbamp"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Ampdb[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Ampdb[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.ampDb(wd.widen1(a))
 
     override def name = "Ampdb"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Octcps[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Octcps[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.octCps(wd.widen1(a))
 
     override def name = "Octcps"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Cpsoct[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Cpsoct[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.cpsOct(wd.widen1(a))
 
     override def name = "Cpsoct"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Log[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Log[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.log(wd.widen1(a))
 
     override def name = "Log"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Log2[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Log2[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.log2(wd.widen1(a))
 
     override def name = "Log2"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Log10[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Log10[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.log10(wd.widen1(a))
 
     override def name = "Log10"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Sin[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Sin[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.sin(wd.widen1(a))
 
     override def name = "Sin"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Cos[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Cos[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.cos(wd.widen1(a))
 
     override def name = "Cos"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Tan[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Tan[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.tan(wd.widen1(a))
 
     override def name = "Tan"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Asin[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Asin[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.asin(wd.widen1(a))
 
     override def name = "Asin"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Acos[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Acos[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.acos(wd.widen1(a))
 
     override def name = "Acos"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Atan[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Atan[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.atan(wd.widen1(a))
 
     override def name = "Atan"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Sinh[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Sinh[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.sinh(wd.widen1(a))
 
     override def name = "Sinh"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Cosh[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Cosh[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.cosh(wd.widen1(a))
 
     override def name = "Cosh"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
-  final case class Tanh[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAux {
+  final case class Tanh[A, B]()(implicit wd: WidenToDouble[A, B]) extends NamedOp[A, B] with ProductWithAdjuncts {
     def apply(a: A): B = wd.tanh(wd.widen1(a))
 
     override def name = "Tanh"
 
-    override def aux: AuxL = wd :: Nil
+    override def adjuncts: Adjuncts = wd :: Nil
   }
 
 //  final case class Rand[A]()(implicit num: Num[A])

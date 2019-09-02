@@ -1,5 +1,5 @@
 /*
- *  Aux.scala
+ *  Adjunct.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -11,9 +11,9 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.aux
+package de.sciss.lucre.adjunct
 
-import de.sciss.lucre.aux.impl.{ScalarEqImpl, ScalarToNumImpl, SeqLikeEq, SeqLikeNum, SeqLikeNumDouble, SeqLikeNumFrac, SeqLikeToNum}
+import de.sciss.lucre.adjunct.impl.{ScalarEqImpl, ScalarToNumImpl, SeqLikeEq, SeqLikeNum, SeqLikeNumDouble, SeqLikeNumFrac, SeqLikeToNum}
 import de.sciss.lucre.stm.Random
 import de.sciss.numbers.{DoubleFunctions => rd, IntFunctions => ri, IntFunctions2 => ri2, LongFunctions => rl, LongFunctions2 => rl2}
 import de.sciss.serial.{DataInput, DataOutput, Writable}
@@ -21,12 +21,12 @@ import de.sciss.serial.{DataInput, DataOutput, Writable}
 import scala.annotation.switch
 
 /** These are basically our "type classes" with the ability to serialize and deserialize.
-  * They are supported through `ProductHasAux` which is recognized in serialization.
+  * They are supported through `ProductHasAdjuncts` which is recognized in serialization.
   */
-object Aux {
-  private[Aux] final val COOKIE = 0x4175   // "Au"
+object Adjunct {
+  private[Adjunct] final val COOKIE = 0x4175   // "Au"
 
-  def read(in: DataInput): Aux = {
+  def read(in: DataInput): Adjunct = {
     val cookie  = in.readShort()
     if (cookie != COOKIE) sys.error(s"Unexpected cookie - found ${cookie.toHexString}, expected ${COOKIE.toHexString}")
     val id      = in.readShort()
@@ -51,18 +51,13 @@ object Aux {
       case WidenToDouble.DoubleImpl .id => WidenToDouble.DoubleImpl
       case _ =>
         val f = getFactory(id)
-        f.readIdentifiedAux(in)
+        f.readIdentifiedAdjunct(in)
     }
   }
 
-  def readT[A <: Aux](in: DataInput): A = read(in).asInstanceOf[A]
+  def readT[A <: Adjunct](in: DataInput): A = read(in).asInstanceOf[A]
 
-  def write(out: DataOutput, aux: Aux): Unit = aux.write(out)
-
-  //    def write(out: DataOutput, aux: Aux): Unit = {
-  //      out.writeShort(Aux.COOKIE)
-  //      out.writeShort(aux.id)
-  //    }
+  def write(out: DataOutput, adj: Adjunct): Unit = adj.write(out)
 
   trait WidenLowPriority {
     implicit object intSeqSeq extends Widen2[Int, Seq[Int], Seq[Int]] {
@@ -99,7 +94,7 @@ object Aux {
   object Widen extends WidenMidPriority {
     implicit def identity[A]: Widen2[A, A, A] = anyWiden.asInstanceOf[Identity[A]]
 
-    private[Aux] final val idIdentity = 0xFF
+    private[Adjunct] final val idIdentity = 0xFF
 
     private val anyWiden = new Identity[Any]
 
@@ -111,7 +106,7 @@ object Aux {
     }
   }
 
-  trait Widen[A1, A] extends Aux {
+  trait Widen[A1, A] extends Adjunct {
     def widen1(a: A1): A
   }
 
@@ -159,7 +154,7 @@ object Aux {
     implicit def doubleTop: DoubleTop .type = DoubleTop
     implicit def longTop  : LongTop   .type = LongTop
   }
-  trait Eq[A] extends Aux {
+  trait Eq[A] extends Adjunct {
     type Boolean
 
     def eq (a: A, b: A): Boolean
@@ -290,7 +285,7 @@ object Aux {
     //    implicit def double     : WidenToDouble[Double, Double] = DoubleTop
     implicit def intToDouble: WidenToDouble[Int   , Double] = DoubleImpl
 
-    private[Aux] object DoubleImpl extends DoubleTop with WidenToDouble[Int, Double] {
+    private[Adjunct] object DoubleImpl extends DoubleTop with WidenToDouble[Int, Double] {
       final val id = 0x120
 
       def widen1(a: Int): Double = a.toDouble
@@ -341,7 +336,7 @@ object Aux {
     implicit def doubleTop    : DoubleTop   .type = DoubleTop
     implicit def longTop      : LongTop     .type = LongTop
   }
-  trait ToNum[A] extends Aux {
+  trait ToNum[A] extends Adjunct {
     type Int
     type Double
     type Long
@@ -376,7 +371,7 @@ object Aux {
       def id: Int = throw new UnsupportedOperationException // XXX TODO --- do we may to store this instance?
     }
   }
-  trait FromAny[A] extends Aux {
+  trait FromAny[A] extends Adjunct {
     /** Tries to extract a value of type `A` from an unknown input value.
       * If the input value is generally incompatible with `A`, an efficient
       * return value is `Unsupported`.
@@ -831,7 +826,7 @@ object Aux {
   trait Factory {
     def id: Int
 
-    def readIdentifiedAux(in: DataInput): Aux
+    def readIdentifiedAdjunct(in: DataInput): Adjunct
   }
 
   private final val sync = new AnyRef
@@ -839,27 +834,27 @@ object Aux {
   @volatile private var factoryMap = Map.empty[Int, Factory]
 
   def addFactory(f: Factory): Unit = {
-    val auxId = f.id
-    if (auxId < 1000) throw new IllegalArgumentException(s"Third party aux id ($auxId) must be >= 1000")
+    val adjId = f.id
+    if (adjId < 1000) throw new IllegalArgumentException(s"Third party adjunct id ($adjId) must be >= 1000")
     sync.synchronized {
-      if (factoryMap.contains(auxId))
-        throw new IllegalArgumentException(s"Aux $auxId was already registered ($f overrides ${factoryMap(auxId)})")
+      if (factoryMap.contains(adjId))
+        throw new IllegalArgumentException(s"Adjunct $adjId was already registered ($f overrides ${factoryMap(adjId)})")
 
-      factoryMap += auxId -> f
+      factoryMap += adjId -> f
     }
   }
 
   @inline
-  def getFactory(id: Int): Factory = factoryMap.getOrElse(id, sys.error(s"Unknown aux $id"))
+  def getFactory(id: Int): Factory = factoryMap.getOrElse(id, sys.error(s"Unknown adjunct $id"))
 
-  sealed trait Primitive extends Aux
+  sealed trait Primitive extends Adjunct
 
 }
-/* sealed */ trait Aux extends Writable {
+/* sealed */ trait Adjunct extends Writable {
   def id: Int
 
   def write(out: DataOutput): Unit = {
-    out.writeShort(Aux.COOKIE)
+    out.writeShort(Adjunct.COOKIE)
     out.writeShort(id)
   }
 }

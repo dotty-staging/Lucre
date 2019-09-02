@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.14.0"
-lazy val mimaVersion      = "3.14.0"
+lazy val projectVersion   = "3.15.0"
+lazy val mimaVersion      = "3.15.0"
 
 lazy val deps = new {
   val base = new {
@@ -53,8 +53,8 @@ lazy val agpl = "AGPL v3+" -> url("http://www.gnu.org/licenses/agpl-3.0.txt")
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
-  .aggregate(base, geom, aux, data, core, expr, confluent, bdb)
-  .dependsOn(base, geom, aux, data, core, expr, confluent, bdb)
+  .aggregate(base, geom, adjunct, data, core, expr, confluent, bdb)
+  .dependsOn(base, geom, adjunct, data, core, expr, confluent, bdb)
   .settings(commonSettings)
   .settings(
     licenses := Seq(agpl),
@@ -83,7 +83,7 @@ lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-geom" % mimaVersion)
   )
 
-lazy val aux = project.withId(s"$baseNameL-aux").in(file("aux"))
+lazy val adjunct = project.withId(s"$baseNameL-adjunct").in(file("adjunct"))
   .dependsOn(base)
   .settings(commonSettings)
   .settings(
@@ -91,7 +91,7 @@ lazy val aux = project.withId(s"$baseNameL-aux").in(file("aux"))
     libraryDependencies ++= Seq(
       "de.sciss" %% "numbers" % deps.expr.numbers
     ),
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-aux" % mimaVersion)
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-adjunct" % mimaVersion)
   )
 
 lazy val data = project.withId(s"$baseNameL-data").in(file("data"))
@@ -125,7 +125,7 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   )
 
 lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
-  .dependsOn(core, aux)
+  .dependsOn(core, adjunct)
   .settings(commonSettings)
   .settings(
     licenses := Seq(agpl),

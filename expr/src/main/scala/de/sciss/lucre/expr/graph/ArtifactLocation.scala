@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.file._
 import de.sciss.lucre.artifact.{ArtifactLocation => _ArtifactLocation}
-import de.sciss.lucre.aux.Aux
+import de.sciss.lucre.adjunct.Adjunct
 import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
@@ -26,14 +26,14 @@ import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.serial.DataInput
 
 object ArtifactLocation {
-  private lazy val _init: Unit = Aux.addFactory(Bridge)
+  private lazy val _init: Unit = Adjunct.addFactory(Bridge)
 
   def init(): Unit = _init
 
-  private final object Bridge extends Obj.Bridge[File] with Aux.Factory {
+  private final object Bridge extends Obj.Bridge[File] with Adjunct.Factory {
     final val id = 2003
 
-    def readIdentifiedAux(in: DataInput): Aux = this
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[File]] =
       new ObjCellViewImpl(tx.newHandle(obj.attr), key = key)
@@ -123,5 +123,5 @@ final case class ArtifactLocation(key: String, default: Ex[File] = file(""))
 
   implicit private def bridge: Obj.Bridge[File] = ArtifactLocation.Bridge
 
-  def aux: List[Aux] = Nil
+  def adjuncts: List[Adjunct] = Nil
 }

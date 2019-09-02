@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
@@ -27,7 +27,7 @@ import scala.annotation.tailrec
 import scala.concurrent.stm.Ref
 
 object Attr {
-  trait Like[A] extends ProductWithAux {
+  trait Like[A] extends ProductWithAdjuncts {
     def update(in: Ex[A]): Control
     def set   (in: Ex[A]): Act
   }
@@ -177,7 +177,7 @@ object Attr {
       Impl(key, default)
 
     private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Obj.Bridge[A])
-      extends WithDefault[A] with ProductWithAux {
+      extends WithDefault[A] with ProductWithAdjuncts {
 
       type Repr[S <: Sys[S]] = IExpr[S, A]
 
@@ -193,7 +193,7 @@ object Attr {
         new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
       }
 
-      override def aux: scala.List[Aux] = bridge :: Nil
+      override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
 
     private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
@@ -274,7 +274,7 @@ object Attr {
   }
 
   final case class Update[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
-    extends Control with ProductWithAux {
+    extends Control with ProductWithAdjuncts {
 
     override def productPrefix: String = s"Attr$$Update"  // serialization
 
@@ -286,11 +286,11 @@ object Attr {
       IControl.wrap(peer)
     }
 
-    override def aux: scala.List[Aux] = bridge :: Nil
+    override def adjuncts: scala.List[Adjunct] = bridge :: Nil
   }
 
   final case class Set[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
-    extends Act with ProductWithAux {
+    extends Act with ProductWithAdjuncts {
 
     override def productPrefix: String = s"Attr$$Set"  // serialization
 
@@ -301,11 +301,11 @@ object Attr {
       new ExpandedAttrSet[S, A](attrView, source.expand[S], tx)
     }
 
-    override def aux: scala.List[Aux] = bridge :: Nil
+    override def adjuncts: scala.List[Adjunct] = bridge :: Nil
   }
 }
 final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
-  extends Ex[Option[A]] with Attr.Like[A] with ProductWithAux {
+  extends Ex[Option[A]] with Attr.Like[A] with ProductWithAdjuncts {
 
   type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
 
@@ -318,5 +318,5 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
     new Attr.Expanded[S, A](attrView, tx)
   }
 
-  override def aux: scala.List[Aux] = bridge :: Nil
+  override def adjuncts: scala.List[Adjunct] = bridge :: Nil
 }

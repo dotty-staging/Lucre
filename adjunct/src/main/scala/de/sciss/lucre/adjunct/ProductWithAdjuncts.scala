@@ -1,5 +1,5 @@
 /*
- *  ProductWithAux.scala
+ *  ProductWithAdjuncts.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -11,8 +11,8 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.aux
+package de.sciss.lucre.adjunct
 
-trait ProductWithAux extends Product {
-  def aux: List[Aux]
+trait ProductWithAdjuncts extends Product {
+  def adjuncts: List[Adjunct]
 }

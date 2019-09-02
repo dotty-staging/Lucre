@@ -1,5 +1,5 @@
 /*
- *  AuxImpl.scala
+ *  AdjunctImpl.scala
  *  (Lucre)
  *
  *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
@@ -11,10 +11,10 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.aux
+package de.sciss.lucre.adjunct
 package impl
 
-import de.sciss.lucre.aux.Aux.{Eq, Num, NumDouble, NumFrac, Ord, Scalar, ScalarEq, ScalarNum, ScalarNumDouble, ScalarNumFrac, ScalarOrd, ScalarToNum, ToNum}
+import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumDouble, NumFrac, Ord, Scalar, ScalarEq, ScalarNum, ScalarNumDouble, ScalarNumFrac, ScalarOrd, ScalarToNum, ToNum}
 import de.sciss.lucre.stm.Random
 
 trait SeqLike[A] {

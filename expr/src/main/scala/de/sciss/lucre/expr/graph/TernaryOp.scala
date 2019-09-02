@@ -14,8 +14,8 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.aux.Aux.{Num, Widen2}
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.Adjunct.{Num, Widen2}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
@@ -34,38 +34,38 @@ object TernaryOp {
     override def toString: String = name
   }
   
-  type AuxL = scala.List[Aux]
+  type Adjuncts = scala.List[Adjunct]
 
   // ---- (Num, Num, Num) -> Num ----
 
   final case class Clip[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
-    extends NamedOp[A, B, B, C] with ProductWithAux {
+    extends NamedOp[A, B, B, C] with ProductWithAdjuncts {
 
     def apply(a: A, b: B, c: B): C = num.clip(widen.widen1(a), widen.widen2(b), widen.widen2(c))
 
     def name = "Clip"
 
-    override def aux: AuxL = widen :: num :: Nil
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   final case class Fold[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
-    extends NamedOp[A, B, B, C] with ProductWithAux {
+    extends NamedOp[A, B, B, C] with ProductWithAdjuncts {
 
     def apply(a: A, b: B, c: B): C = num.fold(widen.widen1(a), widen.widen2(b), widen.widen2(c))
 
     def name = "Fold"
 
-    override def aux: AuxL = widen :: num :: Nil
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   final case class Wrap[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
-    extends NamedOp[A, B, B, C] with ProductWithAux {
+    extends NamedOp[A, B, B, C] with ProductWithAdjuncts {
 
     def apply(a: A, b: B, c: B): C = num.wrap(widen.widen1(a), widen.widen2(b), widen.widen2(c))
 
     def name = "Wrap"
 
-    override def aux: AuxL = widen :: num :: Nil
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   // ---- String ----

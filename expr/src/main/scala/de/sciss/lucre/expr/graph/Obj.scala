@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewVarImpl, ObjImplBase}
@@ -33,8 +33,8 @@ import scala.language.higherKinds
 
 object Obj {
   private lazy val _init: Unit = {
-    Aux.addFactory(Source.obj)
-    Aux.addFactory(Bridge.obj)
+    Adjunct.addFactory(Source.obj)
+    Adjunct.addFactory(Bridge.obj)
   }
 
   def init(): Unit = _init
@@ -119,14 +119,14 @@ object Obj {
   object Make {
     def apply[A](ex: Ex[A])(implicit cm: CanMake[A]): Make = Impl(ex)
 
-    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Make with Act with ProductWithAux {
+    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Make with Act with ProductWithAdjuncts {
       type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
 
       override def productPrefix: String = s"Obj$$Make" // serialization
 
       def make: Act = this
 
-      def aux: List[Aux] = cm :: Nil
+      def adjuncts: List[Adjunct] = cm :: Nil
 
       protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
         import ctx.targets
@@ -149,12 +149,12 @@ object Obj {
     implicit val intVec   : Bridge[Vec[Int   ]] = new ExObjBridgeImpl(IntVector    )
     implicit val doubleVec: Bridge[Vec[Double]] = new ExObjBridgeImpl(DoubleVector )
 
-    implicit object obj extends Bridge[Obj] with Aux.Factory {
+    implicit object obj extends Bridge[Obj] with Adjunct.Factory {
       final val id = 1005
 
       type Repr[S <: Sys[S]] = stm.Obj[S]
 
-      def readIdentifiedAux(in: DataInput): Aux = this
+      def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
       def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Obj]] =
         new ObjCellViewVarImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
@@ -178,7 +178,7 @@ object Obj {
         obj.attr.get(key).map(wrap(_))
     }
   }
-  trait Bridge[A] extends Aux {
+  trait Bridge[A] extends Adjunct {
     /** Creates a bidirectional view between `stm.Obj` and the expression side representation type `A`.
       * If possible, implementations should look at `UndoManager.find` when updating values.
       */
@@ -193,7 +193,7 @@ object Obj {
   }
 
   object Source {
-    implicit object obj extends Source[Obj] with Aux.Factory {
+    implicit object obj extends Source[Obj] with Adjunct.Factory {
       final val id = 1006
 
       type Repr[S <: Sys[S]] = stm.Obj[S]
@@ -204,14 +204,14 @@ object Obj {
       implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
         stm.Obj.serializer
 
-      def readIdentifiedAux(in: DataInput): Aux = this
+      def readIdentifiedAdjunct(in: DataInput): Adjunct = this
     }
   }
 
   /** An `Obj.Source` either has an `stm.Obj` peer, or it can make one.
     * The latter is represented by sub-trait `CanMake`.
     */
-  trait Source[-A] extends Aux {
+  trait Source[-A] extends Adjunct {
     type Repr[S <: Sys[S]] <: stm.Obj[S]
 
     def toObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): Repr[S]
@@ -287,7 +287,7 @@ object Obj {
 
   object Attr {
     final case class Update[A](obj: Ex[Obj], key: String,value: Ex[A])(implicit bridge: Obj.Bridge[A])
-      extends Control with ProductWithAux {
+      extends Control with ProductWithAdjuncts {
 
       override def productPrefix: String = s"Obj$$Attr$$Update"  // serialization
 
@@ -298,10 +298,10 @@ object Obj {
         IControl.wrap(peer)
       }
 
-      override def aux: scala.List[Aux] = bridge :: Nil
+      override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
     final case class Set[A](obj: Ex[Obj], key: String, value: Ex[A])(implicit bridge: Obj.Bridge[A])
-      extends Act with ProductWithAux {
+      extends Act with ProductWithAdjuncts {
 
       override def productPrefix: String = s"Obj$$Attr$$Set"  // serialization
 
@@ -310,7 +310,7 @@ object Obj {
       protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
         new ExpandedAttrSetIn[S, A](obj.expand[S], key, value.expand[S], tx)
 
-      override def aux: scala.List[Aux] = bridge :: Nil
+      override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
   }
 
@@ -330,7 +330,7 @@ object Obj {
     def update(in: Ex[A]): Control  = Obj.Attr.Update (obj, key, in)
     def set   (in: Ex[A]): Act      = Obj.Attr.Set    (obj, key, in)
 
-    def aux: List[Aux] = bridge :: Nil
+    def adjuncts: List[Adjunct] = bridge :: Nil
   }
 
   private final class CopyExpanded[S <: Sys[S]](ex: IExpr[S, Obj])(implicit protected val targets: ITargets[S])

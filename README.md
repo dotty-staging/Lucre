@@ -27,6 +27,7 @@ Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12 (las
 
 Lucre comes with multiple modules:
 
+- `adjunct` introduces a type-class API with fast serialization.
 - `base` introduces `Base` quasi-system type, which may or may not be transactional;
   it contains a `Plain` base system.
 - `geom` introduces geometric data types (required by `data`)
@@ -47,7 +48,7 @@ Or just for a selected module:
 
 Where `{module}` is any of the above names.
 
-The current version `v` is `"3.14.0"`.
+The current version `v` is `"3.15.0"`.
 
 ## contributing
 

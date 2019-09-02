@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.aux.Aux.{FromAny, HasDefault}
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.impl.IActionImpl
@@ -33,12 +33,12 @@ object CaseDef {
     def commit()(implicit tx: S#Tx): Unit
   }
 }
-sealed trait CaseDef[A] extends Ex[A] with ProductWithAux {
+sealed trait CaseDef[A] extends Ex[A] with ProductWithAdjuncts {
   type Repr[S <: Sys[S]] <: CaseDef.Expanded[S, A]
 
   def fromAny: FromAny[A]
 
-  def aux: List[Aux] = fromAny :: Nil
+  def adjuncts: List[Adjunct] = fromAny :: Nil
 }
 
 object Quote {
@@ -171,6 +171,6 @@ object Var {
     }
   }
 }
-trait Var[A] extends Ex[A] with CaseDef[A] with ProductWithAux {
+trait Var[A] extends Ex[A] with CaseDef[A] with ProductWithAdjuncts {
   type Repr[S <: Sys[S]] = Var.Expanded[S, A]
 }

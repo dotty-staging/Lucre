@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.edit.EditFolder
 import de.sciss.lucre.event.impl.IGenerator
 import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
@@ -30,7 +30,7 @@ import scala.concurrent.stm.Ref
 
 object Folder {
   private lazy val _init: Unit =
-    Aux.addFactory(Bridge)
+    Adjunct.addFactory(Bridge)
 
   def init(): Unit = _init
 
@@ -90,12 +90,12 @@ object Folder {
       Serializer.option
   }
 
-  implicit object Bridge extends Obj.Bridge[Folder] with Aux.Factory {
+  implicit object Bridge extends Obj.Bridge[Folder] with Adjunct.Factory {
     final val id = 2001
 
     type Repr[S <: Sys[S]] = stm.Folder[S]
 
-    def readIdentifiedAux(in: DataInput): Aux = this
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
     def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Folder]] =
       new CellViewImpl(tx.newHandle(obj), key)
@@ -245,7 +245,7 @@ object Folder {
   }
 
   final case class Append[A](in: Ex[Folder], elem: Ex[A])(implicit source: Obj.Source[A])
-    extends Act with ProductWithAux {
+    extends Act with ProductWithAdjuncts {
 
     override def productPrefix: String = s"Folder$$Append" // serialization
 
@@ -254,11 +254,11 @@ object Folder {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
       new AppendExpanded(in.expand[S], elem.expand[S])
 
-    def aux: List[Aux] = source :: Nil
+    def adjuncts: List[Adjunct] = source :: Nil
   }
 
   final case class Prepend[A](in: Ex[Folder], elem: Ex[A])(implicit source: Obj.Source[A])
-    extends Act with ProductWithAux {
+    extends Act with ProductWithAdjuncts {
 
     override def productPrefix: String = s"Folder$$Prepend" // serialization
 
@@ -267,7 +267,7 @@ object Folder {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
       new PrependExpanded(in.expand[S], elem.expand[S])
 
-    def aux: List[Aux] = source :: Nil
+    def adjuncts: List[Adjunct] = source :: Nil
   }
 
   implicit final class Ops(private val f: Ex[Folder]) extends AnyVal {

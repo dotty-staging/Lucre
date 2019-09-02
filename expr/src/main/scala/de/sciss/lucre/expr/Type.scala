@@ -16,7 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.Targets
 import de.sciss.lucre.expr.impl.ExObjBridgeImpl
 import de.sciss.lucre.stm.{Obj, Sys}
-import de.sciss.lucre.{aux, expr, stm}
+import de.sciss.lucre.{adjunct, expr, stm}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.language.{higherKinds, implicitConversions}
@@ -58,15 +58,15 @@ object Type {
   }
 
   private lazy val _init: Unit = {
-    aux.Aux.addFactory(Type.ObjBridge)
+    adjunct.Adjunct.addFactory(Type.ObjBridge)
   }
 
   def init(): Unit = _init
 
-  object ObjBridge extends aux.Aux.Factory {
+  object ObjBridge extends adjunct.Adjunct.Factory {
     final val id = 1000
 
-    def readIdentifiedAux(in: DataInput): aux.Aux = {
+    def readIdentifiedAdjunct(in: DataInput): adjunct.Adjunct = {
       val typeId  = in.readInt()
       val peer    = Obj.getType(typeId)
       new ExObjBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])

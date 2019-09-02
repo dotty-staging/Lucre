@@ -11,7 +11,7 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.aux
+package de.sciss.lucre.adjunct
 
 import de.sciss.lucre.stm.{Base, TxnRandom}
 

@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import java.io.File
 
-import de.sciss.lucre.aux.Aux.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
+import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
 import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 

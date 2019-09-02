@@ -15,8 +15,8 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.aux.Aux.{Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
-import de.sciss.lucre.aux.{Aux, ProductWithAux}
+import de.sciss.lucre.adjunct.Adjunct.{Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
@@ -36,309 +36,309 @@ object BinaryOp {
     override def toString: String = name
   }
   
-  type AuxL = scala.List[Aux]
+  type Adjuncts = scala.List[Adjunct]
 
   // ---- (Num, Num) -> Num ----
 
-  final case class Plus[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Plus[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.+(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Plus"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Minus[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Minus[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.-(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Minus"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Times[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Times[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.*(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Times"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   /** Division, _not_ integer division */
-  final case class Div[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumFrac[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Div[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumFrac[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num./(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Div"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class ModJ[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class ModJ[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.%(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "ModJ"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Mod[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Mod[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.mod(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Mod"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   // ---- (Ord, Ord) -> Boolean ----
 
   /** Equal */
-  final case class Eq[A, B]()(implicit eq: Aux.Eq[A] { type Boolean = B }) 
-    extends NamedOp[A, A, B] with ProductWithAux {
-    
+  final case class Eq[A, B]()(implicit eq: Adjunct.Eq[A] { type Boolean = B })
+    extends NamedOp[A, A, B] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): B = eq.eq(a, b)
-    
+
     def name = "Eq"
-    
-    override def aux: AuxL = eq :: Nil
+
+    override def adjuncts: Adjuncts = eq :: Nil
   }
 
   /** Not equal */
-  final case class Neq[A, B]()(implicit eq: Aux.Eq[A] { type Boolean = B}) 
-    extends NamedOp[A, A, B] with ProductWithAux {
-    
+  final case class Neq[A, B]()(implicit eq: Adjunct.Eq[A] { type Boolean = B})
+    extends NamedOp[A, A, B] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): B = eq.neq(a, b)
-    
+
     def name = "Neq"
-    
-    override def aux: AuxL = eq :: Nil
+
+    override def adjuncts: Adjuncts = eq :: Nil
   }
 
   /** Less than */
-  final case class Lt[A, B]()(implicit ord: Ord[A] { type Boolean = B }) 
-    extends NamedOp[A, A, B] with ProductWithAux {
-    
+  final case class Lt[A, B]()(implicit ord: Ord[A] { type Boolean = B })
+    extends NamedOp[A, A, B] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): B = ord.lt(a, b)
-    
+
     def name = "Lt"
-    
-    override def aux: AuxL = ord :: Nil
+
+    override def adjuncts: Adjuncts = ord :: Nil
   }
 
   /** Greater than */
   final case class Gt[A, B]()(implicit ord: Ord[A] { type Boolean = B })
-    extends NamedOp[A, A, B] with ProductWithAux {
-    
+    extends NamedOp[A, A, B] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): B = ord.gt(a, b)
-    
+
     def name = "Gt"
-    
-    override def aux: AuxL = ord :: Nil
+
+    override def adjuncts: Adjuncts = ord :: Nil
   }
 
   /** Less than or equal */
-  final case class Leq[A, B]()(implicit ord: Ord[A] { type Boolean = B }) 
-    extends NamedOp[A, A, B] with ProductWithAux {
-    
+  final case class Leq[A, B]()(implicit ord: Ord[A] { type Boolean = B })
+    extends NamedOp[A, A, B] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): B = ord.leq(a, b)
-    
+
     def name = "Leq"
-    
-    override def aux: AuxL = ord :: Nil
+
+    override def adjuncts: Adjuncts = ord :: Nil
   }
 
   /** Greater than or equal */
-  final case class Geq[A, B]()(implicit ord: Ord[A] { type Boolean = B }) 
-    extends NamedOp[A, A, B] with ProductWithAux {
-    
+  final case class Geq[A, B]()(implicit ord: Ord[A] { type Boolean = B })
+    extends NamedOp[A, A, B] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): B = ord.geq(a, b)
-    
+
     def name = "Geq"
-    
-    override def aux: AuxL = ord :: Nil
+
+    override def adjuncts: Adjuncts = ord :: Nil
   }
 
   // ---- (Num, Num) -> Num ----
 
-  final case class Min[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Min[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.min(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Min"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Max[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Max[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.max(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Max"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   final case class And[A]()(implicit num: NumLogic[A])
-    extends NamedOp[A, A, A] with ProductWithAux {
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
     def apply(a: A, b: A): A = num.&(a, b)
 
     def name = "And"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
   final case class Or[A]()(implicit num: NumLogic[A])
-    extends NamedOp[A, A, A] with ProductWithAux {
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
     def apply(a: A, b: A): A = num.|(a, b)
 
     def name = "Or"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
   final case class Xor[A]()(implicit num: NumLogic[A])
-    extends NamedOp[A, A, A] with ProductWithAux {
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
     def apply(a: A, b: A): A = num.^(a, b)
 
     def name = "Xor"
 
-    override def aux: AuxL = num :: Nil
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Lcm[A]()(implicit num: NumInt[A]) 
-    extends NamedOp[A, A, A] with ProductWithAux {
-    
+  final case class Lcm[A]()(implicit num: NumInt[A])
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): A = num.lcm(a, b)
-    
+
     def name = "Lcm"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class Gcd[A]()(implicit num: NumInt[A]) 
-    extends NamedOp[A, A, A] with ProductWithAux {
-    
+  final case class Gcd[A]()(implicit num: NumInt[A])
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): A = num.gcd(a, b)
-    
+
     def name = "Gcd"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class RoundTo[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class RoundTo[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.roundTo(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "RoundTo"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class RoundUpTo[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class RoundUpTo[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.roundUpTo(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "RoundUpTo"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Trunc[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Trunc[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.trunc(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Trunc"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Atan2[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDouble[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Atan2[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDouble[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.atan2(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Atan2"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   final case class Hypot[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDouble[C])
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.hypot(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Hypot"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Hypotx[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDouble[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Hypotx[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDouble[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.hypotApx(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Hypotx"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   final case class Pow[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDouble[C])
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.pow(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Pow"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class LeftShift[A]()(implicit num: NumInt[A]) 
-    extends NamedOp[A, A, A] with ProductWithAux {
-    
+  final case class LeftShift[A]()(implicit num: NumInt[A])
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): A = num.<<(a, b)
-    
+
     def name = "LeftShift"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
   final case class RightShift[A]()(implicit num: NumInt[A])
-    extends NamedOp[A, A, A] with ProductWithAux {
-    
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): A = num.>>(a, b)
-    
+
     def name = "RightShift"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
-  final case class UnsignedRightShift[A]()(implicit num: NumInt[A]) 
-    extends NamedOp[A, A, A] with ProductWithAux {
-    
+  final case class UnsignedRightShift[A]()(implicit num: NumInt[A])
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
+
     def apply(a: A, b: A): A = num.>>>(a, b)
-    
+
     def name = "UnsignedRightShift"
-    
-    override def aux: AuxL = num :: Nil
+
+    override def adjuncts: Adjuncts = num :: Nil
   }
 
   //  Ring1
@@ -346,98 +346,98 @@ object BinaryOp {
   //  Ring3
   //  Ring4
 
-  final case class Difsqr[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Difsqr[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.difSqr(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Difsqr"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   final case class Sumsqr[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.sumSqr(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Sumsqr"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Sqrsum[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Sqrsum[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.sqrSum(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Sqrsum"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Sqrdif[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Sqrdif[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.sqrDif(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Sqrdif"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Absdif[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Absdif[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.absDif(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Absdif"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   //  Thresh
   //  Amclip
   //  Scaleneg
 
-  final case class Clip2[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Clip2[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.clip2(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Clip2"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Excess[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Excess[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.excess(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Excess"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Fold2[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Fold2[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.fold2(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Fold2"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  final case class Wrap2[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C]) 
-    extends NamedOp[A, B, C] with ProductWithAux {
-    
+  final case class Wrap2[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
+    extends NamedOp[A, B, C] with ProductWithAdjuncts {
+
     def apply(a: A, b: B): C = num.wrap2(widen.widen1(a), widen.widen2(b))
-    
+
     def name = "Wrap2"
-    
-    override def aux: AuxL = widen :: num :: Nil
+
+    override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
   // ---- Option ----

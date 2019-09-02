@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.aux.Aux
+import de.sciss.lucre.adjunct.Adjunct
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
@@ -33,7 +33,7 @@ object QuaternaryOp {
     override def toString: String = name
   }
 
-  type AuxL = scala.List[Aux]
+  type Adjuncts = scala.List[Adjunct]
 
   // ---- Seq ----
 
