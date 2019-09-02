@@ -19,7 +19,7 @@ import scala.language.higherKinds
 
 object MapLike {
   trait Update[S <: Sys[S], K, Repr[~ <: Sys[~]]] {
-    def changes: List[Change[S, K, Repr[S]]]
+    def changes: scala.List[Change[S, K, Repr[S]]]
   }
 
   sealed trait Change[S <: Sys[S], K, V] {
