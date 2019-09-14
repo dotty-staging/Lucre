@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.15.0"
+lazy val projectVersion   = "3.15.1-SNAPSHOT"
 lazy val mimaVersion      = "3.15.0"
 
 lazy val deps = new {
@@ -33,8 +33,8 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.12.9",
-  crossScalaVersions  := Seq("2.13.0", "2.12.9"),
+  scalaVersion        := "2.12.10",
+  crossScalaVersions  := Seq("2.13.0", "2.12.10"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),

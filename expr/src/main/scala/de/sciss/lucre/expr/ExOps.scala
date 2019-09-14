@@ -281,6 +281,201 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
     fm.flatMap(x, f)
 }
 
+final class IntLiteralExOps(private val x: Int) extends AnyVal {
+  private type A = Int
+
+  // binary
+
+  def +  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Plus [A, A1, A2](), x, that)
+  def -  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Minus[A, A1, A2](), x, that)
+  def *  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Times[A, A1, A2](), x, that)
+  //  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
+  def %  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.ModJ [A, A1, A2](), x, that)
+  def mod[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Mod  [A, A1, A2](), x, that)
+
+  def sig_== (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Eq [A, Boolean](), x, that)
+  def sig_!= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Neq[A, Boolean](), x, that)
+
+  def <  (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Lt [A, Boolean](), x, that)
+  def >  (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Gt [A, Boolean](), x, that)
+  def <= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Leq[A, Boolean](), x, that)
+  def >= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Geq[A, Boolean](), x, that)
+
+  def min[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Min[A, A1, A2](), x, that)
+  def max[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Max[A, A1, A2](), x, that)
+
+  def &   (that: Ex[A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
+  def |   (that: Ex[A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
+  def ^   (that: Ex[A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
+
+  def lcm (that: Ex[A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
+  def gcd (that: Ex[A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
+
+  def roundTo   [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundTo  [A, A1, A2](), x, that)
+  def roundUpTo [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundUpTo[A, A1, A2](), x, that)
+  def trunc     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.Trunc    [A, A1, A2](), x, that)
+
+  //  def atan2     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Atan2    [A, A1, A2](), x, that)
+  //  def hypot     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypot    [A, A1, A2](), x, that)
+  //  def hypotApx  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypotx   [A, A1, A2](), x, that)
+  //  def pow       [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Pow      [A, A1, A2](), x, that)
+
+  def <<  (that: Ex[A]): Ex[A] = BinOp(BinOp.LeftShift         [A](), x, that)
+  def >>  (that: Ex[A]): Ex[A] = BinOp(BinOp.RightShift        [A](), x, that)
+  def >>> (that: Ex[A]): Ex[A] = BinOp(BinOp.UnsignedRightShift[A](), x, that)
+
+  def difSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Difsqr[A, A1, A2](), x, that)
+  def sumSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sumsqr[A, A1, A2](), x, that)
+  def sqrSum[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sqrsum[A, A1, A2](), x, that)
+  def sqrDif[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sqrdif[A, A1, A2](), x, that)
+  def absDif[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Absdif[A, A1, A2](), x, that)
+
+  def clip2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Clip2 [A, A1, A2](), x, that)
+  def excess[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Excess[A, A1, A2](), x, that)
+  def fold2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Fold2 [A, A1, A2](), x, that)
+  def wrap2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Wrap2 [A, A1, A2](), x, that)
+
+  // ternary
+
+  def clip[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Clip[A, A1, A2](), x, lo, hi)
+  def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A, A1, A2](), x, lo, hi)
+  def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
+
+  //  def ---> (attr: Attr.Like[A]): Unit = attr.update(x)
+
+  //  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
+}
+
+final class LongLiteralExOps(private val x: Long) extends AnyVal {
+  private type A = Long
+
+  // binary
+
+  def +  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Plus [A, A1, A2](), x, that)
+  def -  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Minus[A, A1, A2](), x, that)
+  def *  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Times[A, A1, A2](), x, that)
+//  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
+  def %  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.ModJ [A, A1, A2](), x, that)
+  def mod[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Mod  [A, A1, A2](), x, that)
+
+  def sig_== (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Eq [A, Boolean](), x, that)
+  def sig_!= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Neq[A, Boolean](), x, that)
+
+  def <  (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Lt [A, Boolean](), x, that)
+  def >  (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Gt [A, Boolean](), x, that)
+  def <= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Leq[A, Boolean](), x, that)
+  def >= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Geq[A, Boolean](), x, that)
+
+  def min[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Min[A, A1, A2](), x, that)
+  def max[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Max[A, A1, A2](), x, that)
+
+  def &   (that: Ex[A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
+  def |   (that: Ex[A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
+  def ^   (that: Ex[A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
+
+  def lcm (that: Ex[A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
+  def gcd (that: Ex[A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
+
+  def roundTo   [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundTo  [A, A1, A2](), x, that)
+  def roundUpTo [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundUpTo[A, A1, A2](), x, that)
+  def trunc     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.Trunc    [A, A1, A2](), x, that)
+
+//  def atan2     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Atan2    [A, A1, A2](), x, that)
+//  def hypot     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypot    [A, A1, A2](), x, that)
+//  def hypotApx  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypotx   [A, A1, A2](), x, that)
+//  def pow       [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Pow      [A, A1, A2](), x, that)
+
+  def <<  (that: Ex[A]): Ex[A] = BinOp(BinOp.LeftShift         [A](), x, that)
+  def >>  (that: Ex[A]): Ex[A] = BinOp(BinOp.RightShift        [A](), x, that)
+  def >>> (that: Ex[A]): Ex[A] = BinOp(BinOp.UnsignedRightShift[A](), x, that)
+
+  def difSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Difsqr[A, A1, A2](), x, that)
+  def sumSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sumsqr[A, A1, A2](), x, that)
+  def sqrSum[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sqrsum[A, A1, A2](), x, that)
+  def sqrDif[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sqrdif[A, A1, A2](), x, that)
+  def absDif[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Absdif[A, A1, A2](), x, that)
+
+  def clip2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Clip2 [A, A1, A2](), x, that)
+  def excess[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Excess[A, A1, A2](), x, that)
+  def fold2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Fold2 [A, A1, A2](), x, that)
+  def wrap2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Wrap2 [A, A1, A2](), x, that)
+
+  // ternary
+
+  def clip[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Clip[A, A1, A2](), x, lo, hi)
+  def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A, A1, A2](), x, lo, hi)
+  def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
+
+//  def ---> (attr: Attr.Like[A]): Unit = attr.update(x)
+
+//  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
+}
+
+final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
+  private type A = Double
+
+  // binary
+
+  def +  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Plus [A, A1, A2](), x, that)
+  def -  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Minus[A, A1, A2](), x, that)
+  def *  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Times[A, A1, A2](), x, that)
+  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
+  def %  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.ModJ [A, A1, A2](), x, that)
+  def mod[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Mod  [A, A1, A2](), x, that)
+
+  def sig_== (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Eq [A, Boolean](), x, that)
+  def sig_!= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Neq[A, Boolean](), x, that)
+
+  def <  (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Lt [A, Boolean](), x, that)
+  def >  (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Gt [A, Boolean](), x, that)
+  def <= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Leq[A, Boolean](), x, that)
+  def >= (that: Ex[A]): Ex[Boolean] = BinOp(BinOp.Geq[A, Boolean](), x, that)
+
+  def min[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Min[A, A1, A2](), x, that)
+  def max[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Max[A, A1, A2](), x, that)
+
+//  def &   (that: Ex[A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
+//  def |   (that: Ex[A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
+//  def ^   (that: Ex[A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
+
+//  def lcm (that: Ex[A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
+//  def gcd (that: Ex[A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
+
+  def roundTo   [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundTo  [A, A1, A2](), x, that)
+  def roundUpTo [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundUpTo[A, A1, A2](), x, that)
+  def trunc     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.Trunc    [A, A1, A2](), x, that)
+
+  def atan2     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Atan2    [A, A1, A2](), x, that)
+  def hypot     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypot    [A, A1, A2](), x, that)
+  def hypotApx  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypotx   [A, A1, A2](), x, that)
+  def pow       [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Pow      [A, A1, A2](), x, that)
+
+//  def <<  (that: Ex[A]): Ex[A] = BinOp(BinOp.LeftShift         [A](), x, that)
+//  def >>  (that: Ex[A]): Ex[A] = BinOp(BinOp.RightShift        [A](), x, that)
+//  def >>> (that: Ex[A]): Ex[A] = BinOp(BinOp.UnsignedRightShift[A](), x, that)
+
+  def difSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Difsqr[A, A1, A2](), x, that)
+  def sumSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sumsqr[A, A1, A2](), x, that)
+  def sqrSum[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sqrsum[A, A1, A2](), x, that)
+  def sqrDif[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sqrdif[A, A1, A2](), x, that)
+  def absDif[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Absdif[A, A1, A2](), x, that)
+
+  def clip2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Clip2 [A, A1, A2](), x, that)
+  def excess[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Excess[A, A1, A2](), x, that)
+  def fold2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Fold2 [A, A1, A2](), x, that)
+  def wrap2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Wrap2 [A, A1, A2](), x, that)
+
+  // ternary
+
+  def clip[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Clip[A, A1, A2](), x, lo, hi)
+  def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A, A1, A2](), x, lo, hi)
+  def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
+
+  //  def ---> (attr: Attr.Like[A]): Unit = attr.update(x)
+
+  //  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
+}
+
 final class StringLiteralExOps(private val x: String) extends AnyVal {
   def attr[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr(x)
 
