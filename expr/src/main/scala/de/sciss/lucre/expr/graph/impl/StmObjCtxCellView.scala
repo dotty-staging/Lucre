@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.expr.graph.Obj
+import de.sciss.lucre.expr.graph
 import de.sciss.lucre.expr.{CellView, Context, ExprLike}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Disposable, Form, MapLike, Sys}
@@ -22,7 +22,7 @@ import de.sciss.lucre.stm.{Disposable, Form, MapLike, Sys}
 // because stm.Obj.AttrMap must be put into a handle...
 
 abstract class AbstractCtxCellView[S <: Sys[S], A](attr: Context.Attr[S], key: String)
-  extends CellView[S#Tx, Option[A]] {
+  extends CellView/*.Var*/[S#Tx, Option[A]] {
 
   // ---- abstract ----
 
@@ -30,6 +30,22 @@ abstract class AbstractCtxCellView[S <: Sys[S], A](attr: Context.Attr[S], key: S
   protected def tryParseObj  (obj  : stm.Obj[S] )(implicit tx: S#Tx): Option[A]
 
   // ---- impl ----
+
+//  def update(v: Option[A])(implicit tx: S#Tx): Unit =
+//    v.foreach { value =>
+//      attr.get(key).foreach {
+//        case ex: graph.Var.Expanded[S, _] =>
+//          def inner[A1](vr: graph.Var.Expanded[S, A1]): Unit =
+//            vr.fromAny.fromAny(value).foreach { valueT =>
+//              // XXX TODO --- support UndoManager
+//              vr.update(new graph.Const.Expanded(valueT))
+//            }
+//
+//          inner(ex)
+//
+//        case _ =>
+//      }
+//    }
 
   final def apply()(implicit tx: S#Tx): Option[A] =
     attr.get(key).flatMap(formValue)
@@ -67,8 +83,8 @@ final class StmObjCtxCellView[S <: Sys[S]](attr: Context.Attr[S], key: String)
   extends AbstractCtxCellView[S, stm.Obj[S]](attr, key) {
 
   protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[stm.Obj[S]] = value match {
-    case obj: Obj => obj.peer
-    case _        => None
+    case obj: graph.Obj => obj.peer
+    case _              => None
   }
 
   protected def tryParseObj(obj: stm.Obj[S])(implicit tx: S#Tx): Option[stm.Obj[S]] = Some(obj)

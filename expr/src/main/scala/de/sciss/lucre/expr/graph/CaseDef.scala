@@ -28,6 +28,8 @@ import scala.language.higherKinds
 
 object CaseDef {
   sealed trait Expanded[S <: Sys[S], A] extends IExpr[S, A] {
+    def fromAny: FromAny[A]
+
     def select(value: Any)(implicit tx: S#Tx): Boolean
 
     def commit()(implicit tx: S#Tx): Unit
@@ -42,7 +44,7 @@ sealed trait CaseDef[A] extends Ex[A] with ProductWithAdjuncts {
 }
 
 object Quote {
-  private final class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, A])(implicit fromAny: FromAny[A])
+  private final class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, A])(implicit val fromAny: FromAny[A])
     extends Expanded[S, A] {
 
     def select(value: Any)(implicit tx: S#Tx): Boolean =

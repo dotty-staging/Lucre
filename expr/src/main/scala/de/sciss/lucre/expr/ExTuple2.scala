@@ -20,8 +20,8 @@ import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 object ExTuple2 {
-  private final class Expanded[S <: Sys[S], T1, T2](_1: IExpr[S, T1], _2: IExpr[S, T2])
-                                                   (implicit protected val targets: ITargets[S])
+  private[lucre] final class Expanded[S <: Sys[S], T1, T2](val _1: IExpr[S, T1], val _2: IExpr[S, T2])
+                                                         (implicit protected val targets: ITargets[S])
     extends IExpr[S, (T1, T2)] with IEventImpl[S, Change[(T1, T2)]] {
 
     def init()(implicit tx: S#Tx): this.type = {
