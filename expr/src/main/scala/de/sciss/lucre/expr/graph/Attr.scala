@@ -127,6 +127,35 @@ object Attr {
     }
   }
 
+  // XXX TODO --- all pretty hack'ish
+  private final class FlatVarCellView[S <: Sys[S], A, B](firstP   : CellView[S#Tx, Option[A]],
+                                                         firstVr  : Option[Var.Expanded[S, B]],
+                                                         secondP  : CellView.Var[S#Tx, Option[A]],
+                                                         )(implicit bridge: Obj.Bridge[A])
+    extends CellView.Var[S#Tx, Option[A]] {
+
+    def apply()(implicit tx: S#Tx): Option[A] =
+      firstP() orElse secondP()
+
+    def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
+      val f: S#Tx => Option[A] => Unit = { implicit tx => _ => fun(tx)(apply()) }
+      val r1 = firstP .react(f)
+      val r2 = secondP.react(f)
+      Disposable.seq(r1, r2)
+    }
+
+    def update(v: Option[A])(implicit tx: S#Tx): Unit = {
+      firstVr match {
+        case Some(vr) =>
+          vr.fromAny.fromAny(v.get).foreach { vT =>
+            vr.update(new Const.Expanded(vT))
+          }
+        case None =>
+          secondP.update(v)
+      }
+    }
+  }
+
   private[lucre] def resolveNestedVar[S <: Sys[S], A](key: String)(implicit ctx: Context[S], tx: S#Tx,
                                                                    bridge: Obj.Bridge[A]): CellView.Var[S#Tx, Option[A]] = {
     val isNested = key.contains(":")
@@ -165,8 +194,15 @@ object Attr {
     } else {
       ctx.selfOption match {
         case Some(self) =>
-          bridge.cellView(self, key)
-        case None =>
+          val firstP  = bridge.contextCellView(key)
+          val secondP = bridge.cellView(self, key)
+          val firstVr = ctx.attr.get(key) match {
+            case Some(ex: Var.Expanded[S, _]) => Some(ex)
+            case _ => None
+          }
+          new FlatVarCellView(firstP, firstVr, secondP)
+
+        case None =>  // if there is no 'self', simply give up on the idea of attributes
           CellView.Var.empty
       }
     }

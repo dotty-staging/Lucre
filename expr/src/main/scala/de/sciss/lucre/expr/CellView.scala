@@ -116,5 +116,9 @@ object CellView {
   }
 }
 
-/** A `CellView` is an in-memory view of a transactional object that fires updates when the object changes. */
+/** A `CellView` is an in-memory view of a transactional object that fires updates when the object changes.
+  *
+  * It is important that the cell-view is ''not'' a `Disposable`, which means we do not have to track its
+  * life cycle. A `Disposable` of course is generated from the `react` call.
+  */
 trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A]
