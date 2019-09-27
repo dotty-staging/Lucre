@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.{ITrigger, TrigOps}
+import de.sciss.lucre.expr.{Context, IAction, ITrigger, TrigOps}
 import de.sciss.lucre.stm.Sys
 
 import scala.language.{higherKinds, implicitConversions}
@@ -22,6 +22,16 @@ object Trig {
   final val Some: Option[Unit] = scala.Some(())
 
   implicit def ops(t: Trig): TrigOps = new TrigOps(t)
+
+  /** Creates a "standalone" trigger that can be activated as an action.
+    */
+  def apply(): Act with Trig = Impl()
+
+  private final case class Impl() extends Act with Trig {
+    type Repr[S <: Sys[S]] = IAction[S] with ITrigger[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = ???
+  }
 }
 
 /** A trigger element.

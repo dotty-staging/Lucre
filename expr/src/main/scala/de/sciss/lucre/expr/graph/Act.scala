@@ -71,11 +71,14 @@ object Act {
 
     def executeAction()(implicit tx: S#Tx): Unit = {
       val act = in.value
-      val (actEx, d) = ctx.nested {
-        act.expand[S]
-      }
+      // XXX TODO --- nesting produces all sorts of problems
+      // why did we try to do that in the first place?
+//      val (actEx, d) = ctx.nested {
+//        act.expand[S]
+//      }
+      val actEx = act.expand[S]
       actEx.executeAction()
-      d.dispose()
+//      d.dispose()
     }
   }
 
@@ -85,11 +88,14 @@ object Act {
     def executeAction()(implicit tx: S#Tx): Unit = {
       val v = in.value
       v.foreach { act =>
-        val (actEx, d) = ctx.nested {
-          act.expand[S]
-        }
+        // XXX TODO --- nesting produces all sorts of problems
+        // why did we try to do that in the first place?
+//        val (actEx, d) = ctx.nested {
+//          act.expand[S]
+//        }
+        val actEx = act.expand[S]
         actEx.executeAction()
-        d.dispose()
+//        d.dispose()
       }
     }
   }
