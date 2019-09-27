@@ -13,6 +13,9 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.event.IPush.Parents
+import de.sciss.lucre.event.impl.IGenerator
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.{Context, IAction, ITrigger, TrigOps}
 import de.sciss.lucre.stm.Sys
 
@@ -27,10 +30,37 @@ object Trig {
     */
   def apply(): Act with Trig = Impl()
 
+  private final class Expanded[S <: Sys[S]](implicit protected val targets: ITargets[S])
+    extends ITrigger[S] with IAction[S] with IGenerator[S, Unit] {
+
+    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Unit] = {
+      if (pull.isOrigin(this)) Trig.Some
+      else {
+        val p: Parents[S] = pull.parents(this)
+        if (p.exists(pull(_).isDefined)) Trig.Some else None
+      }
+    }
+
+    def changed: IEvent[S, Unit] = this
+
+    def executeAction()(implicit tx: S#Tx): Unit = fire(())
+
+    def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit =
+      tr.changed ---> this
+
+    def dispose()(implicit tx: S#Tx): Unit = ()
+  }
+
+
   private final case class Impl() extends Act with Trig {
+    override def productPrefix: String = "Trig" // serialization
+
     type Repr[S <: Sys[S]] = IAction[S] with ITrigger[S]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = ???
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      import ctx.targets
+      new Expanded[S]
+    }
   }
 }
 
