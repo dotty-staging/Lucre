@@ -16,11 +16,12 @@ package de.sciss.lucre.expr.graph
 import java.io.File
 
 import de.sciss.lucre.adjunct.Adjunct
+import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
-import de.sciss.span.SpanLike
+import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.{higherKinds, implicitConversions}
 
@@ -30,11 +31,11 @@ object Ex {
   implicit def const[A: Value](x: A): Ex[A] = Const(x)
 
   object Value {
-    implicit object anyVal    extends Value[AnyVal  ]
-    implicit object string    extends Value[String  ]
-    implicit object file      extends Value[File    ]
-    implicit object spanLike  extends Value[SpanLike]
-    implicit object act       extends Value[Act     ]
+    implicit object anyVal    extends Value[AnyVal    ]
+    implicit object string    extends Value[String    ]
+    implicit object file      extends Value[File      ]
+    implicit object spanLike  extends Value[_SpanLike ]
+    implicit object act       extends Value[Act       ]
 
     implicit def tuple2 [A: Value, B: Value]: Value[(A, B)] = null
 
@@ -78,7 +79,7 @@ object Ex {
   implicit def tuple2Ops[A, B](x: Ex[(A, B)])   : ExTuple2Ops [A, B]  = new ExTuple2Ops (x)
   implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
   implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
-  implicit def spanOps[A <: SpanLike](x: Ex[A]) : ExSpanOps   [A]     = new ExSpanOps   (x)
+  implicit def spanOps[A <: _SpanLike](x: Ex[A]): ExSpanOps   [A]     = new ExSpanOps   (x)
   implicit def fileOps        (x: Ex[File])     : ExFileOps           = new ExFileOps   (x)
 
   //////////////////////////////
@@ -93,6 +94,8 @@ object Ex {
     Adjunct.addFactory(anyCanMapExSeq       )
     Adjunct.addFactory(CanMapActOption      )
     Adjunct.addFactory(anyCanFlatMapExOption)
+    Adjunct.addFactory(SpanLikeTop      )
+    Adjunct.addFactory(SpanTop          )
   }
 
   def init(): Unit = _init
@@ -223,6 +226,37 @@ object Ex {
     def flatMap[A](from: Ex[Option[A]], fun: Ex[A] => Ex[Option[B]]): Ex[Option[B]] = {
       val fOut = fun(OptionGet(from))
       ExOptionFlatMap(in = from, fun = fOut)
+    }
+  }
+
+  // ---- further adjuncts ----
+
+  def spanLikeTop: FromAny[_SpanLike ] with HasDefault[_SpanLike] = SpanLikeTop
+  def spanTop    : FromAny[_Span     ] with HasDefault[_Span    ] = SpanTop
+
+  private object SpanLikeTop extends FromAny[_SpanLike] with HasDefault[_SpanLike] with Adjunct.Factory {
+    final val id = 1007
+
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
+
+    def defaultValue: _SpanLike = _Span.Void
+
+    def fromAny(in: Any): Option[_SpanLike] = in match {
+      case s: _SpanLike => Some(s)
+      case _            => None
+    }
+  }
+
+  private object SpanTop extends FromAny[_Span] with HasDefault[_Span] with Adjunct.Factory {
+    final val id = 1008
+
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
+
+    def defaultValue: _Span = _Span(0L, 0L) // by convention
+
+    def fromAny(in: Any): Option[_Span] = in match {
+      case s: _Span     => Some(s)
+      case _            => None
     }
   }
 }

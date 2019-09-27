@@ -391,6 +391,12 @@ object Adjunct {
     implicit def doubleTop  : DoubleTop .type = DoubleTop
     implicit def longTop    : LongTop   .type = LongTop
   }
+  /** A type class saying some default value is provided for a type.
+    * This is often a convention, such as "zero" for numeric types,
+    * or "empty" for containers etc. It is used to avoid having to
+    * initialize objects with explicit default values, but care must
+    * be taken to take those conventional defaults into account.
+    */
   trait HasDefault[A] {
     def defaultValue: A
   }

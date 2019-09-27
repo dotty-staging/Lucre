@@ -13,6 +13,8 @@
 
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
@@ -27,4 +29,7 @@ object ExImport {
 
   type Span     = _Span
   type SpanLike = _SpanLike
+
+  implicit def spanLikeTop: FromAny[SpanLike] with HasDefault[SpanLike] = Ex.spanLikeTop
+  implicit def spanTop    : FromAny[Span    ] with HasDefault[Span]     = Ex.spanTop
 }
