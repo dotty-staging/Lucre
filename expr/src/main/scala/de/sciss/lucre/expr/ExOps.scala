@@ -13,10 +13,10 @@
 
 package de.sciss.lucre.expr
 
-import java.io.File
+import java.io.{File => _File}
 
 import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 // XXX TODO --- use constant optimizations
@@ -496,9 +496,11 @@ final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {
   def swap: Ex[(B, A)] = UnOp(UnOp.Tuple2Swap[A, B](), x)
 }
 
-final class ExFileOps(private val x: Ex[File]) extends AnyVal {
+final class ExFileOps(private val x: Ex[_File]) extends AnyVal {
+  // ---- expressions ----
+
   /** Returns the parent directory if it exists. */
-  def parentOption: Ex[Option[File]] =
+  def parentOption: Ex[Option[_File]] =
     UnOp(UnOp.FileParentOption(), x)
 
   /** Returns the string representation of the file's path. */
@@ -520,13 +522,21 @@ final class ExFileOps(private val x: Ex[File]) extends AnyVal {
     UnOp(UnOp.FileExtL(), x)  // ! simplify and use lower case here
 
   /** Replaces the extension part of this file. Parameter `s` may or may not contain a leading period. */
-  def replaceExt(s: Ex[String]): Ex[File] =
+  def replaceExt(s: Ex[String]): Ex[_File] =
     BinOp(BinOp.FileReplaceExt(), x, s)
 
   /** Replaces the name part of this file, keeping the parent directory. */
-  def replaceName(s: Ex[String]): Ex[File] =
+  def replaceName(s: Ex[String]): Ex[_File] =
     BinOp(BinOp.FileReplaceName(), x, s)
 
-  def / (child: Ex[String]): Ex[File] =
+  def / (child: Ex[String]): Ex[_File] =
     BinOp(BinOp.FileChild(), x, child)
+
+  // ---- actions ----
+
+  /** Deletes the file */
+  def delete: Act = File.Delete(x)
+
+  /** Creates the directory and possibly parent directories denoted by this file. */
+  def mkDir : Act = File.MkDir(x)
 }
