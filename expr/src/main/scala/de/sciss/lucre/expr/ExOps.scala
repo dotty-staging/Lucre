@@ -186,14 +186,18 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   def isEmpty : Ex[Boolean] = UnOp(UnOp.StringIsEmpty(), x)
   def nonEmpty: Ex[Boolean] = UnOp(UnOp.StringNonEmpty(), x)
 
-  def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
-  
+  def ++      (that: Ex[String]): Ex[String]  = BinOp(BinOp.StringConcat  (), x, that)
+  def contains(that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringContains(), x, that)
+  def indexOf (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringIndexOf (), x, that)
+
   def take(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringTake(), x, n)
   def drop(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringDrop(), x, n)
   
   def slice(from: Ex[Int], until: Ex[Int]): Ex[String] = TernOp(TernOp.StringSlice(), x, from, until)
 
-  // def format(args: Ex[Any]*): Ex[String] = ...
+  /** Applies 'printf' style formatting. See `StringFormat` for details.
+    */
+  def format(args: Ex[Any]*): Ex[String] = graph.StringFormat(x, args)
 }
 
 final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
@@ -476,17 +480,33 @@ final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
   //  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
 }
 
+// XXX TODO --- we could check here if arguments are constants,
+// and in that case fall back to constant behaviour like `scala.StringOps`.
+/** Some methods are here form `ExStringOps` again, so that we can
+  * use them on plain string literals, without requiring an
+  * explicit wrap such as `Const("x")` first.
+  */
 final class StringLiteralExOps(private val x: String) extends AnyVal {
   def attr[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr(x)
 
   def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
     Attr.WithDefault(x, default)
 
-  /** The concatenation method is here again, so that we can
-    * use it on plain string literals, without requiring an
-    * explicit wrap such as `Const("x")` first.
-    */
+  def size: Int /*Ex[Int]*/ = x.length
+
+  def nonEmpty: Boolean /*Ex[Boolean]*/ = !x.isEmpty
+
   def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
+
+  def contains(that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringContains(), x, that)
+  def indexOf (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringIndexOf (), x, that)
+
+  def take(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringTake(), x, n)
+  def drop(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringDrop(), x, n)
+
+  def slice(from: Ex[Int], until: Ex[Int]): Ex[String] = TernOp(TernOp.StringSlice(), x, from, until)
+
+  def format(args: Ex[Any]*): Ex[String] = graph.StringFormat(x, args)
 }
 
 final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {

@@ -496,6 +496,18 @@ object BinaryOp {
     def name = "StringConcat"
   }
 
+  final case class StringContains() extends NamedOp[String, String, Boolean] {
+    def apply(a: String, b: String): Boolean = a.contains(b)
+
+    def name = "StringContains"
+  }
+
+  final case class StringIndexOf() extends NamedOp[String, String, Int] {
+    def apply(a: String, b: String): Int = a.indexOf(b)
+
+    def name = "StringIndexOf"
+  }
+
   final case class StringTake() extends NamedOp[String, Int, String] {
     def apply(a: String, b: Int): String = a.take(b)
 

@@ -25,7 +25,9 @@ object ExImport {
   implicit def longLiteralExOps   (x: Long  ): LongLiteralExOps   = new LongLiteralExOps  (x)
   implicit def doubleLiteralExOps (x: Double): DoubleLiteralExOps = new DoubleLiteralExOps(x)
 
-  def any2stringadd: Any = () // yeah, fuck you too
+  def any2stringadd             : Any = () // disable this from scala.Predef
+  def augmentString (x: String) : Any = () // disable this from scala.Predef
+  def wrapString    (x: String) : Any = () // disable this from scala.Predef
 
   type Span     = _Span
   type SpanLike = _SpanLike
