@@ -488,6 +488,12 @@ object BinaryOp {
     def name = "SeqDrop"
   }
 
+  final case class SeqZip[A, B]() extends NamedOp[Seq[A], Seq[B], Seq[(A, B)]] {
+    def apply(a: Seq[A], b: Seq[B]): Seq[(A, B)] = a zip b
+
+    def name = "SeqZip"
+  }
+
   // ---- String ----
 
   final case class StringConcat() extends NamedOp[String, String, String] {

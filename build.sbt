@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.15.3"
+lazy val projectVersion   = "3.15.4-SNAPSHOT"
 lazy val mimaVersion      = "3.15.0"
 
 lazy val deps = new {
@@ -15,7 +15,7 @@ lazy val deps = new {
     val fileUtil  = "1.1.3"
     val model     = "0.3.4"
     val numbers   = "0.2.0"
-    val span      = "1.4.2"
+    val span      = "1.4.3"
   }
   val confluent = new {
     val finger    = "1.5.4"

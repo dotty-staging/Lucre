@@ -206,6 +206,8 @@ object Obj {
 
       def readIdentifiedAdjunct(in: DataInput): Adjunct = this
     }
+
+    implicit def canMake[A](implicit peer: CanMake[A]): Source[A] = peer
   }
 
   /** An `Obj.Source` either has an `stm.Obj` peer, or it can make one.

@@ -14,10 +14,10 @@
 package de.sciss.lucre.adjunct
 package impl
 
-import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumDouble, NumFrac, Ord, Scalar, ScalarEq, ScalarNum, ScalarNumDouble, ScalarNumFrac, ScalarOrd, ScalarToNum, ToNum}
+import de.sciss.lucre.adjunct.Adjunct.{Eq, HasDefault, Num, NumDouble, NumFrac, Ord, Scalar, ScalarEq, ScalarNum, ScalarNumDouble, ScalarNumFrac, ScalarOrd, ScalarToNum, ToNum}
 import de.sciss.lucre.stm.Random
 
-trait SeqLike[A] {
+trait SeqLike[A] extends HasDefault[Seq[A]] {
   final type Boolean  = Seq[scala.Boolean ]
   final type Int      = Seq[scala.Int     ]
   final type Double   = Seq[scala.Double  ]
@@ -44,6 +44,8 @@ trait SeqLike[A] {
       op(a(i % as), b(i % bs), c(i % cs))
     }
   }
+
+  def defaultValue: Seq[A] = Nil
 }
 
 trait SeqLikeEq[A] extends SeqLike[A] with Eq[Seq[A]] {

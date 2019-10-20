@@ -220,6 +220,8 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   def slice(from: Ex[Int], until: Ex[Int]): Ex[Seq[A]] = TernOp(TernOp.SeqSlice[A](), x, from, until)
 
+  def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]] = BinOp(BinOp.SeqZip[A, B](), x, that)
+
   def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
     m.map(x, f)
 

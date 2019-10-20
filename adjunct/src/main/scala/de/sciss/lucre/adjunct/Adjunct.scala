@@ -360,6 +360,9 @@ object Adjunct {
     implicit def longTop    : LongTop   .type = LongTop
 //    implicit def booleanTop : BooleanTop.type = BooleanTop
 //    implicit def stringTop  : StringTop .type = StringTop
+    implicit def intSeqTop    : FromAny[Seq[Int     ]] = IntSeqTop
+    implicit def doubleSeqTop : FromAny[Seq[Double  ]] = DoubleSeqTop
+//    implicit def booleanSeqTop: FromAny[Seq[Boolean ]] = BooleanSeqTop
 
     def empty[A]: FromAny[A] = anyEmpty.asInstanceOf[FromAny[A]]
 
@@ -373,8 +376,7 @@ object Adjunct {
   }
   trait FromAny[A] extends Adjunct {
     /** Tries to extract a value of type `A` from an unknown input value.
-      * If the input value is generally incompatible with `A`, an efficient
-      * return value is `Unsupported`.
+      * If the input value is generally incompatible with `A`, returns `None`.
       *
       * The extraction should be direct and lossless. For example, a `FromAny[Int]`
       * should not try to parse a string, nor should it cast a `Long` to an `Int`.
@@ -387,9 +389,11 @@ object Adjunct {
     // So this is all a bit nasty. Trying to remember why `IntTop` is not
     // an implicit object, but `BooleanTop` is. I think it has to do with
     // disambiguating `IntTop` and `IntSeqTop`.
-    implicit def intTop     : IntTop    .type = IntTop
-    implicit def doubleTop  : DoubleTop .type = DoubleTop
-    implicit def longTop    : LongTop   .type = LongTop
+    implicit def intTop       : IntTop    .type = IntTop
+    implicit def doubleTop    : DoubleTop .type = DoubleTop
+    implicit def longTop      : LongTop   .type = LongTop
+    implicit def intSeqTop    : HasDefault[Seq[Int]]    = IntSeqTop
+    implicit def doubleSeqTop : HasDefault[Seq[Double]] = DoubleSeqTop
   }
   /** A type class saying some default value is provided for a type.
     * This is often a convention, such as "zero" for numeric types,
@@ -417,7 +421,10 @@ object Adjunct {
   final object IntSeqTop
     extends NumInt      [Seq[Int]]
       with  SeqLikeNum  [Int]
-      with  SeqLikeToNum[Int] {
+      with  SeqLikeToNum[Int]
+      with  FromAny     [Seq[Int]] {
+
+    final val id = 1
 
     protected val peer: IntTop.type = IntTop
 
@@ -434,7 +441,20 @@ object Adjunct {
     def >>  (a: In, b: In): In = binOp(a, b)(peer.>>)
     def >>> (a: In, b: In): In = binOp(a, b)(peer.>>>)
 
-    final val id = 1
+    def fromAny(in: Any): Option[Seq[scala.Int]] = in match {
+      case sq: Seq[_] =>
+        val b   = Seq.newBuilder[scala.Int]
+        val it  = sq.iterator
+        while (it.hasNext) {
+          it.next() match {
+            case i: scala.Int => b += i
+            case _            => return None
+          }
+        }
+        Some(b.result())
+        
+      case _ => None
+    }
   }
 
   final object IntTop
@@ -629,11 +649,28 @@ object Adjunct {
       with  SeqLikeToNum    [Double]
       with  SeqLikeNumDouble[Double]
       with  WidenSelfToDouble[Seq[Double]]
-  {
+      with FromAny[Seq[Double]] {
+
+    final val id = 3
 
     protected val peer: DoubleTop.type = DoubleTop
 
-    final val id = 3
+    def fromAny(in: Any): Option[Seq[scala.Double]] = in match {
+      case sq: Seq[_] =>
+        val b   = Seq.newBuilder[scala.Double]
+        val it  = sq.iterator
+        while (it.hasNext) {
+          it.next() match {
+            case d: scala.Double  => b += d
+            case f: scala.Float   => b += f.toDouble
+            case i: scala.Int     => b += i.toDouble
+            case _                => return None
+          }
+        }
+        Some(b.result())
+
+      case _ => None
+    }
   }
 
   object DoubleTop extends DoubleTop with WidenToDouble[Double, Double] {
@@ -764,7 +801,8 @@ object Adjunct {
   implicit final object BooleanSeqTop
     extends NumBool[Seq[Boolean]]
       with SeqLikeEq    [Boolean]
-      with SeqLikeToNum [Boolean] {
+      with SeqLikeToNum [Boolean] 
+      with FromAny[Seq[Boolean]] {
 
     val peer: BooleanTop.type = BooleanTop
 
@@ -775,6 +813,21 @@ object Adjunct {
     def & (a: In, b: In): In = binOp(a, b)(_ & _)
     def | (a: In, b: In): In = binOp(a, b)(_ | _)
     def ^ (a: In, b: In): In = binOp(a, b)(_ ^ _)
+
+    def fromAny(in: Any): Option[Seq[scala.Boolean]] = in match {
+      case sq: Seq[_] =>
+        val b   = Seq.newBuilder[scala.Boolean]
+        val it  = sq.iterator
+        while (it.hasNext) {
+          it.next() match {
+            case x: scala.Boolean => b += x
+            case _                => return None
+          }
+        }
+        Some(b.result())
+
+      case _ => None
+    }
   }
 
   implicit final object BooleanTop
