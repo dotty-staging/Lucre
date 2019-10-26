@@ -59,6 +59,7 @@ import scala.concurrent.stm.Ref
 //  def changed: IEvent[S, Change[Option[B]]] = this
 //}
 
+// XXX TODO --- why is this using `Caching`?
 final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[B], tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] with Caching {

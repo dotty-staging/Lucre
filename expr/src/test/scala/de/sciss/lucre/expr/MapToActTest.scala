@@ -28,7 +28,7 @@ object MapToActTest extends App {
     val actOpt  = opt.map { s =>
       PrintLn(s)
     }
-    val act = actOpt.orNop
+    val act = actOpt // .orNop
 
     opt.changed ---> act
   }

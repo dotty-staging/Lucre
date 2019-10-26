@@ -14,11 +14,10 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{Context, IAction, IControl, IExpr}
+import de.sciss.lucre.expr.{Context, IAction, IControl}
 import de.sciss.lucre.stm.Sys
 
 import scala.language.{higherKinds, implicitConversions}
-import scala.{Option => _Option}
 
 object Act {
   def apply(xs: Act*): Act = SeqImpl(xs)
@@ -53,76 +52,71 @@ object Act {
     }
   }
 
-  /** Treats an expression of actions as an action, simply
-    * expanding its value every time it is called.
-    */
-  implicit def flatten(in: Ex[Act]): Act = Flatten(in)
+//  /** Treats an expression of actions as an action, simply
+//    * expanding its value every time it is called.
+//    */
+//  implicit def flatten(in: Ex[Act]): Act = Flatten(in)
 
-  trait Option[S <: Sys[S]] extends IExpr[S, _Option[Act]] {
-    def executeAction()(implicit tx: S#Tx): Boolean
+//  trait Option[S <: Sys[S]] extends IExpr[S, _Option[Act]] {
+//    def executeAction()(implicit tx: S#Tx): Boolean
+//  }
+
+  trait Option extends Act {
+    type Repr[S <: Sys[S]] <: IAction.Option[S]
+
+    def isEmpty   : Ex[Boolean]
+    def isDefined : Ex[Boolean]
+
+    def orElse(that: Act): Act = OrElse(this, that)
   }
 
-  implicit final class Ops (private val in: Ex[_Option[Act]]) extends AnyVal {
-    def orNop: Act = OrNop(in)
-  }
+//  implicit final class Ops (private val in: Ex[_Option[Act]]) extends AnyVal {
+//    def orNop: Act = OrNop(in)
+//  }
 
-  private final class ExpandedFlatten[S <: Sys[S]](in: IExpr[S, Act])(implicit ctx: Context[S])
+//  private final class ExpandedFlatten[S <: Sys[S]](in: IExpr[S, Act])(implicit ctx: Context[S])
+//    extends IActionImpl[S] {
+//
+//    def executeAction()(implicit tx: S#Tx): Unit = {
+//      val act = in.value
+//      // XXX TODO --- nesting produces all sorts of problems
+//      // why did we try to do that in the first place?
+////      val (actEx, d) = ctx.nested {
+////        act.expand[S]
+////      }
+//      val actEx = act.expand[S]
+//      actEx.executeAction()
+////      d.dispose()
+//    }
+//  }
+
+  private final class ExpandedOrElse[S <: Sys[S]](a: IAction.Option[S], b: IAction[S])(implicit ctx: Context[S])
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {
-      val act = in.value
-      // XXX TODO --- nesting produces all sorts of problems
-      // why did we try to do that in the first place?
-//      val (actEx, d) = ctx.nested {
-//        act.expand[S]
-//      }
-      val actEx = act.expand[S]
-      actEx.executeAction()
-//      d.dispose()
+      val c = if (a.isDefined) a else b
+      c.executeAction()
     }
   }
 
-  private final class ExpandedOrNop[S <: Sys[S]](in: IExpr[S, _Option[Act]])(implicit ctx: Context[S])
-    extends IActionImpl[S] {
-
-    def executeAction()(implicit tx: S#Tx): Unit = {
-      in match {
-        case inOpt: Act.Option[S] =>
-          inOpt.executeAction() // XXX TODO --- was there a problem with this approach?
-        case _ =>
-          val v = in.value
-          v.foreach { act =>
-            // XXX TODO --- nesting produces all sorts of problems
-            // why did we try to do that in the first place?
-            //        val (actEx, d) = ctx.nested {
-            //          act.expand[S]
-            //        }
-            val actEx = act.expand[S]
-            actEx.executeAction()
-            //        d.dispose()
-          }
-      }
-    }
-  }
-
-  final case class OrNop(in: Ex[_Option[Act]]) extends Act {
-    override def productPrefix = s"Act$$OrNop" // serialization
+  final case class OrElse(a: Act.Option, b: Act) extends Act {
+    override def productPrefix = s"Act$$OrElse" // serialization
 
     type Repr[S <: Sys[S]] = IAction[S]
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      new ExpandedOrNop(in.expand[S])
+      new ExpandedOrElse(a.expand[S], b.expand[S])
   }
 
-  final case class Flatten(in: Ex[Act]) extends Act {
-
-    override def productPrefix = s"Act$$Flatten" // serialization
-
-    type Repr[S <: Sys[S]] = IAction[S]
-
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      new ExpandedFlatten(in.expand[S])
-  }
+//  final case class Flatten(in: Ex[Act]) extends Act {
+//
+//    override def productPrefix = s"Act$$Flatten" // serialization
+//
+//    type Repr[S <: Sys[S]] = IAction[S]
+//
+//    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+//      new ExpandedFlatten(in.expand[S])
+//  }
 
   private final class ExpandedNop[S <: Sys[S]]/*(implicit ctx: Context[S])*/
     extends IActionImpl[S] {

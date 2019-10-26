@@ -15,6 +15,11 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.stm.{Base, Disposable, Form}
 
+object IAction {
+  trait Option[S <: Base[S]] extends IAction[S] {
+    def isDefined: Boolean
+  }
+}
 trait IAction[S <: Base[S]] extends Form[S] with Disposable[S#Tx] {
   /** Directly adds a trigger input to the action.
     * Actions that do not produce successive events can
