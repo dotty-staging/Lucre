@@ -14,11 +14,12 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.ExObjBridgeImpl
+import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl}
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.lucre.{adjunct, expr, stm}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
+import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.{higherKinds, implicitConversions}
 
 object Type {
@@ -59,6 +60,7 @@ object Type {
 
   private lazy val _init: Unit = {
     adjunct.Adjunct.addFactory(Type.ObjBridge)
+    adjunct.Adjunct.addFactory(Type.SeqObjBridge)
   }
 
   def init(): Unit = _init
@@ -70,6 +72,16 @@ object Type {
       val typeId  = in.readInt()
       val peer    = Obj.getType(typeId)
       new ExObjBridgeImpl(peer.asInstanceOf[Type.Expr[Any, ({ type R[~ <: Sys[~]] <: expr.Expr[~, Any] }) # R]])
+    }
+  }
+
+  object SeqObjBridge extends adjunct.Adjunct.Factory {
+    final val id = 1010
+
+    def readIdentifiedAdjunct(in: DataInput): adjunct.Adjunct = {
+      val typeId  = in.readInt()
+      val peer    = Obj.getType(typeId)
+      new ExSeqObjBridgeImpl(peer.asInstanceOf[Type.Expr[Vec[Any], ({ type R[~ <: Sys[~]] <: expr.Expr[~, Vec[Any]] }) # R]])
     }
   }
 

@@ -32,7 +32,7 @@ DRY, because we won't be using `IdentifierMap`, deal with serialization, etc.
 Can we do this: `Ex[Seq[A]] => Function1[A, B] => Ex[Seq[B]]`? Let's say we rely on a structure where expression
 values are not cached, so the auxiliary iterator variable of type `Ex[A]` does not need to dispatch events (well,
 if it is a problem, it could still do that), so we simply poll the function result expression a number of times,
-an the `IExpr` must hold a counter or something similar. So that `ExMap` expansion, when `value` is called, will
+and the `IExpr` must hold a counter or something similar. So that `ExMap` expansion, when `value` is called, will
 reset the iterator and poll it a number of times.
 
 ```
@@ -344,5 +344,110 @@ if (isNested) {
   bridge.cellView()
 }
 
+```
+
+-------
+
+# Notes 191026 - mapping a sequence of expressions to actions
+
+The problem arises from the impedance mismatch of `Ex[Act]` - the expression assumes that its value is
+immutable, but `Act` itself must first be expanded, it's on the same level as `Ex`, it's not a primitive value.
+
+I think we should eliminate `Ex[Act]` altogether. Also `Ex[Option[Act]]` and `Ex[Seq[Act]]`. Otherwise we might
+have
 
 ```
+val exSeq: Ex[Seq[Int]] = ???
+val actSeq: Ex[Seq[Act]] = exSeqMap(PrintLn(_))
+val last = actSeq.lastOption.orNop
+LoadBang() ---> last
+```
+
+It's easy to see the problem here: `.lastOption` would work for any `Ex[Seq[_]]`, and so it would rely on
+`value` to generate a `Seq[_]` first. Now we actually have only a single action, like `PrintLn(MapIt(...))`.
+It can only be reasonably invoked with the entire sequence, taking care of iterating the sequence input
+elements.
+
+Or... we introduce a type next to `Act` that is more "primitive" not a `Lazy`. E.g. `Ex[Seq[ActPerform]]` or
+whatever name? What happens to `PrintLn(in: Ex[String])`? More dangerous are objects which mix `Ex` with `Act`,
+there are some I believe? For example `Obj.Copy`.
+
+```
+case class MapExSeqAct[A](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Act) extends Ex[Seq[ActPerform]] {
+
+  def expand[S]: IExpr[S, Seq[ActPerform]] = ...
+}
+
+trait ActPerform {
+  def execute(): Unit
+}
+
+class ExpandedMapExSeqAct[S](in: IExpr[S, Seq[A]], it: It.Expanded[S, A], closure: Graph, fun: Act)
+  extends IExpr[S, Seq[ActPerform]] {
+
+  private class PerformImpl(inV: A) {
+    def executeAction(): Unit = {
+      it.set(inV)
+      val disp = ctx.nested {
+        val funEx = fun.expand
+        funEx.execute()
+      }
+      disp.dispose()
+    }
+  }
+
+  def value: Seq[ActPerform] = {
+    val inV = in.value
+    inV.map(new PerformImpl)
+  }
+}
+```
+
+The only difference here between `Act` and `ActPerform` is that we don't register the instance creation through
+`Lazy`... Which begs the question, why `Act` needs to extend `Lazy` at all? I think it is to ensure that the 
+expanded `IAction` is the same with respect to registered triggers. This in turn could mean that a distinction
+between `Act` and `ActPerform` _is_ useful.
+
+It also means we should avoid implicit conversion from `Ex[ActPerform]` to `Act`?
+
+Does `Ex[Seq[Act{Perform}]]` make sense at all? I.e. does it make sense to manipulate that sequence as a sequence,
+e.g. `.reverse`? I don't think so.
+
+We should see `map` and `flatMap` here as actually doing a `foreach`. It's also not clear if we really need
+`Ex[Option[Act]]`. Instead we might either have an `Act.Option <: Act` with additional functionality, and/or we
+have `Ex[Option[A]].fold(ifEmpty: Act)(df: A => Act): Act`, perhaps give it a distinct name like `foldAct`, or
+`cond`.
+
+So let us review were we ever have `Ex[Act]` and `Ex[F[Act]]`:
+
+```
+implicit def flatten(in: Ex[Act]): Act = Flatten(in)
+
+def orNop
+
+SeqImpl (publicly only a plain Act)
+
+CanMapActOption
+
+implicit object act extends Value[Act] -- and thus Const(act)
+```
+
+What happens to for comprehensions:
+
+```
+  val act = for {
+    a <- aOpt
+    b <- bOpt
+    if guard
+  } yield {
+    PrintLn(a.toStr ++ b.toStr)
+  }
+```
+
+That translates to
+
+```
+  aOpt.flatMap { (a: Ex[A]) => bOpt.map { (b: Ex[B]) => ... => PrintLn(...)))
+```
+
+So we need a map from `Ex[Option[A]]` to `Act`, and a flat-map from `Ex[Option[A]]` to `Act` or `Act.Option`?

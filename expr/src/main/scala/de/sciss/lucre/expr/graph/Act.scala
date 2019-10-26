@@ -86,16 +86,21 @@ object Act {
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {
-      val v = in.value
-      v.foreach { act =>
-        // XXX TODO --- nesting produces all sorts of problems
-        // why did we try to do that in the first place?
-//        val (actEx, d) = ctx.nested {
-//          act.expand[S]
-//        }
-        val actEx = act.expand[S]
-        actEx.executeAction()
-//        d.dispose()
+      in match {
+        case inOpt: Act.Option[S] =>
+          inOpt.executeAction() // XXX TODO --- was there a problem with this approach?
+        case _ =>
+          val v = in.value
+          v.foreach { act =>
+            // XXX TODO --- nesting produces all sorts of problems
+            // why did we try to do that in the first place?
+            //        val (actEx, d) = ctx.nested {
+            //          act.expand[S]
+            //        }
+            val actEx = act.expand[S]
+            actEx.executeAction()
+            //        d.dispose()
+          }
       }
     }
   }
