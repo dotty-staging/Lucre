@@ -35,8 +35,8 @@ final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], 
   def value(implicit tx: S#Tx): Option[B] = // ref()._1
     IPush.tryPull(this).fold(ref()._1)(_.now)
 
-  private def valueOf(inOption: Option[A])(implicit tx: S#Tx): (Option[B], Disposable[S#Tx]) =
-    if (inOption.isEmpty) (None, Disposable.empty[S#Tx]) else {
+  private def valueOf(inV: Option[A])(implicit tx: S#Tx): (Option[B], Disposable[S#Tx]) =
+    if (inV.isEmpty) (None, Disposable.empty[S#Tx]) else {
       val tup = ctx.nested {
         val funEx = fun.expand[S]
         val vn    = funEx.value

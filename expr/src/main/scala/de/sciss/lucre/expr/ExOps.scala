@@ -201,9 +201,9 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
 }
 
 // TODO: select[B], selectFirst[B], count, distinctBy, dropWhile, exists, filter, filterNot, find, findLast,
-// flatMap: support Seq/Seq, Seq/Option, withFilter, flatten, fold, foldLeft, foldRight, forall, groupBy,
+// flatten, fold, foldLeft, foldRight, forall, groupBy,
 // groupMap, groupMapReduce, indexWhere, maxByOption, minByOption, partition, reduceLeftOption, reduceRightOption,
-// scanLeft, scanRight, segmentLength, sortBy, sortWith, span, takeWhile, toMap, toSet, transpose, unzip
+// scanLeft, scanRight, segmentLength, sortBy, sortWith, span, takeWhile, toMap, toSet, transpose, unzip, withFilter
 final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** A concatenation of this sequence with `that` sequence */
   def ++ [B >: A](that: Ex[Seq[B]]): Ex[Seq[B]] = BinOp(BinOp.SeqConcat[B](), x, that)

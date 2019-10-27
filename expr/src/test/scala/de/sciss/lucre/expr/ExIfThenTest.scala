@@ -8,14 +8,13 @@ object ExIfThenTest extends App {
   type S = InMemory
 
   val g = Graph {
-    ???
-//    val cond    = "cond".attr[Boolean](false)
-//    val resEx   = If (cond) Then "hello-S" Else "world-S"
-//    val resAct  = If (cond) Then PrintLn("hello-A") Else PrintLn("world-A")
-//
-//    LoadBang() ---> PrintLn("cond: " ++ cond.toStr)
-//    LoadBang() ---> PrintLn(resEx)
-//    LoadBang() ---> resAct
+    val cond    = "cond".attr[Boolean](false)
+    val resEx   = If (cond) Then "hello-S" Else "world-S"
+    val resAct  = If (cond) Then PrintLn("hello-A") Else PrintLn("world-A")
+
+    LoadBang() ---> PrintLn("cond: " ++ cond.toStr)
+    LoadBang() ---> PrintLn(resEx)
+    LoadBang() ---> resAct
   }
 
   implicit val system: S = InMemory()

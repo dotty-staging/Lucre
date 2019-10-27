@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.adjunct.Adjunct
 import de.sciss.file.{File => _File}
 import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
-import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq, ExpandedMapExSeqAct}
+import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapExOption, ExpandedFlatMapExSeq, ExpandedFlatMapExSeqOption, ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq, ExpandedMapExSeqAct}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
@@ -78,25 +78,27 @@ object Ex {
 
   //////////////////////////////
 
-  private val anyCanMapOption     = new CanMapOption    [Any]
-  private val anyCanMapSeq        = new CanMapSeq       [Any]
-  private val anyCanFlatMapOption = new CanFlatMapOption[Any]
+  private val anyCanMapOption         = new CanMapOption        [Any]
+  private val anyCanMapSeq            = new CanMapSeq           [Any]
+  private val anyCanFlatMapOption     = new CanFlatMapOption    [Any]
+  private val anyCanFlatMapSeq        = new CanFlatMapSeq       [Any]
+  private val anyCanFlatMapSeqOption  = new CanFlatMapSeqOption [Any]
 
   // XXX TODO:
 //  private val anyCanFlatMapSeq    = new CanFlatMapSeq   [Any]
 
   private lazy val _init: Unit = {
-    Adjunct.addFactory(anyCanMapOption      )
-    Adjunct.addFactory(anyCanMapSeq         )
-    Adjunct.addFactory(anyCanFlatMapOption  )
-// XXX TODO:
-//    Adjunct.addFactory(anyCanFlatMapSeq     )
-    Adjunct.addFactory(CanMapOptionToAct    )
-    Adjunct.addFactory(CanMapSeqToAct       )
-    Adjunct.addFactory(CanFlatMapOptionToAct)
-    Adjunct.addFactory(CanFlatMapSeqToAct   )
-    Adjunct.addFactory(SpanLikeTop          )
-    Adjunct.addFactory(SpanTop              )
+    Adjunct.addFactory(anyCanMapOption        )
+    Adjunct.addFactory(anyCanMapSeq           )
+    Adjunct.addFactory(anyCanFlatMapOption    )
+    Adjunct.addFactory(anyCanFlatMapSeq       )
+    Adjunct.addFactory(anyCanFlatMapSeqOption )
+    Adjunct.addFactory(CanMapOptionToAct      )
+    Adjunct.addFactory(CanMapSeqToAct         )
+    Adjunct.addFactory(CanFlatMapOptionToAct  )
+    Adjunct.addFactory(CanFlatMapSeqToAct     )
+    Adjunct.addFactory(SpanLikeTop            )
+    Adjunct.addFactory(SpanTop                )
   }
 
   def init(): Unit = _init
@@ -115,7 +117,9 @@ object Ex {
     }
   }
 
-  final case class MapExSeq[A, B](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[B]) extends Ex[Seq[B]] {
+  final case class MapExSeq[A, B] private (in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[B])
+    extends Ex[Seq[B]] {
+
     type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
 
     override def productPrefix: String = s"Ex$$MapExSeq" // serialization
@@ -142,7 +146,7 @@ object Ex {
     }
   }
 
-  final case class MapSeqAct[A](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Act) extends Act {
+  final case class MapSeqAct[A] private (in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Act) extends Act {
     type Repr[S <: Sys[S]] = IAction[S]
 
     override def productPrefix: String = s"Ex$$MapSeqAct" // serialization
@@ -155,17 +159,49 @@ object Ex {
     }
   }
 
-//  final case class FlatMapActOption[A](in: Ex[Option[A]], it: It[A], closure: Graph, fun: Act) extends Ex[Seq[Act]] {
-//    type Repr[S <: Sys[S]] = IExpr[S, Seq[Act]]
-//
-//    override def productPrefix: String = s"Ex$$MapExSeqAct" // serialization
-//
-//    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-//      val inEx = in.expand[S]
-//      val itEx = it.expand[S]
-//      ... // new ExpandedMapExSeqAct[S, A](inEx, itEx, /*closure, */ fun, tx)
-//    }
-//  }
+  final case class FlatMapExOption[A, B] private(in: Ex[Option[A]], fun: Ex[Option[B]])
+    extends Ex[Option[B]] {
+
+    type Repr[S <: Sys[S]] = IExpr[S, Option[B]]
+
+    override def productPrefix: String = s"Ex$$FlatMapExOption" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val inEx = in.expand[S]
+      import ctx.targets
+      new ExpandedFlatMapExOption[S, A, B](inEx, fun, tx)
+    }
+  }
+
+  final case class FlatMapExSeq[A, B] private (in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[Seq[B]])
+    extends Ex[Seq[B]] {
+
+    type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
+
+    override def productPrefix: String = s"Ex$$FlatMapExSeq" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val inEx = in.expand[S]
+      val itEx = it.expand[S]
+      import ctx.targets
+      new ExpandedFlatMapExSeq[S, A, B](inEx, itEx, /*closure, */ fun, tx)
+    }
+  }
+
+  final case class FlatMapExSeqOption[A, B] private (in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Ex[Option[B]])
+    extends Ex[Seq[B]] {
+
+    type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
+
+    override def productPrefix: String = s"Ex$$FlatMapExSeqOption" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val inEx = in.expand[S]
+      val itEx = it.expand[S]
+      import ctx.targets
+      new ExpandedFlatMapExSeqOption[S, A, B](inEx, itEx, /*closure, */ fun, tx)
+    }
+  }
 
   object CanMap {
     /** One can map over an option expression */
@@ -182,11 +218,11 @@ object Ex {
   }
 
   object CanFlatMap {
-    implicit def option [B] : CanFlatMap[Option , Ex[Option [B]], Ex[Option [B]]] = anyCanFlatMapOption.asInstanceOf[CanFlatMapOption [B]]
-    // XXX TODO:
-//    implicit def seq    [B] : CanFlatMap[Seq    , Ex[Seq    [B]], Ex[Seq    [B]]] = anyCanFlatMapSeq   .asInstanceOf[CanFlatMapSeq    [B]]
-    implicit def optionToAct: CanFlatMap[Option , Act           , Act.Option]     = CanFlatMapOptionToAct
-    implicit def seqToAct   : CanFlatMap[Seq    , Act           , Act]            = CanFlatMapSeqToAct
+    implicit def option   [B] : CanFlatMap[Option , Ex[Option [B]], Ex[Option [B]]] = anyCanFlatMapOption.asInstanceOf[CanFlatMapOption [B]]
+    implicit def seq      [B] : CanFlatMap[Seq    , Ex[Seq    [B]], Ex[Seq    [B]]] = anyCanFlatMapSeq   .asInstanceOf[CanFlatMapSeq    [B]]
+    implicit def seqOption[B] : CanFlatMap[Seq    , Ex[Option [B]], Ex[Seq    [B]]] = anyCanFlatMapSeqOption.asInstanceOf[CanFlatMapSeqOption[B]]
+    implicit def optionToAct  : CanFlatMap[Option , Act           , Act.Option]     = CanFlatMapOptionToAct
+    implicit def seqToAct     : CanFlatMap[Seq    , Act           , Act]            = CanFlatMapSeqToAct
   }
   trait CanFlatMap[-From[_], -B, +To] {
     def flatMap[A](from: Ex[From[A]], fun: Ex[A] => B): To
@@ -269,23 +305,35 @@ object Ex {
 
     def flatMap[A](from: Ex[Option[A]], fun: Ex[A] => Ex[Option[B]]): Ex[Option[B]] = {
       val fOut = fun(OptionGet(from))
-      ExOptionFlatMap(in = from, fun = fOut)
+      FlatMapExOption(in = from, fun = fOut)
     }
   }
 
-  // XXX TODO
+  private final class CanFlatMapSeq[B] extends MapSupport
+    with CanFlatMap[Seq, Ex[Seq[B]], Ex[Seq[B]]] {
 
-//  private final class CanFlatMapSeq[B] extends MapSupport
-//    with CanFlatMap[Seq, Ex[Seq[B]], Ex[Seq[B]]] {
-//
-//    final val id = 1012
-//
-//    override def toString = "CanFlatMapSeq"
-//
-//    def flatMap[A](from: Ex[Seq[A]], fun: Ex[A] => Ex[Seq[B]]): Ex[Seq[B]] = {
-//      ... // ExOptionFlatMap(in = from, fun = fOut)
-//    }
-//  }
+    final val id = 1012
+
+    override def toString = "CanFlatMapSeq"
+
+    def flatMap[A](from: Ex[Seq[A]], fun: Ex[A] => Ex[Seq[B]]): Ex[Seq[B]] = {
+      val (it, closure, res) = mkClosure(fun)
+      FlatMapExSeq[A, B](in = from, it = it, closure = closure, fun = res)
+    }
+  }
+
+  private final class CanFlatMapSeqOption[B] extends MapSupport
+    with CanFlatMap[Seq, Ex[Option[B]], Ex[Seq[B]]] {
+
+    final val id = 1014
+
+    override def toString = "CanFlatMapSeqOption"
+
+    def flatMap[A](from: Ex[Seq[A]], fun: Ex[A] => Ex[Option[B]]): Ex[Seq[B]] = {
+      val (it, closure, res) = mkClosure(fun)
+      FlatMapExSeqOption[A, B](in = from, it = it, closure = closure, fun = res)
+    }
+  }
 
   private final object CanFlatMapOptionToAct extends MapSupport
     with CanFlatMap[Option, Act, Act.Option] {
