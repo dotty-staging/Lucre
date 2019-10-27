@@ -48,6 +48,7 @@ object Adjunct {
       case Widen .longDoubleDouble  .id => Widen .longDoubleDouble
       case Widen2.doubleIntDouble   .id => Widen2.doubleIntDouble
       case Widen2.doubleLongDouble  .id => Widen2.doubleLongDouble
+      case Widen2.longIntLong       .id => Widen2.longIntLong
       case WidenToDouble.DoubleImpl .id => WidenToDouble.DoubleImpl
       case _ =>
         val f = getFactory(id)
@@ -136,6 +137,12 @@ object Adjunct {
       def widen2(a: Long   ): Double = a.toDouble
 
       final val id = 0x107
+    }
+    implicit object longIntLong extends Widen2[Long, Int, Long] {
+      def widen1(a: Long ): Long = a
+      def widen2(a: Int  ): Long = a
+
+      final val id = 0x108
     }
   }
 
