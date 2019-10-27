@@ -30,20 +30,20 @@ import scala.annotation.tailrec
 final case class If(cond: Ex[Boolean]) {
   def Then [A](branch: Ex[A]): IfThen[A] =
     IfThen(cond, branch)
+
+//  def Then (branch: Act): IfThenAct =
+//    IfThenAct(cond, branch)
 }
 
 sealed trait Then[+A] /*extends Ex[Option[A]]*/ {
   def cond  : Ex[Boolean]
   def result: Ex[A]
-}
 
-sealed trait IfOrElseIfThen[+A] extends Then[A] {
   import de.sciss.lucre.expr.graph.{Else => _Else}
+
   def Else [B >: A](branch: Ex[B]): Ex[B] =
     _Else(this, branch)
-}
 
-sealed trait IfThenLike[+A] extends IfOrElseIfThen[A] {
   final def ElseIf (cond: Ex[Boolean]): ElseIf[A] =
     new ElseIf(this, cond)
 }
@@ -54,15 +54,15 @@ sealed trait IfThenLike[+A] extends IfOrElseIfThen[A] {
   * @see  [[Else]]
   * @see  [[ElseIf]]
   */
-final case class IfThen[+A](cond: Ex[Boolean], result: Ex[A]) extends IfThenLike[A]
+final case class IfThen[+A](cond: Ex[Boolean], result: Ex[A]) extends Then[A]
 
-final case class ElseIf[+A](pred: IfOrElseIfThen[A], cond: Ex[Boolean]) {
+final case class ElseIf[+A](pred: Then[A], cond: Ex[Boolean]) {
   def Then [B >: A](branch: Ex[B]): ElseIfThen[B] =
     ElseIfThen[B](pred, cond, branch)
 }
 
-final case class ElseIfThen[+A](pred: IfOrElseIfThen[A], cond: Ex[Boolean], result: Ex[A])
-  extends IfThenLike[A] with Then[A]
+final case class ElseIfThen[+A](pred: Then[A], cond: Ex[Boolean], result: Ex[A])
+  extends Then[A]
 
 object Else {
   private type Case[S <: Sys[S], A] = (IExpr[S, Boolean], IExpr[S, A])
@@ -168,7 +168,7 @@ object Else {
     }
   }
 }
-final case class Else[A](pred: IfOrElseIfThen[A], default: Ex[A]) extends Ex[A] {
+final case class Else[A](pred: Then[A], default: Ex[A]) extends Ex[A] {
   type Repr[S <: Sys[S]] = IExpr[S, A]
 
   def cond: Ex[Boolean] = true
@@ -181,3 +181,13 @@ final case class Else[A](pred: IfOrElseIfThen[A], default: Ex[A]) extends Ex[A] 
     new Else.Expanded(cases, defaultEx, tx)
   }
 }
+
+// ---- Act variants ----
+
+/** A side effecting conditional block. To turn it into a full `if-then-else` construction,
+  * call `Else` or `ElseIf`.
+  *
+  * @see  [[Else]]
+  * @see  [[ElseIf]]
+  */
+//final case class IfThenAct(cond: Ex[Boolean], result: Act) // extends IfThenLike[A]
