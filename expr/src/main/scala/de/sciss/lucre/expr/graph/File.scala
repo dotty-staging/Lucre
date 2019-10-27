@@ -1,13 +1,26 @@
+/*
+ *  File.scala
+ *  (Lucre)
+ *
+ *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.expr.graph
 
-import java.io.File
+import java.io.{File => _File}
 
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
 
 object File {
-  private final class MkDirExpanded[S <: Sys[S]](f: IExpr[S, File])
+  private final class MkDirExpanded[S <: Sys[S]](f: IExpr[S, _File])
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {
@@ -16,7 +29,7 @@ object File {
     }
   }
 
-  final case class MkDir(f: Ex[File]) extends Act {
+  final case class MkDir(f: Ex[_File]) extends Act {
     override def productPrefix: String = s"File$$MkDir"  // serialization
 
     type Repr[S <: Sys[S]] = IAction[S]
@@ -25,7 +38,7 @@ object File {
       new MkDirExpanded(f.expand[S])
   }
 
-  private final class DeleteExpanded[S <: Sys[S]](f: IExpr[S, File])
+  private final class DeleteExpanded[S <: Sys[S]](f: IExpr[S, _File])
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {
@@ -34,7 +47,7 @@ object File {
     }
   }
 
-  final case class Delete(f: Ex[File]) extends Act {
+  final case class Delete(f: Ex[_File]) extends Act {
     override def productPrefix: String = s"File$$Delete"  // serialization
 
     type Repr[S <: Sys[S]] = IAction[S]

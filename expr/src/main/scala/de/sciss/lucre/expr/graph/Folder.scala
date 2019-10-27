@@ -218,6 +218,31 @@ object Folder {
     }
   }
 
+  private final class ChildrenExpanded[S <: Sys[S]](in: IExpr[S, Folder], tx0: S#Tx)
+                                                   (implicit targets: ITargets[S])
+    extends ExpandedImpl[S, Seq[Obj]](in, Nil, tx0) {
+
+    protected def mapValue(f: stm.List[S, stm.Obj[S]])(implicit tx: S#Tx): Seq[Obj] = {
+      val b = List.newBuilder[Obj]
+      b.sizeHint(f.size)
+      f.iterator.foreach { peer =>
+        b += Obj.wrap(peer)
+      }
+      b.result()
+    }
+  }
+
+  final case class Children(in: Ex[Folder]) extends Ex[Seq[Obj]] {
+    override def productPrefix: String = s"Folder$$Children" // serialization
+
+    type Repr[S <: Sys[S]] = IExpr[S, Seq[Obj]]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      import ctx.targets
+      new ChildrenExpanded(in.expand[S], tx)
+    }
+  }
+
   private final class AppendExpanded[S <: Sys[S], A](in: IExpr[S, Folder], elem: IExpr[S, A])
                                                     (implicit source: Obj.Source[A])
     extends IActionImpl[S] {
@@ -274,9 +299,11 @@ object Folder {
     def prepend[A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Prepend(f, elem)
     def append [A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Append (f, elem)
 
-    def size    : Ex[Int    ] = Size    (f)
-    def isEmpty : Ex[Boolean] = IsEmpty (f)
-    def nonEmpty: Ex[Boolean] = NonEmpty(f)
+    def size    : Ex[Int    ]   = Size    (f)
+    def isEmpty : Ex[Boolean]   = IsEmpty (f)
+    def nonEmpty: Ex[Boolean]   = NonEmpty(f)
+    
+    def children: Ex[Seq[Obj]]  = Children(f)
   }
 }
 /** The representation of a folder within an expression program.
