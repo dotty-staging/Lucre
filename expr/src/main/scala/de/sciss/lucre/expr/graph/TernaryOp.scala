@@ -78,11 +78,63 @@ object TernaryOp {
 
   // ---- Seq ----
 
+  final case class SeqIndexOf[A, B >: A]() extends NamedOp[Seq[A], B, Int, Int] {
+    def apply(a: Seq[A], elem: B, from: Int): Int = a.indexOf(elem, from)
+
+    def name = "SeqIndexOf"
+  }
+
+  final case class SeqIndexOfSlice[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Int, Int] {
+    def apply(a: Seq[A], that: Seq[B], from: Int): Int = a.indexOfSlice(that, from)
+
+    def name = "SeqIndexOfSlice"
+  }
+
+  final case class SeqLastIndexOf[A, B >: A]() extends NamedOp[Seq[A], B, Int, Int] {
+    def apply(a: Seq[A], elem: B, from: Int): Int = a.lastIndexOf(elem, from)
+
+    def name = "SeqLastIndexOf"
+  }
+
+  final case class SeqLastIndexOfSlice[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Int, Int] {
+    def apply(a: Seq[A], that: Seq[B], from: Int): Int = a.lastIndexOfSlice(that, from)
+
+    def name = "SeqLastIndexOfSlice"
+  }
+
+  final case class SeqPadTo[A, B >: A]() extends NamedOp[Seq[A], Int, B, Seq[B]] {
+    def apply(a: Seq[A], len: Int, elem: B): Seq[B] = a.padTo(len, elem)
+
+    def name = "SeqPadTo"
+  }
+
   final case class SeqSlice[A]() extends NamedOp[Seq[A], Int, Int, Seq[A]] {
     def apply(a: Seq[A], b: Int, c: Int): Seq[A] = a.slice(b, c)
 
     def name = "SeqSlice"
   }
+
+  final case class SeqSliding[A]() extends NamedOp[Seq[A], Int, Int, Seq[Seq[A]]] {
+    def apply(a: Seq[A], size: Int, step: Int): Seq[Seq[A]] =
+      a.sliding(math.max(1, size), math.max(1, step)).toIndexedSeq
+
+    def name = "SeqSliding"
+  }
+
+  final case class SeqStartsWith[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Int, Boolean] {
+    def apply(a: Seq[A], b: Seq[B], offset: Int): Boolean = a.startsWith(b, offset)
+
+    def name = "SeqStartsWith"
+  }
+
+  final case class SeqUpdated[A, B >: A]() extends NamedOp[Seq[A], Int, B, Seq[B]] {
+    def apply(a: Seq[A], index: Int, elem: B): Seq[B] =
+      if (index >= 0 && index < a.size) a.updated(index, elem) else a
+
+    def name = "SeqUpdated"
+  }
+
+  // ----
 
   private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
                                                                    a: IExpr[S, A1], b: IExpr[S, A2],

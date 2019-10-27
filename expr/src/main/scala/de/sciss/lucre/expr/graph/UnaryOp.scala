@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.adjunct.Adjunct.{Num, NumBool, NumFrac, NumInt, ToNum, Widen, WidenToDouble}
+import de.sciss.lucre.adjunct.Adjunct.{Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.event.impl.IEventImpl
@@ -408,10 +408,10 @@ object UnaryOp {
 
   // ---- Seq ----
 
-  final case class SeqSize[A]() extends NamedOp[Seq[A], Int] {
-    def apply(a: Seq[A]): Int = a.size
+  final case class SeqDistinct[A]() extends NamedOp[Seq[A], Seq[A]] {
+    def apply(a: Seq[A]): Seq[A] = a.distinct
 
-    override def name = "SeqSize"
+    override def name = "SeqDistinct"
   }
 
   final case class SeqHeadOption[A]() extends NamedOp[Seq[A], Option[A]] {
@@ -420,10 +420,10 @@ object UnaryOp {
     override def name = "SeqHeadOption"
   }
 
-  final case class SeqLastOption[A]() extends NamedOp[Seq[A], Option[A]] {
-    def apply(a: Seq[A]): Option[A] = a.lastOption
+  final case class SeqIndices[A]() extends NamedOp[Seq[A], Seq[Int]] {
+    def apply(a: Seq[A]): Seq[Int] = a.indices
 
-    override def name = "SeqLastOption"
+    override def name = "SeqIndices"
   }
 
   final case class SeqIsEmpty[A]() extends NamedOp[Seq[A], Boolean] {
@@ -432,10 +432,86 @@ object UnaryOp {
     override def name = "SeqIsEmpty"
   }
 
+  final case class SeqLastOption[A]() extends NamedOp[Seq[A], Option[A]] {
+    def apply(a: Seq[A]): Option[A] = a.lastOption
+
+    override def name = "SeqLastOption"
+  }
+
+  final case class SeqMaxOption[A]()(implicit ord: ScalarOrd[A])
+    extends NamedOp[Seq[A], Option[A]] with ProductWithAdjuncts {
+
+    def apply(a: Seq[A]): Option[A] = if (a.isEmpty) None else Some(a.max(Ordering.fromLessThan[A](ord.lt)))
+
+    override def name = "SeqMaxOption"
+
+    def adjuncts: List[Adjunct] = ord :: Nil
+  }
+
+  final case class SeqMinOption[A]()(implicit ord: ScalarOrd[A])
+    extends NamedOp[Seq[A], Option[A]] with ProductWithAdjuncts {
+
+    def apply(a: Seq[A]): Option[A] = if (a.isEmpty) None else Some(a.min(Ordering.fromLessThan[A](ord.lt)))
+
+    override def name = "SeqMinOption"
+
+    def adjuncts: List[Adjunct] = ord :: Nil
+  }
+
   final case class SeqNonEmpty[A]() extends NamedOp[Seq[A], Boolean] {
     def apply(a: Seq[A]): Boolean = a.nonEmpty
 
     override def name = "SeqNonEmpty"
+  }
+
+  final case class SeqPermutations[A]() extends NamedOp[Seq[A], Seq[Seq[A]]] {
+    def apply(a: Seq[A]): Seq[Seq[A]] = a.permutations.toIndexedSeq
+
+    override def name = "SeqPermutations"
+  }
+
+  final case class SeqProduct[A]()(implicit num: Num[A]) extends NamedOp[Seq[A], A] with ProductWithAdjuncts {
+    def apply(a: Seq[A]): A = a.foldLeft(num.one)(num.*)
+
+    override def name = "SeqProduct"
+
+    def adjuncts: List[Adjunct] = num :: Nil
+  }
+
+  final case class SeqReverse[A]() extends NamedOp[Seq[A], Seq[A]] {
+    def apply(a: Seq[A]): Seq[A] = a.reverse
+
+    override def name = "SeqReverse"
+  }
+
+  final case class SeqSize[A]() extends NamedOp[Seq[A], Int] {
+    def apply(a: Seq[A]): Int = a.size
+
+    override def name = "SeqSize"
+  }
+
+  final case class SeqSorted[A]()(implicit ord: ScalarOrd[A])
+    extends NamedOp[Seq[A], Seq[A]] with ProductWithAdjuncts {
+
+    def apply(a: Seq[A]): Seq[A] = a.sorted(Ordering.fromLessThan(ord.lt))
+
+    override def name = "SeqSorted"
+
+    def adjuncts: List[Adjunct] = ord :: Nil
+  }
+
+  final case class SeqSum[A]()(implicit num: Num[A]) extends NamedOp[Seq[A], A] with ProductWithAdjuncts {
+    def apply(a: Seq[A]): A = a.foldLeft(num.zero)(num.+)
+
+    override def name = "SeqSum"
+
+    def adjuncts: List[Adjunct] = num :: Nil
+  }
+
+  final case class SeqZipWithIndex[A]() extends NamedOp[Seq[A], Seq[(A, Int)]] {
+    def apply(a: Seq[A]): Seq[(A, Int)] = a.zipWithIndex
+
+    override def name = "SeqZipWithIndex"
   }
 
   // ---- String ----

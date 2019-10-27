@@ -44,6 +44,13 @@ object QuaternaryOp {
     def name = "SeqMkString"
   }
 
+  final case class SeqPatch[A, B >: A]() extends NamedOp[Seq[A], Int, Seq[B], Int, Seq[B]] {
+    def apply(a: Seq[A], from: Int, other: Seq[B], replaced: Int): Seq[B] =
+      a.patch(from, other, replaced)
+
+    def name = "SeqPatch"
+  }
+
   private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3, A4, A],
                                                                        a: IExpr[S, A1], b: IExpr[S, A2],
                                                                        c: IExpr[S, A3], d: IExpr[S, A4],

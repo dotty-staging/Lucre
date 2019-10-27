@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import java.io.{File => _File}
 
-import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ToNum, Widen, Widen2, WidenToDouble}
+import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
 import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -200,41 +200,171 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   def format(args: Ex[Any]*): Ex[String] = graph.StringFormat(x, args)
 }
 
+// TODO: select[B], selectFirst[B], count, distinctBy, dropWhile, exists, filter, filterNot, find, findLast,
+// flatMap: support Seq/Seq, Seq/Option, withFilter, flatten, fold, foldLeft, foldRight, forall, groupBy,
+// groupMap, groupMapReduce, indexWhere, maxByOption, minByOption, partition, reduceLeftOption, reduceRightOption,
+// scanLeft, scanRight, segmentLength, sortBy, sortWith, span, takeWhile, toMap, toSet, transpose, unzip
 final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
-  //  def apply(index: Ex[Int]): Ex[A] = ...
-
-  def applyOption(index: Ex[Int]): Ex[Option[A]] = BinOp(BinOp.SeqApplyOption[A](), x, index)
-
-  def headOption: Ex[Option[A]] = UnOp(UnOp.SeqHeadOption[A](), x)
-  def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
-
-  def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
-
-  def isEmpty : Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
-  def nonEmpty: Ex[Boolean] = UnOp(UnOp.SeqNonEmpty [A](), x)
-
+  /** A concatenation of this sequence with `that` sequence */
   def ++ [B >: A](that: Ex[Seq[B]]): Ex[Seq[B]] = BinOp(BinOp.SeqConcat[B](), x, that)
 
-  def take(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqTake[A](), x, n)
+  /** A new sequence with the element prepended */
+  def +: [B >: A](elem: Ex[B]): Ex[Seq[B]] = BinOp(BinOp.SeqPrepended[A, B](), x, elem)
+
+  /** A new sequence with the element appended */
+  def :+ [B >: A](elem: Ex[B]): Ex[Seq[B]] = BinOp(BinOp.SeqAppended[A, B](), x, elem)
+
+  /** A new sequence with the element appended */
+  def appended[B >: A](elem: Ex[B]): Ex[Seq[B]] = BinOp(BinOp.SeqAppended[A, B](), x, elem)
+
+  /** The element at a given `index` if the index is valid */
+  def applyOption(index: Ex[Int]): Ex[Option[A]] = BinOp(BinOp.SeqApplyOption[A](), x, index)
+
+  /** A concatenation of this sequence with `that` sequence */
+  def concat[B >: A](that: Ex[Seq[B]]): Ex[Seq[B]] = BinOp(BinOp.SeqConcat[B](), x, that)
+
+  /** Whether this collection contains an element or not */
+  def contains(elem: Ex[A]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, A](), x, elem)
+//  def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, B](), x, elem)
+
+  /** The multiset difference between this sequence and `that` sequence */
+  def diff(that: Ex[Seq[A]]): Ex[Seq[A]] = BinOp(BinOp.SeqDiff[A, A](), x, that)
+//  def diff[B >: A](that: Ex[Seq[B]]): Ex[Seq[A]] = BinOp(BinOp.SeqDiff[A, B](), x, that)
+
+  /** All the elements of this sequence ignoring the duplicates */
+  def distinct: Ex[Seq[A]] = UnOp(UnOp.SeqDistinct[A](), x)
+
+  /** All elements except first `n` ones */
   def drop(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqDrop[A](), x, n)
 
-  def slice(from: Ex[Int], until: Ex[Int]): Ex[Seq[A]] = TernOp(TernOp.SeqSlice[A](), x, from, until)
+  /** The rest of this sequence without its `n` last elements */
+  def dropRight(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqDropRight[A](), x, n)
 
-  def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]] = BinOp(BinOp.SeqZip[A, B](), x, that)
-
-  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
-    m.map(x, f)
+  /** Tests whether this sequence ends with `that` sequence */
+  def endsWith(that: Ex[Seq[A]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, A](), x, that)
+//  def endsWith[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, B](), x, that)
 
   def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Seq, B, To]): To =
     fm.flatMap(x, f)
 
-  def mkString(sep: Ex[String]): Ex[String] = {
-    import Ex.const
-    mkString("", sep, "")
-  }
+  /** Partitions elements in fixed size sequences */
+  def grouped(size: Ex[Int]): Ex[Seq[Seq[A]]] = BinOp(BinOp.SeqGrouped[A](), x, size)
+
+  /** The first element if the sequence is non-empty */
+  def headOption: Ex[Option[A]] = UnOp(UnOp.SeqHeadOption[A](), x)
+
+  /** The index of the first occurrence of `elem` in this sequence, or `-1` if not found */
+  def indexOf(elem: Ex[A]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, A](), x, elem)
+//  def indexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, B](), x, elem)
+
+  /** The index of the first occurrence of `elem` at or after `from` in this sequence, or `-1` if not found */
+  def indexOf(elem: Ex[A], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOf[A, A](), x, elem, from)
+//  def indexOf[B >: A](elem: Ex[B], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOf[A, B](), x, elem, from)
+
+  /** First index where this sequence contains `that` sequence as a slice, or `-1` if not found */
+  def indexOfSlice(that: Ex[Seq[A]]): Ex[Int] = BinOp(BinOp.SeqIndexOfSlice[A, A](), x, that)
+//  def indexOfSlice[B >: A](that: Ex[Seq[B]]): Ex[Int] = BinOp(BinOp.SeqIndexOfSlice[A, B](), x, that)
+
+  /** First index at or after `from` where this sequence contains `that` sequence as a slice, or `-1` if not found */
+  def indexOfSlice(that: Ex[Seq[A]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, A](), x, that, from)
+//  def indexOfSlice[B >: A](that: Ex[Seq[B]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, B](), x, that, from)
+
+  /** Indices from zero until the size of this sequence */
+  def indices: Ex[Seq[Int]] = UnOp(UnOp.SeqIndices[A](), x)
+
+  /** The multiset intersection between this sequence and `that` sequence */
+  def intersect(that: Ex[Seq[A]]): Ex[Seq[A]] = BinOp(BinOp.SeqIntersect[A, A](), x, that)
+  //  def intersect[B >: A](that: Ex[Seq[B]]): Ex[Seq[A]] = BinOp(BinOp.SeqIntersect[A, B](), x, that)
+
+  /** Whether an `index` lies within this sequence */
+  def isDefinedAt(index: Ex[Int]): Ex[Boolean] = BinOp(BinOp.SeqIsDefinedAt[A](), x, index)
+
+  def isEmpty: Ex[Boolean] = UnOp(UnOp.SeqIsEmpty  [A](), x)
+
+  /** The index of the last occurrence of `elem` in this sequence, or `-1` if not found */
+  def lastIndexOf(elem: Ex[A]): Ex[Int] = BinOp(BinOp.SeqLastIndexOf[A, A](), x, elem)
+//  def lastIndexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqLastIndexOf[A, B](), x, elem)
+
+  /** The index of the last occurrence of `elem` at or before `end` in this sequence, or `-1` if not found */
+  def lastIndexOf(elem: Ex[A], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOf[A, A](), x, elem, end)
+//  def lastIndexOf[B >: A](elem: Ex[B], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOf[A, B](), x, elem, end)
+
+  /** Last index where this sequence contains `that` sequence as a slice, or `-1` if not found */
+  def lastIndexOfSlice(that: Ex[Seq[A]]): Ex[Int] = BinOp(BinOp.SeqLastIndexOfSlice[A, A](), x, that)
+//  def lastIndexOfSlice[B >: A](that: Ex[Seq[B]]): Ex[Int] = BinOp(BinOp.SeqLastIndexOfSlice[A, B](), x, that)
+
+  /** Last index at or before `end` where this sequence contains `that` sequence as a slice, or `-1` if not found */
+  def lastIndexOfSlice(that: Ex[Seq[A]], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOfSlice[A, A](), x, that, end)
+//  def lastIndexOfSlice[B >: A](that: Ex[Seq[B]], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOfSlice[A, B](), x, that, end)
+
+  /** The last element if the sequence is non-empty */
+  def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
+
+  def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
+    m.map(x, f)
+
+  def maxOption(implicit ord: ScalarOrd[A]): Ex[Option[A]] = UnOp(UnOp.SeqMaxOption[A](), x)
+
+  def minOption(implicit ord: ScalarOrd[A]): Ex[Option[A]] = UnOp(UnOp.SeqMinOption[A](), x)
+
+  def mkString: Ex[String] = mkString("")
+
+  def mkString(sep: Ex[String]): Ex[String] = mkString("", sep, "")
 
   def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] =
     QuaternaryOp(QuaternaryOp.SeqMkString[A](), x, start, sep, end)
+
+  def nonEmpty: Ex[Boolean] = UnOp(UnOp.SeqNonEmpty[A](), x)
+
+  def padTo[B >: A](len: Ex[Int], elem: Ex[B]): Ex[Seq[B]] = TernOp(TernOp.SeqPadTo[A, B](), x, len, elem)
+
+  def patch[B >: A](from: Ex[Int], other: Ex[Seq[B]], replaced: Ex[Int]): Ex[Seq[B]] =
+    QuaternaryOp(QuaternaryOp.SeqPatch[A, B](), x, from, other, replaced)
+
+  def permutations: Ex[Seq[Seq[A]]] = UnOp(UnOp.SeqPermutations[A](), x)
+
+  def prepended[B >: A](elem: Ex[B]): Ex[Seq[B]] = BinOp(BinOp.SeqPrepended[A, B](), x, elem)
+
+  def product(implicit num: Num[A]): Ex[A] = UnOp(UnOp.SeqProduct[A](), x)
+
+  def reverse: Ex[Seq[A]] = UnOp(UnOp.SeqReverse[A](), x)
+
+  def sameElements[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqSameElements[A, B](), x, that)
+
+  /** The number of elements in the sequence */
+  def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
+
+  def slice(from: Ex[Int], until: Ex[Int]): Ex[Seq[A]] = TernOp(TernOp.SeqSlice[A](), x, from, until)
+
+  /** Groups elements in fixed size blocks by passing a "sliding window" over them.
+    * Note that both `size` and `step` are automatically constraint to values of one and greater.
+    */
+  def sliding(size: Ex[Int], step: Ex[Int] = 1): Ex[Seq[Seq[A]]] = TernOp(TernOp.SeqSliding[A](), x, size, step)
+
+  def sorted(implicit ord: ScalarOrd[A]): Ex[Seq[A]] = UnOp(UnOp.SeqSorted[A](), x)
+
+  def splitAt(n: Ex[Int]): Ex[(Seq[A], Seq[A])] = BinOp(BinOp.SeqSplitAt[A](), x, n)
+
+  /** Tests whether this sequence starts with `that` sequence */
+  def startsWith(that: Ex[Seq[A]], offset: Ex[Int] = 0): Ex[Boolean] =
+    TernOp(TernOp.SeqStartsWith[A, A](), x, that, offset)
+
+//  def startsWith[B >: A](that: Ex[Seq[B]], offset: Ex[Int] = 0): Ex[Boolean] = TernOp(TernOp.SeqStartsWith[A, B](), x, that, offset)
+
+  def sum(implicit num: Num[A]): Ex[A] = UnOp(UnOp.SeqSum[A](), x)
+
+  def take(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqTake[A](), x, n)
+
+  def takeRight(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqTakeRight[A](), x, n)
+
+  /** A new sequence equal to this sequence with one single replaced `elem` at `index`.
+    * If the index lies outside the sequence, the original sequence is returned.
+    */
+  def updated[B >: A](index: Ex[Int], elem: Ex[B]): Ex[Seq[B]] = TernOp(TernOp.SeqUpdated[A, B](), x, index, elem)
+
+  def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]] = BinOp(BinOp.SeqZip[A, B](), x, that)
+
+  def zipWithIndex: Ex[Seq[(A, Int)]] = UnOp(UnOp.SeqZipWithIndex[A](), x)
 }
 
 final class ExSpanOps[A <: _SpanLike](private val x: Ex[A]) extends AnyVal {

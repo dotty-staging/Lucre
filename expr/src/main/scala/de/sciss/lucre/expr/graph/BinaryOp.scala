@@ -462,6 +462,12 @@ object BinaryOp {
 
   // ---- Seq ----
 
+  final case class SeqAppended[A, B >: A]() extends NamedOp[Seq[A], B, Seq[B]] {
+    def apply(a: Seq[A], b: B): Seq[B] = a :+ b
+
+    def name = "SeqAppended"
+  }
+
   final case class SeqApplyOption[A]() extends NamedOp[Seq[A], Int, Option[A]] {
     def apply(a: Seq[A], b: Int): Option[A] = if (b < 0) None else {
       if (a.lengthCompare(b) <= 0) None else Some(a.apply(b))
@@ -476,16 +482,106 @@ object BinaryOp {
     def name = "SeqConcat"
   }
 
-  final case class SeqTake[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
-    def apply(a: Seq[A], b: Int): Seq[A] = a.take(b)
+  final case class SeqContains[A, B >: A]() extends NamedOp[Seq[A], B, Boolean] {
+    def apply(a: Seq[A], b: B): Boolean = a.contains(b)
 
-    def name = "SeqTake"
+    def name = "SeqContains"
+  }
+
+  final case class SeqDiff[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Seq[A]] {
+    def apply(a: Seq[A], b: Seq[B]): Seq[A] = a.diff(b)
+
+    def name = "SeqDiff"
   }
 
   final case class SeqDrop[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
     def apply(a: Seq[A], b: Int): Seq[A] = a.drop(b)
 
     def name = "SeqDrop"
+  }
+
+  final case class SeqDropRight[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
+    def apply(a: Seq[A], b: Int): Seq[A] = a.dropRight(b)
+
+    def name = "SeqDropRight"
+  }
+
+  final case class SeqEndsWith[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Boolean] {
+    def apply(a: Seq[A], b: Seq[B]): Boolean = a.endsWith(b)
+
+    def name = "SeqEndsWith"
+  }
+
+  final case class SeqGrouped[A]() extends NamedOp[Seq[A], Int, Seq[Seq[A]]] {
+    def apply(a: Seq[A], b: Int): Seq[Seq[A]] = a.grouped(b).toIndexedSeq
+
+    def name = "SeqGrouped"
+  }
+
+  final case class SeqIndexOf[A, B >: A]() extends NamedOp[Seq[A], B, Int] {
+    def apply(a: Seq[A], b: B): Int = a.indexOf(b)
+
+    def name = "SeqIndexOf"
+  }
+
+  final case class SeqIndexOfSlice[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Int] {
+    def apply(a: Seq[A], that: Seq[B]): Int = a.indexOfSlice(that)
+
+    def name = "SeqIndexOfSlice"
+  }
+
+  final case class SeqIntersect[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Seq[A]] {
+    def apply(a: Seq[A], b: Seq[B]): Seq[A] = a.intersect(b)
+
+    def name = "SeqIntersect"
+  }
+
+  final case class SeqIsDefinedAt[A]() extends NamedOp[Seq[A], Int, Boolean] {
+    def apply(a: Seq[A], b: Int): Boolean = a.isDefinedAt(b)
+
+    def name = "SeqIsDefinedAt"
+  }
+
+  final case class SeqLastIndexOf[A, B >: A]() extends NamedOp[Seq[A], B, Int] {
+    def apply(a: Seq[A], b: B): Int = a.lastIndexOf(b)
+
+    def name = "SeqLastIndexOf"
+  }
+
+  final case class SeqLastIndexOfSlice[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Int] {
+    def apply(a: Seq[A], that: Seq[B]): Int = a.lastIndexOfSlice(that)
+
+    def name = "SeqLastIndexOfSlice"
+  }
+
+  final case class SeqPrepended[A, B >: A]() extends NamedOp[Seq[A], B, Seq[B]] {
+    def apply(a: Seq[A], b: B): Seq[B] = b +: a
+
+    def name = "SeqPrepended"
+  }
+
+  final case class SeqSameElements[A, B >: A]() extends NamedOp[Seq[A], Seq[B], Boolean] {
+    def apply(a: Seq[A], b: Seq[B]): Boolean = a.sameElements(b)
+
+    def name = "SeqSameElements"
+  }
+
+  final case class SeqSplitAt[A]() extends NamedOp[Seq[A], Int, (Seq[A], Seq[A])] {
+    def apply(a: Seq[A], b: Int): (Seq[A], Seq[A]) = a.splitAt(b)
+
+    def name = "SeqSplitAt"
+  }
+
+  final case class SeqTake[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
+    def apply(a: Seq[A], b: Int): Seq[A] = a.take(b)
+
+    def name = "SeqTake"
+  }
+
+  final case class SeqTakeRight[A]() extends NamedOp[Seq[A], Int, Seq[A]] {
+    def apply(a: Seq[A], b: Int): Seq[A] = a.takeRight(b)
+
+    def name = "SeqTakeRight"
   }
 
   final case class SeqZip[A, B]() extends NamedOp[Seq[A], Seq[B], Seq[(A, B)]] {
