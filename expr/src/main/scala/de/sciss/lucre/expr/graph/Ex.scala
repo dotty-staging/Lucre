@@ -29,6 +29,17 @@ object Ex {
 
   implicit def const[A: Value](x: A): Ex[A] = Const(x)
 
+  // ---- extractors ----
+
+  // This doesn't work, you can only get
+  // `zipped.map { case Ex(a, b) => ... }`
+  // So let's leave that until we know this can be
+  // expanded to multiple arities
+
+//  def unapply[A, B](in: Ex[(A, B)]): Option[(Ex[A], Ex[B])] = Some((in._1, in._2))
+
+  // ----
+
   object Value {
     implicit object anyVal    extends Value[AnyVal    ]
     implicit object string    extends Value[String    ]
@@ -43,31 +54,15 @@ object Ex {
   }
   trait Value[-A]
 
-//  implicit def const(x: Int     ): Ex[Int     ] = Const(x)
-//  implicit def const(x: Long    ): Ex[Long    ] = Const(x)
-//  implicit def const(x: Double  ): Ex[Double  ] = Const(x)
-//  implicit def const(x: Boolean ): Ex[Boolean ] = Const(x)
-//  implicit def const(x: String  ): Ex[String  ] = Const(x)
-//  implicit def const(x: File    ): Ex[File    ] = Const(x)
-//
-//  implicit def const[A <: SpanLike](x: A): Ex[A] = Const(x)
-
-//  implicit def liftTuple[A: Value, B: Value](x: (A, B)): Ex[(A, B)] = Const(x)
+  // ---- implicit lifting and ops ----
 
   implicit def liftTuple2_1[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ExTuple2(x._1, Const(x._2))
   implicit def liftTuple2_2[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ExTuple2(Const(x._1), x._2)
-
-//  implicit def liftTupleL[A, B: Value](x: (Ex[A], B)): Ex[(A, B)] = ...
-//  implicit def liftTupleR[A: Value, B](x: (A, Ex[B])): Ex[(A, B)] = ...
-
-//  implicit def liftOption[A: Value](x: Option[A]): Ex[Option[A]] = Const(x)
 
   implicit def liftOptionEx[A](x: Option[Ex[A]]): Ex[Option[A]] = x match {
     case Some(ex) => UnaryOp(UnaryOp.OptionSome[A](), ex)
     case None     => Const(Option.empty[A])
   }
-
-//  implicit def liftSeq[A: Value](x: Seq[A]): Ex[Seq[A]] = Const(x) // immutable(x))
 
   implicit def liftSeqEx[A](x: Seq[Ex[A]]): Ex[Seq[A]] =
     if (x.isEmpty) Const(Nil) else ExSeq(x: _*) // immutable(x): _*)
@@ -86,13 +81,16 @@ object Ex {
   private val anyCanMapOption     = new CanMapOption    [Any]
   private val anyCanMapSeq        = new CanMapSeq       [Any]
   private val anyCanFlatMapOption = new CanFlatMapOption[Any]
-  private val anyCanFlatMapSeq    = new CanFlatMapSeq   [Any]
+
+  // XXX TODO:
+//  private val anyCanFlatMapSeq    = new CanFlatMapSeq   [Any]
 
   private lazy val _init: Unit = {
     Adjunct.addFactory(anyCanMapOption      )
     Adjunct.addFactory(anyCanMapSeq         )
     Adjunct.addFactory(anyCanFlatMapOption  )
-    Adjunct.addFactory(anyCanFlatMapSeq     )
+// XXX TODO:
+//    Adjunct.addFactory(anyCanFlatMapSeq     )
     Adjunct.addFactory(CanMapOptionToAct    )
     Adjunct.addFactory(CanMapSeqToAct       )
     Adjunct.addFactory(CanFlatMapOptionToAct)
@@ -185,7 +183,8 @@ object Ex {
 
   object CanFlatMap {
     implicit def option [B] : CanFlatMap[Option , Ex[Option [B]], Ex[Option [B]]] = anyCanFlatMapOption.asInstanceOf[CanFlatMapOption [B]]
-    implicit def seq    [B] : CanFlatMap[Seq    , Ex[Seq    [B]], Ex[Seq    [B]]] = anyCanFlatMapSeq   .asInstanceOf[CanFlatMapSeq    [B]]
+    // XXX TODO:
+//    implicit def seq    [B] : CanFlatMap[Seq    , Ex[Seq    [B]], Ex[Seq    [B]]] = anyCanFlatMapSeq   .asInstanceOf[CanFlatMapSeq    [B]]
     implicit def optionToAct: CanFlatMap[Option , Act           , Act.Option]     = CanFlatMapOptionToAct
     implicit def seqToAct   : CanFlatMap[Seq    , Act           , Act]            = CanFlatMapSeqToAct
   }
@@ -274,17 +273,19 @@ object Ex {
     }
   }
 
-  private final class CanFlatMapSeq[B] extends MapSupport
-    with CanFlatMap[Seq, Ex[Seq[B]], Ex[Seq[B]]] {
+  // XXX TODO
 
-    final val id = 1012
-
-    override def toString = "CanFlatMapSeq"
-
-    def flatMap[A](from: Ex[Seq[A]], fun: Ex[A] => Ex[Seq[B]]): Ex[Seq[B]] = {
-      ??? // ExOptionFlatMap(in = from, fun = fOut)
-    }
-  }
+//  private final class CanFlatMapSeq[B] extends MapSupport
+//    with CanFlatMap[Seq, Ex[Seq[B]], Ex[Seq[B]]] {
+//
+//    final val id = 1012
+//
+//    override def toString = "CanFlatMapSeq"
+//
+//    def flatMap[A](from: Ex[Seq[A]], fun: Ex[A] => Ex[Seq[B]]): Ex[Seq[B]] = {
+//      ... // ExOptionFlatMap(in = from, fun = fOut)
+//    }
+//  }
 
   private final object CanFlatMapOptionToAct extends MapSupport
     with CanFlatMap[Option, Act, Act.Option] {

@@ -29,12 +29,14 @@ trait NewExActMapBlueprint {
     def map[A](from: Ex[From[A]], fun: Ex[A] => B): To
   }
 
-  implicit def ExOptionOps[A] (in: Ex[Option[A]]) : ExOptionOps [A]
-  implicit def ExSeqOps   [A] (in: Ex[Seq   [A]]) : ExSeqOps    [A]
-  implicit def ExStringOps    (in: Ex[String])    : ExStringOps
+  implicit def ExOptionOps[A]   (in: Ex[Option[A]]) : ExOptionOps [A]
+  implicit def ExSeqOps   [A]   (in: Ex[Seq   [A]]) : ExSeqOps    [A]
+  implicit def ExTupleOps [A, B](in: Ex[(A, B)])    : ExTupleOps  [A, B]
+  implicit def ExStringOps      (in: Ex[String])    : ExStringOps
 
   implicit def canMapExOptionToAct    : CanMap     [Option, Act, Act]
   implicit def canFlatMapExOptionToAct: CanFlatMap [Option, Act, Act]
+  implicit def canMapExSeq[B]         : CanMap     [Seq   , Ex[B], Ex[Seq[B]]]
   implicit def canMapExSeqToAct       : CanMap     [Seq   , Act, Act]
   implicit def canFlatMapExSeqToAct   : CanFlatMap [Seq   , Act, Act]
 
@@ -72,6 +74,13 @@ trait NewExActMapBlueprint {
       m.map(x, f)
 
     def withFilter(f: Ex[A] => Ex[Boolean]): Ex[Seq[A]]  // seems doable
+
+    def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]]
+  }
+
+  abstract class ExTupleOps[A, B](x: Ex[(A, B)]) {
+    def _1 : Ex[A]
+    def _2 : Ex[B]
   }
 
   trait ExStringOps {
@@ -118,5 +127,11 @@ trait NewExActMapBlueprint {
 
     LoadBang(actFromSeq)
     LoadBang(actFromSeqGuard)
+  }
+
+  def extractorTest(): Unit = {
+    (aSeq zip bSeq).map { tup =>
+      tup._1
+    }
   }
 }
