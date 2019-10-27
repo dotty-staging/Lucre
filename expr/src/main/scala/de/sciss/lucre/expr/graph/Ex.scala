@@ -13,12 +13,11 @@
 
 package de.sciss.lucre.expr.graph
 
-import java.io.File
-
 import de.sciss.lucre.adjunct.Adjunct
+import de.sciss.file.{File => _File}
 import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
-import de.sciss.lucre.expr.graph.impl.{ExpandedMapExOption, ExpandedMapExSeq}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IExpr}
+import de.sciss.lucre.expr.graph.impl.{ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq, ExpandedMapExSeqAct}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
@@ -33,7 +32,7 @@ object Ex {
   object Value {
     implicit object anyVal    extends Value[AnyVal    ]
     implicit object string    extends Value[String    ]
-    implicit object file      extends Value[File      ]
+    implicit object file      extends Value[_File]
     implicit object spanLike  extends Value[_SpanLike ]
 //    implicit object act       extends Value[Act       ]
 
@@ -80,7 +79,7 @@ object Ex {
   implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
   implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
   implicit def spanOps[A <: _SpanLike](x: Ex[A]): ExSpanOps   [A]     = new ExSpanOps   (x)
-  implicit def fileOps        (x: Ex[File])     : ExFileOps           = new ExFileOps   (x)
+  implicit def fileOps        (x: Ex[_File])    : ExFileOps           = new ExFileOps   (x)
 
   //////////////////////////////
 
@@ -131,21 +130,34 @@ object Ex {
     }
   }
 
-//  final case class MapActOption[A] private (in: Ex[Option[A]], fun: Act)
-//    extends Ex[Option[Act]] {
-//
-//    type Repr[S <: Sys[S]] = IExpr[S, Option[Act]]
-//
-//    override def productPrefix: String = s"Ex$$MapActOption" // serialization
-//
-//    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-//      val inEx = in.expand[S]
-//      import ctx.targets
-//      ??? // new ExpandedMapActOption[S, A](inEx, fun, tx)
-//    }
-//  }
+  final case class MapActOption[A] private (in: Ex[Option[A]], fun: Act)
+    extends Act.Option {
 
-//  final case class MapExSeqAct[A](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Act) extends Ex[Seq[Act]] {
+    type Repr[S <: Sys[S]] = IAction.Option[S]
+
+    override def productPrefix: String = s"Ex$$MapActOption" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val inEx = in.expand[S]
+      import ctx.targets
+      new ExpandedMapActOption[S, A](inEx, fun, tx)
+    }
+  }
+
+  final case class MapSeqAct[A](in: Ex[Seq[A]], it: It[A], closure: Graph, fun: Act) extends Act {
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    override def productPrefix: String = s"Ex$$MapSeqAct" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val inEx = in.expand[S]
+      val itEx = it.expand[S]
+      import ctx.targets
+      new ExpandedMapExSeqAct[S, A](inEx, itEx, /*closure, */ fun, tx)
+    }
+  }
+
+//  final case class FlatMapActOption[A](in: Ex[Option[A]], it: It[A], closure: Graph, fun: Act) extends Ex[Seq[Act]] {
 //    type Repr[S <: Sys[S]] = IExpr[S, Seq[Act]]
 //
 //    override def productPrefix: String = s"Ex$$MapExSeqAct" // serialization
@@ -153,7 +165,7 @@ object Ex {
 //    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
 //      val inEx = in.expand[S]
 //      val itEx = it.expand[S]
-//      ??? // new ExpandedMapExSeqAct[S, A](inEx, itEx, /*closure, */ fun, tx)
+//      ... // new ExpandedMapExSeqAct[S, A](inEx, itEx, /*closure, */ fun, tx)
 //    }
 //  }
 
@@ -232,7 +244,7 @@ object Ex {
 
     def map[A](from: Ex[Option[A]], fun: Ex[A] => Act): Act.Option = {
       val fOut = fun(OptionGet(from))
-      ??? // MapActOption[A](in = from, fun = fOut)
+      MapActOption[A](in = from, fun = fOut)
     }
   }
 
@@ -245,7 +257,7 @@ object Ex {
 
     def map[A](from: Ex[Seq[A]], fun: Ex[A] => Act): Act = {
       val (it, closure, res) = mkClosure(fun)
-      ??? // MapExSeqAct[A](in = from, it = it, closure = closure, fun = res)
+      MapSeqAct[A](in = from, it = it, closure = closure, fun = res)
     }
   }
 
@@ -283,7 +295,7 @@ object Ex {
 
     def flatMap[A](from: Ex[Option[A]], fun: Ex[A] => Act): Act.Option = {
       val fOut = fun(OptionGet(from))
-      ??? // ExOptionFlatMap(in = from, fun = fOut)
+      MapActOption(in = from, fun = fOut)
     }
   }
 
@@ -295,7 +307,8 @@ object Ex {
     override def toString = "CanFlatMapSeqToAct"
 
     def flatMap[A](from: Ex[Seq[A]], fun: Ex[A] => Act): Act = {
-      ??? // ExOptionFlatMap(in = from, fun = fOut)
+      val (it, closure, res) = mkClosure(fun)
+      MapSeqAct[A](in = from, it = it, closure = closure, fun = res)
     }
   }
 

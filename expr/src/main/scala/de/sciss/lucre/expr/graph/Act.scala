@@ -17,7 +17,7 @@ import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IControl}
 import de.sciss.lucre.stm.Sys
 
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.higherKinds
 
 object Act {
   def apply(xs: Act*): Act = SeqImpl(xs)
@@ -63,16 +63,14 @@ object Act {
 
   trait Option extends Act {
     type Repr[S <: Sys[S]] <: IAction.Option[S]
-
-    def isEmpty   : Ex[Boolean]
-    def isDefined : Ex[Boolean]
-
-    def orElse(that: Act): Act = OrElse(this, that)
   }
 
-//  implicit final class Ops (private val in: Ex[_Option[Act]]) extends AnyVal {
-//    def orNop: Act = OrNop(in)
-//  }
+  implicit final class OptionOps(private val in: Act.Option) extends AnyVal {
+    //    def isEmpty   : Ex[Boolean] = ...
+    //    def isDefined : Ex[Boolean] = ...
+
+    def orElse(that: Act): Act = OrElse(in, that)
+  }
 
 //  private final class ExpandedFlatten[S <: Sys[S]](in: IExpr[S, Act])(implicit ctx: Context[S])
 //    extends IActionImpl[S] {
@@ -90,7 +88,7 @@ object Act {
 //    }
 //  }
 
-  private final class ExpandedOrElse[S <: Sys[S]](a: IAction.Option[S], b: IAction[S])(implicit ctx: Context[S])
+  private final class ExpandedOrElse[S <: Sys[S]](a: IAction.Option[S], b: IAction[S])/*(implicit ctx: Context[S])*/
     extends IActionImpl[S] {
 
     def executeAction()(implicit tx: S#Tx): Unit = {

@@ -17,7 +17,7 @@ import de.sciss.lucre.stm.{Base, Disposable, Form}
 
 object IAction {
   trait Option[S <: Base[S]] extends IAction[S] {
-    def isDefined: Boolean
+    def isDefined(implicit tx: S#Tx): Boolean
   }
 }
 trait IAction[S <: Base[S]] extends Form[S] with Disposable[S#Tx] {
