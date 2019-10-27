@@ -13,9 +13,10 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.expr.{Context, IExpr}
+import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.expr.impl.IActionImpl
+import de.sciss.lucre.expr.{Context, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
@@ -31,8 +32,8 @@ final case class If(cond: Ex[Boolean]) {
   def Then [A](branch: Ex[A]): IfThen[A] =
     IfThen(cond, branch)
 
-//  def Then (branch: Act): IfThenAct =
-//    IfThenAct(cond, branch)
+  def Then (branch: Act): IfThenAct =
+    IfThenAct(cond, branch)
 }
 
 sealed trait Then[+A] /*extends Ex[Option[A]]*/ {
@@ -184,10 +185,100 @@ final case class Else[A](pred: Then[A], default: Ex[A]) extends Ex[A] {
 
 // ---- Act variants ----
 
+final case class ElseIfAct(pred: ThenAct, cond: Ex[Boolean]) {
+  def Then (branch: Act): ElseIfThenAct =
+    ElseIfThenAct(pred, cond, branch)
+}
+
+object ThenAct {
+  private type Case[S <: Sys[S]] = (IExpr[S, Boolean], IAction[S])
+
+  private def gather[S <: Sys[S]](e: ThenAct)(implicit ctx: Context[S],
+                                                 tx: S#Tx): List[Case[S]] = {
+    @tailrec
+    def loop(t: ThenAct, res: List[Case[S]]): List[Case[S]] = {
+      val condEx  = t.cond  .expand[S]
+      val resEx   = t.result.expand[S]
+      val res1 = (condEx, resEx) :: res
+      t match {
+        case hd: ElseIfThenAct => loop(hd.pred, res1)
+        case _ => res1
+      }
+    }
+
+    loop(e, Nil)
+  }
+
+  private final class Expanded[S <: Sys[S]](cases: List[Case[S]])
+    extends IAction.Option[S] with IActionImpl[S] {
+
+    def isDefined(implicit tx: S#Tx): Boolean = cases.exists(_._1.value)
+
+    def executeAction()(implicit tx: S#Tx): Unit = executeIfDefined()
+
+    def executeIfDefined()(implicit tx: S#Tx): Boolean = {
+      @tailrec
+      def loop(rem: List[Case[S]]): Boolean = rem match {
+        case (hdCond, hdAct) :: tail =>
+          if (hdCond.value) {
+            hdAct.executeAction()
+            true
+          } else {
+            loop(tail)
+          }
+
+        case Nil => false
+      }
+
+      loop(cases)
+    }
+  }
+}
+
+sealed trait ThenAct extends Act {
+  type Repr[S <: Sys[S]] = IAction.Option[S]
+
+  def cond  : Ex[Boolean]
+  def result: Act
+
+  def Else (branch: Act): Act =
+    ElseAct(this, branch)
+
+  final def ElseIf (cond: Ex[Boolean]): ElseIfAct =
+    ElseIfAct(this, cond)
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    val cases = ThenAct.gather(this)
+    new ThenAct.Expanded(cases)
+  }
+}
+
+object ElseAct {
+  private final class Expanded[S <: Sys[S]](pred: IAction.Option[S], default: IAction[S])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit =
+      if (!pred.executeIfDefined()) default.executeAction()
+  }
+}
+final case class ElseAct(pred: ThenAct, default: Act) extends Act {
+  type Repr[S <: Sys[S]] = IAction[S]
+
+  def cond: Ex[Boolean] = true
+
+  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    val predEx    = pred    .expand[S]
+    val defaultEx = default .expand[S]
+    new ElseAct.Expanded(predEx, defaultEx)
+  }
+}
+
+final case class ElseIfThenAct(pred: ThenAct, cond: Ex[Boolean], result: Act) extends ThenAct
+
 /** A side effecting conditional block. To turn it into a full `if-then-else` construction,
   * call `Else` or `ElseIf`.
   *
   * @see  [[Else]]
   * @see  [[ElseIf]]
   */
-//final case class IfThenAct(cond: Ex[Boolean], result: Act) // extends IfThenLike[A]
+final case class IfThenAct(cond: Ex[Boolean], result: Act) extends ThenAct

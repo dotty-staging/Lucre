@@ -25,15 +25,18 @@ final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], fun: A
 
   def isDefined(implicit tx: S#Tx): Boolean = in.value.isDefined
 
-  def executeAction()(implicit tx: S#Tx): Unit = {
+  def executeAction()(implicit tx: S#Tx): Unit = executeIfDefined()
+
+  def executeIfDefined()(implicit tx: S#Tx): Boolean = {
     val inOption = in.value
-    if (inOption.isDefined) {
+    inOption.isDefined && {
       val (_, d) = ctx.nested {
         val actEx = fun.expand[S]
         actEx.executeAction()
       }
 
       d.dispose()
+      true
     }
   }
 
