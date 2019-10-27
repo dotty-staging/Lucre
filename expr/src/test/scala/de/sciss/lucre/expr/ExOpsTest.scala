@@ -10,8 +10,8 @@ trait ExOpsTest {
 
     val tr = x.toTrig
 
-    val y: Ex[Option[Act]] = fail()
+    val y: Act /*Ex[Option[Act]]*/ = fail()
 
-    tr ---> y.orNop
+    tr ---> y // .orNop
   }
 }
