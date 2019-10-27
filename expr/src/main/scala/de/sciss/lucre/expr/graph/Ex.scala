@@ -84,9 +84,6 @@ object Ex {
   private val anyCanFlatMapSeq        = new CanFlatMapSeq       [Any]
   private val anyCanFlatMapSeqOption  = new CanFlatMapSeqOption [Any]
 
-  // XXX TODO:
-//  private val anyCanFlatMapSeq    = new CanFlatMapSeq   [Any]
-
   private lazy val _init: Unit = {
     Adjunct.addFactory(anyCanMapOption        )
     Adjunct.addFactory(anyCanMapSeq           )
@@ -230,17 +227,17 @@ object Ex {
 
   // --------------------- impl ---------------------
 
+  private[expr] def mkClosure[A, B](fun: Ex[A] => B): (It[A], Graph, B) = {
+    val b     = Graph.builder
+    val it    = b.allocToken[A]()
+    val (c, r) = Graph.withResult {
+      fun(it)
+    }
+    (it, c, r)
+  }
+
   // common to all type classes
   private abstract class MapSupport extends Adjunct with Adjunct.Factory {
-    def mkClosure[A, B](fun: Ex[A] => B): (It[A], Graph, B) = {
-      val b     = Graph.builder
-      val it    = b.allocToken[A]()
-      val (c, r) = Graph.withResult {
-        fun(it)
-      }
-      (it, c, r)
-    }
-
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this
   }
 

@@ -60,6 +60,8 @@ import scala.concurrent.stm.Ref
 //}
 
 // XXX TODO --- why is this using `Caching`?
+// Note: this needs `Caching` because the closure `fun` may depend on expressions from the
+// environment, and therefore... XXX TODO: we need to track fun.expand.changed
 final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[B], tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] with Caching {

@@ -16,7 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.impl.IEventImpl
 import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr
-import de.sciss.lucre.expr.graph.Ex
+import de.sciss.lucre.expr.graph.{Ex, It}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
@@ -59,6 +59,33 @@ object ExSeq {
       }
       val ch = Change(beforeB.result(), nowB.result())
       if (ch.isSignificant) Some(ch) else None
+    }
+  }
+
+  private final class FindExpanded[S <: Sys[S], A](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
+                                                   p: Ex[Boolean], tx0: S#Tx)
+                                                  (implicit targets: ITargets[S])
+    extends IExpr[S, Option[A]] {
+
+    def value(implicit tx: S#Tx): Option[A] = ???
+
+    def changed: IEvent[S, Change[Option[A]]] = ???
+
+    def dispose()(implicit tx: S#Tx): Unit = ???
+  }
+
+  final case class Find[A] private (in: Ex[Seq[A]], it: It[A], closure: Graph, p: Ex[Boolean])
+    extends Ex[Option[A]] {
+
+    type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
+
+    override def productPrefix: String = s"ExSeq$$Find" // serialization
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      val inEx = in.expand[S]
+      val itEx = it.expand[S]
+      import ctx.targets
+      new FindExpanded[S, A](inEx, itEx, p, tx)
     }
   }
 }

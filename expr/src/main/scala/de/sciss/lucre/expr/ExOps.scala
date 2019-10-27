@@ -244,6 +244,11 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   def endsWith(that: Ex[Seq[A]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, A](), x, that)
 //  def endsWith[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, B](), x, that)
 
+  def find(p: Ex[A] => Ex[Boolean]): Ex[Option[A]] = {
+    val (it, closure, res) = Ex.mkClosure(p)
+    ExSeq.Find(x, it, closure, res)
+  }
+
   def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Seq, B, To]): To =
     fm.flatMap(x, f)
 
