@@ -653,7 +653,7 @@ trait IExpr[S <: Base[S], +A] extends IChangePublisher[S, A]
 ```
 
 We have to think carefully if this solves the issue, otherwise we have a lot of work for nothing...
-Essentially we have to triplicate each event implementation :-/ There are 30 implementations of
+Essentially we have to triplicate each event implementation :-/ There are 26 implementations of
 `pullUpdate` in the current code base.
 
 Thus
@@ -732,3 +732,29 @@ performance advantage over having to calculate the binary-op value every time. I
 and code becomes much more concise, which is also a big advantage.
 
 -- I would say, we take the risk and remove the `Option` for `pullChange`.
+
+Let's see how this works with caching expressions, such as `Latch`:
+
+```
+def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+  if (pull(trig.changed).isEmpty) None else {
+    val newValue  = in.value
+    val oldValue  = ref.swap(newValue)
+    if (oldValue == newValue) None else Some(Change(oldValue, newValue))
+  }
+```
+
+Here we _do need_ to distinguish 'before' and 'now', so can't just define `pullChange`. Perhaps we add a `Boolean`
+argument to `pullChange` or add a way to query it on the `pull` argument:
+
+```
+def pullChange(pull: IPull[S])(implicit tx: S#Tx): A =
+  if (pull.isBefore || pull(trig.changed).isEmpty) ref() else {
+    val newValue  = init.value
+    ref() = newValue
+    newValue
+  }
+```
+
+So if `pullUpdate` calls `pullChange` twice, it will first return `ref()` and then return either `ref()` or the
+new value.

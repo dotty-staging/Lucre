@@ -23,11 +23,11 @@ import de.sciss.model.Change
 import scala.concurrent.stm.Ref
 
 object Latch {
-  private final class Expanded[S <: Sys[S], A](init: IExpr[S, A], trig: ITrigger[S], tx0: S#Tx)
+  private final class Expanded[S <: Sys[S], A](in: IExpr[S, A], trig: ITrigger[S], tx0: S#Tx)
                                               (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IEventImpl[S, Change[A]] with Caching {
 
-    private[this] val ref = Ref(init.value(tx0))
+    private[this] val ref = Ref(in.value(tx0))
 
     trig.changed.--->(this)(tx0)
 
@@ -39,13 +39,12 @@ object Latch {
 
     def changed: IEvent[S, Change[A]] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
       if (pull(trig.changed).isEmpty) None else {
-        val newValue  = init.value
+        val newValue  = in.value
         val oldValue  = ref.swap(newValue)
         if (oldValue == newValue) None else Some(Change(oldValue, newValue))
       }
-    }
   }
 }
 /** Latches the expression based on the trigger argument.
