@@ -2,7 +2,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.graph.Ex
 
-trait ExMapTest3 {
+trait ExTuplesCompile {
 //  def runWith(m: ExMap[String, Any]): Unit
 
   def runWith1(m: (Ex[String], Ex[_])*): Unit

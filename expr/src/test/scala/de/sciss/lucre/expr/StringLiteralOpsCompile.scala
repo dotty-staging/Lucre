@@ -1,7 +1,7 @@
 package de.sciss.lucre.expr
 
 // Note: IntelliJ highlights this all wrong.
-trait StringLiteralOpsTest {
+trait StringLiteralOpsCompile {
   import graph._
   import ExImport._
 

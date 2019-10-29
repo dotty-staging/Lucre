@@ -1,4 +1,4 @@
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.examples
 
 import scala.language.{higherKinds, implicitConversions}
 

@@ -2,7 +2,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.expr.graph.{Act, Ex}
 
-trait ExOpsTest {
+trait ExOpsCompile {
   def run(): Unit = {
     def fail(): Nothing = throw new NotImplementedError()
 

@@ -1,5 +1,6 @@
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.examples
 
+import de.sciss.lucre.expr.{Context, Graph, graph}
 import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
 
 /*

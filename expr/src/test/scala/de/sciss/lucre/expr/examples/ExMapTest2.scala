@@ -1,20 +1,23 @@
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.examples
 
 import de.sciss.lucre.expr.ExImport._
 import de.sciss.lucre.expr.graph._
+import de.sciss.lucre.expr.{Context, Graph, IntObj}
 import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
 
-object ExIfThenTest extends App {
+/*
+  expected output:
+
+  Some(66)
+
+ */
+object ExMapTest2 extends App {
   type S = InMemory
 
   val g = Graph {
-    val cond    = "cond".attr[Boolean](false)
-    val resEx   = If (cond) Then "hello-S" Else "world-S"
-    val resAct  = If (cond) Then PrintLn("hello-A") Else PrintLn("world-A")
-
-    LoadBang() ---> PrintLn("cond: " ++ cond.toStr)
-    LoadBang() ---> PrintLn(resEx)
-    LoadBang() ---> resAct
+    val fAttr = "foo".attr[Int]
+    val m = fAttr.map(_ * 2)
+    m.changed ---> PrintLn(m.toStr)
   }
 
   implicit val system: S = InMemory()
@@ -26,7 +29,7 @@ object ExIfThenTest extends App {
     val self  = IntObj.newConst(0): IntObj[S]
     val selfH = tx.newHandle(self)
     implicit val ctx: Context[S] = Context(Some(selfH))
-    self.attr.put("cond", BooleanObj.newConst(true /*false*/))
     g.expand.initControl()
+    self.attr.put("foo", IntObj.newConst(33))
   }
 }

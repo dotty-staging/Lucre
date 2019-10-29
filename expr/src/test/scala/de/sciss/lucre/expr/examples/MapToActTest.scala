@@ -1,5 +1,6 @@
-package de.sciss.lucre.expr
+package de.sciss.lucre.expr.examples
 
+import de.sciss.lucre.expr.{CellView, Context, ExImport, Graph, StringObj, graph}
 import de.sciss.lucre.stm.{InMemory, Obj, UndoManager, Workspace}
 
 /*

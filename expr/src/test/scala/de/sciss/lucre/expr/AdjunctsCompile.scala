@@ -4,7 +4,7 @@ import de.sciss.lucre.expr.graph.{CaseDef, Quote, Var}
 import de.sciss.lucre.expr.ExImport._
 
 // ensure this compiles
-trait AdjunctsTest {
+trait AdjunctsCompile {
   def test(): Unit = {
     val intVar1       = Var[Int]()
     val booleanVar1   = Var[Boolean]()
