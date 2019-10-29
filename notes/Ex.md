@@ -451,3 +451,284 @@ That translates to
 ```
 
 So we need a map from `Ex[Option[A]]` to `Act`, and a flat-map from `Ex[Option[A]]` to `Act` or `Act.Option`?
+
+---------
+
+# Notes 191029 - issue no. 20
+
+Here is the problematic example:
+
+```
+  val in1: Ex[Seq[Double]]  = "in1".attr(Seq.empty[Double])
+  val in2: Ex[Double]       = "in2".attr(0.0)
+  val out = in1.map(_ + in2)
+  val b   = LoadBang()
+  val c   = out.changed
+  val t   = b | c
+  t ---> PrintLn(Const("out = ") ++ out.mkString(", "))
+```
+
+It does not react to changes in `in2`, because `in2` is only referred to from the closure of `in1.map` which can
+only be expanded when the iteration variable has been set.
+
+Even if `in2` was collected and expanded in the outer environment, it would not propagate its changes, because the
+event listeners are not registered. It appears that we need an intermediate stage, where expanding the `Map`
+operation also "partially expands" the closure result expression. In the sense that we must prevent that the `value`
+of `It` is used in initialization code. Should this be the case at all anywhere? Where is `Caching` used?
+
+- in `Folder` because the peer does not emit `Change` instances. (This seems unproblematic, but also unnecessary,
+  as we can calculate the `before` values from the peer events nevertheless)
+- in `Timeline` (SP), probably for similar reasons
+- in `DropTarget` (LucreSwing), for storing default values
+- in `TimeStamp`; a bit odd the whole thing, is this ever triggered? Also stores just system time, does not
+  call `value` on any inputs
+- in `Obj.make`, because we also cannot get `Change` instances here
+- map and flat-map stuff; this is what we are working on here, so we can assume this is "axed" anyway
+
+So from what I can see, there is actually no case where `value` is initially called. Is it not the best idea then
+to simply expand the closure results directly with the containing object (e.g. map)? Then should we removing firing
+from `It.Expanded`? If we don't do that, we may also have the containing object be "deaf" to the closure result
+during iteration.
+
+But how do we generate a `Change[Seq[A]]` if an expression from the outside changes and the event reaches the
+closure result? It appears that the map and flat-map object necessarily have to be `Caching`...?
+
+```
+                  env
+                   |
+    seq . map      V "fire" (Change)
+
+                  res ---- res0, res1, res2   (iteration)
+
+```
+
+We need to fundamentally interfere in the event dispatch. If we "redirected" the `env.changed` event to 
+`seq.map` instead of `res`, and we'd call `res.value` to gather the sequences, we must provide a surrogate for
+`env` such that the map can "set" a `before` and `now` value. __Not nice__.
+
+Also, we can create a very tricky structure:
+
+
+```
+  val env: Ex[A]
+  val in: Ex[Seq[B]]
+
+  def combine(a: Ex[A], b: Ex[B]): Ex[B]
+
+  val m = in.map { b =>
+    val c = combine(env, b)
+    c.changed ---> PrintLn(c.toStr)
+    c
+  }
+
+```
+
+Although we could just say, side-effects inside closures are undefined behaviour. Let's say that. So:
+
+```
+  val env: Ex[A]
+  val in: Ex[Seq[B]]
+
+  def combine(a: Ex[A], b: Ex[B]): Ex[B]
+
+  val m = in.map { b =>
+    combine(env, b)
+  }
+
+```
+
+Note that `env` does not need to be lexically defined outside the closure. It could as well be
+
+```
+  val in: Ex[Seq[B]]
+
+  def combine(a: Ex[A], b: Ex[B]): Ex[B]
+
+  val m = in.map { b =>
+    val env: Ex[A] = "env".attr(default)
+    combine(env, b)
+  }
+
+```
+
+And we would have the same situation/problem. Thus there is no use to contemplate about determining the
+"location" of `env`.
+
+What we need is, if we conceptually think that `combine.changed ---> in.map.changed`, a way to __multiply__ the
+`pull` calls to `combine.changed`. Likewise, if the map operation was over an `Option`, we also need to "multiple"
+the pull calls - either there is one, or there is zero ("swallowed").
+
+Say we assume there are no side-effects inside the closure; then there is no leaf in the event dispatch inside the
+closure. Instead let's assume we have set up the `combine.changed ---> in.map.changed`, and thus in the _push_ phase
+of event dispatch, we will reach `in.map.changed`, and that will be necessarily the _only child_ of `combine.changed`.
+And thus we will encounter `pullUpdate` for `in.map.changed` at some point, and certainly before `combine.changed`.
+Now `IPush.Impl.apply` is implemented by caching the results of `pullUpdate`. What we could therefore do is
+isolate the call to `push.apply(combined.changed)` so that it's result is not cached and we can call `push.apply`
+multiple times. As a negative side-effect, this will also prevent caching of any upstream events that are actually
+drawn in from outside the closure.
+
+However, taking first the case where `It` is _not subject to the event_, `combine.changed` would need to call
+`it.value` in its `pullUpdate` body. We already have a `ThreadLocal` for the pull, because of the stupid caching.
+So `it.value` could signalise the special state to the current pull, and mark the current event under consideration
+as non-cached. In the second case where `It` is part of the event path, its `pullUpdate` and likewise mark the
+parent event as non-cached.
+
+In pseudo-code:
+
+```
+trait MapExpanded {
+  def pullUpdate = {
+    val chIn: Change[Seq[A]] = {
+      val opt = if (pull.contains(in)) pull(in) else None
+      opt.getOrElse {
+        val inV = in.value
+        Change(inV, inV)
+      }
+    }
+    val bBefore = Seq.newBuilder[A]
+    val bNow    = Seq.newBuilder[A]
+    if (pull.contains(closureRes)) {
+      chIn.now.foreach { e =>
+        it.set(e)
+        val opt = pull(closureRes) else None
+        val itCh = opt.getOrElse {
+          val itV = closureRes.value
+          Change(itV, itV)
+        }
+        bBefore += itCh.before
+        bNow    += itCh.now
+      }
+    } else {
+      chIn.now.foreach { e =>
+        it.set(e)
+        val itV = closureRes.value
+        bBefore += itV
+        bNow    += itV
+      }
+    }
+    val ch = Change(bBefore.result(), bNow.result()
+    if (ch.isSignificant) Some(ch) else None
+  }
+}
+```
+
+This leaves one crucial component - a change in sequence size. How can we handle this without resorting to
+`Caching`?' For __example__, consider:
+
+```
+val sq: Ex[Seq[Int]]
+val out = sq.map { e =>
+  e + sq.size
+}
+```
+
+Then if `sq` changes from `Seq(1, 2, 3)` to `Seq(1, 2)`, `out` changes from `Seq(4, 5, 6)` to `Seq(3, 4)`.
+We'd see a propagation for `sq` of `Change(Seq(1, 2, 3), Seq(1, 2))`, and a propagation for `sq.size` 
+of `Change(3, 2)`. For the last element, there is no "now" iteration, but to obtain the `before` for `out`, we
+anyway need to execute the iteration. So what happens if we provide a `Change(e, e)` for `it.changed` in that
+particular iteration, using a new hook in the `IPull` API. We could thus bypass an `isSignificant` check at that
+point. However, the `pull(closureRes)` might decide to return a `None` if the corresponding change is not
+significant __!__.
+
+A possible way out of this situation, is to add two methods to the pull API:
+
+- `def applyBefore[A](source: IChangeEvent[S, A]): Option[A]`
+- `def applyNow   [A](source: IChangeEvent[S, A]): Option[A]`
+
+with
+
+```
+trait IChangeEvent[S <: Base[S], +A] extends IEvent[S, Change[A]] {
+  def pullBefore(pull: IPull[S])(implicit tx: S#Tx): A
+  def pullNow   (pull: IPull[S])(implicit tx: S#Tx): A
+}
+```
+
+and
+
+```
+trait IChangePublisher[S <: Base[S], +A] extends IPublisher[S, Change[A]]
+
+trait IExpr[S <: Base[S], +A] extends IChangePublisher[S, A]
+```
+
+We have to think carefully if this solves the issue, otherwise we have a lot of work for nothing...
+Essentially we have to triplicate each event implementation :-/ There are 30 implementations of
+`pullUpdate` in the current code base.
+
+Thus
+
+```
+trait MapExpanded {
+  def pullUpdate = {
+    val chIn: Change[Seq[A]] = {
+      val opt = if (pull.contains(in)) pull(in) else None
+      opt.getOrElse {
+        val inV = in.value
+        Change(inV, inV)
+      }
+    }
+    val bBefore = Seq.newBuilder[A]
+    val bNow    = Seq.newBuilder[A]
+    if (pull.contains(closureRes)) {
+      chIn.before.foreach { e =>
+        it.set(e)
+        val itV = pullBefore(closureRes)
+        bBefore += itCh.before
+      }
+      chIn.now.foreach { e =>
+        it.set(e)
+        val itV = pullNow(closureRes)
+        bNow += itCh.now
+      }
+    } else {
+      chIn.now.foreach { e =>
+        it.set(e)
+        val itV = closureRes.value
+        bBefore += itV
+        bNow    += itV
+      }
+    }
+    val ch = Change(bBefore.result(), bNow.result()
+    if (ch.isSignificant) Some(ch) else None
+  }
+
+  def pullBefore = {
+    val inSeqV: Seq[A] = if (pull.contains(in)) pullBefore(in) else in.value
+    val bBefore = Seq.newBuilder[A]
+    val pullC = pull.contains(closureRes)
+    inSeqV.foreach { e =>
+      it.set(e)
+      val itV = if (pullC) pullBefore(closureRes) else closureRes.value
+      bBefore += itCh.before
+    }
+    bBefore.result()
+  }
+}
+```
+
+Perhaps we can avoid the duplication of `pullBefore` and `pullNow`, using only `pullChange` and marking in `Pull`
+whether we are in `before` or `now` phase (also add: `resolveChange`). Then we might even drop most implementations
+of `pullUpdate` by mixing in a default implementation that just calls `pull.applyBefore` and `pull.applyNow` and
+returns the `Change` with `isSignificant` check. For example, `Attr`:
+
+```
+  def pullChange(pull: IPull[S])(implicit tx: S#Tx): A = {
+    val dch = default.changed
+    if (pull.contains(dch) && ref.get(tx.peer).isEmpty) {
+      pullChange(dch)
+    } else if (pull.isOrigin(this)) {
+      pull.resolveChange
+    } else {
+      this.value
+    }
+  }
+```
+
+The last branch may be surprising, but perhaps we can indeed do without returning `Option[A]`, as practically all
+sinks of expressions use `(if (pull.contains(source) pull(source) else None).getOrElse(source.value)`.
+There are exceptions, like `BinaryOp`, so the question is if wrapping everything in `Option` indeed gives us a
+performance advantage over having to calculate the binary-op value every time. I suspect that this is negligible,
+and code becomes much more concise, which is also a big advantage.
+
+-- I would say, we take the risk and remove the `Option` for `pullChange`.
