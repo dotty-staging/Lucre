@@ -13,16 +13,15 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr
 import de.sciss.lucre.expr.graph.{Ex, It}
 import de.sciss.lucre.stm.Sys
-import de.sciss.model.Change
 
 object ExSeq {
   private final class Expanded[S <: Sys[S], A](elems: Seq[IExpr[S, A]])(implicit protected val targets: ITargets[S])
-    extends IExpr[S, Seq[A]] with IEventImpl[S, Change[Seq[A]]] {
+    extends IExpr[S, Seq[A]] with IChangeEventImpl[S, Seq[A]] {
 
     def init()(implicit tx: S#Tx): this.type = {
       elems.foreach { in =>
@@ -39,26 +38,17 @@ object ExSeq {
       }
     }
 
-    def changed: IEvent[S, Change[Seq[A]]] = this
+    def changed: IChangeEvent[S, Seq[A]] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[A]]] = {
-      val beforeB = Seq.newBuilder[A]
-      val nowB    = Seq.newBuilder[A]
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Seq[A] = {
+      val b = Seq.newBuilder[A]
+      b.sizeHint(elems)
       elems.foreach { in =>
         val evt = in.changed
-        val opt: Option[Change[A]] = if (pull.contains(evt)) pull(evt) else None
-        opt match {
-          case Some(Change(beforeV, nowV)) =>
-            beforeB += beforeV
-            nowB    += nowV
-          case None =>
-            val v = in.value
-            beforeB += v
-            nowB    += v
-        }
+        val v = if (pull.contains(evt)) pull.applyChange(evt, isNow = isNow) else in.value
+        b += v
       }
-      val ch = Change(beforeB.result(), nowB.result())
-      if (ch.isSignificant) Some(ch) else None
+      b.result()
     }
   }
 
@@ -69,7 +59,7 @@ object ExSeq {
 
     def value(implicit tx: S#Tx): Option[A] = ???
 
-    def changed: IEvent[S, Change[Option[A]]] = ???
+    def changed: IChangeEvent[S, Option[A]] = ???
 
     def dispose()(implicit tx: S#Tx): Unit = ???
   }

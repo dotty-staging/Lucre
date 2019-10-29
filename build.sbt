@@ -9,11 +9,12 @@ lazy val deps = new {
   }
   val core = new {
     val equal     = "0.1.4"
+    val model     = "0.3.4"
     val scalaSTM  = "0.9.1"
   }
   val expr = new {
+    def equal     = core.equal
     val fileUtil  = "1.1.3"
-    val model     = "0.3.4"
     val numbers   = "0.2.0"
     val span      = "1.4.3"
   }
@@ -109,7 +110,8 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   .settings(
     licenses := Seq(agpl),
     libraryDependencies ++= Seq(
-      "de.sciss"      %% "equal"     % deps.core.equal,   // to-do: compile-only
+      "de.sciss"      %% "equal"     % deps.core.equal % Provided,
+      "de.sciss"      %% "model"     % deps.core.model,
       "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM
     ),
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
@@ -130,8 +132,8 @@ lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
   .settings(
     licenses := Seq(agpl),
     libraryDependencies ++= Seq(
+      "de.sciss" %% "equal"     % deps.expr.equal % Provided,
       "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
-      "de.sciss" %% "model"     % deps.expr.model,
       "de.sciss" %% "span"      % deps.expr.span,
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)

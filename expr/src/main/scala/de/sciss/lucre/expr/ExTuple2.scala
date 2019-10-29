@@ -13,16 +13,15 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.stm.Sys
-import de.sciss.model.Change
 
 object ExTuple2 {
   private[lucre] final class Expanded[S <: Sys[S], T1, T2](val _1: IExpr[S, T1], val _2: IExpr[S, T2])
                                                          (implicit protected val targets: ITargets[S])
-    extends IExpr[S, (T1, T2)] with IEventImpl[S, Change[(T1, T2)]] {
+    extends IExpr[S, (T1, T2)] with IChangeEventImpl[S, (T1, T2)] {
 
     def init()(implicit tx: S#Tx): this.type = {
       _1.changed ---> changed
@@ -37,23 +36,14 @@ object ExTuple2 {
       _2.changed -/-> changed
     }
 
-    def changed: IEvent[S, Change[(T1, T2)]] = this
+    def changed: IChangeEvent[S, (T1, T2)] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[(T1, T2)]] = {
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): (T1, T2) = {
       val _1Evt = _1.changed
       val _2Evt = _2.changed
-      val _1Opt: Option[Change[T1]] = if (pull.contains(_1Evt)) pull(_1Evt) else None
-      val _2Opt: Option[Change[T2]] = if (pull.contains(_2Evt)) pull(_2Evt) else None
-      val _1Ch = _1Opt.getOrElse {
-        val v1 = _1.value
-        Change(v1, v1)
-      }
-      val _2Ch = _2Opt.getOrElse {
-        val v2 = _2.value
-        Change(v2, v2)
-      }
-      val ch = Change((_1Ch.before, _2Ch.before), (_1Ch.now, _2Ch.now))
-      if (ch.isSignificant) Some(ch) else None
+      val _1V: T1 = if (pull.contains(_1Evt)) pull.applyChange(_1Evt, isNow = isNow) else _1.value
+      val _2V: T2 = if (pull.contains(_2Evt)) pull.applyChange(_2Evt, isNow = isNow) else _2.value
+      (_1V, _2V)
     }
   }
 }

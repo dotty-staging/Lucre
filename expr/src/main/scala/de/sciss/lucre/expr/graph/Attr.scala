@@ -14,8 +14,8 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeGenerator
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
 import de.sciss.lucre.expr.impl.CellViewImpl.CatVarImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl, IExpr}
@@ -235,7 +235,7 @@ object Attr {
     private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
                                                         tx0: S#Tx)
                                                        (implicit protected val targets: ITargets[S])
-      extends IExpr[S, A] with IGenerator[S, Change[A]] {
+      extends IExpr[S, A] with IChangeGenerator[S, A] {
 
       private[this] val ref = Ref(attrView()(tx0))
 
@@ -256,14 +256,14 @@ object Attr {
         opt.getOrElse(default.value)
       }
 
-      private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+      private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
         val dch = default.changed
         if (pull.contains(dch) && ref.get(tx.peer).isEmpty) {
-          pull(dch)
+          pull.applyChange(dch, isNow = isNow)
         } else if (pull.isOrigin(this)) {
-          Some(pull.resolve)
+          pull.resolveChange(isNow = isNow)
         } else {
-          None
+          value
         }
       }
 
@@ -272,7 +272,7 @@ object Attr {
         obsAttr.dispose()
       }
 
-      def changed: IEvent[S, Change[A]] = this
+      def changed: IChangeEvent[S, A] = this
     }
   }
   // N.B. we use a trait here not a case class, because
@@ -283,7 +283,7 @@ object Attr {
 
   private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
                                                      (implicit protected val targets: ITargets[S])
-    extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
+    extends IExpr[S, Option[A]] with IChangeGenerator[S, Option[A]] {
 
     // println("Attr.Expanded - created")
 
@@ -298,10 +298,10 @@ object Attr {
 
     def value(implicit tx: S#Tx): Option[A] = attrView()
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
-      Some(pull.resolve)
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[A] =
+      pull.resolveChange(isNow = isNow)
 
-    def changed: IEvent[S, Change[Option[A]]] = this
+    def changed: IChangeEvent[S, Option[A]] = this
 
     def dispose()(implicit tx: S#Tx): Unit = {
       // println("Attr.Expanded - dispose")

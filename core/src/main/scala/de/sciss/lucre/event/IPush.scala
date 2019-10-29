@@ -15,6 +15,7 @@ package de.sciss.lucre.event
 
 import de.sciss.equal.Implicits._
 import de.sciss.lucre.stm.Base
+import de.sciss.model.Change
 
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
@@ -109,6 +110,12 @@ object IPush {
       update.asInstanceOf[A]
     }
 
+    def resolveChange[A](isNow: Boolean): A = {
+      logEvent(s"${indent}resolveChange")
+      val ch = update.asInstanceOf[Change[A]]
+      if (isNow) ch.now else ch.before
+    }
+
     // caches pulled values
     def apply[A](source: IEvent[S, A]): Option[A] = {
       incIndent()
@@ -121,6 +128,26 @@ object IPush {
             logEvent(s"${indent}pull $source  (new ? true)")
             val res = source.pullUpdate(this)
             pullMap += ((source, res))
+            res
+        }
+      } finally {
+        decIndent()
+      }
+    }
+
+    // caches pulled values
+    def applyChange[A](source: IChangeEvent[S, A], isNow: Boolean): A = {
+      incIndent()
+      try {
+        pullMap.get(source) match {
+          case Some(res) if res.isDefined =>
+            logEvent(s"${indent}pull $source  (new ? false)")
+            val opt = res.asInstanceOf[Option[A]]
+            opt.get
+          case _ =>
+            logEvent(s"${indent}pull $source  (new ? true)")
+            val res = source.pullChange(this, isNow = isNow)
+            pullMap += ((source, Some(res)))
             res
         }
       } finally {
@@ -144,11 +171,15 @@ trait IPull[S <: Base[S]] {
   /** Assuming that the caller is origin of the event, resolves the update of the given type. */
   def resolve[A]: A
 
+  def resolveChange[A](isNow: Boolean): A
+
   /** Retrieves the immediate parents from the push phase. */
   def parents(source: IEvent[S, Any]): IPush.Parents[S]
 
   /** Pulls the update from the given source. */
   def apply[A](source: IEvent[S, A]): Option[A]
+
+  def applyChange[A](source: IChangeEvent[S, A], isNow: Boolean): A
 
   /** Whether the selector has been visited during the push phase. */
   def contains(source: IEvent[S, Any]): Boolean
