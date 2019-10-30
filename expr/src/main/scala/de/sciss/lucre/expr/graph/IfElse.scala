@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.{IChangeEventImpl, IEventImpl}
+import de.sciss.lucre.event.{IChangeEvent, IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
@@ -86,7 +86,7 @@ object Else {
 
   private final class Expanded[S <: Sys[S], A](cases: List[Case[S, A]], default: IExpr[S, A], tx0: S#Tx)
                                               (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IEventImpl[S, Change[A]] {
+    extends IExpr[S, A] with IChangeEventImpl[S, A] {
 
     cases.foreach { case (cond, res) =>
       cond.changed.--->(this)(tx0)
@@ -106,9 +106,11 @@ object Else {
       loop(cases)
     }
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx) = ???
+
+    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
       type CaseChange = (Change[Boolean], Change[A])
 
       // XXX TODO --- this evaluates all branches; we could optimize

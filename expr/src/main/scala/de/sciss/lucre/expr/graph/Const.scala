@@ -14,9 +14,8 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.event.{IDummy, IEvent}
+import de.sciss.lucre.event.{IChangeEvent, IDummy}
 import de.sciss.lucre.stm.{Base, Sys}
-import de.sciss.model.Change
 
 object Const {
   private[sciss] final class Expanded[S <: Base[S], A](peer: A)
@@ -24,7 +23,7 @@ object Const {
 
     override def toString: String = peer.toString
 
-    def changed: IEvent[S, Change[A]] = IDummy.apply
+    def changed: IChangeEvent[S, A] = IDummy.applyChange
 
     def value(implicit tx: S#Tx): A = peer
 

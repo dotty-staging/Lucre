@@ -13,15 +13,14 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.IExpr
 import de.sciss.lucre.stm.Base
-import de.sciss.model.Change
 
 abstract class MappedIExpr[S <: Base[S], A1, A](in: IExpr[S, A1], tx0: S#Tx)
                                              (implicit protected val targets: ITargets[S])
-  extends IExpr[S, A] with IEventImpl[S, Change[A]] {
+  extends IExpr[S, A] with IChangeEventImpl[S, A] {
 
   in.changed.--->(this)(tx0)
 
@@ -29,15 +28,20 @@ abstract class MappedIExpr[S <: Base[S], A1, A](in: IExpr[S, A1], tx0: S#Tx)
 
   def value(implicit tx: S#Tx): A = mapValue(in.value)
 
-  private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
-    pull(in.changed).flatMap { ch =>
-      val before  = mapValue(ch.before )
-      val now     = mapValue(ch.now    )
-      if (before == now) None else Some(Change(before, now))
-    }
+  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
+    val v = pull.applyChange(in.changed, isNow = isNow)
+    mapValue(v)
+  }
+
+//  private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+//    pull(in.changed).flatMap { ch =>
+//      val before  = mapValue(ch.before )
+//      val now     = mapValue(ch.now    )
+//      if (before == now) None else Some(Change(before, now))
+//    }
 
   def dispose()(implicit tx: S#Tx): Unit =
     in.changed.-/->(this)
 
-  def changed: IEvent[S, Change[A]] = this
+  def changed: IChangeEvent[S, A] = this
 }

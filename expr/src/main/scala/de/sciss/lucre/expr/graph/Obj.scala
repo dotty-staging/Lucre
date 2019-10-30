@@ -14,8 +14,8 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.event.impl.IChangeGenerator
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl, ITriggerConsumer}
@@ -74,8 +74,8 @@ object Obj {
   private abstract class AbstractMakeExpanded[S <: Sys[S]]
     extends IExpr[S, Obj]
       with IAction[S]
-      with IGenerator       [S, Change[Obj]]
-      with ITriggerConsumer [S, Change[Obj]]
+      with IChangeGenerator [S, Obj]
+      with ITriggerConsumer [S, Obj]
       with Caching {
 
     // ---- abstract ----
@@ -101,7 +101,7 @@ object Obj {
         Some(Change(before, now))
     }
 
-    final def changed: IEvent[S, Change[Obj]] = this
+    final def changed: IChangeEvent[S, Obj] = this
   }
 
   private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
@@ -235,7 +235,7 @@ object Obj {
 
   private final class AttrExpanded[S <: Sys[S], A](obj: IExpr[S, Obj], key: String, tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], bridge: Bridge[A])
-    extends IExpr[S, Option[A]] with IGenerator[S, Change[Option[A]]] {
+    extends IExpr[S, Option[A]] with IChangeGenerator[S, Option[A]] {
 
     override def toString: String = s"graph.Obj.AttrExpanded($obj, $key)@${hashCode().toHexString}"
 
@@ -275,10 +275,13 @@ object Obj {
 
     def value(implicit tx: S#Tx): Option[A] = viewRef().flatMap(_.apply())
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
-      Some(pull.resolve)
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[A] =
+      pull.resolveChange(isNow = isNow)
 
-    def changed: IEvent[S, Change[Option[A]]] = this
+//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
+//      Some(pull.resolve)
+
+    def changed: IChangeEvent[S, Option[A]] = this
 
     def dispose()(implicit tx: S#Tx): Unit = {
       objObs  .dispose()

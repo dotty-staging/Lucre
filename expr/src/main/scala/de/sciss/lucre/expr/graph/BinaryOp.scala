@@ -17,10 +17,9 @@ package graph
 import de.sciss.file._
 import de.sciss.lucre.adjunct.Adjunct.{Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
-import de.sciss.model.Change
 import de.sciss.span.SpanLike
 
 object BinaryOp {
@@ -691,39 +690,19 @@ object BinaryOp {
   private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],
                                                                    a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
                                                                   (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IEventImpl[S, Change[A]] {
+    extends IExpr[S, A] with IChangeEventImpl[S, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
 
     override def toString: String = s"BinaryOp($op, $a, $b)"
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
-      val _1c = a.changed
-      val _2c = b.changed
-
-      val _1ch = if (pull.contains(_1c)) pull(_1c) else None
-      val _2ch = if (pull.contains(_2c)) pull(_2c) else None
-
-      (_1ch, _2ch) match {
-        case (Some(ach), None) =>
-          val bv      = b.value
-          val before  = value1(ach.before, bv)
-          val now     = value1(ach.now, bv)
-          if (before == now) None else Some(Change(before, now))
-        case (None, Some(bch)) =>
-          val av      = a.value
-          val before  = value1(av, bch.before)
-          val now     = value1(av, bch.now)
-          if (before == now) None else Some(Change(before, now))
-        case (Some(ach), Some(bch)) =>
-          val before  = value1(ach.before, bch.before)
-          val now     = value1(ach.now, bch.now)
-          if (before == now) None else Some(Change(before, now))
-        case _ => None
-      }
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
+      val aV = pull.applyChange(a.changed, isNow = isNow)
+      val bV = pull.applyChange(b.changed, isNow = isNow)
+      value1(aV, bV)
     }
 
     @inline

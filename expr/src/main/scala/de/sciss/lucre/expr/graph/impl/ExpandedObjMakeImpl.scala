@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{Caching, IEvent, IPush, ITargets}
+import de.sciss.lucre.event.impl.IChangeGenerator
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPush, ITargets}
 import de.sciss.lucre.expr.impl.ITriggerConsumer
 import de.sciss.lucre.expr.{IAction, IExpr}
 import de.sciss.lucre.stm.Sys
@@ -27,8 +27,8 @@ import scala.concurrent.stm.Ref
 abstract class ExpandedObjMakeImpl[S <: Sys[S], A](implicit protected val targets: ITargets[S])
   extends IExpr[S, A]
     with IAction[S]
-    with IGenerator       [S, Change[A]]
-    with ITriggerConsumer [S, Change[A]]
+    with IChangeGenerator [S, A]
+    with ITriggerConsumer [S, A]
     with Caching {
 
   /** Must not be a `val` (used during initialization). */
@@ -50,5 +50,5 @@ abstract class ExpandedObjMakeImpl[S <: Sys[S], A](implicit protected val target
     Some(Change(before, now))
   }
 
-  def changed: IEvent[S, Change[A]] = this
+  def changed: IChangeEvent[S, A] = this
 }

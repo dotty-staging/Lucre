@@ -13,17 +13,17 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.expr.{Context, IExpr}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.graph.{Ex, It}
+import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
                                                 /* closure: Graph, */ fun: Ex[B], tx0: S#Tx)
                                                (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IExpr[S, Seq[B]] with IEventImpl[S, Change[Seq[B]]] {
+  extends IExpr[S, Seq[B]] with IChangeEventImpl[S, Seq[B]] {
 
   in.changed.--->(this)(tx0)
 
@@ -61,7 +61,9 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
       outSeq
     }
 
-  private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[B]]] =
+  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Seq[B] = ???
+
+  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[B]]] =
     pull(in.changed).flatMap { inCh =>
       val before  = valueOf(inCh.before )
       val now     = valueOf(inCh.now    )
@@ -71,5 +73,5 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
   def dispose()(implicit tx: S#Tx): Unit =
     in.changed.-/->(this)
 
-  def changed: IEvent[S, Change[Seq[B]]] = this
+  def changed: IChangeEvent[S, Seq[B]] = this
 }

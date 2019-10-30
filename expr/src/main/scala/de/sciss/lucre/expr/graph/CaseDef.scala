@@ -15,8 +15,8 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeGenerator
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IExpr, graph}
 import de.sciss.lucre.stm.Sys
@@ -59,7 +59,7 @@ object Quote {
 
     def dispose()(implicit tx: S#Tx): Unit = in.dispose()
 
-    def changed: IEvent[S, Change[A]] = in.changed
+    def changed: IChangeEvent[S, A] = in.changed
   }
 
   trait Expanded[S <: Sys[S], A] extends CaseDef.Expanded[S, A]
@@ -112,7 +112,7 @@ object Var {
 
   private final class ExpandedImpl[S <: Sys[S], A](init: IExpr[S, A], tx0: S#Tx)
                                               (implicit protected val targets: ITargets[S], val fromAny: FromAny[A])
-    extends Expanded[S, A] with IGenerator[S, Change[A]] {
+    extends Expanded[S, A] with IChangeGenerator[S, A] {
 
     private[this] val ref     = Ref(init)
     private[this] val selRef  = Ref.make[A]
@@ -136,12 +136,9 @@ object Var {
       }
     }
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
-      if (pull.isOrigin(this)) {
-        Some(pull.resolve)
-      } else {
-        pull(ref().changed)
-      }
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A =
+      if (pull.isOrigin(this)) pull.resolveChange(isNow = isNow)
+      else pull.applyChange(ref().changed, isNow = isNow)
 
     def select(value: Any)(implicit tx: S#Tx): Boolean =
       fromAny.fromAny(value) match {
@@ -161,7 +158,7 @@ object Var {
     def dispose()(implicit tx: S#Tx): Unit =
       ref().changed -/-> changed
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
   }
 
   private final case class Impl[A](init: Ex[A])(implicit val fromAny: FromAny[A]) extends Var[A] {

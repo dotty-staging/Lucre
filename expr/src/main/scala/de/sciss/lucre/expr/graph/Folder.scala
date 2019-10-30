@@ -15,8 +15,8 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.edit.EditFolder
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.event.impl.IChangeGenerator
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedObjMakeImpl, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IExpr}
@@ -119,7 +119,7 @@ object Folder {
 
   private abstract class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, Folder], init: A, tx0: S#Tx)
                                                      (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IGenerator[S, Change[A]] with Caching {
+    extends IExpr[S, A] with IChangeGenerator[S, A] with Caching {
 
     private[this] val obs   = Ref[Disposable[S#Tx]](Disposable.empty)
     private[this] val ref   = Ref(init)
@@ -148,20 +148,22 @@ object Folder {
     def value(implicit tx: S#Tx): A =
       IPush.tryPull(this).fold(ref())(_.now)
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
 
     def dispose()(implicit tx: S#Tx): Unit = {
       in.changed.-/->(this)
       obs.swap(Disposable.empty).dispose()
     }
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
-      if (pull.isOrigin(this)) Some(pull.resolve)
-      else {
-        pull(in.changed).flatMap { ch =>
-          setObj(ch.now)
-        }
-      }
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx) = ???
+
+//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+//      if (pull.isOrigin(this)) Some(pull.resolve)
+//      else {
+//        pull(in.changed).flatMap { ch =>
+//          setObj(ch.now)
+//        }
+//      }
   }
 
   private final class SizeExpanded[S <: Sys[S]](in: IExpr[S, Folder], tx0: S#Tx)

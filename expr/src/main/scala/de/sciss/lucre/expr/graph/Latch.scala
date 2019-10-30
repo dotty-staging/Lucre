@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.event.impl.{IChangeEventImpl, IEventImpl}
+import de.sciss.lucre.event.{Caching, IChangeEvent, IEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.{Context, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
@@ -25,7 +25,7 @@ import scala.concurrent.stm.Ref
 object Latch {
   private final class Expanded[S <: Sys[S], A](in: IExpr[S, A], trig: ITrigger[S], tx0: S#Tx)
                                               (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IEventImpl[S, Change[A]] with Caching {
+    extends IExpr[S, A] with IChangeEventImpl[S, A] with Caching {
 
     private[this] val ref = Ref(in.value(tx0))
 
@@ -37,9 +37,11 @@ object Latch {
     def dispose()(implicit tx: S#Tx): Unit =
       trig.changed.-/->(this)
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx) = ???
+
+    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
       if (pull(trig.changed).isEmpty) None else {
         val newValue  = in.value
         val oldValue  = ref.swap(newValue)

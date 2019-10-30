@@ -15,10 +15,9 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.lucre.adjunct.Adjunct
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
-import de.sciss.model.Change
 
 object QuaternaryOp {
   abstract class Op[A, B, C, D, E] extends Product {
@@ -56,7 +55,7 @@ object QuaternaryOp {
                                                                        c: IExpr[S, A3], d: IExpr[S, A4],
                                                                        tx0: S#Tx)
                                                                   (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IEventImpl[S, Change[A]] {
+    extends IExpr[S, A] with IChangeEventImpl[S, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
@@ -65,29 +64,20 @@ object QuaternaryOp {
 
     override def toString: String = s"QuaternaryOp($op, $a, $b, $c, $d)"
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
       val _1c = a.changed
       val _2c = b.changed
       val _3c = c.changed
       val _4c = d.changed
 
-      val _1Ch0 = if (pull.contains(_1c)) pull(_1c) else None
-      val _2Ch0 = if (pull.contains(_2c)) pull(_2c) else None
-      val _3Ch0 = if (pull.contains(_3c)) pull(_3c) else None
-      val _4Ch0 = if (pull.contains(_4c)) pull(_4c) else None
+      val _1v = if (pull.contains(_1c)) pull.applyChange(_1c, isNow = isNow) else a.value
+      val _2v = if (pull.contains(_2c)) pull.applyChange(_2c, isNow = isNow) else b.value
+      val _3v = if (pull.contains(_3c)) pull.applyChange(_3c, isNow = isNow) else c.value
+      val _4v = if (pull.contains(_4c)) pull.applyChange(_4c, isNow = isNow) else d.value
 
-
-      val _1Ch = _1Ch0.getOrElse { val v = a.value; Change(v, v) }
-      val _2Ch = _2Ch0.getOrElse { val v = b.value; Change(v, v) }
-      val _3Ch = _3Ch0.getOrElse { val v = c.value; Change(v, v) }
-      val _4Ch = _4Ch0.getOrElse { val v = d.value; Change(v, v) }
-
-      val before  = value1(_1Ch.before , _2Ch.before , _3Ch.before , _4Ch.before)
-      val now     = value1(_1Ch.now    , _2Ch.now    , _3Ch.now    , _4Ch.now   )
-      val ch      = Change(before, now)
-      if (ch.isSignificant) Some(ch) else None
+      value1(_1v, _2v, _3v, _4v)
     }
 
     @inline

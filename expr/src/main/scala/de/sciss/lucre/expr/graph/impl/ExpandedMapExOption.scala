@@ -13,12 +13,12 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.expr.{Context, IExpr}
-import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.lucre.stm.TxnLike.peer
+import de.sciss.lucre.stm.{Disposable, Sys}
 import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
@@ -64,7 +64,7 @@ import scala.concurrent.stm.Ref
 // environment, and therefore... XXX TODO: we need to track fun.expand.changed
 final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[B], tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IExpr[S, Option[B]] with IEventImpl[S, Change[Option[B]]] with Caching {
+  extends IExpr[S, Option[B]] with IChangeEventImpl[S, Option[B]] with Caching {
 
   in.changed.--->(this)(tx0)
 
@@ -84,7 +84,9 @@ final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun:
       Some(tup)
     }
 
-  private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[B]]] =
+  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[B] = ???
+
+  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[B]]] =
     pull(in.changed).flatMap { inCh =>
       val beforeTup = ref()
       beforeTup.foreach(_._2.dispose())
@@ -100,5 +102,5 @@ final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun:
     ref.swap(None).foreach(_._2.dispose())
   }
 
-  def changed: IEvent[S, Change[Option[B]]] = this
+  def changed: IChangeEvent[S, Option[B]] = this
 }

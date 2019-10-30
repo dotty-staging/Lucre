@@ -16,8 +16,8 @@ package de.sciss.lucre.expr.graph
 import java.util.Locale
 
 import de.sciss.lucre.event.IPush.Parents
-import de.sciss.lucre.event.impl.{IEventImpl, IGenerator}
-import de.sciss.lucre.event.{Caching, IEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.event.impl.{IChangeEventImpl, IGenerator}
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.{Context, IAction, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
@@ -89,12 +89,14 @@ object TimeStamp {
   }
 
   private final class Expanded[S <: Sys[S]](implicit protected val targets: ITargets[S])
-    extends IExpr[S, Long] with IEventImpl[S, Change[Long]] with Caching {
+    extends IExpr[S, Long] with IChangeEventImpl[S, Long] with Caching {
 
     // should we use universe.scheduler?
     private[this] val ref = Ref(System.currentTimeMillis())
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[Long]] = {
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Long = ???
+
+    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[Long]] = {
       val p: Parents[S] = pull.parents(this)
       if (p.exists(pull(_).isDefined)) {
         val now     = System.currentTimeMillis()
@@ -106,7 +108,7 @@ object TimeStamp {
     def value(implicit tx: S#Tx): Long =
       IPush.tryPull(this).fold(ref())(_.now)
 
-    def changed: IEvent[S, Change[Long]] = this
+    def changed: IChangeEvent[S, Long] = this
 
     def dispose()(implicit tx: S#Tx): Unit = ()
   }

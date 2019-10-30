@@ -14,17 +14,18 @@
 package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.event.IPush.Parents
-import de.sciss.lucre.event.{IPublisher, IPull}
+import de.sciss.lucre.event.{IChangePublisher, IPull}
 import de.sciss.lucre.expr.ITrigger
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
+import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
 
 /** A helper implementation for mapping trigger inputs to
   * outputs. Can be used for example with `IAction` and `IGenerator`.
   */
-trait ITriggerConsumer[S <: Sys[S], A] extends IPublisher[S, A] {
+trait ITriggerConsumer[S <: Sys[S], A] extends IChangePublisher[S, A] {
   private[this] val inputs = Ref(List.empty[ITrigger[S]])
 
   def dispose()(implicit tx: S#Tx): Unit =
@@ -35,9 +36,11 @@ trait ITriggerConsumer[S <: Sys[S], A] extends IPublisher[S, A] {
   def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit =
     tr.changed ---> this.changed
 
-  protected def trigReceived()(implicit tx: S#Tx): Option[A]
+  protected def trigReceived()(implicit tx: S#Tx): Option[Change[A]]
 
-  private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx) : Option[A] = {
+  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = ???
+
+  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[A]] = {
     if (pull.isOrigin(this.changed)) Some(pull.resolve)
     else {
       val p: Parents[S] = pull.parents(this.changed)

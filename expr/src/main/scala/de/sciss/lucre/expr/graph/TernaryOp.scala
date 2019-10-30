@@ -16,10 +16,9 @@ package graph
 
 import de.sciss.lucre.adjunct.Adjunct.{Num, Widen2}
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.stm.{Base, Sys}
-import de.sciss.model.Change
 
 object TernaryOp {
   abstract class Op[A, B, C, D] extends Product {
@@ -140,7 +139,7 @@ object TernaryOp {
                                                                    a: IExpr[S, A1], b: IExpr[S, A2],
                                                                    c: IExpr[S, A3], tx0: S#Tx)
                                                                   (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IEventImpl[S, Change[A]] {
+    extends IExpr[S, A] with IChangeEventImpl[S, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
@@ -148,53 +147,65 @@ object TernaryOp {
 
     override def toString: String = s"TernaryOp($op, $a, $b, $c)"
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
       val _1c = a.changed
       val _2c = b.changed
       val _3c = c.changed
 
-      val _1ch = if (pull.contains(_1c)) pull(_1c) else None
-      val _2ch = if (pull.contains(_2c)) pull(_2c) else None
-      val _3ch = if (pull.contains(_3c)) pull(_3c) else None
+      val _1v = if (pull.contains(_1c)) pull.applyChange(_1c, isNow = isNow) else a.value
+      val _2v = if (pull.contains(_2c)) pull.applyChange(_2c, isNow = isNow) else b.value
+      val _3v = if (pull.contains(_3c)) pull.applyChange(_3c, isNow = isNow) else c.value
 
-      (_1ch, _2ch, _3ch) match {
-        case (Some(ach), None, None) =>
-          val bv      = b.value
-          val cv      = c.value
-          val before  = value1(ach.before , bv, cv)
-          val now     = value1(ach.now    , bv, cv)
-          if (before == now) None else Some(Change(before, now))
-        case (None, Some(bch), None) =>
-          val av      = a.value
-          val cv      = c.value
-          val before  = value1(av, bch.before , cv)
-          val now     = value1(av, bch.now    , cv)
-          if (before == now) None else Some(Change(before, now))
-        case (None, None, Some(cch)) =>
-          val av      = a.value
-          val bv      = b.value
-          val before  = value1(av, bv, cch.before )
-          val now     = value1(av, bv, cch.now    )
-          if (before == now) None else Some(Change(before, now))
-        case (Some(ach), Some(bch), None) =>
-          val cv      = c.value
-          val before  = value1(ach.before , bch.before, cv)
-          val now     = value1(ach.now    , bch.now   , cv)
-          if (before == now) None else Some(Change(before, now))
-        case (None, Some(bch), Some(cch)) =>
-          val av      = a.value
-          val before  = value1(av, bch.before , cch.before)
-          val now     = value1(av, bch.now    , cch.now   )
-          if (before == now) None else Some(Change(before, now))
-        case (Some(ach), Some(bch), Some(cch)) =>
-          val before  = value1(ach.before , bch.before, cch.before)
-          val now     = value1(ach.now    , bch.now   , cch.now   )
-          if (before == now) None else Some(Change(before, now))
-        case _ => None
-      }
+      value1(_1v, _2v, _3v)
     }
+
+//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+//      val _1c = a.changed
+//      val _2c = b.changed
+//      val _3c = c.changed
+//
+//      val _1ch = if (pull.contains(_1c)) pull(_1c) else None
+//      val _2ch = if (pull.contains(_2c)) pull(_2c) else None
+//      val _3ch = if (pull.contains(_3c)) pull(_3c) else None
+//
+//      (_1ch, _2ch, _3ch) match {
+//        case (Some(ach), None, None) =>
+//          val bv      = b.value
+//          val cv      = c.value
+//          val before  = value1(ach.before , bv, cv)
+//          val now     = value1(ach.now    , bv, cv)
+//          if (before == now) None else Some(Change(before, now))
+//        case (None, Some(bch), None) =>
+//          val av      = a.value
+//          val cv      = c.value
+//          val before  = value1(av, bch.before , cv)
+//          val now     = value1(av, bch.now    , cv)
+//          if (before == now) None else Some(Change(before, now))
+//        case (None, None, Some(cch)) =>
+//          val av      = a.value
+//          val bv      = b.value
+//          val before  = value1(av, bv, cch.before )
+//          val now     = value1(av, bv, cch.now    )
+//          if (before == now) None else Some(Change(before, now))
+//        case (Some(ach), Some(bch), None) =>
+//          val cv      = c.value
+//          val before  = value1(ach.before , bch.before, cv)
+//          val now     = value1(ach.now    , bch.now   , cv)
+//          if (before == now) None else Some(Change(before, now))
+//        case (None, Some(bch), Some(cch)) =>
+//          val av      = a.value
+//          val before  = value1(av, bch.before , cch.before)
+//          val now     = value1(av, bch.now    , cch.now   )
+//          if (before == now) None else Some(Change(before, now))
+//        case (Some(ach), Some(bch), Some(cch)) =>
+//          val before  = value1(ach.before , bch.before, cch.before)
+//          val now     = value1(ach.now    , bch.now   , cch.now   )
+//          if (before == now) None else Some(Change(before, now))
+//        case _ => None
+//      }
+//    }
 
     @inline
     private def value1(av: A1, bv: A2, cv: A3): A = {

@@ -13,10 +13,9 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.expr.Context
-import de.sciss.lucre.expr.{IExpr, graph}
+import de.sciss.lucre.event.impl.IChangeGenerator
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
+import de.sciss.lucre.expr.{Context, IExpr, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change
@@ -29,7 +28,7 @@ object It {
   }
 
   private final class ExpandedImpl[S <: Sys[S], A](implicit protected val targets: ITargets[S])
-    extends Expanded[S, A] with IGenerator[S, Change[A]] {
+    extends Expanded[S, A] with IChangeGenerator[S, A] {
 
     private[this] val ref = Ref.make[A]
 
@@ -40,14 +39,17 @@ object It {
       }
     }
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
-      Some(pull.resolve)
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A =
+      pull.resolveChange(isNow = isNow)
+
+//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+//      Some(pull.resolve)
 
     def value(implicit tx: S#Tx): A = ref()
 
     def dispose()(implicit tx: S#Tx): Unit = ()
 
-    def changed: IEvent[S, Change[A]] = this
+    def changed: IChangeEvent[S, A] = this
   }
 }
 /** A glue element to make `map` and `flatMap` work. */

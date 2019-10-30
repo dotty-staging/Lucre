@@ -15,16 +15,15 @@ package de.sciss.lucre.expr.graph
 
 import java.util.Locale
 
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.Sys
-import de.sciss.model.Change
 
 object StringFormat {
   private final class Expanded[S <: Sys[S]](in: IExpr[S, String], args: Seq[IExpr[S, Any]], tx0: S#Tx)
                                            (implicit protected val targets: ITargets[S])
-    extends IExpr[S, String] with IEventImpl[S, Change[String]] {
+    extends IExpr[S, String] with IChangeEventImpl[S, String] {
 
     args.foreach { a =>
       a.changed.--->(this)(tx0)
@@ -45,34 +44,44 @@ object StringFormat {
           s"Format error: inV - $m"
       }
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[String]] = {
-      val inEvt   = in.changed
-      val inChOpt = if (pull.contains(inEvt)) pull (inEvt) else None
-      val inCh    = inChOpt.getOrElse {
-        val inV = in.value
-        Change(inV, inV)
-      }
-      val argsCh = args.map { arg =>
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): String = {
+      val inEvt = in.changed
+      val inV   = if (pull.contains(inEvt)) pull.applyChange(inEvt, isNow = isNow) else in.value
+      val argsV = args.map { arg =>
         val argEvt    = arg.changed
-        val argChOpt  = if (pull.contains(argEvt)) pull (argEvt) else None
-        argChOpt.getOrElse {
-          val argV = arg.value
-          Change(argV, argV)
-        }
+        if (pull.contains(argEvt)) pull.applyChange(argEvt, isNow = isNow) else arg.value
       }
-
-      val before  = tryFormat(inCh.before, argsCh.map(_.before))
-      val now     = tryFormat(inCh.now   , argsCh.map(_.now   ))
-      val ch      = Change(before, now)
-      if (ch.isSignificant) Some(ch) else None
+      tryFormat(inV, argsV)
     }
+
+//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[String]] = {
+//      val inEvt   = in.changed
+//      val inChOpt = if (pull.contains(inEvt)) pull (inEvt) else None
+//      val inCh    = inChOpt.getOrElse {
+//        val inV = in.value
+//        Change(inV, inV)
+//      }
+//      val argsCh = args.map { arg =>
+//        val argEvt    = arg.changed
+//        val argChOpt  = if (pull.contains(argEvt)) pull (argEvt) else None
+//        argChOpt.getOrElse {
+//          val argV = arg.value
+//          Change(argV, argV)
+//        }
+//      }
+//
+//      val before  = tryFormat(inCh.before, argsCh.map(_.before))
+//      val now     = tryFormat(inCh.now   , argsCh.map(_.now   ))
+//      val ch      = Change(before, now)
+//      if (ch.isSignificant) Some(ch) else None
+//    }
 
     def dispose()(implicit tx: S#Tx): Unit =
       args.foreach { a =>
         a.changed.-/->(this)
       }
 
-    def changed: IEvent[S, Change[String]] = this
+    def changed: IChangeEvent[S, String] = this
   }
 }
 
