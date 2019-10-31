@@ -758,3 +758,9 @@ def pullChange(pull: IPull[S])(implicit tx: S#Tx): A =
 
 So if `pullUpdate` calls `pullChange` twice, it will first return `ref()` and then return either `ref()` or the
 new value.
+
+---------------------------
+
+We need to codify the partial knowledge of before/now values in the internal `pullMap`. We can no longer assume
+we don't know anything about the value type, therefore it may be good to introduce a mutable replacement for
+`Change`.

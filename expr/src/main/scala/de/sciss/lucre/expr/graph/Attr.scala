@@ -281,9 +281,11 @@ object Attr {
     def default: Ex[A]
   }
 
-  private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
+  private[lucre] final class Expanded[S <: Sys[S], A](key: String, attrView: CellView[S#Tx, Option[A]], tx0: S#Tx)
                                                      (implicit protected val targets: ITargets[S])
     extends IExpr[S, Option[A]] with IChangeGenerator[S, Option[A]] {
+
+    override def toString: String = s"Attr($key)"
 
     // println("Attr.Expanded - created")
 
@@ -351,7 +353,7 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
     val attrView = Attr.resolveNested(key)
-    new Attr.Expanded[S, A](attrView, tx)
+    new Attr.Expanded[S, A](key, attrView, tx)
   }
 
   override def adjuncts: scala.List[Adjunct] = bridge :: Nil

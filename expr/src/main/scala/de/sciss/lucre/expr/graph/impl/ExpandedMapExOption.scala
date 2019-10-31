@@ -14,14 +14,9 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.Ex
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.{Context, IExpr}
-import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Disposable, Sys}
-import de.sciss.model.Change
-
-import scala.concurrent.stm.Ref
+import de.sciss.lucre.stm.Sys
 
 //final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[B], tx0: S#Tx)
 //                                                  (implicit protected val targets: ITargets[S], ctx: Context[S])
@@ -62,44 +57,54 @@ import scala.concurrent.stm.Ref
 // XXX TODO --- why is this using `Caching`?
 // Note: this needs `Caching` because the closure `fun` may depend on expressions from the
 // environment, and therefore... XXX TODO: we need to track fun.expand.changed
-final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[B], tx0: S#Tx)
+final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: IExpr[S, B], tx0: S#Tx)
                                                   (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IExpr[S, Option[B]] with IChangeEventImpl[S, Option[B]] with Caching {
+  extends IExpr[S, Option[B]] with IChangeEventImpl[S, Option[B]] {
 
-  in.changed.--->(this)(tx0)
+  in  .changed.--->(this)(tx0)
+  fun .changed.--->(this)(tx0)
 
-  private[this] val ref = Ref(valueOf(in.value(tx0))(tx0))
+  override def toString: String = s"$in.map($fun)"
 
-  def value(implicit tx: S#Tx): Option[B] = // ref().map(_._1)
-    IPush.tryPull(this).fold(ref().map(_._1))(_.now)
+  def value(implicit tx: S#Tx): Option[B] = {
+    if (in.value.isDefined) Some(fun.value) else None
+  }
 
-  private def valueOf(inOption: Option[A])(implicit tx: S#Tx): Option[(B, Disposable[S#Tx])] =
-    if (inOption.isEmpty) None else {
-      val tup = ctx.nested {
-        val funEx = fun.expand[S]
-        val vn    = funEx.value
-        vn
-      }
+//  private def valueOf(inOption: Option[A])(implicit tx: S#Tx): Option[(B, Disposable[S#Tx])] =
+//    if (inOption.isDefined) None else {
+//      val tup = ctx.nested {
+//        val funEx = fun.expand[S]
+//        val vn    = funEx.value
+//        vn
+//      }
+//
+//      Some(tup)
+//    }
 
-      Some(tup)
+  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[B] = {
+    val inCh  = in.changed
+    val inV: Option[A] = if (pull.contains(inCh)) pull.applyChange(inCh, isNow = isNow) else in.value
+    if (inV.isEmpty) None else {
+      val funCh = fun.changed
+      val funV: B = if (pull.contains(funCh)) pull.applyChange(funCh, isNow = isNow) else fun.value
+      Some(funV)
     }
+  }
 
-  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[B] = ???
-
-  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[B]]] =
-    pull(in.changed).flatMap { inCh =>
-      val beforeTup = ref()
-      beforeTup.foreach(_._2.dispose())
-      val before    = beforeTup.map(_._1)
-      val nowTup    = valueOf(inCh.now)
-      ref() = nowTup
-      val now       = nowTup.map(_._1)
-      if (before == now) None else Some(Change(before, now))
-    }
+//  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[B]]] =
+//    pull(in.changed).flatMap { inCh =>
+//      val beforeTup = ref()
+//      beforeTup.foreach(_._2.dispose())
+//      val before    = beforeTup.map(_._1)
+//      val nowTup    = valueOf(inCh.now)
+//      ref() = nowTup
+//      val now       = nowTup.map(_._1)
+//      if (before == now) None else Some(Change(before, now))
+//    }
 
   def dispose()(implicit tx: S#Tx): Unit = {
-    in.changed.-/->(this)
-    ref.swap(None).foreach(_._2.dispose())
+    in  .changed.-/->(this)
+    fun .changed.-/->(this)
   }
 
   def changed: IChangeEvent[S, Option[B]] = this

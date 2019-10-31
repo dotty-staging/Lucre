@@ -41,13 +41,54 @@ object IPush {
     def apply()(implicit tx: S#Tx): Unit =
       observers.foreach(_.apply(update))
   }
+  
+  private final class Value {
+    var state = 0 // 1 = has before, 2 = has now, 4 = has full
+    var full  : Option[Any] = None
+    var before: Any = _
+    var now   : Any = _
+    
+    def hasBefore : Boolean = (state & 1) != 0
+    def hasNow    : Boolean = (state & 2) != 0
+    def hasFull   : Boolean = (state & 4) != 0
+
+    def setBefore(v: Any): Unit = {
+      before = v
+      state |= 1
+      if (!hasFull && hasNow) createFull()
+    }
+
+    def setNow(v: Any): Unit = {
+      now = v
+      state |= 2
+      if (!hasFull && hasBefore) createFull()
+    }
+    
+    def setFull(v: Option[Any]): Unit = {
+      full = v
+      state |= 4
+      if (!hasNow || !hasBefore) v match {
+        case Some(Change(_before, _now)) =>
+          before  = _before
+          now     = _now
+          state  |= 3
+
+        case _ =>
+      }
+    }
+    
+    def createFull(): Unit = {
+      full = if (before == now) None else Some(Change(before, now))
+      state |= 4
+    }
+  }
 
   private final class Impl[S <: Base[S]](origin: IEvent[S, Any], val update: Any)
                                         (implicit tx: S#Tx, targets: ITargets[S])
     extends IPull[S] {
 
     private[this] var pushMap   = IMap(origin -> NoParents[S])
-    private[this] var pullMap   = IMap.empty[IEvent[S, Any], Option[Any]]
+    private[this] var pullMap   = IMap.empty[IEvent[S, Any], Value]
 
     private[this] var indent    = ""
 
@@ -122,13 +163,21 @@ object IPush {
       try {
         pullMap.get(source) match {
           case Some(res) =>
-            logEvent(s"${indent}pull $source  (new ? false)")
-            res.asInstanceOf[Option[A]]
+            logEvent(s"${indent}pull $source  (new ? false; state = ${res.state})")
+            if (res.hasFull) {
+              res.full.asInstanceOf[Option[A]]
+            } else {
+              val v = source.pullUpdate(this)
+              res.setFull(v)
+              v
+            }
           case _ =>
             logEvent(s"${indent}pull $source  (new ? true)")
-            val res = source.pullUpdate(this)
+            val v   = source.pullUpdate(this)
+            val res = new Value
+            res.setFull(v)
             pullMap += ((source, res))
-            res
+            v
         }
       } finally {
         decIndent()
@@ -140,15 +189,33 @@ object IPush {
       incIndent()
       try {
         pullMap.get(source) match {
-          case Some(res) if res.isDefined =>
-            logEvent(s"${indent}pull $source  (new ? false)")
-            val opt = res.asInstanceOf[Option[A]]
-            opt.get
+          case Some(res) =>
+            logEvent(s"${indent}pull $source  (new ? false; state = ${res.state})")
+            if (isNow) {
+              if      (res.hasNow         ) res.now.asInstanceOf[A]
+              else if (res.full.isDefined ) res.full.get.asInstanceOf[Change[A]].now
+              else {
+                val now = source.pullChange(this, isNow = true)
+                res.setNow(now)
+                now
+              }
+            } else {
+              if      (res.hasBefore      ) res.before.asInstanceOf[A]
+              else if (res.full.isDefined ) res.full.get.asInstanceOf[Change[A]].before
+              else {
+                val before = source.pullChange(this, isNow = false)
+                res.setBefore(before)
+                before
+              }
+            }
+
           case _ =>
             logEvent(s"${indent}pull $source  (new ? true)")
-            val res = source.pullChange(this, isNow = isNow)
-            pullMap += ((source, Some(res)))
-            res
+            val v   = source.pullChange(this, isNow = isNow)
+            val res = new Value
+            if (isNow) res.setNow(v) else res.setBefore(v)
+            pullMap += ((source, res))
+            v
         }
       } finally {
         decIndent()

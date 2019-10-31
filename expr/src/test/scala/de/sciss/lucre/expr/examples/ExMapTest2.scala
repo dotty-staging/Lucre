@@ -14,6 +14,8 @@ import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
 object ExMapTest2 extends App {
   type S = InMemory
 
+//  de.sciss.lucre.event.showLog = true
+
   val g = Graph {
     val fAttr = "foo".attr[Int]
     val m = fAttr.map(_ * 2)

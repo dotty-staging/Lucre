@@ -700,8 +700,10 @@ object BinaryOp {
     def changed: IChangeEvent[S, A] = this
 
     private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
-      val aV = pull.applyChange(a.changed, isNow = isNow)
-      val bV = pull.applyChange(b.changed, isNow = isNow)
+      val aCh = a.changed
+      val bCh = b.changed
+      val aV  = if (pull.contains(aCh)) pull.applyChange(aCh, isNow = isNow) else a.value
+      val bV  = if (pull.contains(bCh)) pull.applyChange(bCh, isNow = isNow) else b.value
       value1(aV, bV)
     }
 

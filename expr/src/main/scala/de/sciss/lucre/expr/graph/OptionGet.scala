@@ -23,6 +23,8 @@ object OptionGet {
   private final class Expanded[S <: Sys[S], A](in: IExpr[S, Option[A]], tx0: S#Tx)(implicit targets: ITargets[S])
     extends MappedIExpr[S, Option[A], A](in, tx0) {
 
+    override def toString: String = s"OptionGet($in)"
+
     protected def mapValue(inValue: Option[A])(implicit tx: S#Tx): A = inValue.get
 
     override private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
