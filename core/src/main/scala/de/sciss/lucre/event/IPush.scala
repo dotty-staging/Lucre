@@ -157,7 +157,11 @@ object IPush {
       if (isNow) ch.now else ch.before
     }
 
-    // caches pulled values
+    // Caches pulled values.
+    // Noe that we do not check `nonCachedTerms`, implying that
+    // `It.Expanded` forbids the use of `pullUpdate` (it throws
+    // an exception), and therefore there cannot be a case that
+    // circumvents `applyChange` usage.
     def apply[A](source: IEvent[S, A]): Option[A] = {
       incIndent()
       try {
@@ -184,7 +188,42 @@ object IPush {
       }
     }
 
-    def TEST_PURGE_CACHE(): Unit = pullMap = pullMap.empty
+//    def TEST_PURGE_CACHE(): Unit = pullMap = pullMap.empty
+
+    private[this] var nonCachedTerms = List.empty[IEvent[S, Any]]
+    private[this] var nonCachedPath  = List.empty[IEvent[S, Any]]
+
+    def TEST_NON_CACHED[A](source: IEvent[S, Any])(body: => A): A = {
+      val oldTerms  = nonCachedTerms
+      val oldPath   = nonCachedPath
+      nonCachedTerms  = source :: oldTerms
+      nonCachedPath   = Nil
+      try {
+        body
+      } finally {
+        nonCachedTerms  = oldTerms
+        nonCachedPath   = oldPath
+      }
+    }
+
+    private def performPullChange[A](source: IChangeEvent[S, A], res: Value, isNow: Boolean): A = {
+      if (nonCachedTerms.contains(source)) {
+        // Console.err.println(s"erasing non-cached path of size ${nonCachedPath.size} for $source")
+        // remove cached values in the current call sequence
+        pullMap --= nonCachedPath
+        source.pullChange(this, isNow = isNow)
+      } else {
+        val oldPath = nonCachedPath
+        nonCachedPath = source :: oldPath
+        val v = try {
+          source.pullChange(this, isNow = isNow)
+        } finally {
+          nonCachedPath = oldPath
+        }
+        if (isNow) res.setNow(v) else res.setBefore(v)
+        v
+      }
+    }
 
     // caches pulled values
     def applyChange[A](source: IChangeEvent[S, A], isNow: Boolean): A = {
@@ -197,25 +236,20 @@ object IPush {
               if      (res.hasNow         ) res.now.asInstanceOf[A]
               else if (res.full.isDefined ) res.full.get.asInstanceOf[Change[A]].now
               else {
-                val now = source.pullChange(this, isNow = true)
-                res.setNow(now)
-                now
+                performPullChange(source, res, isNow = isNow)
               }
             } else {
               if      (res.hasBefore      ) res.before.asInstanceOf[A]
               else if (res.full.isDefined ) res.full.get.asInstanceOf[Change[A]].before
               else {
-                val before = source.pullChange(this, isNow = false)
-                res.setBefore(before)
-                before
+                performPullChange(source, res, isNow = isNow)
               }
             }
 
           case _ =>
             logEvent(s"${indent}pull $source  (new ? true)")
-            val v   = source.pullChange(this, isNow = isNow)
             val res = new Value
-            if (isNow) res.setNow(v) else res.setBefore(v)
+            val v   = performPullChange(source, res, isNow = isNow)
             pullMap += ((source, res))
             v
         }
@@ -255,5 +289,13 @@ trait IPull[S <: Base[S]] {
 
   def isOrigin(source: IEvent[S, Any]): Boolean
 
-  def TEST_PURGE_CACHE(): Unit
+  /** Marks a region of the pull action as non-caching.
+    * This is done by submitting a terminal symbol `source`, typically
+    * an instance of `It.Expanded`. When anything within the `body` tries to apply
+    * the `source`, all values from events on the call tree will be removed
+    * from cache.
+    */
+  def TEST_NON_CACHED[A](source: IEvent[S, Any])(body: => A): A
+
+//  def TEST_PURGE_CACHE(): Unit
 }

@@ -27,6 +27,8 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
 
   in .changed.--->(this)(tx0)
   fun.changed.--->(this)(tx0)
+  // this is so that we can wipe the cache
+  in. changed.--->(it.changed)(tx0)
 
   def value(implicit tx: S#Tx): Seq[B] = {
     val inV = in.value
@@ -55,6 +57,7 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
     else {
       val iterator  = inV.iterator
       val b         = Seq.newBuilder[B]
+      b.sizeHint(inV)
       val funCh     = fun.changed
       val funP      = pull.contains(funCh)
 //      Console.err.println(s"ExpandedMapExSeq.pullChange(_, $isNow), pull.contains(fun.changed) = $funP")
@@ -62,16 +65,18 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
 //        Console.err.println(s"Now should cache? inV = $inV, isNow = $isNow")
 //      }
 
-      while (iterator.hasNext) {
-        val vn = iterator.next()
-        it.setValue(vn /*, dispatch = true*/)
-        val funV = if (funP) {
-          pull.applyChange(funCh, isNow = isNow)
-        } else {
-          fun.value
+      pull.TEST_NON_CACHED(it.changed) {
+        while (iterator.hasNext) {
+          val vn = iterator.next()
+          it.setValue(vn /*, dispatch = true*/)
+          val funV = if (funP) {
+            pull.applyChange(funCh, isNow = isNow)
+          } else {
+            fun.value
+          }
+          b += funV
+          //        pull.TEST_PURGE_CACHE()
         }
-        b += funV
-        pull.TEST_PURGE_CACHE()
       }
       b.result()
     }
@@ -87,6 +92,7 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
   def dispose()(implicit tx: S#Tx): Unit = {
     in .changed.-/->(this)
     fun.changed.-/->(this)
+    in. changed.-/->(it.changed)
   }
 
   def changed: IChangeEvent[S, Seq[B]] = this

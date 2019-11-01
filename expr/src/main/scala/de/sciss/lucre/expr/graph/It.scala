@@ -40,10 +40,15 @@ object It {
 //      }
     }
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A =
-      throw new AssertionError("Should never be here") // pull.resolveChange(isNow = isNow)
 
-//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+    override private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+      throw new IllegalArgumentException("pullUpdate on It.Expanded")
+
+    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
+      value // pull.resolveChange(isNow = isNow) // throw new AssertionError("Should never be here")
+    }
+
+    //    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
 //      Some(pull.resolve)
 
     def value(implicit tx: S#Tx): A = ref()
