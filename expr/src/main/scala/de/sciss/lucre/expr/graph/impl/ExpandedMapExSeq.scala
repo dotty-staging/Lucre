@@ -57,10 +57,19 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
       val b         = Seq.newBuilder[B]
       val funCh     = fun.changed
       val funP      = pull.contains(funCh)
+//      Console.err.println(s"ExpandedMapExSeq.pullChange(_, $isNow), pull.contains(fun.changed) = $funP")
+//      if (funP && inV.size > 1) {
+//        Console.err.println(s"Now should cache? inV = $inV, isNow = $isNow")
+//      }
+
       while (iterator.hasNext) {
         val vn = iterator.next()
         it.setValue(vn /*, dispatch = true*/)
-        val funV = if (funP) pull.applyChange(funCh, isNow = isNow) else fun.value
+        val funV = if (funP) {
+          pull.applyChange(funCh, isNow = isNow)
+        } else {
+          fun.value
+        }
         b += funV
         pull.TEST_PURGE_CACHE()
       }

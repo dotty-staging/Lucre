@@ -91,7 +91,50 @@ class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
         |out = 8.0, 7.0
         |""".stripMargin
 
-//    println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
+//    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
+
+    assert (res === exp)
+  }
+
+  it should "correctly observe more expressions from the closure" in {
+    val g = Graph {
+      import ExImport._
+      import graph._
+
+      val in: Ex[Seq[Int]] = "in".attr(Seq.empty[Int])
+      val out = in.map(_ + in.size)
+      val b   = LoadBang()
+      val c   = out.changed
+      val t   = b | c
+      t ---> PrintLn(out.mkString("out = [", ", ", "]"))
+    }
+
+    implicit val system: S = InMemory()
+    implicit val undo: UndoManager[S] = UndoManager()
+
+    import Workspace.Implicits._
+
+    val res = captureConsole {
+      system.step { implicit tx =>
+        val self = IntObj.newConst(0): IntObj[S]
+        val selfH = tx.newHandle(self)
+        implicit val ctx: Context[S] = Context(Some(selfH))
+        val vr = IntVector.newVar[S](Vector(3, 5, 8))
+        self.attr.put("in", vr)
+        g.expand.initControl()
+        vr() = Vector(13, 21)
+        vr() = Vector(13, 20) // ensures that we don't cache first value only
+        vr() = Vector()
+      }
+    }
+    val exp =
+      """out = [6, 8, 11]
+        |out = [15, 23]
+        |out = [15, 22]
+        |out = []
+        |""".stripMargin
+
+//    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
     assert (res === exp)
   }
