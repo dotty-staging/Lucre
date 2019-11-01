@@ -15,53 +15,58 @@ package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IChangeEventImpl
 import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.expr.graph.{Ex, It}
+import de.sciss.lucre.expr.graph.It
 import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.model.Change
 
 final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
-                                                /* closure: Graph, */ fun: Ex[B], tx0: S#Tx)
+                                                /* closure: Graph, */ fun: IExpr[S, B], tx0: S#Tx)
                                                (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IExpr[S, Seq[B]] with IChangeEventImpl[S, Seq[B]] {
 
-  in.changed.--->(this)(tx0)
+  in .changed.--->(this)(tx0)
+  fun.changed.--->(this)(tx0)
 
   def value(implicit tx: S#Tx): Seq[B] = {
-    val outerV = in.value
-    valueOf(outerV)
+    val inV = in.value
+    valueOf(inV)
   }
 
-  private def valueOf(inSeq: Seq[A])(implicit tx: S#Tx): Seq[B] =
-    if (inSeq.isEmpty) Nil
+  private def valueOf(inV: Seq[A])(implicit tx: S#Tx): Seq[B] =
+    if (inV.isEmpty) Nil
     else {
-      // XXX TODO --- ok, this is the first test for this idea
-      // so we just expand and dispose locally. Later we could
-      // optimise to avoid re-expansion for non-empty input sequences.
-      val iterator  = inSeq.iterator
-      val v0        = iterator.next()
-      it.setValue(v0 /*, dispatch = false*/ )  // make sure we have the first value ready
-      val (outSeq, funDisposable) = ctx.nested {
-        val b     = Seq.newBuilder[B]
-        val funEx = fun.expand[S]  // ...which might be read here
-        // it.setValue(v0, dispatch = true)
-        b += funEx.value
-
-        // now iterate over the tail
-        while (iterator.hasNext) {
-          val vn = iterator.next()
-          it.setValue(vn /*, dispatch = true*/)
-          b += funEx.value
-        }
-
-        b.result()
+      val iterator  = inV.iterator
+      val b         = Seq.newBuilder[B]
+      while (iterator.hasNext) {
+        val vn = iterator.next()
+        it.setValue(vn /*, dispatch = true*/)
+        val funV = fun.value
+        b += funV
       }
-
-      funDisposable.dispose()
-      outSeq
+      b.result()
     }
 
-  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Seq[B] = ???
+  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Seq[B] = {
+    val inCh  = in.changed
+    val inV   = if (pull.contains(inCh)) pull.applyChange(inCh, isNow = isNow) else in.value
+//    valueOf(inV)
+    if (inV.isEmpty) Nil
+    else {
+      val iterator  = inV.iterator
+      val b         = Seq.newBuilder[B]
+      val funCh     = fun.changed
+      val funP      = pull.contains(funCh)
+      while (iterator.hasNext) {
+        val vn = iterator.next()
+        it.setValue(vn /*, dispatch = true*/)
+        val funV = if (funP) pull.applyChange(funCh, isNow = isNow) else fun.value
+        b += funV
+        pull.TEST_PURGE_CACHE()
+      }
+      b.result()
+    }
+  }
 
   private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Seq[B]]] =
     pull(in.changed).flatMap { inCh =>
@@ -70,8 +75,10 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
       if (before == now) None else Some(Change(before, now))
     }
 
-  def dispose()(implicit tx: S#Tx): Unit =
-    in.changed.-/->(this)
+  def dispose()(implicit tx: S#Tx): Unit = {
+    in .changed.-/->(this)
+    fun.changed.-/->(this)
+  }
 
   def changed: IChangeEvent[S, Seq[B]] = this
 }

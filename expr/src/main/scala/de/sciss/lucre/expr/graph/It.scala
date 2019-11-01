@@ -33,14 +33,15 @@ object It {
     private[this] val ref = Ref.make[A]
 
     def setValue(value: A /*, dispatch: Boolean*/)(implicit tx: S#Tx): Unit = {
-      val old =  ref.swap(value)
-      if (/*dispatch && */ old != value) {
-        fire(Change(old, value))
-      }
+      ref() = value
+//      val old =  ref.swap(value)
+//      if (/*dispatch && */ old != value) {
+//        fire(Change(old, value))
+//      }
     }
 
     private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A =
-      pull.resolveChange(isNow = isNow)
+      throw new AssertionError("Should never be here") // pull.resolveChange(isNow = isNow)
 
 //    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
 //      Some(pull.resolve)

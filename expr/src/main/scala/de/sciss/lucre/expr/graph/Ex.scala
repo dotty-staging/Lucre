@@ -123,10 +123,11 @@ object Ex {
     override def productPrefix: String = s"Ex$$MapExSeq" // serialization
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx = in.expand[S]
-      val itEx = it.expand[S]
+      val inEx  = in.expand[S]
+      val itEx  = it.expand[S]
+      val funEx = fun.expand[S]
       import ctx.targets
-      new ExpandedMapExSeq[S, A, B](inEx, itEx, /*closure, */ fun, tx)
+      new ExpandedMapExSeq[S, A, B](inEx, itEx, /*closure, */ funEx, tx)
     }
   }
 

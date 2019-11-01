@@ -184,6 +184,8 @@ object IPush {
       }
     }
 
+    def TEST_PURGE_CACHE(): Unit = pullMap = pullMap.empty
+
     // caches pulled values
     def applyChange[A](source: IChangeEvent[S, A], isNow: Boolean): A = {
       incIndent()
@@ -252,4 +254,6 @@ trait IPull[S <: Base[S]] {
   def contains(source: IEvent[S, Any]): Boolean
 
   def isOrigin(source: IEvent[S, Any]): Boolean
+
+  def TEST_PURGE_CACHE(): Unit
 }

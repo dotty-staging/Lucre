@@ -86,10 +86,12 @@ class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
     val exp =
       """out = 0.0, 3.0, 6.0
         |out = 1.0, 2.0, 3.0
-        |out = 10.0, 12.0, 13.0
+        |out = 11.0, 12.0, 13.0
         |out = 6.0, 5.0
         |out = 8.0, 7.0
         |""".stripMargin
+
+//    println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
     assert (res === exp)
   }
