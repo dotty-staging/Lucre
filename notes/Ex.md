@@ -764,3 +764,47 @@ new value.
 We need to codify the partial knowledge of before/now values in the internal `pullMap`. We can no longer assume
 we don't know anything about the value type, therefore it may be good to introduce a mutable replacement for
 `Change`.
+
+--------------------------
+
+## Notes 191102
+
+We missed an important case where the seq over which we map or flat-map contains mutable element which must be
+traced:
+
+```
+  val f = "folder".attr[Folder](Folder())
+  val children = f.children
+  val names0 = children.flatMap { obj =>
+    obj.attr[String]("name")
+  }
+  LoadBang() ---> PrintLn(names0.mkString(" "))
+
+```
+
+Here the attribute map is not communicating to the `graph.Obj` at all, thus the `Obj.AttrExpanded` has to create
+views when it expands, and thus it must call `it.value`, which fails. I seems it's not tenable to treat the
+closure function as _one_ expanded instance. For this example to work, we _must_ allow the creation of initial
+state for the expanded closure, I don't see any other way? That would render the previous approach of wiping the
+cache futile. Luckily, we _can_ in principle call `expand` multiple times; we just run into a similar situation, we
+need to detect the expansion of `It` and use that as a stopping point in a `nonCaching` run, only this time the
+cache of the graph builder needs to be wiped, not of the `IPull` phase.
+
+Also, the `graph.Folder.children` expression is wrong; it never tracks additions and deletions from the folder.
+
+The root of the problem is that `graph.Obj` doesn't stick with the rest because it points to a mutable structure and
+is not strictly a "value". Yes, we can say there is an object identity, and in that sense it works.
+
+So... are we going back to `ctx.nested` then? Yes and not. The mistake is that it will encapsulate expansions from
+the outer environment as well, which tends to be wrong (at least if there are triggers involved). So it should be
+`ctx.nonCached(it) { ... }`
+
+How does this relate to `Caching` (does it at all?). How to the before/now phase? They might be related where there
+has to be stored the 'before' state.
+
+--------
+
+How to create and dispose the iterations? We going exactly the opposite way as before, we need to call `.value` now
+for `in` in map-expanded initialisation. So we need to ensure that it's always possible and valid to call `.value` on
+an expression in expansion initialisation.
+

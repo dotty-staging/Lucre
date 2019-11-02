@@ -278,9 +278,6 @@ object Obj {
     private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Option[A] =
       pull.resolveExpr(this)
 
-//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
-//      Some(pull.resolve)
-
     def changed: IChangeEvent[S, Option[A]] = this
 
     def dispose()(implicit tx: S#Tx): Unit = {
