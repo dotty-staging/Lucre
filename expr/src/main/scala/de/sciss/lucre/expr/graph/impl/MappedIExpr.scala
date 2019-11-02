@@ -28,8 +28,8 @@ abstract class MappedIExpr[S <: Base[S], A1, A](in: IExpr[S, A1], tx0: S#Tx)
 
   def value(implicit tx: S#Tx): A = mapValue(in.value)
 
-  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
-    val v = pull.applyChange(in.changed, isNow = isNow)
+  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+    val v = pull.applyChange(in.changed)
     mapValue(v)
   }
 

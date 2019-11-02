@@ -94,7 +94,7 @@ object TimeStamp {
     // should we use universe.scheduler?
     private[this] val ref = Ref(System.currentTimeMillis())
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Long = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Long = ???
 
     private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[Long]] = {
       val p: Parents[S] = pull.parents(this)

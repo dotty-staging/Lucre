@@ -108,59 +108,59 @@ object Else {
 
     def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx) = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
 
-    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
-      type CaseChange = (Change[Boolean], Change[A])
-
-      // XXX TODO --- this evaluates all branches; we could optimize
-      @tailrec
-      def loop1(rem: List[Case[S, A]], res: List[CaseChange]): List[CaseChange] = rem match {
-        case (cond, branch) :: tail =>
-          val condEvt     = cond  .changed
-          val branchEvt   = branch.changed
-          val condChOpt   = if (pull.contains(condEvt  )) pull(condEvt   ) else None
-          val branchChOpt = if (pull.contains(branchEvt)) pull(branchEvt ) else None
-          val condCh      = condChOpt.getOrElse {
-            val condV = cond.value
-            Change(condV, condV)
-          }
-          val branchCh    = branchChOpt.getOrElse {
-            val branchV = branch.value
-            Change(branchV, branchV)
-          }
-
-          loop1(tail, (condCh, branchCh) :: res)
-
-        case Nil => res.reverse
-      }
-
-      val defaultEvt    = default.changed
-      val defaultChOpt  = if (pull.contains(defaultEvt)) pull(defaultEvt) else None
-      val defaultCh     = defaultChOpt.getOrElse {
-        val defaultV = default.value
-        Change(defaultV, defaultV)
-      }
-
-      @tailrec
-      def loop2(rem: List[CaseChange], isBefore: Boolean): A = rem match {
-        case (cond, branch) :: tail =>
-          val condV = if (isBefore) cond.before else cond.now
-          if (condV) {
-            if (isBefore) branch.before else branch.now
-          } else loop2(tail, isBefore = isBefore)
-
-        case Nil =>
-          if (isBefore) defaultCh.before else defaultCh.now
-      }
-
-      val casesCh     = loop1(cases, Nil)
-      val valueBefore = loop2(casesCh, isBefore = true  )
-      val valueNow    = loop2(casesCh, isBefore = false )
-      val valueCh     = Change(valueBefore, valueNow)
-
-      if (valueCh.isSignificant) Some(valueCh) else None
-    }
+//    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+//      type CaseChange = (Change[Boolean], Change[A])
+//
+//      // XXX TODO --- this evaluates all branches; we could optimize
+//      @tailrec
+//      def loop1(rem: List[Case[S, A]], res: List[CaseChange]): List[CaseChange] = rem match {
+//        case (cond, branch) :: tail =>
+//          val condEvt     = cond  .changed
+//          val branchEvt   = branch.changed
+//          val condChOpt   = if (pull.contains(condEvt  )) pull(condEvt   ) else None
+//          val branchChOpt = if (pull.contains(branchEvt)) pull(branchEvt ) else None
+//          val condCh      = condChOpt.getOrElse {
+//            val condV = cond.value
+//            Change(condV, condV)
+//          }
+//          val branchCh    = branchChOpt.getOrElse {
+//            val branchV = branch.value
+//            Change(branchV, branchV)
+//          }
+//
+//          loop1(tail, (condCh, branchCh) :: res)
+//
+//        case Nil => res.reverse
+//      }
+//
+//      val defaultEvt    = default.changed
+//      val defaultChOpt  = if (pull.contains(defaultEvt)) pull(defaultEvt) else None
+//      val defaultCh     = defaultChOpt.getOrElse {
+//        val defaultV = default.value
+//        Change(defaultV, defaultV)
+//      }
+//
+//      @tailrec
+//      def loop2(rem: List[CaseChange], isBefore: Boolean): A = rem match {
+//        case (cond, branch) :: tail =>
+//          val condV = if (isBefore) cond.before else cond.now
+//          if (condV) {
+//            if (isBefore) branch.before else branch.now
+//          } else loop2(tail, isBefore = isBefore)
+//
+//        case Nil =>
+//          if (isBefore) defaultCh.before else defaultCh.now
+//      }
+//
+//      val casesCh     = loop1(cases, Nil)
+//      val valueBefore = loop2(casesCh, isBefore = true  )
+//      val valueNow    = loop2(casesCh, isBefore = false )
+//      val valueCh     = Change(valueBefore, valueNow)
+//
+//      if (valueCh.isSignificant) Some(valueCh) else None
+//    }
 
     def dispose()(implicit tx: S#Tx): Unit = {
       cases.foreach { case (cond, res) =>

@@ -14,6 +14,8 @@
 package de.sciss.lucre.event
 
 import de.sciss.equal.Implicits._
+import de.sciss.lucre.event.IPull.Phase
+import de.sciss.lucre.expr.IExpr
 import de.sciss.lucre.stm.Base
 import de.sciss.model.Change
 
@@ -51,6 +53,17 @@ object IPush {
     def hasBefore : Boolean = (state & 1) != 0
     def hasNow    : Boolean = (state & 2) != 0
     def hasFull   : Boolean = (state & 4) != 0
+
+    def hasPhase(implicit phase: Phase): Boolean =
+      if (phase.isNow) hasNow else hasBefore
+
+    def resolvePhase[A](implicit phase: Phase): A =
+      if (phase.isNow) now.asInstanceOf[A] else before.asInstanceOf[A]
+
+    def resolveFull[A](implicit phase: Phase): A = {
+      val ch = full.get.asInstanceOf[Change[A]]
+      if (phase.isNow) ch.now else ch.before
+    }
 
     def setBefore(v: Any): Unit = {
       before = v
@@ -151,11 +164,15 @@ object IPush {
       update.asInstanceOf[A]
     }
 
-    def resolveChange[A](isNow: Boolean): A = {
+    def resolveChange[A](implicit phase: IPull.Phase): A = {
       logEvent(s"${indent}resolveChange")
       val ch = update.asInstanceOf[Change[A]]
-      if (isNow) ch.now else ch.before
+      if (phase.isNow) ch.now else ch.before
     }
+
+    // this is simply to avoid type mismatch for `A`
+    def resolveExpr[A](in: IExpr[S, A])(implicit phase: IPull.Phase): A =
+      resolveChange
 
     // Caches pulled values.
     // Noe that we do not check `nonCachedTerms`, implying that
@@ -193,7 +210,7 @@ object IPush {
     private[this] var nonCachedTerms = List.empty[IEvent[S, Any]]
     private[this] var nonCachedPath  = List.empty[IEvent[S, Any]]
 
-    def TEST_NON_CACHED[A](source: IEvent[S, Any])(body: => A): A = {
+    def nonCached[A](source: IEvent[S, Any])(body: => A): A = {
       val oldTerms  = nonCachedTerms
       val oldPath   = nonCachedPath
       nonCachedTerms  = source :: oldTerms
@@ -206,52 +223,48 @@ object IPush {
       }
     }
 
-    private def performPullChange[A](source: IChangeEvent[S, A], res: Value, isNow: Boolean): A = {
+    private def performPullChange[A](source: IChangeEvent[S, A], res: Value)(implicit phase: Phase): A = {
       if (nonCachedTerms.contains(source)) {
         // Console.err.println(s"erasing non-cached path of size ${nonCachedPath.size} for $source")
         // remove cached values in the current call sequence
         pullMap --= nonCachedPath
-        source.pullChange(this, isNow = isNow)
+        source.pullChange(this)
       } else {
         val oldPath = nonCachedPath
         nonCachedPath = source :: oldPath
         val v = try {
-          source.pullChange(this, isNow = isNow)
+          source.pullChange(this)
         } finally {
           nonCachedPath = oldPath
         }
-        if (isNow) res.setNow(v) else res.setBefore(v)
+        if (phase.isNow) res.setNow(v) else res.setBefore(v)
         v
       }
     }
 
+    def expr[A](in: IExpr[S, A])(implicit phase: Phase): A = {
+      val inCh = in.changed
+      if (contains(inCh)) applyChange(inCh)
+      else                in.value
+    }
+
     // caches pulled values
-    def applyChange[A](source: IChangeEvent[S, A], isNow: Boolean): A = {
+    def applyChange[A](source: IChangeEvent[S, A])(implicit phase: Phase): A = {
       incIndent()
       try {
-        pullMap.get(source) match {
-          case Some(res) =>
-            logEvent(s"${indent}pull $source  (new ? false; state = ${res.state})")
-            if (isNow) {
-              if      (res.hasNow         ) res.now.asInstanceOf[A]
-              else if (res.full.isDefined ) res.full.get.asInstanceOf[Change[A]].now
-              else {
-                performPullChange(source, res, isNow = isNow)
-              }
-            } else {
-              if      (res.hasBefore      ) res.before.asInstanceOf[A]
-              else if (res.full.isDefined ) res.full.get.asInstanceOf[Change[A]].before
-              else {
-                performPullChange(source, res, isNow = isNow)
-              }
-            }
+        val resOpt  = pullMap.get(source)
+        val res     = resOpt.getOrElse {
+          val _res = new Value
+          pullMap += ((source, _res))
+          _res
+        }
+        val isOld   = resOpt.isDefined
 
-          case _ =>
-            logEvent(s"${indent}pull $source  (new ? true)")
-            val res = new Value
-            val v   = performPullChange(source, res, isNow = isNow)
-            pullMap += ((source, res))
-            v
+        logEvent(s"${indent}pull $source  (old ? $isOld; state = ${res.state})")
+        if      (isOld && res.hasPhase      ) res.resolvePhase[A]
+        else if (isOld && res.full.isDefined) res.resolveFull [A]
+        else {
+          performPullChange(source, res)
         }
       } finally {
         decIndent()
@@ -270,11 +283,21 @@ object IPush {
     }
 }
 
+object IPull {
+  sealed trait Phase {
+    def isBefore: Boolean
+    def isNow   : Boolean
+  }
+  case object Before extends Phase { def isBefore = true  ; def isNow = false }
+  case object Now    extends Phase { def isBefore = false ; def isNow = true  }
+}
 trait IPull[S <: Base[S]] {
   /** Assuming that the caller is origin of the event, resolves the update of the given type. */
   def resolve[A]: A
 
-  def resolveChange[A](isNow: Boolean): A
+  def resolveChange[A](implicit phase: IPull.Phase): A
+
+  def resolveExpr[A](in: IExpr[S, A])(implicit phase: IPull.Phase): A
 
   /** Retrieves the immediate parents from the push phase. */
   def parents(source: IEvent[S, Any]): IPush.Parents[S]
@@ -282,7 +305,11 @@ trait IPull[S <: Base[S]] {
   /** Pulls the update from the given source. */
   def apply[A](source: IEvent[S, A]): Option[A]
 
-  def applyChange[A](source: IChangeEvent[S, A], isNow: Boolean): A
+  def applyChange[A](source: IChangeEvent[S, A])(implicit phase : Phase): A
+
+  /** Pulls the value from the given expression. If `in` is
+    * part of the event graph, pulls the update, otherwise returns the current value. */
+  def expr[A](in: IExpr[S, A])(implicit phase : Phase): A
 
   /** Whether the selector has been visited during the push phase. */
   def contains(source: IEvent[S, Any]): Boolean
@@ -295,7 +322,7 @@ trait IPull[S <: Base[S]] {
     * the `source`, all values from events on the call tree will be removed
     * from cache.
     */
-  def TEST_NON_CACHED[A](source: IEvent[S, Any])(body: => A): A
+  def nonCached[A](source: IEvent[S, Any])(body: => A): A
 
 //  def TEST_PURGE_CACHE(): Unit
 }

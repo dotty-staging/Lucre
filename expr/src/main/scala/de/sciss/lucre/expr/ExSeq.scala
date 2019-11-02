@@ -40,12 +40,11 @@ object ExSeq {
 
     def changed: IChangeEvent[S, Seq[A]] = this
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Seq[A] = {
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Seq[A] = {
       val b = Seq.newBuilder[A]
       b.sizeHint(elems)
       elems.foreach { in =>
-        val evt = in.changed
-        val v = if (pull.contains(evt)) pull.applyChange(evt, isNow = isNow) else in.value
+        val v = pull.expr(in)
         b += v
       }
       b.result()

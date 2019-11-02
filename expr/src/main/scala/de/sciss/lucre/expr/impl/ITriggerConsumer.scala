@@ -38,7 +38,7 @@ trait ITriggerConsumer[S <: Sys[S], A] extends IChangePublisher[S, A] {
 
   protected def trigReceived()(implicit tx: S#Tx): Option[Change[A]]
 
-  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = ???
+  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
 
   private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[A]] = {
     if (pull.isOrigin(this.changed)) Some(pull.resolve)

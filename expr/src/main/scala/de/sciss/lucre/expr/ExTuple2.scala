@@ -38,11 +38,9 @@ object ExTuple2 {
 
     def changed: IChangeEvent[S, (T1, T2)] = this
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): (T1, T2) = {
-      val _1Evt = _1.changed
-      val _2Evt = _2.changed
-      val _1V: T1 = if (pull.contains(_1Evt)) pull.applyChange(_1Evt, isNow = isNow) else _1.value
-      val _2V: T2 = if (pull.contains(_2Evt)) pull.applyChange(_2Evt, isNow = isNow) else _2.value
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): (T1, T2) = {
+      val _1V: T1 = pull.expr(_1)
+      val _2V: T2 = pull.expr(_2)
       (_1V, _2V)
     }
   }

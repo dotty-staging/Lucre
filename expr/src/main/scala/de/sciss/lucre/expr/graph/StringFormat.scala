@@ -44,12 +44,10 @@ object StringFormat {
           s"Format error: inV - $m"
       }
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): String = {
-      val inEvt = in.changed
-      val inV   = if (pull.contains(inEvt)) pull.applyChange(inEvt, isNow = isNow) else in.value
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): String = {
+      val inV   = pull.expr(in)
       val argsV = args.map { arg =>
-        val argEvt    = arg.changed
-        if (pull.contains(argEvt)) pull.applyChange(argEvt, isNow = isNow) else arg.value
+        pull.expr(arg)
       }
       tryFormat(inV, argsV)
     }

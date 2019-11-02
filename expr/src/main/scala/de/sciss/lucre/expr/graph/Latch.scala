@@ -13,12 +13,11 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.impl.{IChangeEventImpl, IEventImpl}
-import de.sciss.lucre.event.{Caching, IChangeEvent, IEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.{Context, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
 
@@ -39,14 +38,14 @@ object Latch {
 
     def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx) = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
 
-    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
-      if (pull(trig.changed).isEmpty) None else {
-        val newValue  = in.value
-        val oldValue  = ref.swap(newValue)
-        if (oldValue == newValue) None else Some(Change(oldValue, newValue))
-      }
+//    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+//      if (pull(trig.changed).isEmpty) None else {
+//        val newValue  = in.value
+//        val oldValue  = ref.swap(newValue)
+//        if (oldValue == newValue) None else Some(Change(oldValue, newValue))
+//      }
   }
 }
 /** Latches the expression based on the trigger argument.

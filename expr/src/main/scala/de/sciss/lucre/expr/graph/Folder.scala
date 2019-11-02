@@ -155,7 +155,7 @@ object Folder {
       obs.swap(Disposable.empty).dispose()
     }
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx) = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
 
 //    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
 //      if (pull.isOrigin(this)) Some(pull.resolve)

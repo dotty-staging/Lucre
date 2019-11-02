@@ -46,7 +46,7 @@ final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], 
       tup
     }
 
-  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[B] = ???
+  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Option[B] = ???
 
   private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[B]]] =
     pull(in.changed).flatMap { inCh =>

@@ -42,7 +42,7 @@ object IDummy {
     def --->(sink: IEvent[S, Any])(implicit tx: S#Tx): Unit = ()
     def -/->(sink: IEvent[S, Any])(implicit tx: S#Tx): Unit = ()
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Any = ()
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Any = ()
 
     def react(fun: S#Tx => Change[Any] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
   }

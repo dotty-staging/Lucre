@@ -81,12 +81,10 @@ final class ExpandedMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun:
 //      Some(tup)
 //    }
 
-  private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[B] = {
-    val inCh  = in.changed
-    val inV: Option[A] = if (pull.contains(inCh)) pull.applyChange(inCh, isNow = isNow) else in.value
+  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Option[B] = {
+    val inV: Option[A] = pull.expr(in)
     if (inV.isEmpty) None else {
-      val funCh = fun.changed
-      val funV: B = if (pull.contains(funCh)) pull.applyChange(funCh, isNow = isNow) else fun.value
+      val funV: B = pull.expr(fun)
       Some(funV)
     }
   }

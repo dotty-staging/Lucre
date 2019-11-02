@@ -44,7 +44,7 @@ object It {
     override private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
       throw new IllegalArgumentException("pullUpdate on It.Expanded")
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
       value // pull.resolveChange(isNow = isNow) // throw new AssertionError("Should never be here")
     }
 

@@ -136,9 +136,9 @@ object Var {
       }
     }
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A =
-      if (pull.isOrigin(this)) pull.resolveChange(isNow = isNow)
-      else pull.applyChange(ref().changed, isNow = isNow)
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A =
+      if (pull.isOrigin(this)) pull.resolveExpr(this)
+      else pull.expr(ref())
 
     def select(value: Any)(implicit tx: S#Tx): Boolean =
       fromAny.fromAny(value) match {

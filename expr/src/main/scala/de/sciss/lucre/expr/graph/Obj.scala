@@ -275,8 +275,8 @@ object Obj {
 
     def value(implicit tx: S#Tx): Option[A] = viewRef().flatMap(_.apply())
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[A] =
-      pull.resolveChange(isNow = isNow)
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Option[A] =
+      pull.resolveExpr(this)
 
 //    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[Option[A]]] =
 //      Some(pull.resolve)

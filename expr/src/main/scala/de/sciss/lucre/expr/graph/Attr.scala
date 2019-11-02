@@ -20,7 +20,7 @@ import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmO
 import de.sciss.lucre.expr.impl.CellViewImpl.CatVarImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl, IExpr}
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.stm.{Disposable, Form, Sys}
 import de.sciss.model.Change
 
 import scala.annotation.tailrec
@@ -196,7 +196,8 @@ object Attr {
         case Some(self) =>
           val firstP  = bridge.contextCellView(key)
           val secondP = bridge.cellView(self, key)
-          val firstVr = ctx.attr.get(key) match {
+          val opt: Option[Form[S]] = ctx.attr.get(key)
+          val firstVr = opt match {
             case Some(ex: Var.Expanded[S, _]) => Some(ex)
             case _ => None
           }
@@ -256,12 +257,12 @@ object Attr {
         opt.getOrElse(default.value)
       }
 
-      private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
+      private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
         val dch = default.changed
         if (pull.contains(dch) && ref.get(tx.peer).isEmpty) {
-          pull.applyChange(dch, isNow = isNow)
+          pull.applyChange(dch)
         } else if (pull.isOrigin(this)) {
-          pull.resolveChange(isNow = isNow)
+          pull.resolveExpr(this)
         } else {
           value
         }
@@ -300,8 +301,8 @@ object Attr {
 
     def value(implicit tx: S#Tx): Option[A] = attrView()
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): Option[A] =
-      pull.resolveChange(isNow = isNow)
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Option[A] =
+      pull.resolveExpr(this)
 
     def changed: IChangeEvent[S, Option[A]] = this
 

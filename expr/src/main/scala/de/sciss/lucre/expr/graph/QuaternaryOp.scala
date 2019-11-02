@@ -66,16 +66,11 @@ object QuaternaryOp {
 
     def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S], isNow: Boolean)(implicit tx: S#Tx): A = {
-      val _1c = a.changed
-      val _2c = b.changed
-      val _3c = c.changed
-      val _4c = d.changed
-
-      val _1v = if (pull.contains(_1c)) pull.applyChange(_1c, isNow = isNow) else a.value
-      val _2v = if (pull.contains(_2c)) pull.applyChange(_2c, isNow = isNow) else b.value
-      val _3v = if (pull.contains(_3c)) pull.applyChange(_3c, isNow = isNow) else c.value
-      val _4v = if (pull.contains(_4c)) pull.applyChange(_4c, isNow = isNow) else d.value
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+      val _1v = pull.expr(a)
+      val _2v = pull.expr(b)
+      val _3v = pull.expr(c)
+      val _4v = pull.expr(d)
 
       value1(_1v, _2v, _3v, _4v)
     }

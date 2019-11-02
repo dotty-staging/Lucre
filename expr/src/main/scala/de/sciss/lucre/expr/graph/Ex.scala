@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.adjunct.Adjunct
 import de.sciss.file.{File => _File}
+import de.sciss.lucre.adjunct.Adjunct
 import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapExOption, ExpandedFlatMapExSeq, ExpandedFlatMapExSeqOption, ExpandedMapActOption, ExpandedMapExOption, ExpandedMapExSeq, ExpandedMapExSeqAct}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, IExpr}
@@ -180,10 +180,11 @@ object Ex {
     override def productPrefix: String = s"Ex$$FlatMapExSeq" // serialization
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx = in.expand[S]
-      val itEx = it.expand[S]
+      val inEx  = in  .expand[S]
+      val itEx  = it  .expand[S]
+      val funEx = fun .expand[S]
       import ctx.targets
-      new ExpandedFlatMapExSeq[S, A, B](inEx, itEx, /*closure, */ fun, tx)
+      new ExpandedFlatMapExSeq[S, A, B](inEx, itEx, /*closure, */ funEx, tx)
     }
   }
 
@@ -195,10 +196,11 @@ object Ex {
     override def productPrefix: String = s"Ex$$FlatMapExSeqOption" // serialization
 
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx = in.expand[S]
-      val itEx = it.expand[S]
+      val inEx  = in.expand[S]
+      val itEx  = it.expand[S]
+      val funEx = fun .expand[S]
       import ctx.targets
-      new ExpandedFlatMapExSeqOption[S, A, B](inEx, itEx, /*closure, */ fun, tx)
+      new ExpandedFlatMapExSeqOption[S, A, B](inEx, itEx, /*closure, */ funEx, tx)
     }
   }
 
