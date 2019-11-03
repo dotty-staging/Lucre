@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IChangeEventImpl
 import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.Ex
+import de.sciss.lucre.expr.graph.{Ex, It}
 import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Sys}
@@ -24,7 +24,8 @@ import de.sciss.model.Change
 import scala.concurrent.stm.Ref
 
 // XXX TODO DRY with ExpandedMapExOption
-final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], fun: Ex[Option[B]], tx0: S#Tx)
+final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], it: It.Expanded[S, A],
+                                                       fun: Ex[Option[B]], tx0: S#Tx)
                                                (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IExpr[S, Option[B]] with IChangeEventImpl[S, Option[B]] with Caching {
 
@@ -37,7 +38,7 @@ final class ExpandedFlatMapExOption[S <: Sys[S], A, B](in: IExpr[S, Option[A]], 
 
   private def valueOf(inV: Option[A])(implicit tx: S#Tx): (Option[B], Disposable[S#Tx]) =
     if (inV.isEmpty) (None, Disposable.empty[S#Tx]) else {
-      val tup = ctx.nested {
+      val tup = ctx.nested(it) {
         val funEx = fun.expand[S]
         val vn    = funEx.value
         vn

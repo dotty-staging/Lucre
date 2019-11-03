@@ -63,7 +63,7 @@ object ExSeq {
     def dispose()(implicit tx: S#Tx): Unit = ???
   }
 
-  final case class Find[A] private (in: Ex[Seq[A]], it: It[A], closure: Graph, p: Ex[Boolean])
+  final case class Find[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Option[A]] {
 
     type Repr[S <: Sys[S]] = IExpr[S, Option[A]]

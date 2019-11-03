@@ -14,12 +14,12 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.ITargets
-import de.sciss.lucre.expr.graph.Act
+import de.sciss.lucre.expr.graph.{Act, It}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
 
-final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], fun: Act, tx0: S#Tx)
+final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], it: It.Expanded[S, A], fun: Act, tx0: S#Tx)
                                                 (implicit protected val targets: ITargets[S], ctx: Context[S])
   extends IAction.Option[S] with IActionImpl[S] {
 
@@ -30,7 +30,7 @@ final class ExpandedMapActOption[S <: Sys[S], A](in: IExpr[S, Option[A]], fun: A
   def executeIfDefined()(implicit tx: S#Tx): Boolean = {
     val inOption = in.value
     inOption.isDefined && {
-      val (_, d) = ctx.nested {
+      val (_, d) = ctx.nested(it) {
         val actEx = fun.expand[S]
         actEx.executeAction()
       }

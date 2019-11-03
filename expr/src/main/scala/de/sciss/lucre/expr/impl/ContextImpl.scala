@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr.impl
 
 import de.sciss.lucre.event.ITargets
-import de.sciss.lucre.expr.graph.Control
+import de.sciss.lucre.expr.graph.{Control, It}
 import de.sciss.lucre.expr.{Context, Graph}
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.TxnLike.peer
@@ -47,7 +47,7 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     }
   }
 
-  def nested[A](body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
+  def nested[A](it: It.Expanded[S, _])(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
     val parentMap = sourceMap.swap(Map.empty)
     parents.transform(parentMap :: _)
     val res = body
@@ -85,7 +85,7 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
               }
 
             case Nil =>
-              val exp    = init
+              val exp = init
               sourceMap.transform(m => m + (ref -> exp))
               exp
           }

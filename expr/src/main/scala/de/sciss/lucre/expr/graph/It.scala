@@ -25,15 +25,17 @@ import scala.concurrent.stm.Ref
 object It {
   trait Expanded[S <: Sys[S], A] extends IExpr[S, A] {
     def setValue(value: A /*, dispatch: Boolean*/)(implicit tx: S#Tx): Unit
+
+    def ref: AnyRef
   }
 
-  private final class ExpandedImpl[S <: Sys[S], A](implicit protected val targets: ITargets[S])
+  private final class ExpandedImpl[S <: Sys[S], A](val ref: AnyRef)(implicit protected val targets: ITargets[S])
     extends Expanded[S, A] with IChangeGenerator[S, A] {
 
-    private[this] val ref = Ref.make[A]
+    private[this] val valueRef = Ref.make[A]
 
     def setValue(value: A /*, dispatch: Boolean*/)(implicit tx: S#Tx): Unit = {
-      ref() = value
+      valueRef() = value
 //      val old =  ref.swap(value)
 //      if (/*dispatch && */ old != value) {
 //        fire(Change(old, value))
@@ -51,7 +53,7 @@ object It {
     //    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
 //      Some(pull.resolve)
 
-    def value(implicit tx: S#Tx): A = ref()
+    def value(implicit tx: S#Tx): A = valueRef()
 
     def dispose()(implicit tx: S#Tx): Unit = ()
 
@@ -65,6 +67,6 @@ final case class It[A](token: Int) extends Ex[A] {
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
-    new graph.It.ExpandedImpl[S, A]
+    new graph.It.ExpandedImpl[S, A](ref)
   }
 }

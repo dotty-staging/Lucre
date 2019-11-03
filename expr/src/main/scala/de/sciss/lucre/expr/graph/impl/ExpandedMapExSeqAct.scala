@@ -31,7 +31,7 @@ final class ExpandedMapExSeqAct[S <: Sys[S], A](in: IExpr[S, Seq[A]], it: It.Exp
     val iterator  = inV.iterator
     val v0        = iterator.next()
     it.setValue(v0 /*, dispatch = false*/ )  // make sure we have the first value ready
-    val (_, funDisposable) = ctx.nested {
+    val (_, funDisposable) = ctx.nested(it) {
       val funEx = fun.expand[S]  // ...which might be read here
       // it.setValue(v0, dispatch = true)
       funEx.executeAction()

@@ -51,7 +51,7 @@ abstract class ExpandedMapExSeqLike[S <: Sys[S], A, CC, B](in: IExpr[S, Seq[A]],
   private def mkRef(inV: Seq[A])(implicit tx: S#Tx): Tuples =
     inV.map { v =>
       it.setValue(v)
-      val (f, d) = ctx.nested {
+      val (f, d) = ctx.nested(it) {
         val _f = fun.expand[S]
         _f.changed ---> this
         _f

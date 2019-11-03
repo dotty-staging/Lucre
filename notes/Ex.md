@@ -809,3 +809,223 @@ for `in` in map-expanded initialisation. So we need to ensure that it's always p
 an expression in expansion initialisation. And then `tryPull` is coming back to haunt as, as now we will need to
 check in any `.value` that is cached whether we currently in an event dispatch :-/
 
+Correct end points for `ctx.nested`: Instead of push/pop of new maps, we should adopt a behaviour similar to `IPull`,
+such that we push/pop elements on a stack during actual expansion in the `visit` (`val exp = init`).
+
+How about nested cases?
+
+```
+  val outer = in.flatMap { xs =>
+    xs.map { x =>
+      f(x)
+    }
+  }
+```
+
+The `xs.map` would keep its own `Disposable` with all the expansion of `f(x)`. When `outer` is disposed, so will
+be the multiple expansions of `xs.map` and in turn their own disposables.
+
+It is theoretically possible that an inner closure refers to the `It` of an outer closure (only or "first"), like
+
+```
+  val outer = in.flatMap { xs =>
+    xs.map { _ =>
+      f(xs)
+    }
+  }
+```
+
+this would translate to
+
+```
+  FlatMap.Expanded(in, it1) {
+    ctx.nested(it1) {
+      Map.Expanded(it1, it2) {
+        ctx.nested(i2) {
+          f(it1)
+        }
+      }
+    }
+  }
+```
+
+the inner map.expand already calls `in.expand` and thus `it1.expand`, before even initialising the body.
+It could also have been
+
+```
+  val outer = in.flatMap { xs =>
+    ys.map { _ =>
+      f(xs)
+    }
+  }
+```
+
+Then we'd encounter the terminal symbol `it1` (`xs`) in an a nested block that uses its own terminal `it2`.
+How do we roll this back correctly, how do we produce the correct disposables?
+
+With something from the environment
+
+```
+  val a = "key".attr(0)
+  val outer = in.flatMap { xs =>
+    ys.map { y =>
+      xs + a
+    }
+  }
+```
+
+Obviously we must exclude `a` from multiple expansion, and `xs + a` must be expanded per element in `in`, whereas
+`ys` does not play a role in multiple expansion. I think this is a good example embodying most possible problems,
+so let's traverse that, by way of `outer.expand`:
+
+- before instantiating the class it will call `in.expand` and its own `it.expand` (`xs`). 
+  Both are new to the context and thus expand and memoise the result
+- the expanded flat-map in its initialisation will call `in.value` and then `ctx.nested(xs) { ... }`
+- the context will thus push `xs` on its internal stack of terminal symbols.
+- we will then expand the closure `ys.map { ... }`. It's new and thus will proceed to expand.
+- before instantiating `ys.map` the class it will call `ys.expand` and its own `it.expand` (`y`).
+  Both are new and thus expanded and memoised.
+- the expanded map in its initialisation will call `ys.value` and then `ctx.nested(y) { ... }`.
+- the context will thus push `y` on its internal stack of terminal symbols.
+- we will then expand the closure `BinaryOp(Plus, xs, a)`. It's new and thus will proceed to expand.
+- before instantiating the class it would call `xs.expand` and `a.expand`. The first would be found by the context
+  on its stack of terminal symbols. We now need to mark the call sequence from `ctx.nested(xs)` to here for
+  non-caching on the return of `ctx.nested(xs)`. What's in that sequence? `ys` was completed, `y` was completed.
+  the open symbols are `ys.map`, `BinaryOp` and `xs`. The latter being the special `It` terminal object is ignored. 
+  In other words `ys.map` and `BinaryOp` are the only things marked for transferal/removal when returning from
+  `ctx.nested(xs)`.
+- in contrast `a` is not a terminal symbol, and thus it will be expanded and not marked for transferal/removal.
+- we then return with the expanded binary-op, which has been memoised for now?
+- let's assume there are two elements in both `in` and `ys`.
+- thus we enter the second call to expand `BinaryOp(Plus, xs, a)` and should find the memoised version, and return
+  quickly.
+- `ctx.nested(y)` ends; there are no objects marked for the terminal symbol `y`. Consequently the disposable is
+  empty
+- `ys.map` expansion is finished, and memoised and returned.
+- Now `ctx.nested(xs)` is done; it will return `ys.map` and `BinaryOp` as its disposables, and they will no longer
+  be found on the cache. Thus in the second iteration of `xs`, the above process repeats.
+
+How do multiple paths coexist? Let's look at a slightly more complex example with two different markings:
+
+```
+  val a = "key".attr(0)
+  val outer = in.flatMap { xs =>
+    ys.map { y =>
+      // BinaryOp(Plus, BinaryOp(Plus, xs, a), y)
+      (xs + a) + y
+    }
+  }
+```
+
+It's obvious that the detection must work in parallel, as we could have written 
+`BinaryOp(Plus, y, BinaryOp(Plus, xs, a))` and should obtain the same markings. In the first variant, we'll first
+mark both inner and outer binary operators for `xs`, then the outer operator for `ys`. In the second variant, we'll
+first mark the outer operator for `ys`, then (only) the inner for `xs`.
+If we had `BinaryOp(Plus, xs, BinaryOp(Plus, y, a))`, we would first mark the outer operator for `xs`, then both
+the inner and the outer for `y`. So we need a way to determine that `y` is nested inside `xs`.
+
+How do we operationalise this? When doing a `ctx.visit` where the value is not cached, we need to wrap around the
+call to 
+
+```
+  val exp = init
+  sourceMap.transform(m => m + (ref -> exp))
+```
+
+"Marking" here could mean that we maintain a `scala.List` of terminal symbols. Before calling `init`, we store the list
+and replace it temporarily by `Nil`. When we return from `init`, we
+check that list. If it is still empty, we store the memoised value in the global source-map. Otherwise we add it to
+the source-map corresponding to the terminal symbol. Then we "unite" the new symbols with previous symbols; if
+the previous list was empty, we leave the new list, otherwise need a correct merger.
+
+Another run through:
+
+```
+  val a = "key".attr(0)
+  val outer = in.flatMap { xs =>
+    ys.map { y =>
+      (xs + a) + y
+    }
+  }
+```
+
+- first iteration of `y`
+- begin `in.flatMap.expand` : is new
+- `in.expand` : is new ; no terms -> global cache
+- `xs.expand` : is new ; no terms -> global cache
+- first iteration of `xs`
+- enter `ctx.nested(xs.ref)`; terminal symbols: `xs :: Nil`
+- begin `ys.map.expand` : is new
+- `ys.expand` : is new ; no terms -> global cache
+- `y.expand` : is new ; no terms -> global cache
+- first iteration of `y`
+- enter `ctx.nested(y.ref)`; terminal symbols: `y :: xs :: Nil`
+- begin `BinaryOp(Plus, BinaryOp(Plus, xs, a), y).expand` : is new
+- begin `BinaryOp(Plus, xs, a).expand` : is new
+- `xs.expand` : in cache; is terminal symbol ; add it to marks, becoming `xs :: Nil` (prepend)
+- `a.expand` : is new ; no terms -> global cache
+- end `BinaryOp(Plus, xs, a).expand`. Mark `xs` found; -> `xs`'s specific cache
+- previous marks was empty; new united marks is `xs :: Nil` (concat)
+- `y.expand` : in cache; is terminal symbol ; add it to marks, becoming `y :: xs :: Nil` (prepend)
+- end `BinaryOp(Plus, BinaryOp(Plus, xs, a), y).expand`; Marks `y :: xs :: Nil` found; -> `y`'s specific cache
+- exit `ctx.nested(y.ref)`; terminal symbols and marks reverted to `xs :: Nil`. Sole disposable is
+  `BinaryOp(Plus, BinaryOp(Plus, xs, a), y).expand`
+- second iteration of `y`
+- enter `ctx.nested(y.ref)`; terminal symbols: `y :: xs :: Nil`
+- begin `BinaryOp(Plus, BinaryOp(Plus, xs, a), y).expand` : is new
+- begin `BinaryOp(Plus, xs, a).expand` : is in `xs`'s specific cache; add `xs` to marks (prepend)
+- `y.expand` : in cache; is terminal symbol ; add it to marks (prepend)
+- end `BinaryOp(Plus, BinaryOp(Plus, xs, a), y).expand`; Marks `y :: xs :: Nil` found; -> `y`'s specific cache
+- exit `ctx.nested(y.ref)`; terminal symbols and marks reverted to `xs :: Nil`. Sole disposable is
+  `BinaryOp(Plus, BinaryOp(Plus, xs, a), y).expand` 
+- end `ys.map.expand` : Mark `xs` found; -> `xs`'s specific cache
+- exit `ctx.nested(xs.ref)`; terminal symbols and marks reverted to `Nil`. Disposables are
+  `ys.map.expand` and `BinaryOp(Plus, xs, a).expand`
+- second iteration of `xs`...
+
+Variant:
+
+```
+  val a = "key".attr(0)
+  val outer = in.flatMap { xs =>
+    ys.map { y =>
+      y + (xs + a)
+    }
+  }
+```
+
+- first iteration of `y`
+- begin `in.flatMap.expand` : is new
+- `in.expand` : is new ; no terms -> global cache
+- `xs.expand` : is new ; no terms -> global cache
+- first iteration of `xs`
+- enter `ctx.nested(xs.ref)`; terminal symbols: `xs :: Nil`
+- begin `ys.map.expand` : is new
+- `ys.expand` : is new ; no terms -> global cache
+- `y.expand` : is new ; no terms -> global cache
+- first iteration of `y`
+- enter `ctx.nested(y.ref)`; terminal symbols: `y :: xs :: Nil`
+- begin `BinaryOp(Plus, y, BinaryOp(Plus, xs, a)).expand` : is new
+- `y.expand` : in cache; is terminal symbol ; add it to marks
+- begin `BinaryOp(Plus, xs, a).expand` : is new (pushed marks is `Nil`)
+- `xs.expand` : in cache; is terminal symbol ; add it to marks (pushed marks is `xs :: Nil`) (prepend)
+- `a.expand` : is new ; no terms -> global cache
+- end `BinaryOp(Plus, xs, a).expand`. Mark `xs` found; -> `xs`'s specific cache
+- previous marks was `y :: Nil`; new united marks is `y :: xs :: Nil` (concat)
+- end `BinaryOp(Plus, y, BinaryOp(Plus, xs, a)).expand`; Marks `y :: xs :: Nil` found; -> `y`'s specific cache
+- exit `ctx.nested(y.ref)`; terminal symbols and marks reverted to `xs :: Nil`. Sole disposable is
+  `BinaryOp(Plus, y, BinaryOp(Plus, xs, a)).expand`
+- second iteration of `y`
+- enter `ctx.nested(y.ref)`; terminal symbols: `y :: xs :: Nil`
+- begin `BinaryOp(Plus, y, BinaryOp(Plus, xs, a)).expand` : is new
+- `y.expand` : in cache; is terminal symbol ; add it to marks, becoming `y :: Nil` (concat)
+- begin `BinaryOp(Plus, xs, a).expand` : is in `xs`'s specific cache; add `xs` to marks, thus `y :: xs :: Nil` (__not prepend__)
+- end `BinaryOp(Plus, y, BinaryOp(Plus, xs, a)).expand`; Marks `y :: xs :: Nil` found; -> `y`'s specific cache
+- exit `ctx.nested(y.ref)`; terminal symbols and marks reverted to `xs :: Nil`. Sole disposable is
+  `BinaryOp(Plus, y, BinaryOp(Plus, xs, a)).expand` 
+- end `ys.map.expand` : Mark `xs` found; -> `xs`'s specific cache
+- exit `ctx.nested(xs.ref)`; terminal symbols and marks reverted to `Nil`. Disposables are
+  `ys.map.expand` and `BinaryOp(Plus, xs, a).expand`
+- second iteration of `xs`...
+
+Question: When marks are united, must that be sorted, or just `old ++ new` ? Adding marks surely must be sorted.

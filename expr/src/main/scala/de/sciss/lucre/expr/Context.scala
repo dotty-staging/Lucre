@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.{ITargets, Observable}
-import de.sciss.lucre.expr.graph.Control
+import de.sciss.lucre.expr.graph.{Control, It}
 import de.sciss.lucre.expr.impl.ContextImpl
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.{Cursor, Disposable, Form, MapLike, NoSys, Obj, Sys, UndoManager, Workspace}
@@ -65,7 +65,7 @@ trait Context[S <: Sys[S]] extends Disposable[S#Tx] {
   /** Creates a temporary nested context into which all `visit` calls are
     * redirected, thus a compound `Disposable` can be returned.
     */
-  def nested[A](body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
+  def nested[A](it: It.Expanded[S, _])(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
 
   def getProperty[A](control: Control, key: String)(implicit tx: S#Tx): Option[A]
 
