@@ -116,6 +116,8 @@ final class ExpandedMapExSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.Exp
                                                (implicit targets: ITargets[S], ctx: Context[S])
   extends ExpandedMapExSeqLike[S, A, B, B](in, it, fun, tx0) {
 
+  override def toString: String = s"$in.map($fun)"
+
   protected def append(b: mutable.Builder[B, _], cc: B): Unit = b += cc
 }
 

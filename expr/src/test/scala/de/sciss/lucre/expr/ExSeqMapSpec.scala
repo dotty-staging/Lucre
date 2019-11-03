@@ -6,7 +6,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
 
-  "Ex[Seq[A]].map" should "work as expected" in {
+  ignore /*"Ex[Seq[A]].map"*/ should "work as expected" in {
     val g = Graph {
       import ExImport._
       import graph._
@@ -46,6 +46,8 @@ class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
   }
 
   it should "correctly observe expressions from the closure" in {
+    de.sciss.lucre.event.showLog = true
+
     val g = Graph {
       import ExImport._
       import graph._
@@ -96,7 +98,7 @@ class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
     assert (res === exp)
   }
 
-  it should "correctly observe more expressions from the closure" in {
+  ignore should "correctly observe more expressions from the closure" in {
     val g = Graph {
       import ExImport._
       import graph._

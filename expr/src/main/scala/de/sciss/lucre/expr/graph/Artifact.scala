@@ -138,7 +138,7 @@ final case class Artifact(key: String, default: Ex[File] = file(""))
     val defaultEx: Repr[S] = default.expand[S]
     val attrView = Attr.resolveNested(key)
     import ctx.targets
-    new Attr.WithDefault.Expanded[S, File](attrView, defaultEx, tx)
+    new Attr.WithDefault.Expanded[S, File](key, attrView, defaultEx, tx)
   }
 
   def update(in: Ex[File]): Control = Attr.Update (in, key)

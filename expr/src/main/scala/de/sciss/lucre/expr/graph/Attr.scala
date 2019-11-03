@@ -227,16 +227,18 @@ object Attr {
         val defaultEx: Repr[S] = default.expand[S]
         import ctx.targets
         val attrView = resolveNested(key)
-        new WithDefault.Expanded[S, A](attrView, defaultEx, tx)
+        new WithDefault.Expanded[S, A](key, attrView, defaultEx, tx)
       }
 
       override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
 
-    private[lucre] final class Expanded[S <: Sys[S], A](attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
+    private[lucre] final class Expanded[S <: Sys[S], A](key: String, attrView: CellView[S#Tx, Option[A]], default: IExpr[S, A],
                                                         tx0: S#Tx)
                                                        (implicit protected val targets: ITargets[S])
       extends IExpr[S, A] with IChangeGenerator[S, A] {
+
+      override def toString: String = s"Attr.WithDefault($key, $default)"
 
       private[this] val ref = Ref(attrView()(tx0))
 
