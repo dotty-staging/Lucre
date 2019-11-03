@@ -806,5 +806,6 @@ has to be stored the 'before' state.
 
 How to create and dispose the iterations? We going exactly the opposite way as before, we need to call `.value` now
 for `in` in map-expanded initialisation. So we need to ensure that it's always possible and valid to call `.value` on
-an expression in expansion initialisation.
+an expression in expansion initialisation. And then `tryPull` is coming back to haunt as, as now we will need to
+check in any `.value` that is cached whether we currently in an event dispatch :-/
 

@@ -125,9 +125,9 @@ object Ex {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val inEx  = in.expand[S]
       val itEx  = it.expand[S]
-      val funEx = fun.expand[S]
+//      val funEx = fun.expand[S]
       import ctx.targets
-      new ExpandedMapExSeq[S, A, B](inEx, itEx, /*closure, */ funEx, tx)
+      new ExpandedMapExSeq[S, A, B](inEx, itEx, /*closure, */ fun, tx)
     }
   }
 
@@ -182,9 +182,9 @@ object Ex {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val inEx  = in  .expand[S]
       val itEx  = it  .expand[S]
-      val funEx = fun .expand[S]
+//      val funEx = fun .expand[S]
       import ctx.targets
-      new ExpandedFlatMapExSeq[S, A, B](inEx, itEx, /*closure, */ funEx, tx)
+      new ExpandedFlatMapExSeq[S, A, B](inEx, itEx, /*closure, */ fun, tx)
     }
   }
 
@@ -198,9 +198,9 @@ object Ex {
     protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
       val inEx  = in.expand[S]
       val itEx  = it.expand[S]
-      val funEx = fun .expand[S]
+//      val funEx = fun .expand[S]
       import ctx.targets
-      new ExpandedFlatMapExSeqOption[S, A, B](inEx, itEx, /*closure, */ funEx, tx)
+      new ExpandedFlatMapExSeqOption[S, A, B](inEx, itEx, /*closure, */ fun, tx)
     }
   }
 
