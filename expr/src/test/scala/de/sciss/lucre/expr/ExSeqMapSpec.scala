@@ -46,8 +46,6 @@ class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
   }
 
   it should "correctly observe expressions from the closure" in {
-    de.sciss.lucre.event.showLog = true
-
     val g = Graph {
       import ExImport._
       import graph._
@@ -80,7 +78,9 @@ class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
         self.attr.put("in2", vr2)
         g.expand.initControl()
         vr1() = Vector(1.0, 2.0, 3.0)
+        de.sciss.lucre.event.showLog = true
         vr2() = 10.0
+        de.sciss.lucre.event.showLog = false
         vr1() = Vector(-4.0, -5.0)
         vr2() = 12.0
       }
