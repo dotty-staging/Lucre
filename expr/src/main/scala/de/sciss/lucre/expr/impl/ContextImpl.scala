@@ -21,7 +21,7 @@ import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, UndoManager, Workspace}
 
 import scala.annotation.tailrec
-import scala.concurrent.stm.{Ref, TMap}
+import scala.concurrent.stm.{Ref, TMap, TxnLocal}
 
 trait ContextMixin[S <: Sys[S]] extends Context[S] {
   // ---- abstract ----
@@ -35,10 +35,8 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   private type SourceMap  = Map [AnyRef, Disposable[S#Tx]]
   private type Properties = TMap[AnyRef, Map[String, Any]]
 
-  private[this] val sourceMap : Ref[SourceMap]  = Ref(Map.empty)
+  private[this] val globalMap : Ref[SourceMap]  = Ref(Map.empty)
   private[this] val properties: Properties      = TMap.empty
-
-  private[this] val parents = Ref(List.empty[SourceMap])
 
   def initGraph(g: Graph)(implicit tx: S#Tx): Unit = {
     properties.clear()
@@ -47,11 +45,22 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     }
   }
 
+  private[this] val terminals = TxnLocal(List.empty[Nested])
+  private[this] val markers   = TxnLocal(Set .empty[Int   ])
+
+  private final class Nested(val ref: AnyRef, val level: Int) {
+    var sourceMap: SourceMap = Map.empty
+  }
+
   def nested[A](it: It.Expanded[S, _])(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
-    val parentMap = sourceMap.swap(Map.empty)
-    parents.transform(parentMap :: _)
-    val res = body
-    val disposableIt = sourceMap().values
+    val tOld    = terminals()
+    val n       = new Nested(it.ref, level = tOld.size)
+    terminals() = tOld :+ n // n :: tOld
+    val res     = body
+    terminals() = tOld
+    markers.transform(_ - n.level)
+
+    val disposableIt = n.sourceMap.values
     val disposable: Disposable[S#Tx] =
       if (disposableIt.isEmpty) Disposable.empty
       else disposableIt.toList match {
@@ -59,38 +68,51 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
         case more           => Disposable.seq(more: _*)
       }
 
-    parents.transform(_.tail)
-    sourceMap() = parentMap
-
     (res, disposable)
   }
 
   def dispose()(implicit tx: S#Tx): Unit = {
-    require (parents().isEmpty, "Must not call dispose in a nested operation")
-    val m = sourceMap.swap(Map.empty)
+    require (terminals().isEmpty, "Must not call dispose in a nested operation")
+    val m = globalMap.swap(Map.empty)
     m.foreach(_._2.dispose())
   }
 
   final def visit[U <: Disposable[S#Tx]](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
-    sourceMap().get(ref) match {
+    val t = terminals()
+    if (t.nonEmpty) t.find(_.ref == ref) match {
+      case Some(n)  => markers.transform(_ + n.level)
+      case None     =>
+    }
+
+    globalMap().get(ref) match {
       case Some(res) => res.asInstanceOf[U]  // not so pretty...
       case None =>
         @tailrec
-        def loop(rem: List[SourceMap]): U =
+        def loop(rem: List[Nested]): U =
           rem match {
             case head :: tail =>
-              head.get(ref) match {
-                case Some(res) => res.asInstanceOf[U]
-                case None => loop(tail)
+              head.sourceMap.get(ref) match {
+                case Some(res)  => res.asInstanceOf[U]
+                case None       => loop(tail)
               }
 
             case Nil =>
-              val exp = init
-              sourceMap.transform(m => m + (ref -> exp))
+              val oldMarkers  = markers.swap(Set.empty)
+              val exp         = init
+              val newMarkers  = markers()
+              if (newMarkers.isEmpty) {
+                globalMap.transform(_ + (ref -> exp))
+                markers()     = oldMarkers
+              } else {
+                val m         = newMarkers.max
+                val n         = terminals().apply(m)
+                n.sourceMap  += (ref -> exp)
+                markers()     = oldMarkers union newMarkers
+              }
               exp
           }
 
-        loop(parents())
+        loop(t)
      }
   }
 
