@@ -47,7 +47,7 @@ class ExSeqFlatMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput 
       """foo bar quux
         |""".stripMargin
 
-    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
+//    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
     assert (res === exp)
   }

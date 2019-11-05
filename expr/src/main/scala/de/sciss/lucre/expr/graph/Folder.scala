@@ -135,8 +135,9 @@ object Folder {
           val before  = ref.swap(now)
           if (before != now) fire(Change(before, now))
         }
-        obs() = newObs
-//        val now     = mapValue(f)
+        obs()   = newObs
+        val now = mapValue(f)
+        ref()   = now
 //        val before  = ref.swap(now)
 //        if (before != now) Some(Change(before, now)) else None
       }
@@ -161,7 +162,7 @@ object Folder {
         if (phase.isBefore) ref() else {
           val res = pull.expr(in)
           setObj(res)
-          res.peer.fold(ref()) { f => mapValue(f) }
+          ref() // res.peer.fold(ref()) { f => mapValue(f) }
         }
       }
 
