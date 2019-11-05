@@ -56,6 +56,14 @@ abstract class AbstractExObjBridgeImpl[A, B <: A, _Ex[~ <: Sys[~]] <: expr.Expr[
     }
   }
 
+  final def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[A] =
+    if (obj.tpe.typeId === tpe.typeId) {
+      val vt = obj.asInstanceOf[_Ex[S]]
+      Some(vt.value)
+    } else {
+      None
+    }
+
   override final def write(out: DataOutput): Unit = {
     super.write(out)
     out.writeInt(tpe.typeId)

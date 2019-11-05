@@ -484,6 +484,29 @@ object UnaryOp {
     override def name = "SeqReverse"
   }
 
+//  final case class SeqSelect[A]()(implicit bridge: Obj.Bridge[A])
+//    extends NamedOp[Seq[Obj], Seq[A]] with ProductWithAdjuncts {
+//
+//    def apply(a: Seq[Obj]): Seq[A] = a.flatMap(_.peer.flatMap(bridge.tryParseObj))
+//
+//    override def name = "SeqSelect"
+//
+//    def adjuncts: List[Adjunct] = from :: Nil
+//  }
+//
+//  final case class SeqSelectFirst[A]()(implicit from: FromAny[A])
+//    extends NamedOp[Seq[Obj], Option[A]] with ProductWithAdjuncts {
+//
+//    def apply(a: Seq[Obj]): Option[A] = {
+//      val it = a.iterator.flatMap(from.fromAny)
+//      if (it.hasNext) Some(it.next()) else None
+//    }
+//
+//    override def name = "SeqSelectFirst"
+//
+//    def adjuncts: List[Adjunct] = from :: Nil
+//  }
+
   final case class SeqSize[A]() extends NamedOp[Seq[A], Int] {
     def apply(a: Seq[A]): Int = a.size
 

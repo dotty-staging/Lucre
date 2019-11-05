@@ -53,6 +53,11 @@ object ArtifactLocation {
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[File] =
       obj.attr.$[_ArtifactLocation](key).map(_.value)
+
+    def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[File] = obj match {
+      case a: _ArtifactLocation[S]  => Some(a.value)
+      case _                        => None
+    }
   }
 
   private final class ObjCellViewImpl[S <: Sys[S]](attrH: stm.Source[S#Tx, AttrMap[S]], key: String)

@@ -115,6 +115,11 @@ object Folder {
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Folder] =
       obj.attr.$[stm.Folder](key).map(wrap(_))
+
+    def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[Folder] = obj match {
+      case a: stm.Folder[S] => Some(wrap(a))
+      case _                => None
+    }
   }
 
   private abstract class ExpandedImpl[S <: Sys[S], A](in: IExpr[S, Folder], init: A, tx0: S#Tx)

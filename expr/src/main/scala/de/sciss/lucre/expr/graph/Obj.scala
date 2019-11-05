@@ -174,6 +174,9 @@ object Obj {
 
       def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Obj] =
         obj.attr.get(key).map(wrap(_))
+
+      def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[Obj] =
+        Some(wrap(obj))
     }
   }
   trait Bridge[A] extends Adjunct {
@@ -188,6 +191,8 @@ object Obj {
     def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]]
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[A]
+
+    def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[A]
   }
 
   object Source {

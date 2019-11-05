@@ -200,10 +200,10 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   def format(args: Ex[Any]*): Ex[String] = graph.StringFormat(x, args)
 }
 
-// TODO: select[B], selectFirst[B], count, distinctBy, dropWhile, exists, filter, filterNot, find, findLast,
-// flatten, fold, foldLeft, foldRight, forall, groupBy,
-// groupMap, groupMapReduce, indexWhere, maxByOption, minByOption, partition, reduceLeftOption, reduceRightOption,
-// scanLeft, scanRight, segmentLength, sortBy, sortWith, span, takeWhile, toMap, toSet, transpose, unzip, withFilter
+// TODO:
+// distinctBy, flatten, fold, foldLeft, foldRight, groupBy,
+// groupMap, groupMapReduce, maxByOption, minByOption, partition, reduceLeftOption, reduceRightOption,
+// scanLeft, scanRight, segmentLength, sortBy, sortWith, span, toMap, toSet, transpose, unzip
 final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** A concatenation of this sequence with `that` sequence */
   def ++ [B >: A](that: Ex[Seq[B]]): Ex[Seq[B]] = BinOp(BinOp.SeqConcat[B](), x, that)
@@ -223,6 +223,11 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** A concatenation of this sequence with `that` sequence */
   def concat[B >: A](that: Ex[Seq[B]]): Ex[Seq[B]] = BinOp(BinOp.SeqConcat[B](), x, that)
 
+  def count(p: Ex[A] => Ex[Boolean]): Ex[Int] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.Count(x, it, res)
+  }
+
   /** Whether this collection contains an element or not */
   def contains(elem: Ex[A]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, A](), x, elem)
 //  def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, B](), x, elem)
@@ -240,13 +245,43 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** The rest of this sequence without its `n` last elements */
   def dropRight(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqDropRight[A](), x, n)
 
+  def dropWhile(p: Ex[A] => Ex[Boolean]): Ex[Seq[A]] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.DropWhile(x, it, res)
+  }
+
   /** Tests whether this sequence ends with `that` sequence */
   def endsWith(that: Ex[Seq[A]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, A](), x, that)
 //  def endsWith[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, B](), x, that)
 
+  def exists(p: Ex[A] => Ex[Boolean]): Ex[Boolean] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.Exists(x, it, res)
+  }
+
+  def filter(p: Ex[A] => Ex[Boolean]): Ex[Seq[A]] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.Filter(x, it, res)
+  }
+
+  def filterNot(p: Ex[A] => Ex[Boolean]): Ex[Seq[A]] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.FilterNot(x, it, res)
+  }
+
+  def forall(p: Ex[A] => Ex[Boolean]): Ex[Boolean] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.Forall(x, it, res)
+  }
+
   def find(p: Ex[A] => Ex[Boolean]): Ex[Option[A]] = {
-    val (it, /*closure,*/ res) = Ex.mkClosure(p)
+    val (it, res) = Ex.mkClosure(p)
     ExSeq.Find(x, it, res)
+  }
+
+  def findLast(p: Ex[A] => Ex[Boolean]): Ex[Option[A]] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.FindLast(x, it, res)
   }
 
   def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Seq, B, To]): To =
@@ -273,6 +308,11 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** First index at or after `from` where this sequence contains `that` sequence as a slice, or `-1` if not found */
   def indexOfSlice(that: Ex[Seq[A]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, A](), x, that, from)
 //  def indexOfSlice[B >: A](that: Ex[Seq[B]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, B](), x, that, from)
+
+  def indexWhere(p: Ex[A] => Ex[Boolean]): Ex[Int] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.IndexWhere(x, it, res)
+  }
 
   /** Indices from zero until the size of this sequence */
   def indices: Ex[Seq[Int]] = UnOp(UnOp.SeqIndices[A](), x)
@@ -336,6 +376,12 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   def sameElements[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqSameElements[A, B](), x, that)
 
+  def select[B](implicit bridge: Obj.Bridge[B], ev: Ex[Seq[A]] =:= Ex[Seq[Obj]]): Ex[Seq[B]] =
+    ExSeq.Select(ev(x))
+
+  def selectFirst[B](implicit bridge: Obj.Bridge[B], ev: Ex[Seq[A]] =:= Ex[Seq[Obj]]): Ex[Option[B]] =
+    ExSeq.SelectFirst(ev(x))
+
   /** The number of elements in the sequence */
   def size: Ex[Int] = UnOp(UnOp.SeqSize[A](), x)
 
@@ -362,10 +408,18 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   def takeRight(n: Ex[Int]): Ex[Seq[A]] = BinOp(BinOp.SeqTakeRight[A](), x, n)
 
+  def takeWhile(p: Ex[A] => Ex[Boolean]): Ex[Seq[A]] = {
+    val (it, res) = Ex.mkClosure(p)
+    ExSeq.TakeWhile(x, it, res)
+  }
+
   /** A new sequence equal to this sequence with one single replaced `elem` at `index`.
     * If the index lies outside the sequence, the original sequence is returned.
     */
   def updated[B >: A](index: Ex[Int], elem: Ex[B]): Ex[Seq[B]] = TernOp(TernOp.SeqUpdated[A, B](), x, index, elem)
+
+  // used in for-comprehensions
+  def withFilter(p: Ex[A] => Ex[Boolean]): Ex[Seq[A]] = filter(p)
 
   def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]] = BinOp(BinOp.SeqZip[A, B](), x, that)
 

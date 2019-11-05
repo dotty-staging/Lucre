@@ -55,6 +55,11 @@ object Artifact {
 
     def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[File] =
       obj.attr.$[_Artifact](key).map(_.value)
+
+    def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[File] = obj match {
+      case a: _Artifact[S]  => Some(a.value)
+      case _                => None
+    }
   }
 
   private def tryRelativize[S <: Sys[S]](loc: _ArtifactLocation[S], f: File)(implicit tx: S#Tx): Try[_Artifact.Child] =
