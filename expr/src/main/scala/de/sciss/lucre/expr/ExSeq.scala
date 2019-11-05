@@ -16,6 +16,7 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.event.impl.IChangeEventImpl
 import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr
+import de.sciss.lucre.expr.graph.impl.ExpandedMapSeqIn
 import de.sciss.lucre.expr.graph.{Ex, It}
 import de.sciss.lucre.stm.Sys
 
@@ -52,15 +53,26 @@ object ExSeq {
   }
 
   private final class FindExpanded[S <: Sys[S], A](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
-                                                   p: Ex[Boolean], tx0: S#Tx)
-                                                  (implicit targets: ITargets[S])
-    extends IExpr[S, Option[A]] {
+                                                   fun: Ex[Boolean], tx0: S#Tx)
+                                                  (implicit targets: ITargets[S], ctx: Context[S])
+    extends ExpandedMapSeqIn[S, A, Boolean, Option[A]](in, it, fun, tx0) {
 
-    def value(implicit tx: S#Tx): Option[A] = ???
+    override def toString: String = s"$in.find($fun)"
 
-    def changed: IChangeEvent[S, Option[A]] = ???
+    protected def emptyOut: Option[A] = None
 
-    def dispose()(implicit tx: S#Tx): Unit = ???
+    protected def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[S, Boolean] => Boolean)
+                             (implicit tx: S#Tx): Option[A] = {
+      assert (tuples.size == inV.size)
+      val iterator  = inV.iterator zip tuples.iterator
+      while (iterator.hasNext) {
+        val (vn, (f, _)) = iterator.next()
+        it.setValue(vn)
+        val funV = elem(f)
+        if (funV) return Some(vn)
+      }
+      None
+    }
   }
 
   final case class Find[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
