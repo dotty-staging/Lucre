@@ -18,7 +18,6 @@ import de.sciss.lucre.event.{IChangePublisher, IPull}
 import de.sciss.lucre.expr.ITrigger
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
 
@@ -36,15 +35,21 @@ trait ITriggerConsumer[S <: Sys[S], A] extends IChangePublisher[S, A] {
   def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit =
     tr.changed ---> this.changed
 
-  protected def trigReceived()(implicit tx: S#Tx): Option[Change[A]]
+  protected def valueBefore ()(implicit tx: S#Tx): A
+  protected def trigReceived()(implicit tx: S#Tx): A
 
-  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
-
-  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[A]] = {
-    if (pull.isOrigin(this.changed)) Some(pull.resolve)
-    else {
+  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A =
+    if (pull.isOrigin(this.changed)) pull.resolveChange[A]
+    else if (phase.isBefore) valueBefore() else {
       val p: Parents[S] = pull.parents(this.changed)
-      if (p.exists(pull(_).isDefined)) trigReceived() else None
+      if (p.exists(pull(_).isDefined)) trigReceived() else valueBefore()
     }
-  }
+
+//  private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[A]] = {
+//    if (pull.isOrigin(this.changed)) Some(pull.resolve)
+//    else {
+//      val p: Parents[S] = pull.parents(this.changed)
+//      if (p.exists(pull(_).isDefined)) trigReceived() else None
+//    }
+//  }
 }

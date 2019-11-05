@@ -92,14 +92,13 @@ object Obj {
     final def executeAction()(implicit tx: S#Tx): Unit =
       trigReceived() // .foreach(fire) --- we don't need to fire, there is nobody listening;
 
-    final protected def trigReceived()(implicit tx: S#Tx): Option[Change[Obj]] = {
-      val now     = make()
-      val before  = ref.swap(now) // needs caching
-      if (before == now)
-        None
-      else
-        Some(Change(before, now))
+    final protected def trigReceived()(implicit tx: S#Tx): Obj = {
+      val now = make()
+      ref() = now
+      now
     }
+
+    protected def valueBefore()(implicit tx: S#Tx): Obj = ref()
 
     final def changed: IChangeEvent[S, Obj] = this
   }

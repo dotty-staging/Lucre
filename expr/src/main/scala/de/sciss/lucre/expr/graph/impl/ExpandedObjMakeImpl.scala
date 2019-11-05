@@ -41,14 +41,18 @@ abstract class ExpandedObjMakeImpl[S <: Sys[S], A](implicit protected val target
   def value(implicit tx: S#Tx): A =
     IPush.tryPull(this).fold(ref())(_.now)
 
-  def executeAction()(implicit tx: S#Tx): Unit =
-    trigReceived().foreach(fire)
-
-  protected def trigReceived()(implicit tx: S#Tx): Option[Change[A]] = {
-    val now     = make()
-    val before  = ref.swap(now) // needs caching
-    Some(Change(before, now))
+  def executeAction()(implicit tx: S#Tx): Unit = {
+    val ch = Change(valueBefore(), trigReceived())
+    if (ch.isSignificant) fire(ch)
   }
+
+  protected def trigReceived()(implicit tx: S#Tx): A = {
+    val now = make()
+    ref() = now
+    now
+  }
+
+  protected def valueBefore()(implicit tx: S#Tx): A = ref()
 
   def changed: IChangeEvent[S, A] = this
 }

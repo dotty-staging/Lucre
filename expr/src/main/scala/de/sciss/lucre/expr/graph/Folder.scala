@@ -126,19 +126,19 @@ object Folder {
 
     protected def mapValue(f: stm.List[S, stm.Obj[S]])(implicit tx: S#Tx): A
 
-    private def setObj(v: Folder)(implicit tx: S#Tx): Option[Change[A]] = {
+    private def setObj(v: Folder)(implicit tx: S#Tx): Unit /*Option[Change[A]]*/ = {
       obs.swap(Disposable.empty).dispose()
       // XXX TODO --- should we also fire when size has been non-zero and v.peer is empty?
-      v.peer.flatMap { f =>
+      v.peer.foreach { f =>
         val newObs = f.changed.react { implicit tx => upd =>
           val now     = mapValue(upd.list)
           val before  = ref.swap(now)
           if (before != now) fire(Change(before, now))
         }
         obs() = newObs
-        val now     = mapValue(f)
-        val before  = ref.swap(now)
-        if (before != now) Some(Change(before, now)) else None
+//        val now     = mapValue(f)
+//        val before  = ref.swap(now)
+//        if (before != now) Some(Change(before, now)) else None
       }
     }
 
@@ -155,7 +155,15 @@ object Folder {
       obs.swap(Disposable.empty).dispose()
     }
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A =
+      if (pull.isOrigin(this)) pull.resolveExpr(this)
+      else {
+        if (phase.isBefore) ref() else {
+          val res = pull.expr(in)
+          setObj(res)
+          res.peer.fold(ref()) { f => mapValue(f) }
+        }
+      }
 
 //    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
 //      if (pull.isOrigin(this)) Some(pull.resolve)

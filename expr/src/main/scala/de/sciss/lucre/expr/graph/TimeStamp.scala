@@ -21,7 +21,6 @@ import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.{Context, IAction, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
 
@@ -94,16 +93,21 @@ object TimeStamp {
     // should we use universe.scheduler?
     private[this] val ref = Ref(System.currentTimeMillis())
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Long = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Long =
+      if (phase.isBefore || { val p: Parents[S] = pull.parents(this); !p.exists(pull(_).isDefined) }) ref() else {
+        val now = System.currentTimeMillis()
+        ref()   = now
+        now
+      }
 
-    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[Long]] = {
-      val p: Parents[S] = pull.parents(this)
-      if (p.exists(pull(_).isDefined)) {
-        val now     = System.currentTimeMillis()
-        val before  = ref.swap(now)
-        if (before != now) Some(Change(before, now)) else None
-      } else None
-    }
+//    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[Long]] = {
+//      val p: Parents[S] = pull.parents(this)
+//      if (p.exists(pull(_).isDefined)) {
+//        val now     = System.currentTimeMillis()
+//        val before  = ref.swap(now)
+//        if (before != now) Some(Change(before, now)) else None
+//      } else None
+//    }
 
     def value(implicit tx: S#Tx): Long =
       IPush.tryPull(this).fold(ref())(_.now)

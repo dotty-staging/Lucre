@@ -13,12 +13,11 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.impl.{IChangeEventImpl, IEventImpl}
-import de.sciss.lucre.event.{IChangeEvent, IEvent, IPull, ITargets}
+import de.sciss.lucre.event.impl.IChangeEventImpl
+import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
-import de.sciss.model.Change
 
 import scala.annotation.tailrec
 
@@ -108,7 +107,33 @@ object Else {
 
     def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+      type CaseValue = (Boolean, A)
+
+      // XXX TODO --- this evaluates all branches; we could optimize
+      @tailrec
+      def loop1(rem: List[Case[S, A]], res: List[CaseValue]): List[CaseValue] = rem match {
+        case (cond, branch) :: tail =>
+          val condV     = pull.expr(cond  )
+          val branchV   = pull.expr(branch)
+          loop1(tail, (condV, branchV) :: res)
+
+        case Nil => res.reverse
+      }
+
+      val defaultV = pull.expr(default)
+
+      @tailrec
+      def loop2(rem: List[CaseValue]): A = rem match {
+        case (condV, branchV) :: tail =>
+          if (condV) branchV else loop2(tail)
+
+        case Nil => defaultV
+      }
+
+      val casesCh = loop1(cases, Nil)
+      loop2(casesCh)
+    }
 
 //    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
 //      type CaseChange = (Change[Boolean], Change[A])

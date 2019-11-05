@@ -38,7 +38,12 @@ object Latch {
 
     def changed: IChangeEvent[S, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = ???
+    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A =
+      if (phase.isBefore || pull(trig.changed).isEmpty) ref() else {
+        val newValue  = in.value
+        ref()         = newValue
+        newValue
+      }
 
 //    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
 //      if (pull(trig.changed).isEmpty) None else {
