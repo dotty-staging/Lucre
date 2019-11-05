@@ -24,24 +24,26 @@ import scala.collection.mutable
 import scala.concurrent.stm.Ref
 import scala.language.higherKinds
 
-abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, CA[_], CB, B](in: IExpr[S, CA[A]], it: It.Expanded[S, A],
-                                                                    /* closure: Graph, */ fun: Ex[CB], tx0: S#Tx)
-                                                                   (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IExpr[S, CA[B]] with IChangeEventImpl[S, CA[B]] with Caching {
+abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, In[_], P, Out](in: IExpr[S, In[A]], it: It.Expanded[S, A],
+                                                                     /* closure: Graph, */ fun: Ex[P], tx0: S#Tx)
+                                                                    (implicit protected val targets: ITargets[S], ctx: Context[S])
+  extends IExpr[S, Out] with IChangeEventImpl[S, Out] with Caching {
 
-  protected type Tuples = CA[(IExpr[S, CB], Disposable[S#Tx])]
+  protected type Tuples = In[(IExpr[S, P], Disposable[S#Tx])]
 
   // ---- abstract: in ----
 
-  protected def isEmpty[A1](in: CA[A1]): Boolean
+  protected def isEmpty[A1](in: In[A1]): Boolean
 
-  protected def foreach[A1](in: CA[A1])(body: A1 => Unit): Unit
+  protected def foreach[A1](in: In[A1])(body: A1 => Unit): Unit
 
-  protected def empty[A1]: CA[A1]
+  protected def emptyIn[A1]: In[A1]
 
-  protected def map[A1, B1](in: CA[A1])(body: A1 => B1): CA[B1]
+  protected def emptyOut: Out
 
-  protected def buildResult(inV: CA[A], tuples: Tuples)(elem: IExpr[S, CB] => CB)(implicit tx: S#Tx): CA[B]
+  protected def map[A1, B1](in: In[A1])(body: A1 => B1): In[B1]
+
+  protected def buildResult(inV: In[A], tuples: Tuples)(elem: IExpr[S, P] => P)(implicit tx: S#Tx): Out
 
   // ---- impl ----
 
@@ -56,15 +58,15 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, CA[_], CB, B](in: IExpr[S,
 
   init()(tx0)
 
-  private def disposeRef(refV: CA[(IExpr[S, CB], Disposable[S#Tx])])(implicit tx: S#Tx): Unit =
+  private def disposeRef(refV: In[(IExpr[S, P], Disposable[S#Tx])])(implicit tx: S#Tx): Unit =
     foreach(refV) { case (f, d) =>
       f.changed -/-> this
       d.dispose()
     }
 
-  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): CA[B] = {
+  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Out = {
     val inV = pull.expr(in)
-    if (isEmpty(inV)) empty
+    if (isEmpty(inV)) emptyOut
     else /*pull.nonCached(it.changed)*/ {
       if (pull.contains(in.changed) && phase.isNow) {
         val refV = mkRef(inV)
@@ -74,7 +76,7 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, CA[_], CB, B](in: IExpr[S,
     }
   }
 
-  private def mkRef(inV: CA[A])(implicit tx: S#Tx): Tuples =
+  private def mkRef(inV: In[A])(implicit tx: S#Tx): Tuples =
     map(inV) { v =>
       it.setValue(v)
       val (f, d) = ctx.nested(it) {
@@ -85,9 +87,9 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, CA[_], CB, B](in: IExpr[S,
       (f, d)
     }
 
-  final def value(implicit tx: S#Tx): CA[B] = {
+  final def value(implicit tx: S#Tx): Out = {
     val inV = in.value
-    if (isEmpty(inV)) empty
+    if (isEmpty(inV)) emptyOut
     else {
       buildResult(inV, ref())(_.value)
     }
@@ -95,22 +97,18 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, CA[_], CB, B](in: IExpr[S,
 
   final def dispose()(implicit tx: S#Tx): Unit = {
     in .changed.-/->(this)
-    disposeRef(ref.swap(empty))
+    disposeRef(ref.swap(emptyIn))
   }
 
-  def changed: IChangeEvent[S, CA[B]] = this
+  def changed: IChangeEvent[S, Out] = this
 }
 
 // sequence input
 
-abstract class ExpandedMapSeqLike[S <: Sys[S], A, CC, B](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
-                                                         /* closure: Graph, */ fun: Ex[CC], tx0: S#Tx)
+abstract class ExpandedMapSeqIn[S <: Sys[S], A, P, Out](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
+                                                         /* closure: Graph, */ fun: Ex[P], tx0: S#Tx)
                                                         (implicit targets: ITargets[S], ctx: Context[S])
-  extends ExpandedMapSeqOrOption[S, A, Seq, CC, B](in, it, fun, tx0) {
-
-  // ---- abstract: out ----
-
-  protected def append(b: mutable.Builder[B, _], cc: CC): Unit
+  extends ExpandedMapSeqOrOption[S, A, Seq, P, Out](in, it, fun, tx0) {
 
   // ---- impl ----
 
@@ -118,12 +116,26 @@ abstract class ExpandedMapSeqLike[S <: Sys[S], A, CC, B](in: IExpr[S, Seq[A]], i
 
   protected final def foreach[A1](in: Seq[A1])(body: A1 => Unit): Unit = in.foreach(body)
 
-  protected final def empty[A1]: Seq[A1] = Nil
+  protected final def emptyIn[A1]: Seq[A1] = Nil
 
   protected final def map[A1, B1](in: Seq[A1])(body: A1 => B1): Seq[B1] = in.map(body)
+}
 
-  protected final def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[S, CC] => CC)
-                         (implicit tx: S#Tx): Seq[B] = {
+abstract class ExpandedMapSeqLike[S <: Sys[S], A, P, B](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
+                                                          /* closure: Graph, */ fun: Ex[P], tx0: S#Tx)
+                                                         (implicit targets: ITargets[S], ctx: Context[S])
+  extends ExpandedMapSeqIn[S, A, P, Seq[B]](in, it, fun, tx0) {
+
+  // ---- abstract: out ----
+
+  protected def append(b: mutable.Builder[B, _], cc: P): Unit
+
+  // ---- impl ----
+
+  protected final def emptyOut: Seq[B] = Nil
+
+  protected final def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[S, P] => P)
+                                 (implicit tx: S#Tx): Seq[B] = {
     assert (tuples.size == inV.size)
     val iterator  = inV.iterator zip tuples.iterator
     val b         = Seq.newBuilder[B]
@@ -170,10 +182,10 @@ final class ExpandedFlatMapSeqOption[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it
 
 // option input
 
-abstract class ExpandedMapOptionLike[S <: Sys[S], A, CC, B](in: IExpr[S, Option[A]], it: It.Expanded[S, A],
-                                                         /* closure: Graph, */ fun: Ex[CC], tx0: S#Tx)
+abstract class ExpandedMapOptionLike[S <: Sys[S], A, P, B](in: IExpr[S, Option[A]], it: It.Expanded[S, A],
+                                                         /* closure: Graph, */ fun: Ex[P], tx0: S#Tx)
                                                         (implicit targets: ITargets[S], ctx: Context[S])
-  extends ExpandedMapSeqOrOption[S, A, Option, CC, B](in, it, fun, tx0) {
+  extends ExpandedMapSeqOrOption[S, A, Option, P, Option[B]](in, it, fun, tx0) {
 
   // ---- impl ----
 
@@ -181,7 +193,9 @@ abstract class ExpandedMapOptionLike[S <: Sys[S], A, CC, B](in: IExpr[S, Option[
 
   protected final def foreach[A1](in: Option[A1])(body: A1 => Unit): Unit = in.foreach(body)
 
-  protected final def empty[A1]: Option[A1] = None
+  protected final def emptyIn[A1]: Option[A1] = None
+
+  protected final def emptyOut: Option[B] = None
 
   protected final def map[A1, B1](in: Option[A1])(body: A1 => B1): Option[B1] = in.map(body)
 }
