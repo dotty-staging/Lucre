@@ -14,13 +14,13 @@
 package de.sciss.lucre.event
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.stm.{Disposable, Elem, NoSys, Sys}
+import de.sciss.lucre.stm.{Base, Disposable, Elem, NoSys, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Writable}
 
 import scala.util.hashing.MurmurHash3
 
-trait EventLike[S <: Sys[S], +A] extends Observable[S#Tx, A] {
+trait EventLike[S <: Base[S], +A] extends Observable[S#Tx, A] {
   /** Connects the given selector to this event. That is, this event will
     * adds the selector to its propagation targets.
     */
@@ -76,27 +76,23 @@ trait Dummy[S <: Sys[S], +A] extends EventLike[S, A] {
 }
 
 object Event {
-  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Event[S, Any]] = anySer.asInstanceOf[Ser[S]]
+  implicit def serializer[S <: Base[S]]: serial.Serializer[S#Tx, S#Acc, Event[S, Any]] = anySer.asInstanceOf[Ser[S]]
 
   private val anySer = new Ser[NoSys]
 
-  private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = {
+  private[event] def read[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = {
     val slot  = in.readByte()
     val node  = Elem.read[S](in, access)
     node.event(slot)
   }
 
-  private final class Ser[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Event[S, Any]] {
+  private final class Ser[S <: Base[S]] extends serial.Serializer[S#Tx, S#Acc, Event[S, Any]] {
     def write(e: Event[S, Any], out: DataOutput): Unit = e.write(out)
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Event[S, Any] = Event.read(in, access)
   }
 }
 
-/** `Event` is not sealed in order to allow you define traits inheriting from it, while the concrete
-  * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
-  * split into `Event.Invariant` and `Event.Mutating`.
-  */
-trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
+trait Event[S <: Base[S], +A] extends EventLike[S, A] with Writable {
   // ---- abstract ----
 
   def node: Node[S]
@@ -104,12 +100,6 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
   private[event] def slot: Int
 
   // ---- implemented ----
-
-  final def ---> (sink: Event[S, Any])(implicit tx: S#Tx): Unit =
-    node._targets.add(slot, sink)
-
-  final def -/-> (sink: Event[S, Any])(implicit tx: S#Tx): Unit =
-    node._targets.remove(slot, sink)
 
   final def write(out: DataOutput): Unit = {
     out.writeByte(slot)
@@ -128,6 +118,4 @@ trait Event[S <: Sys[S], +A] extends EventLike[S, A] with Writable {
     case thatEvent: Event[_, _] => slot === thatEvent.slot && node === thatEvent.node
     case _ => super.equals(that)
   }
-
-  final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer(this, fun)
 }

@@ -25,11 +25,11 @@ object Copy {
   def apply1[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut: Out#Tx): Copy1[In, Out] =
     new CopyImpl[In, Out]
 }
-trait Copy[In <: Sys[In], Out <: Sys[Out]] {
+trait Copy[In <: Base[In], Out <: Sys[Out]] {
   /** Makes a deep copy of the input element. Passing in an `Obj`
     * will also copy the attributes.
     */
-  def apply[Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In]): Repr[Out]
+  def apply[Repr[~ <: Base[~]] <: Elem[~]](in: Repr[In]): Repr[Out]
 
   /** Provides a hint for the input element with key and value
     * by convention.

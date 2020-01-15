@@ -126,7 +126,7 @@ object Txn {
     }
   }
 }
-trait Txn[S <: Sys[S]] extends Executor[S] with TxnLike {
+trait Txn[S <: Base[S]] extends Executor[S] with TxnLike {
   def inMemory: S#I#Tx
 
   // ---- completion ----

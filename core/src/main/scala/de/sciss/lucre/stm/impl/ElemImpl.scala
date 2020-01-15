@@ -20,7 +20,7 @@ import de.sciss.serial.{DataOutput, DataInput, Serializer}
 import scala.annotation.meta.field
 
 object ElemImpl {
-  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = {
+  def read[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = {
     val typeId  = in.readInt()
     val tpe     = getType(typeId)
     tpe.readIdentifiedObj(in, access)

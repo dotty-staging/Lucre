@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.event
 
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.Base
 
-trait Publisher[S <: Sys[S], +A] {
+trait Publisher[S <: Base[S], +A] {
   def changed: EventLike[S, A]
 }

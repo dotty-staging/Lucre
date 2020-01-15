@@ -14,11 +14,11 @@
 package de.sciss.lucre.stm.impl
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.stm.{Obj, Sys}
+import de.sciss.lucre.stm.{Base, Obj}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput}
 
-trait ObjSerializer[S <: Sys[S], Repr <: Obj[S]]
+trait ObjSerializer[S <: Base[S], Repr <: Obj[S]]
   extends serial.Serializer[S#Tx, S#Acc, Repr] {
 
   protected def tpe: Obj.Type

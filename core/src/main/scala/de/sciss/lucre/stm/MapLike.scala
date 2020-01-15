@@ -18,23 +18,23 @@ import de.sciss.lucre.event.Observable
 import scala.language.higherKinds
 
 object MapLike {
-  trait Update[S <: Sys[S], K, Repr[~ <: Sys[~]]] {
+  trait Update[S <: Base[S], K, Repr[~ <: Base[~]]] {
     def changes: scala.List[Change[S, K, Repr[S]]]
   }
 
-  sealed trait Change[S <: Sys[S], K, V] {
+  sealed trait Change[S <: Base[S], K, V] {
     def key  : K
     def value: V
   }
 
-  final case class Added   [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
-  final case class Removed [S <: Sys[S], K, V](key: K, value: V) extends Change[S, K, V]
-  final case class Replaced[S <: Sys[S], K, V](key: K, before: V, now: V) extends Change[S, K, V] {
+  final case class Added   [S <: Base[S], K, V](key: K, value: V) extends Change[S, K, V]
+  final case class Removed [S <: Base[S], K, V](key: K, value: V) extends Change[S, K, V]
+  final case class Replaced[S <: Base[S], K, V](key: K, before: V, now: V) extends Change[S, K, V] {
     def value: V = now
   }
 }
 // XXX TODO why scalac does not let us use `Base` (problem in evt.Map)?
-trait MapLike[S <: Sys[S], K, Repr[~ <: Sys[~]] /*<: Form[~]*/] extends Disposable[S#Tx] {
+trait MapLike[S <: Base[S], K, Repr[~ <: Base[~]] /*<: Form[~]*/] extends Disposable[S#Tx] {
 
   type V = Repr[S]
 

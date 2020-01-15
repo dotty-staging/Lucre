@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.stm.Sys
 
-trait Generator[S <: Sys[S], A] extends Event[S, A] {
+trait Generator[S <: Sys[S], A] extends EventImpl[S, A] {
   final def fire(update: A)(implicit tx: S#Tx): Unit = {
     logEvent(s"$this fire $update")
     Push(this, update)

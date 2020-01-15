@@ -59,6 +59,8 @@ trait Base[S <: Base[S]] extends Closeable {
     * An in-memory system should have a no-op implementation.
     */
   def close(): Unit
+
+  def attrMap(obj: Obj[S]): Obj.AttrMap[S]
 }
 
 trait NoBase extends Base[NoBase]

@@ -51,3 +51,6 @@ object ObjImpl {
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = ObjImpl.read(in, access)
   }
 }
+trait ObjImpl[S <: Base[S]] extends Obj[S] {
+  final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
+}

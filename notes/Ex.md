@@ -1029,3 +1029,24 @@ Variant:
 - second iteration of `xs`...
 
 Question: When marks are united, must that be sorted, or just `old ++ new` ? Adding marks surely must be sorted.
+
+----
+
+# Asynchronous Processes
+
+    val tr: Try with Ex[File] with Act = File.createTemp()
+    
+    LoadBang() ---> tr
+    tr.success ---> PrintLn(tr.name)
+    tr.failure
+    
+    trait Process[A] extends Act {
+      def done  : Trig
+      def failed: Trig
+      def value : Ex[A]
+    }
+    
+    val futFile: Process[File] = File.createTemp()
+    
+    LoadBang()   ---> futFile
+    futFile.done ---> PrintLn(futFile.value)

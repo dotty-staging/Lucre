@@ -20,7 +20,7 @@ import de.sciss.serial
 import de.sciss.serial.{DataInput, Writable}
 
 object Elem {
-  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = Impl.read(in, access)
+  def read[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S] = Impl.read(in, access)
 
   implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Elem[S]] = Impl.serializer
 
@@ -37,7 +37,7 @@ object Elem {
       readIdentifiedObj(in, access)
     }
 
-    def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S]
+    def readIdentifiedObj[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem[S]
   }
 
   def addType(tpe: Type): Unit      = Impl.addType(tpe)
@@ -47,7 +47,7 @@ object Elem {
 /** An `Elem` is any type that is globally registered
   * via `Elem.addType` and can be de-serialized through `Elem.read`.
   */
-trait Elem[S <: Sys[S]] extends Form[S] with Writable with Disposable[S#Tx] with Publisher[S, Any] {
+trait Elem[S <: Base[S]] extends Form[S] with Writable with Disposable[S#Tx] with Publisher[S, Any] {
   def tpe: Elem.Type
 
   /** Selects an event during dispatch. Elements that do not provide events

@@ -14,7 +14,7 @@
 package de.sciss.lucre.event
 
 import de.sciss.lucre.event.impl.{MapImpl => Impl}
-import de.sciss.lucre.stm.{Elem, Form, MapLike, Obj, Sys}
+import de.sciss.lucre.stm.{Base, Elem, Form, MapLike, Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.annotation.switch
@@ -53,18 +53,18 @@ object Map extends Obj.Type {
   }
 
   object Modifiable {
-    def apply[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, K, Repr] =
+    def apply[S <: Sys[S], K: Key, Repr[~ <: Base[~]] <: Elem[~]](implicit tx: S#Tx): Modifiable[S, K, Repr] =
       Impl[S, K, Repr]
 
-    def read[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc)
+    def read[S <: Sys[S], K: Key, Repr[~ <: Base[~]] <: Elem[~]](in: DataInput, access: S#Acc)
                                                                (implicit tx: S#Tx): Modifiable[S, K, Repr] =
       serializer[S, K, Repr].read(in, access)
 
-    implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
+    implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Base[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
       Impl.modSerializer[S, K, Repr]
   }
 
-  trait Modifiable[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]] extends Map[S, K, Repr] {
+  trait Modifiable[S <: Base[S], K, Repr[~ <: Base[~]] <: Form[~]] extends Map[S, K, Repr] {
     // override def copy()(implicit tx: S#Tx): Modifiable[S, K, Repr]
 
     /** Inserts a new entry into the map.
@@ -87,31 +87,31 @@ object Map extends Obj.Type {
     def -=(key: K)(implicit tx: S#Tx): this.type
   }
 
-  def read[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc)
+  def read[S <: Sys[S], K: Key, Repr[~ <: Base[~]] <: Elem[~]](in: DataInput, access: S#Acc)
                                        (implicit tx: S#Tx): Map[S, K, Repr] =
     serializer[S, K, Repr].read(in, access)
 
-  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
+  def readIdentifiedObj[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] =
     Impl.readIdentifiedObj(in, access)
 
-  implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
+  implicit def serializer[S <: Sys[S], K: Key, Repr[~ <: Base[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Map[S, K, Repr]] =
     Impl.serializer[S, K, Repr]
 
-  final case class Update[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]](map: Map[S, K, Repr],
+  final case class Update[S <: Base[S], K, Repr[~ <: Base[~]] <: Form[~]](map: Map[S, K, Repr],
                                                                         changes: List[Change[S, K, Repr[S]]])
     extends MapLike.Update[S, K, Repr]
 
-  type Change[S <: Sys[S], K, V] = MapLike.Change[S, K, V]
+  type Change[S <: Base[S], K, V] = MapLike.Change[S, K, V]
   
-  type Added    [S <: Sys[S], K, V]     = MapLike.Added[S, K, V]
-  type Removed  [S <: Sys[S], K, V]     = MapLike.Removed[S, K, V]
-  type Replaced [S <: Sys[S], K, V]     = MapLike.Removed[S, K, V]
+  type Added    [S <: Base[S], K, V]     = MapLike.Added[S, K, V]
+  type Removed  [S <: Base[S], K, V]     = MapLike.Removed[S, K, V]
+  type Replaced [S <: Base[S], K, V]     = MapLike.Removed[S, K, V]
 
   val  Added    : MapLike.Added   .type = MapLike.Added
   val  Removed  : MapLike.Removed .type = MapLike.Removed
   val  Replaced : MapLike.Replaced.type = MapLike.Replaced
 }
-trait Map[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]]
+trait Map[S <: Base[S], K, Repr[~ <: Base[~]] <: Form[~]]
   extends MapLike[S, K, Repr] with Obj[S] with Publisher[S, Map.Update[S, K, Repr]] {
 
 //  type V = Repr[S]
@@ -122,5 +122,5 @@ trait Map[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Form[~]]
   def keysIterator  (implicit tx: S#Tx): Iterator[K]
   def valuesIterator(implicit tx: S#Tx): Iterator[V]
 
-  def $[R[~ <: Sys[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
+  def $[R[~ <: Base[~]] <: Repr[~]](key: K)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]]
 }

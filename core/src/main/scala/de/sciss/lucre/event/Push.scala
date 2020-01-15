@@ -14,7 +14,7 @@
 package de.sciss.lucre.event
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.stm.{Base, Sys}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
@@ -30,7 +30,7 @@ object Push {
     logEvent("pull end")
   }
 
-  type Parents[S <: Sys[S]] = Set[Event[S, Any]]
+  type Parents[S <: Base[S]] = Set[Event[S, Any]]
 
   private def NoParents[S <: Sys[S]]: Parents[S] = Set.empty[Event[S, Any]]
 
@@ -122,7 +122,7 @@ object Push {
   }
 }
 
-trait Pull[S <: Sys[S]] {
+trait Pull[S <: Base[S]] {
   /** Assuming that the caller is origin of the event, resolves the update of the given type. */
   def resolve[A]: A
 

@@ -15,19 +15,19 @@ package de.sciss.lucre.event
 
 import de.sciss.equal.Implicits._
 import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Elem, NoSys, Mutable, Sys}
+import de.sciss.lucre.stm.{Base, Elem, Mutable, NoSys, Sys}
 import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.annotation.switch
 
 object Targets {
-  private implicit def childrenSerializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
+  private implicit def childrenSerializer[S <: Base[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
     anyChildrenSer.asInstanceOf[ChildrenSer[S]]
 
   private val anyChildrenSer = new ChildrenSer[NoSys]
 
-  private final class ChildrenSer[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Children[S]] {
+  private final class ChildrenSer[S <: Base[S]] extends serial.Serializer[S#Tx, S#Acc, Children[S]] {
     def write(v: Children[S], out: DataOutput): Unit = {
       out./* PACKED */ writeInt(v.size)
       v.foreach { tup =>
@@ -52,20 +52,20 @@ object Targets {
     new Impl[S](0, id, children)
   }
 
-  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
+  def read[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     (in.readByte(): @switch) match {
       case 0      => readIdentified(in, access)
       case cookie => sys.error(s"Unexpected cookie $cookie")
     }
   }
 
-  /* private[lucre] */ def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
+  /* private[lucre] */ def readIdentified[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     val id = tx.readId(in, access)
     val children = tx.readVar /* readEventVar */[Children[S]](id, in)
     new Impl[S](0, id, children)
   }
 
-  private final class Impl[S <: Sys[S]](cookie: Int, val id: S#Id, childrenVar: /* event. */ S#Var[Children[S]])
+  private final class Impl[S <: Base[S]](cookie: Int, val id: S#Id, childrenVar: /* event. */ S#Var[Children[S]])
     extends Targets[S] {
 
     def write(out: DataOutput): Unit = {
@@ -121,7 +121,7 @@ object Targets {
   * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
   * `propagate` a fired event.
   */
-sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#Id, S#Tx] /* extends Reactor[S] */ {
+sealed trait Targets[S <: Base[S]] extends stm.Mutable[S#Id, S#Tx] /* extends Reactor[S] */ {
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   /** Adds a dependant to this node target.
@@ -159,7 +159,7 @@ sealed trait Targets[S <: Sys[S]] extends stm.Mutable[S#Id, S#Tx] /* extends Rea
   * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
   * targets.
   */
-trait Node[S <: Sys[S]] extends Elem[S] with Mutable[S#Id, S#Tx] /* Obj[S] */ {
+trait Node[S <: Base[S]] extends Elem[S] with Mutable[S#Id, S#Tx] /* Obj[S] */ {
   override def toString = s"Node$id"
 
   protected def targets: Targets[S]

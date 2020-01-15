@@ -33,10 +33,10 @@ object Obj {
     * c.finish()
     * }}}
     */
-  def copy[In <: Sys[In], Out <: Sys[Out], Repr[~ <: Sys[~]] <: Elem[~]](in: Repr[In])
+  def copy[In <: Sys[In], Out <: Sys[Out], Repr[~ <: Base[~]] <: Elem[~]](in: Repr[In])
                                                                         (implicit txIn: In#Tx, txOut: Out#Tx): Repr[Out] = {
     val context = Copy[In, Out]
-    val res     = context(in)
+    val res     = context[Repr](in)
     context.finish()
     res
   }
@@ -58,7 +58,7 @@ object Obj {
       readIdentifiedObj(in, access)
     }
 
-    override def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S]
+    override def readIdentifiedObj[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S]
   }
 
   def addType(tpe: Type): Unit      = Impl.addType(tpe)
@@ -66,7 +66,7 @@ object Obj {
 
   // ---- attributes ----
 
-  type AttrMap    [S <: Sys[S]]             = evt.Map.Modifiable[S, String, Obj]
+  type AttrMap    [S <: Base[S]]            = evt.Map.Modifiable[S, String, Obj]
   type AttrUpdate [S <: Sys[S]]             = evt.Map.Update [S, String, Obj]
   val  AttrAdded    : evt.Map.Added.type    = evt.Map.Added
   type AttrAdded  [S <: Sys[S]]             = evt.Map.Added  [S, String, Obj[S]]
@@ -86,10 +86,12 @@ object Obj {
 /** An `Obj` is a type of element that has an `S#Id` identifier and
   * an attribute map. It can be the origin of event dispatch.
   */
-trait Obj[S <: Sys[S]] extends Elem[S] with stm.Mutable[S#Id, S#Tx] {
+trait Obj[S <: Base[S]] extends Elem[S] with stm.Mutable[S#Id, S#Tx] {
   override def toString = s"Obj$id"
 
   override def tpe: Obj.Type
 
-  final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
+  def attr(implicit tx: S#Tx): Obj.AttrMap[S]
+
+//  final def attr(implicit tx: S#Tx): Obj.AttrMap[S] = tx.attrMap(this)
 }

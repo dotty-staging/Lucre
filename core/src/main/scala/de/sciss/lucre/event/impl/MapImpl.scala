@@ -16,8 +16,8 @@ package de.sciss.lucre.event.impl
 import de.sciss.equal.Implicits._
 import de.sciss.lucre.data.{Ordering, SkipList}
 import de.sciss.lucre.event.Map.{Key, Modifiable}
-import de.sciss.lucre.stm.impl.ObjSerializer
-import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
+import de.sciss.lucre.stm.impl.{ObjImpl, ObjSerializer}
+import de.sciss.lucre.stm.{Base, Copy, Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
@@ -25,7 +25,7 @@ import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object MapImpl {
-  def apply[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, Repr] = {
+  def apply[S <: Sys[S], K, Repr[~ <: Base[~]] <: Elem[~]](implicit tx: S#Tx, keyType: Key[K]): Modifiable[S, K, Repr] = {
     val targets = evt.Targets[S]
     new Impl[S, K, Repr](targets) {
       val peer: SkipList.Map[S, K, List[Entry[K, V]]] = SkipList.Map.empty(tx, keyOrdering, keyType.serializer,
@@ -33,32 +33,32 @@ object MapImpl {
     }
   }
 
-  def serializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, evt.Map[S, K, Repr]] =
+  def serializer[S <: Sys[S], K, Repr[~ <: Base[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, evt.Map[S, K, Repr]] =
     new Ser[S, K, Repr]
 
-  def modSerializer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
+  def modSerializer[S <: Sys[S], K, Repr[~ <: Base[~]] <: Elem[~]]: Serializer[S#Tx, S#Acc, Modifiable[S, K, Repr]] =
     new ModSer[S, K, Repr]
 
-  private class Ser[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])
+  private class Ser[S <: Base[S], K, Repr[~ <: Base[~]] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjSerializer[S, evt.Map[S, K, Repr]] {
 
     def tpe: Obj.Type = evt.Map
   }
 
-  private class ModSer[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]] // (implicit keyType: Key[K])
+  private class ModSer[S <: Base[S], K, Repr[~ <: Base[~]] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjSerializer[S, Modifiable[S, K, Repr]] {
 
     def tpe: Obj.Type = evt.Map
   }
 
-  def readIdentifiedObj[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
+  def readIdentifiedObj[S <: Base[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = {
     val targets   = evt.Targets.read(in, access)
     val keyTypeId = in.readInt()
     val keyType   = Key(keyTypeId) // Obj.getType(keyTypeId).asInstanceOf[Key[_]]
     mkRead(in, access, targets)(tx, keyType)
   }
 
-  private def mkRead[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  private def mkRead[S <: Base[S], K, Repr[~ <: Base[~]] <: Elem[~]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                (implicit tx: S#Tx, keyType: Key[K]): Impl[S, K, Repr] =
     new Impl[S, K, Repr](targets) {
       val peer: SkipList.Map[S, K, List[Entry[K, V]]] =
@@ -68,9 +68,9 @@ object MapImpl {
 
   private final class Entry[K, V](val key: K, val value: V)
  
-  private abstract class Impl[S <: Sys[S], K, Repr[~ <: Sys[~]] <: Elem[~]](protected val targets: evt.Targets[S])
+  private abstract class Impl[S <: Base[S], K, Repr[~ <: Base[~]] <: Elem[~]](protected val targets: evt.Targets[S])
                                                           (implicit val keyType: Key[K])
-    extends Modifiable[S, K, Repr] with evt.impl.SingleNode[S, evt.Map.Update[S, K, Repr]] {
+    extends ObjImpl[S] with Modifiable[S, K, Repr] with evt.impl.SingleNode[S, evt.Map.Update[S, K, Repr]] {
     map =>
 
     final def tpe: Obj.Type = evt.Map
@@ -84,7 +84,7 @@ object MapImpl {
     private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] = {
       val res = evt.Map.Modifiable[Out, K, Elem /* Repr */]
       iterator.foreach { case (k, v) =>
-        res.put(k, context(v))
+        res.put(k, context.apply[Elem](v))
       }
       res
     }
