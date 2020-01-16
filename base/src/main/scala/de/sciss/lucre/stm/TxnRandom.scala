@@ -2,7 +2,7 @@
  *  TxnRandom.scala
  *  (Lucre)
  *
- *  Copyright (c) 2009-2019 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Affero General Public License v3+
  *
@@ -20,6 +20,12 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 object TxnRandom {
    private final class Impl[S <: Base[S]](val id: S#Id, protected val seedRef: stm.Var[S#Tx, Long])
     extends SysLike[S#Tx] with TxnRandom[S] {
+
+    override def copy[Out <:  Base[Out]]()(implicit tx: S#Tx, txOut: Out#Tx): TxnRandom[Out] = {
+      val idOut       = txOut.newId()
+      val seedRefOut  = txOut.newLongVar(idOut, seedRef())
+      new Impl[Out](id = idOut, seedRef = seedRefOut)
+    }
 
     def write(out: DataOutput): Unit = {
       id     .write(out)
@@ -61,4 +67,8 @@ object TxnRandom {
 /** A transactional pseudo-random number generator which
   * behaves numerically like `java.util.Random`.
   */
-trait TxnRandom[S <: Base[S]] extends Random[S#Tx] with stm.Mutable[S#Id, S#Tx]
+trait TxnRandom[S <: Base[S]] extends Random[S#Tx] with stm.Mutable[S#Id, S#Tx] {
+  // XXX TODO --- remove implementation for next major version
+  def copy[Out <:  Base[Out]]()(implicit tx: S#Tx, txOut: Out#Tx): TxnRandom[Out] =
+    throw new NotImplementedError()
+}

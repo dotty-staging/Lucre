@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.16.0"
+lazy val projectVersion   = "3.16.1-SNAPSHOT"
 lazy val mimaVersion      = "3.16.0"
 
 lazy val deps = new {
@@ -25,7 +25,7 @@ lazy val deps = new {
     val sleepy7   = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest = "3.0.8"
+    val scalaTest = "3.1.0"
   }
 }
 
