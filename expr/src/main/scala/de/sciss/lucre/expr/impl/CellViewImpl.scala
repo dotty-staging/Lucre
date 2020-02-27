@@ -383,7 +383,7 @@ object CellViewImpl {
       protected val h: stm.Source[S#Tx, Obj.AttrMap[S]],
       protected val key: String)(implicit val tpe: Type.Expr[A, E]
   )
-    extends AttrBasic[S, A, E] with CellView.Var[S#Tx, Option[A]] {
+    extends AttrBasic[S, A, E] with CellView.VarR[S, Option[A]] {
 
     final type EVar[~ <: Sys[~]] = tpe.Var[~]
 

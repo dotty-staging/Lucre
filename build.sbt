@@ -1,31 +1,31 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.16.1"
+lazy val projectVersion   = "3.16.2"
 lazy val mimaVersion      = "3.16.0"
 
 lazy val deps = new {
   val base = new {
-    val serial    = "1.1.1"
+    val serial        = "1.1.1"
   }
   val core = new {
-    val equal     = "0.1.4"
-    val model     = "0.3.4"
-    val scalaSTM  = "0.9.1"
+    val equal         = "0.1.4"
+    val model         = "0.3.4"
+    val scalaSTM      = "0.9.1"
   }
   val expr = new {
-    def equal     = core.equal
-    val fileUtil  = "1.1.3"
-    val numbers   = "0.2.0"
-    val span      = "1.4.3"
+    def equal: String = core.equal
+    val fileUtil      = "1.1.3"
+    val numbers       = "0.2.0"
+    val span          = "1.4.3"
   }
   val confluent = new {
-    val finger    = "1.5.4"
+    val finger        = "1.5.4"
   }
   val bdb = new {
-    val sleepy7   = "7.5.11"  // Apache // Java 8+ required
+    val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest = "3.1.0"
+    val scalaTest     = "3.1.1"
   }
 }
 
