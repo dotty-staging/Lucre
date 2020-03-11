@@ -172,6 +172,9 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   /** Alias for `latch` */
   def <| (tr: Trig): Ex[A] = Latch(x, tr)
 
+  /** Views this expression as a (yet to make) `Obj`.
+    * In order to actually create the object, `.make` has to be called on it.
+    */
   def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
 }
 

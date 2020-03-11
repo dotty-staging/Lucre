@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IChangeGenerator
 import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ObjCellViewVarImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
@@ -38,12 +38,17 @@ object Obj {
 
   def init(): Unit = _init
 
-  implicit class ExOps(private val obj: Ex[Obj]) extends AnyVal {
+  implicit final class ExOps(private val obj: Ex[Obj]) extends AnyVal {
     def attr[A: Bridge](key: String): Obj.Attr[A] = Obj.Attr(obj, key)
 
     // def attr[A: Bridge](key: String, default: Ex[A]): _Attr.WithDefault[A] = ...
 
     def copy: Copy = Obj.Copy(obj)
+
+    /** Tries to parse this object as a more specific type.
+      * Produces `Some` if the type matches, otherwise `None`.
+      */
+    def as[A: Bridge]: Ex[Option[A]] = As[A](obj)
   }
 
   // used by Mellite (no transaction available)
@@ -373,6 +378,35 @@ object Obj {
   }
   type Copy = Make
   // trait Copy extends Make
+
+  object As {
+    def apply[A: Bridge](obj: Ex[Obj]): Ex[Option[A]] = Impl(obj)
+
+    // XXX TODO --- we should use cell-views instead, because this way we won't notice
+    // changes to the value representation (e.g. a `StringObj.Var` contents change)
+    private final class Expanded[S <: Sys[S], A](in: IExpr[S, Obj], tx0: S#Tx)
+                                                           (implicit targets: ITargets[S], bridge: Obj.Bridge[A])
+      extends MappedIExpr[S, Obj, Option[A]](in, tx0) {
+
+      protected def mapValue(inValue: Obj)(implicit tx: S#Tx): Option[A] =
+        inValue.peer.flatMap(bridge.tryParseObj(_))
+    }
+
+    private final case class Impl[A](obj: Ex[Obj])(implicit val bridge: Bridge[A])
+      extends Ex[Option[A]] with ProductWithAdjuncts {
+
+      type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
+
+      def adjuncts: List[Adjunct] = bridge :: Nil
+
+      override def productPrefix: String = s"Obj$$As" // serialization
+
+      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+        import ctx.targets
+        new Expanded[S, A](obj.expand[S], tx)
+      }
+    }
+  }
 }
 trait Obj {
   type Peer[~ <: Sys[~]] <: stm.Obj[~]
