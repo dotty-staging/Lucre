@@ -21,7 +21,6 @@ import de.sciss.serial.DataInput
 import de.sciss.span.{Span, SpanLike}
 
 import scala.annotation.switch
-import scala.language.higherKinds
 
 object SpanLikeExtensions {
   private[this] lazy val _init: Unit = {

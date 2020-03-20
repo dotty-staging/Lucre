@@ -1,6 +1,6 @@
 package de.sciss.lucre.expr.examples
 
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 trait NewExActMapBlueprint {
   trait Ex[+A] {

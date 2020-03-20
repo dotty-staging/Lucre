@@ -22,7 +22,6 @@ import de.sciss.lucre.{expr, stm}
 import de.sciss.serial.{DataOutput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.higherKinds
 
 abstract class AbstractExObjBridgeImpl[A, B <: A, _Ex[~ <: Sys[~]] <: expr.Expr[~, B]](tpe: Type.Expr[B, _Ex])
   extends Obj.CanMake[A] with Obj.Bridge[A] {

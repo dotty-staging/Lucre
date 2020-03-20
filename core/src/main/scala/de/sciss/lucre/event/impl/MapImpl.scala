@@ -21,7 +21,6 @@ import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object MapImpl {

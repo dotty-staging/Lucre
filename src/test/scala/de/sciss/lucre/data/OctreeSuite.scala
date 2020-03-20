@@ -1,10 +1,12 @@
 package de.sciss.lucre.data
 
+import de.sciss.lucre.geom.IntDistanceMeasure3D.MS
 import de.sciss.lucre.geom.IntSpace.ThreeDim
-import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, QueryShape, Space}
+import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, QueryShape, Space}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.mutable.{Set => MSet}
 import scala.util.control.NonFatal
@@ -15,7 +17,7 @@ import scala.util.control.NonFatal
 test-only de.sciss.lucre.data.OctreeSuite
 
  */
-class OctreeSuite extends FeatureSpec with GivenWhenThen {
+class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   val CONSISTENCY     = true
   val RANGE_SEARCH    = true
   val NN_SEARCH       = true
@@ -23,20 +25,20 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
   val INMEMORY        = true
   val DATABASE        = true
 
-  val n               = 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
-  val n2              = n >> 3    // 0x1000    // range query and nn
+  val n       = 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
+  val n2: Int = n >> 3    // 0x1000    // range query and nn
 
   val rnd = new util.Random(2L) // ( 12L )
 
-  val cube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
+  val cube: IntCube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
 
   def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S,
                                           sysCleanUp: (S, Boolean) => Unit): Unit = {
     withTree[S](sysName, () => {
-      implicit val sys = sysCreator()
+      implicit val sys: S = sysCreator()
       val t = sys.step { implicit tx =>
         import ThreeDim.pointSerializer
-        implicit val pointView = (p: IntPoint3D, _: Any) => p
+        implicit val pointView: (IntPoint3D, Any) => IntPoint3D = (p, _) => p
         DeterministicSkipOctree.empty[S, ThreeDim, IntPoint3D](cube)
       }
       (sys, t, succ => sysCleanUp(sys, succ))
@@ -67,13 +69,13 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
     })
   }
 
-  val pointFun3D = (mask: Int) => IntPoint3D(rnd.nextInt() & mask, rnd.nextInt() & mask, rnd.nextInt() & mask)
+  val pointFun3D: Int => IntPoint3D = mask => IntPoint3D(rnd.nextInt() & mask, rnd.nextInt() & mask, rnd.nextInt() & mask)
 
   def randFill[S <: Sys[S], D <: Space[D]](t: SkipOctree[S, D, D#Point], m: MSet[D#Point],
                                            pointFun: Int => D#Point)(implicit cursor: Cursor[S]): Unit = {
     Given("a randomly filled structure")
 
-    for (i <- 0 until n) {
+    for (_ <- 0 until n) {
       val k = pointFun(0x7FFFFFFF)
       cursor.step { implicit tx =>
         t += k
@@ -152,10 +154,10 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
     assert(szAfter2 == 0, szAfter2.toString)
   }
 
-  val queryFun3D = (max: Int, off: Int, ext: Int) =>
+  val queryFun3D: (Int, Int, Int) => IntCube = (max, off, ext) =>
     IntCube(rnd.nextInt(max) - off, rnd.nextInt(max) - off, rnd.nextInt(max) - off, rnd.nextInt(ext))
 
-  val sortFun3D = (p: ThreeDim#PointLike) => (p.x, p.y, p.z)
+  val sortFun3D: IntPoint3DLike => (Int, Int, Int) = p => (p.x, p.y, p.z)
 
   def verifyRangeSearch[S <: Sys[S], A, D <: Space[D], Sort](t: SkipOctree[S, D, D#Point], m: MSet[D#Point],
                                                              queryFun: (Int, Int, Int) => QueryShape[A, D],
@@ -173,7 +175,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
       }
    }
 
-   val pointFilter3D = (p: ThreeDim#PointLike) => {
+   val pointFilter3D: IntPoint3DLike => Boolean = { p =>
       val dx = if( p.x < cube.cx ) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
       val dy = if( p.y < cube.cy ) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
       val dz = if( p.z < cube.cz ) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
@@ -183,7 +185,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
          (dy * dy + dz * dz > 0L)
    }
 
-   val euclideanDist3D = IntDistanceMeasure3D.euclideanSq
+   val euclideanDist3D: MS = IntDistanceMeasure3D.euclideanSq
 
    // JUHUUUUU SPECIALIZATION BROKEN ONCE MORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    def verifyNN[S <: Sys[S], M, D <: Space[D]](t: SkipOctree[S, D, D#Point], m: MSet[D#Point], pointFun: Int => D#Point,
@@ -235,12 +237,12 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
   def withTree[S <: Sys[S]](name: String,
                             tf: () => (S with Cursor[S],
                                        DeterministicSkipOctree[S, ThreeDim, ThreeDim#Point], Boolean => Unit)): Unit = {
-    feature("The " + name + " octree structure should be consistent") {
+    Feature("The " + name + " octree structure should be consistent") {
       info("Several mass operations on the structure")
       info("are tried and expected behaviour verified")
 
       def scenarioWithTime(descr: String)(body: => Unit): Unit =
-        scenario(descr) {
+        Scenario(descr) {
           val t1 = System.currentTimeMillis()
           body
           val t2 = System.currentTimeMillis()
@@ -249,7 +251,7 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
 
       scenarioWithTime("Consistency is verified on a randomly filled structure") {
         val (_sys, t, cleanUp) = tf()
-        implicit val system = _sys
+        implicit val system: S with Cursor[S] = _sys
         var success = false
         try {
           val m = MSet.empty[ThreeDim#Point]

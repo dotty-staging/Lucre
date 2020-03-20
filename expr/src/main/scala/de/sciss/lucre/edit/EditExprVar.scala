@@ -20,8 +20,6 @@ import de.sciss.lucre.stm.UndoManager.{CannotRedoException, CannotUndoException}
 import de.sciss.lucre.stm.impl.BasicUndoableEdit
 import de.sciss.lucre.stm.{Sys, UndoManager}
 
-import scala.language.higherKinds
-
 object EditExprVar {
   def apply[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](vr: E[S] with stm.Var[S#Tx, E[S]], value: E[S])
                                                          (implicit tx: S#Tx, tpe: Type.Expr[A, E]): Unit =

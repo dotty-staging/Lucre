@@ -18,8 +18,6 @@ import de.sciss.lucre.expr.Type
 import de.sciss.lucre.stm.{Obj, Sys}
 import de.sciss.serial.DataInput
 
-import scala.language.higherKinds
-
 trait TypeImplLike[Ext >: Null <: Type.Extension] extends Obj.Type {
   // implicit protected def extTag: reflect.ClassTag[Ext]
 

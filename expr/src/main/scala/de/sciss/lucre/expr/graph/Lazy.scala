@@ -15,8 +15,6 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.expr.Context
 import de.sciss.lucre.stm.{Disposable, Sys}
 
-import scala.language.higherKinds
-
 trait Lazy extends Product {
   type Repr[S <: Sys[S]] <: Disposable[S#Tx]
 

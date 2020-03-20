@@ -1,7 +1,7 @@
 # Lucre
 
 [![Build Status](https://travis-ci.org/Sciss/Lucre.svg?branch=master)](https://travis-ci.org/Sciss/Lucre)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.12)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13)
 
 ## statement
 
@@ -48,7 +48,7 @@ Or just for a selected module:
 
 Where `{module}` is any of the above names.
 
-The current version `v` is `"3.16.3"`.
+The current version `v` is `"3.16.4"`.
 
 ## contributing
 

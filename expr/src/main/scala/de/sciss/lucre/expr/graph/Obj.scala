@@ -28,7 +28,6 @@ import de.sciss.serial.{DataInput, Serializer}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.concurrent.stm.Ref
-import scala.language.higherKinds
 
 object Obj {
   private lazy val _init: Unit = {

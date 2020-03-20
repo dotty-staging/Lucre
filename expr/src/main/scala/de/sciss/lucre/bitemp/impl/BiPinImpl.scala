@@ -24,7 +24,6 @@ import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.higherKinds
 
 object BiPinImpl {
   import BiPin.{Added, Entry, Leaf, Modifiable, Moved, Removed, Update}

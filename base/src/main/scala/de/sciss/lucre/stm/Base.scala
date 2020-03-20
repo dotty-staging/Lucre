@@ -17,8 +17,6 @@ import java.io.Closeable
 
 import de.sciss.lucre.stm
 
-import scala.language.higherKinds
-
 /** The `Base` trait is a pre-stage to `stm.Sys`, without introducing
   * peer STM transactions. It can thus be used to build purely imperative
   * non-transactional systems.

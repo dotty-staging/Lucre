@@ -6,7 +6,8 @@ import de.sciss.lucre.stm.Mutable
 import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataInput, DataOutput}
-import org.scalatest.{FunSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.funspec.AnyFunSpec
 
 import scala.annotation.tailrec
 
@@ -17,7 +18,7 @@ To run only this test:
 test-only de.sciss.lucre.confluent.DoubleLinkedListSuite
 
  */
-class  DoubleLinkedListSuite extends FunSpec with GivenWhenThen {
+class  DoubleLinkedListSuite extends AnyFunSpec with GivenWhenThen {
   type S = Confluent
   type D = S#D
 

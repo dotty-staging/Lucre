@@ -19,7 +19,6 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.higherKinds
 
 object List extends Obj.Type {
   final val typeId  = 23

@@ -1,9 +1,10 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ExIfThenSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
+class ExIfThenSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
 
   def run(condV: Boolean): String = {

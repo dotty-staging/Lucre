@@ -22,7 +22,6 @@ import de.sciss.lucre.stm.{Disposable, Sys}
 
 import scala.collection.mutable
 import scala.concurrent.stm.Ref
-import scala.language.higherKinds
 
 abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, In[_], P, Out](in: IExpr[S, In[A]], it: It.Expanded[S, A],
                                                                      /* closure: Graph, */ fun: Ex[P], tx0: S#Tx)

@@ -7,7 +7,8 @@ import de.sciss.lucre.stm
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{InTxnRandom, Random}
 import de.sciss.serial.Serializer
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.immutable.IntMap
 import scala.collection.mutable.{Set => MSet}
@@ -20,7 +21,7 @@ To run this test copy + paste the following into sbt:
 test-only de.sciss.lucre.confluent.SkipListSuite
 
  */
-class SkipListSuite extends FeatureSpec with GivenWhenThen {
+class SkipListSuite extends AnyFeatureSpec with GivenWhenThen {
    val CONSISTENCY   = true
    val OBSERVATION   = true
    val REMOVAL       = true
@@ -55,8 +56,8 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
       })
     }
     withList[S]("HA-2 (" + sysName + ")", { oo =>
-      implicit val sys = sysCreator()
-      implicit val ser = HASkipList.Set.serializer[S, Int](oo)
+      implicit val sys: S = sysCreator()
+      implicit val ser: Serializer[S#Tx, Access[S], HASkipList.Set[S, Int]] = HASkipList.Set.serializer[S, Int](oo)
       val (access, cursor) = sys.cursorRoot[HASkipList.Set[S, Int], stm.Cursor[S]] { implicit tx =>
         HASkipList.Set.empty[S, Int](minGap = 2, keyObserver = oo)
       } {
@@ -89,7 +90,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
                                (implicit cursor: stm.Cursor[S]): Unit = {
     Given("a randomly filled structure")
     val s1 = cursor.step { implicit tx =>
-      implicit val itx = tx.peer
+      implicit val itx: InTxn = tx.peer
       Seq.fill(NUM1)(rnd.nextInt(0x7FFFFFFF)).toSet
     }
     s ++= s1
@@ -102,7 +103,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
   def randFill2(implicit tx: InTxn): Set[Int] = {
     Given("a set of random numbers")
     var res = Set.empty[Int]
-    for (i <- 0 until NUM2) {
+    for (_ <- 0 until NUM2) {
       res += rnd.nextInt() & ~1 // any int except MaxValue
     }
     res
@@ -110,7 +111,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
 
   def randFill3(implicit tx: InTxn): Set[Int] = {
     var res = Set.empty[Int]
-    for (i <- 0 until NUM3) {
+    for (_ <- 0 until NUM3) {
       res += rnd.nextInt(100)
     }
     Given("a small set of numbers : " + res.mkString(", "))
@@ -129,7 +130,6 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
       res += prev compare next
       prev = next
     }
-    res
 
     Then("the resulting set should only contain -1")
     assert(res == Set(-1), res.toString())
@@ -197,125 +197,125 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
       lf: SkipList.KeyObserver[S#Tx, Int] => (stm.Cursor[S], stm.Source[S#Tx, SkipList.Set[S, Int]], () => Unit)): Unit = {
 
     def scenarioWithTime(descr: String)(body: => Unit): Unit =
-       scenario(descr) {
-         val t1 = System.currentTimeMillis()
-         body
-         val t2 = System.currentTimeMillis()
-         println("For " + name + " the tests took " + TestUtil.formatSeconds((t2 - t1) * 0.001))
-       }
-
-     if (CONSISTENCY) {
-       feature( "The " + name + " skip list structure should be consistent" ) {
-            info( "Several mass operations on the structure" )
-            info( "are tried and expected behaviour verified" )
-
-            scenarioWithTime( "Consistency is verified on a randomly filled structure" ) {
-               val (_csr, access, cleanUp)  = lf( SkipList.NoKeyObserver )
-               implicit val cursor = _csr
-               try {
-                  val s  = MSet.empty[ Int ]
-                  randFill( access, s )
-                  verifyOrder( access )
-                  verifyElems( access, s )
-                  verifyContainsNot( access, s )
-                  verifyAddRemoveAll( access, s )
-//                  cursor.step { implicit tx => access.get.dispose() }
-               } finally {
-                  cleanUp()
-               }
-            }
-         }
+      Scenario(descr) {
+        val t1 = System.currentTimeMillis()
+        body
+        val t2 = System.currentTimeMillis()
+        println("For " + name + " the tests took " + TestUtil.formatSeconds((t2 - t1) * 0.001))
       }
 
-      if( OBSERVATION ) {
-         feature( "The " + name + " skip list structure should be observable" ) {
-            info( "Several operations are performed on the structure while an" )
-            info( "observer monitors key promotions and demotions" )
+    if (CONSISTENCY) {
+      Feature("The " + name + " skip list structure should be consistent") {
+        info("Several mass operations on the structure")
+        info("are tried and expected behaviour verified")
 
-            scenarioWithTime( "Observation is verified on a randomly filled structure" ) {
-               val obs   = new Obs[ S ]
-               val (_sys, access, cleanUp) = lf( obs )
-               implicit val system = _sys
-               try {
-                  val s = system.step( tx => randFill2( tx.peer )) // randFill3
-                  When( "all the elements of the set are added" )
-                  var uppedInsKey = false
-                  system.step { implicit tx =>
-                     val l = access()
-                     s.foreach { i =>
-                        obs.oneUp.transform( _ - i )( tx.peer )
-                        l.add( i )
-                        uppedInsKey |= obs.oneUp()( tx.peer ).contains( i )
-                     }
-                  }
-                  Then( "none was ever promoted during their insertion" )
-                  assert( !uppedInsKey )
-                  Then( "there haven't been any demotions" )
-                  assert( obs.allDn.single().isEmpty, obs.allDn.single().take( 10 ).toString() )
-                  Then( "there were several promotions" )
-                  assert( obs.allUp.single().nonEmpty )
-                  Then( "the height of the list is equal to the maximally promoted key + 1" )
-                  val maxProm = obs.allUp.single().maxBy( _._2 )._2
-                  val (h, minGap, maxGap) = system.step { implicit tx =>
-                     val l = access()
-                     (l.height, l.minGap, l.maxGap)
-                  }
-//println( "height = " + h )
-                  assert( h == maxProm + 1, "Height is reported as " + h + ", while keys were maximally promoted " + maxProm + " times" )
-                  val sz = s.size + 1 // account for the 'maxKey'
-                  val minH = math.ceil( math.log( sz ) / math.log( maxGap + 1 )).toInt
-                  val maxH = math.ceil( math.log( sz ) / math.log( minGap + 1 )).toInt
-                  Then( "ceil(log(n+1)/log(maxGap+1)) <= height <= ceil(log(n+1)/log(minGap+1))" )
-                  assert( minH <= h && h <= maxH, "Not: " + minH + " <= " + h + " <= " + maxH )
-
-                  if( REMOVAL ) {
-                     When( "all the elements are removed again" )
-                     var uppedDelKey = false
-                     system.step { implicit tx =>
-                        val l = access()
-                        s.foreach { i =>
-                           obs.oneUp.transform( _ - i )( tx.peer )
-                           l.remove( i )
-                           uppedDelKey |= obs.oneUp()( tx.peer ).contains( i )
-                        }
-                     }
-                     Then( "none was ever promoted during their deletion" )
-                     assert( !uppedDelKey, "elements were promoted during their deletion" )
-                     val upsNotInS = obs.allUp.single().keys.filterNot( s.contains( _ ))
-                     Then( "no key was ever promoted which was not in s" )
-                     assert( upsNotInS.isEmpty, upsNotInS.take( 10 ).toString() )
-                     val dnsNotInS = obs.allDn.single().keys.filterNot( s.contains( _ ))
-                     Then( "no key was ever demoted which was not in s" )
-                     assert( dnsNotInS.isEmpty, dnsNotInS.take( 10 ).toString() )
-                     val unbal = atomic { implicit tx =>
-                        s.map( i => i -> (obs.allUp().getOrElse( i, 0 ) - obs.allDn().getOrElse( i, 0 ))).filterNot( _._2 == 0 )
-                     }
-                     Then( "the number of promotions and demotions for every key is equal" )
-                     assert( unbal.isEmpty, unbal.take( 10 ).toString() )
-                  }
-//                  system.step { implicit tx => access.get.dispose() }
-
-               } finally {
-                  cleanUp()
-               }
-            }
-         }
+        scenarioWithTime("Consistency is verified on a randomly filled structure") {
+          val (_csr, access, cleanUp) = lf(SkipList.NoKeyObserver)
+          implicit val cursor: stm.Cursor[S] = _csr
+          try {
+            val s = MSet.empty[Int]
+            randFill(access, s)
+            verifyOrder(access)
+            verifyElems(access, s)
+            verifyContainsNot(access, s)
+            verifyAddRemoveAll(access, s)
+            //                  cursor.step { implicit tx => access.get.dispose() }
+          } finally {
+            cleanUp()
+          }
+        }
       }
-   }
+    }
+
+    if (OBSERVATION) {
+      Feature("The " + name + " skip list structure should be observable") {
+        info("Several operations are performed on the structure while an")
+        info("observer monitors key promotions and demotions")
+
+        scenarioWithTime("Observation is verified on a randomly filled structure") {
+          val obs = new Obs[S]
+          val (_sys, access, cleanUp) = lf(obs)
+          implicit val system: stm.Cursor[S] = _sys
+          try {
+            val s = system.step(tx => randFill2(tx.peer)) // randFill3
+            When("all the elements of the set are added")
+            var uppedInsKey = false
+            system.step { implicit tx =>
+              val l = access()
+              s.foreach { i =>
+                obs.oneUp.transform(_ - i)(tx.peer)
+                l.add(i)
+                uppedInsKey |= obs.oneUp()(tx.peer).contains(i)
+              }
+            }
+            Then("none was ever promoted during their insertion")
+            assert(!uppedInsKey)
+            Then("there haven't been any demotions")
+            assert(obs.allDn.single().isEmpty, obs.allDn.single().take(10).toString())
+            Then("there were several promotions")
+            assert(obs.allUp.single().nonEmpty)
+            Then("the height of the list is equal to the maximally promoted key + 1")
+            val maxProm = obs.allUp.single().maxBy(_._2)._2
+            val (h, minGap, maxGap) = system.step { implicit tx =>
+              val l = access()
+              (l.height, l.minGap, l.maxGap)
+            }
+
+            assert(h == maxProm + 1, "Height is reported as " + h + ", while keys were maximally promoted " + maxProm + " times")
+            val sz = s.size + 1 // account for the 'maxKey'
+            val minH = math.ceil(math.log(sz) / math.log(maxGap + 1)).toInt
+            val maxH = math.ceil(math.log(sz) / math.log(minGap + 1)).toInt
+            Then("ceil(log(n+1)/log(maxGap+1)) <= height <= ceil(log(n+1)/log(minGap+1))")
+            assert(minH <= h && h <= maxH, "Not: " + minH + " <= " + h + " <= " + maxH)
+
+            if (REMOVAL) {
+              When("all the elements are removed again")
+              var uppedDelKey = false
+              system.step { implicit tx =>
+                val l = access()
+                s.foreach { i =>
+                  obs.oneUp.transform(_ - i)(tx.peer)
+                  l.remove(i)
+                  uppedDelKey |= obs.oneUp()(tx.peer).contains(i)
+                }
+              }
+              Then("none was ever promoted during their deletion")
+              assert(!uppedDelKey, "elements were promoted during their deletion")
+              val upsNotInS = obs.allUp.single().keys.filterNot(s.contains(_))
+              Then("no key was ever promoted which was not in s")
+              assert(upsNotInS.isEmpty, upsNotInS.take(10).toString())
+              val dnsNotInS = obs.allDn.single().keys.filterNot(s.contains(_))
+              Then("no key was ever demoted which was not in s")
+              assert(dnsNotInS.isEmpty, dnsNotInS.take(10).toString())
+              val unbal = atomic { implicit tx =>
+                s.map(i => i -> (obs.allUp().getOrElse(i, 0) - obs.allDn().getOrElse(i, 0))).filterNot(_._2 == 0)
+              }
+              Then("the number of promotions and demotions for every key is equal")
+              assert(unbal.isEmpty, unbal.take(10).toString())
+            }
+            //                  system.step { implicit tx => access.get.dispose() }
+
+          } finally {
+            cleanUp()
+          }
+        }
+      }
+    }
+  }
 
   final class Obs[S <: stm.Sys[S]] extends SkipList.KeyObserver[S#Tx, Int] {
-    var allUp = Ref(IntMap.empty[Int])
-    var allDn = Ref(IntMap.empty[Int])
-    var oneUp = Ref(IntMap.empty[Int])
+    var allUp: Ref[IntMap[Int]] = Ref(IntMap.empty[Int])
+    var allDn: Ref[IntMap[Int]] = Ref(IntMap.empty[Int])
+    var oneUp: Ref[IntMap[Int]] = Ref(IntMap.empty[Int])
 
     def keyUp(key: Int)(implicit tx: S#Tx): Unit = {
-      implicit val itx = tx.peer
+      implicit val itx: InTxn = tx.peer
       allUp.transform(m => m + (key -> (m.getOrElse(key, 0) + 1)))
       oneUp.transform(m => m + (key -> (m.getOrElse(key, 0) + 1)))
     }
 
     def keyDown(key: Int)(implicit tx: S#Tx): Unit = {
-      implicit val itx = tx.peer
+      implicit val itx: InTxn = tx.peer
       allDn.transform(m => m + (key -> (m.getOrElse(key, 0) + 1)))
     }
   }

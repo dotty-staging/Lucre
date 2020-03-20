@@ -23,7 +23,6 @@ import de.sciss.model.Change
 import de.sciss.serial.Serializer
 
 import scala.concurrent.stm.Ref
-import scala.language.higherKinds
 
 object CellViewImpl {
   def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] = new Const(value)

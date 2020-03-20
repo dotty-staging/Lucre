@@ -15,7 +15,6 @@ package de.sciss.lucre.stm
 
 import de.sciss.lucre.stm.impl.CopyImpl
 
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object Copy {

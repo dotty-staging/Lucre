@@ -19,8 +19,6 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.model.Change
 import de.sciss.serial.DataOutput
 
-import scala.language.higherKinds
-
 trait Tuple1Op[A, T1, ReprA[~ <: Sys[~]] <: Expr[~, A], ReprT1[~ <: Sys[~]] <: Expr[~, T1]] {
   def id: Int
 

@@ -22,7 +22,6 @@ import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.lucre.stm.{Disposable, Sys}
 
 import scala.concurrent.stm.Ref
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 abstract class ObjCellViewVarImpl[S <: Sys[S], Dur[~ <: Sys[~]] <: stm.Obj[~],

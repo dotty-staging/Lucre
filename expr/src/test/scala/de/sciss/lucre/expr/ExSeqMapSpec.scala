@@ -1,9 +1,10 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ExSeqMapSpec extends FlatSpec with Matchers with CaptureConsoleOutput {
+class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
 
   "Ex[Seq[A]].map" should "work as expected" in {

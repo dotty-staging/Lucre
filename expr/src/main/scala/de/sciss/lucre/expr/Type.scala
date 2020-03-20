@@ -20,7 +20,7 @@ import de.sciss.lucre.{adjunct, expr, stm}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 object Type {
   trait Extension {

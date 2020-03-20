@@ -19,8 +19,6 @@ import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{ObjImpl => Impl}
 import de.sciss.serial.{DataInput, Serializer}
 
-import scala.language.higherKinds
-
 object Obj {
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Obj[S] = Impl.read(in, access)
 

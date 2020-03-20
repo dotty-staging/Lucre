@@ -1,7 +1,7 @@
 package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.{IntPoint2D => P, IntSquare => Q}
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
 /*
  To run only this suite
@@ -9,8 +9,8 @@ import org.scalatest.FunSpec
 test-only de.sciss.lucre.data.InterestingSquareSuite
 
   */
-class InterestingSquareSuite extends FunSpec {
-  val p = Q(64, 64, 64)
+class InterestingSquareSuite extends AnyFunSpec {
+  val p: Q = Q(64, 64, 64)
   import p.{greatestInteresting => gi}
 
   for (shift <- 0 to 5) {

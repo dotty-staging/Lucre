@@ -18,8 +18,6 @@ import de.sciss.lucre.expr.impl.Tuple2Op
 import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 
-import scala.language.higherKinds
-
 object StringExtensions  {
   private[this] lazy val _init: Unit = {
     StringObj.registerExtension(StringTuple2s)

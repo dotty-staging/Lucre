@@ -21,7 +21,6 @@ import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.switch
-import scala.language.higherKinds
 
 object BooleanExtensions  {
   private[this] lazy val _init: Unit = {

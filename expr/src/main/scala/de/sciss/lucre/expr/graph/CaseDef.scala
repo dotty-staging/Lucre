@@ -24,7 +24,6 @@ import de.sciss.lucre.stm.TxnLike.peer
 import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
-import scala.language.higherKinds
 
 object CaseDef {
   sealed trait Expanded[S <: Sys[S], A] extends IExpr[S, A] {

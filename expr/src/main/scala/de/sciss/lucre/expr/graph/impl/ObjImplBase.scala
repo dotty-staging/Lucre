@@ -17,8 +17,6 @@ import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.Sys
 
-import scala.language.higherKinds
-
 abstract class ObjImplBase[In <: Sys[In], Repr[~ <: Sys[~]] <: stm.Obj[~]](in: stm.Source[In#Tx, Repr[In]], system: In)
   extends Obj {
 

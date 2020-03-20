@@ -15,8 +15,6 @@ package de.sciss.lucre.stm
 
 import de.sciss.lucre.event.Observable
 
-import scala.language.higherKinds
-
 object MapLike {
   trait Update[S <: Sys[S], K, Repr[~ <: Sys[~]]] {
     def changes: scala.List[Change[S, K, Repr[S]]]

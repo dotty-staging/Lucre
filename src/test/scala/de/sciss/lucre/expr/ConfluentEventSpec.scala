@@ -3,12 +3,14 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.confluent
 import de.sciss.lucre.confluent.Confluent
 import de.sciss.lucre.stm.store.BerkeleyDB
-import org.scalatest.{Matchers, Outcome, fixture}
+import org.scalatest.Outcome
+import org.scalatest.flatspec.FixtureAnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.TxnLocal
 
-trait ConfluentEventSpec extends fixture.FlatSpec with Matchers {
+trait ConfluentEventSpec extends FixtureAnyFlatSpec with Matchers {
   type S = Confluent
   type D = S#D
   type FixtureParam = confluent.Cursor[S, D]

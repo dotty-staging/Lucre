@@ -1,7 +1,8 @@
 package de.sciss.lucre.confluent
 
 import de.sciss.lucre.stm.store.BerkeleyDB
-import org.scalatest.{FunSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.funspec.AnyFunSpec
 
 import scala.annotation.tailrec
 
@@ -12,7 +13,7 @@ To run only this test:
 test-only de.sciss.lucre.confluent.FiatKaplanSuite
 
  */
-class FiatKaplanSuite extends FunSpec with GivenWhenThen with TestHasLinkedList {
+class FiatKaplanSuite extends AnyFunSpec with GivenWhenThen with TestHasLinkedList {
 
   type S = Confluent
 

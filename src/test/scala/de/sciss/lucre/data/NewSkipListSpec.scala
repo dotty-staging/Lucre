@@ -2,9 +2,11 @@ package de.sciss.lucre.data
 
 import de.sciss.lucre.stm.Durable
 import de.sciss.lucre.stm.store.BerkeleyDB
-import org.scalatest.{Matchers, Outcome, fixture}
+import org.scalatest.Outcome
+import org.scalatest.flatspec.FixtureAnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class NewSkipListSpec extends fixture.FlatSpec with Matchers {
+class NewSkipListSpec extends FixtureAnyFlatSpec with Matchers {
   type S = Durable
   type FixtureParam = Durable
 

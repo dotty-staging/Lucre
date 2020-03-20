@@ -285,6 +285,34 @@ object Folder {
     }
   }
 
+  private final class DropExpanded[S <: Sys[S]](in: IExpr[S, Folder], n: IExpr[S, Int])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit = {
+      in.value.peer.foreach { f =>
+        var rem = math.min(n.value, f.size)
+        while (rem > 0) {
+          EditFolder.removeHead(f)
+          rem -= 1
+        }
+      }
+    }
+  }
+
+  private final class DropRightExpanded[S <: Sys[S]](in: IExpr[S, Folder], n: IExpr[S, Int])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit = {
+      in.value.peer.foreach { f =>
+        var rem = math.min(n.value, f.size)
+        while (rem > 0) {
+          EditFolder.removeLast(f)
+          rem -= 1
+        }
+      }
+    }
+  }
+
   final case class Append[A](in: Ex[Folder], elem: Ex[A])(implicit source: Obj.Source[A])
     extends Act with ProductWithAdjuncts {
 
@@ -311,9 +339,41 @@ object Folder {
     def adjuncts: List[Adjunct] = source :: Nil
   }
 
+  final case class Drop(in: Ex[Folder], n: Ex[Int])
+    extends Act {
+
+    override def productPrefix: String = s"Folder$$Drop" // serialization
+
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new DropExpanded(in.expand[S], n.expand[S])
+  }
+
+  final case class DropRight(in: Ex[Folder], n: Ex[Int])
+    extends Act {
+
+    override def productPrefix: String = s"Folder$$DropRight" // serialization
+
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new DropRightExpanded(in.expand[S], n.expand[S])
+  }
+
   implicit final class Ops(private val f: Ex[Folder]) extends AnyVal {
+    /** Prepends an element to the folder */
     def prepend[A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Prepend(f, elem)
+    /** Appends an element to the folder */
     def append [A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Append (f, elem)
+    /** Drops the `n` first elements from the folder.
+      * If the folder contains less elements than `n`, the folder will become empty.
+      */
+    def drop(n: Ex[Int]): Act = Drop(f, n)
+    /** Drops the `n` last elements from the folder.
+      * If the folder contains less elements than `n`, the folder will become empty.
+      */
+    def dropRight(n: Ex[Int]): Act = DropRight(f, n)
 
     def size    : Ex[Int    ]   = Size    (f)
     def isEmpty : Ex[Boolean]   = IsEmpty (f)

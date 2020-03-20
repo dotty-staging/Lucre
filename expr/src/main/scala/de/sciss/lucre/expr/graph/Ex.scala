@@ -22,7 +22,7 @@ import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 object Ex {
   // ---- implicits ----

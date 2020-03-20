@@ -5,7 +5,8 @@ import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
 import de.sciss.serial
 import de.sciss.serial.{DataInput, DataOutput, Writable}
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.immutable.{Vector => Vec}
 
@@ -20,7 +21,7 @@ object TotalOrderSuite {
     final class Serializer[S <: Sys[S]](observer: RelabelObserver[S#Tx, MapHolder[S]], tx0: S#Tx)
       extends serial.Serializer[S#Tx, S#Acc, MapHolder[S]] {
 
-      val map = TotalOrder.Map.empty[S, MapHolder[S]](observer, _.entry)(tx0, this)
+      val map: TotalOrder.Map[S, MapHolder[S]] = TotalOrder.Map.empty[S, MapHolder[S]](observer, _.entry)(tx0, this)
 
       def write(v: MapHolder[S], out: DataOutput): Unit = v.write(out)
 
@@ -40,7 +41,7 @@ object TotalOrderSuite {
     }
   }
 }
-class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
+class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   import TotalOrderSuite.MapHolder
 
   val INMEMORY         = true
@@ -69,7 +70,7 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
   def withSys[S <: Sys[S]](sysName: String, sysCreator: () => S with Cursor[S],
                            sysCleanUp: S => Unit): Unit = {
     def scenarioWithTime(descr: String)(body: => Unit): Unit = {
-      scenario(descr) {
+      Scenario(descr) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -77,14 +78,14 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
       }
     }
 
-    if (TEST1) feature("The ordering of the structure should be consistent") {
+    if (TEST1) Feature("The ordering of the structure should be consistent") {
       info("Each two successive elements of the structure")
       info("should yield '<' in comparison")
 
       scenarioWithTime("Ordering is verified on a randomly filled " + sysName + " structure") {
         Given("a randomly filled structure (" + sysName + ")")
 
-        implicit val system = sysCreator()
+        implicit val system: S with Cursor[S] = sysCreator()
         try {
           val to = system.step { implicit tx =>
             TotalOrder.Set.empty[S]
@@ -97,7 +98,7 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
           val set = system.step { implicit tx =>
             var e = to.root
             var coll = Set[TotalOrder.Set.Entry[S]]() // ( e )
-            for (i <- 1 until n) {
+            for (_ <- 1 until n) {
               //if( (i % 1000) == 0 ) println( "i = " + i )
               if (rnd.nextBoolean()) {
                 e = e.append() // to.insertAfter( e ) // to.insertAfter( i )
@@ -150,9 +151,9 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
       }
     }
 
-    if (TEST2) feature("The structure should accept boundary cases") {
+    if (TEST2) Feature("The structure should accept boundary cases") {
       scenarioWithTime(s"Triggering overflows at the boundaries in a $sysName structure") {
-        implicit val system = sysCreator()
+        implicit val system: S with Cursor[S] = sysCreator()
         try {
           Given("an empty map structure")
 

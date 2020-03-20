@@ -5,7 +5,9 @@ import java.io.File
 import de.sciss.lucre.data.TotalOrder
 import de.sciss.lucre.stm.InTxnRandom
 import de.sciss.lucre.stm.store.BerkeleyDB
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import de.sciss.serial.Serializer
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 /*
 
@@ -14,7 +16,7 @@ To run this test copy + paste the following into sbt:
 test-only de.sciss.lucre.confluent.TotalOrderSuite
 
  */
-class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
+class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   val MONITOR_LABELING = false
 
   val NUM              = 0x8000 // 0x10000 // 0x80000  // 0x200000
@@ -42,23 +44,23 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
 
   def withSys[S <: Sys[S]](sysName: String, sysCreator: () => S, sysCleanUp: S => Unit): Unit = {
     def scenarioWithTime(descr: String)(body: => Unit): Unit =
-      scenario(descr) {
+      Scenario(descr) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
         println(s"For $sysName the tests took ${TestUtil.formatSeconds((t2 - t1) * 0.001)}")
       }
 
-    feature("The ordering of the structure should be consistent") {
+    Feature("The ordering of the structure should be consistent") {
       info("Each two successive elements of the structure")
       info("should yield '<' in comparison")
 
       scenarioWithTime(s"Ordering is verified on a randomly filled $sysName structure") {
         Given(s"a randomly filled structure ($sysName)")
 
-        implicit val system = sysCreator()
+        implicit val system: S = sysCreator()
         try {
-          implicit val ser = TotalOrder.Set.serializer[S]
+          implicit val ser: Serializer[S#Tx, Access[S], TotalOrder.Set[S]] = TotalOrder.Set.serializer[S]
           val (access, cursor) = system.cursorRoot {
             implicit tx =>
               TotalOrder.Set.empty[S] /* ( new RelabelObserver[ S#Tx, E ] {
@@ -86,8 +88,7 @@ class TotalOrderSuite extends FeatureSpec with GivenWhenThen {
             implicit tx =>
               var e = access().root
               var coll = Set[TotalOrder.Set.Entry[S]]() // ( e )
-              for (i <- 1 until n) {
-                // if ((i % 16) == 0) println(s"i = $i")
+              for (_ <- 1 until n) {
                 if (rnd.nextBoolean()(tx.peer)) {
                   e = e.append() // to.insertAfter( e ) // to.insertAfter( i )
                 } else {

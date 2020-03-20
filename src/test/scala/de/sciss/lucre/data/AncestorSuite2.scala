@@ -2,7 +2,8 @@ package de.sciss.lucre.data
 
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.annotation.tailrec
 import scala.collection.immutable.IntMap
@@ -16,7 +17,7 @@ test-only de.sciss.lucre.data.AncestorSuite2
 object AncestorSuite2 {
   private final case class Vertex(parent: Int, children: Set[Int], mark: Option[Int])
 }
-class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
+class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
   import AncestorSuite2._
 
   val NUM1      = 4096 // 10000             // gets frickin slow, hopefully online in the control structure 10000     // 933 // 10000
@@ -56,7 +57,7 @@ class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
   def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S,
                                           sysCleanUp: (S, Boolean) => Unit): Unit = {
     def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit = {
-      scenario(descr) {
+      Scenario(descr) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -64,9 +65,9 @@ class AncestorSuite2 extends FeatureSpec with GivenWhenThen {
       }
     }
 
-    feature(s"Marked ancestor lookup is verified on a dedicated structure in $sysName") {
+    Feature(s"Marked ancestor lookup is verified on a dedicated structure in $sysName") {
       scenarioWithTime("Marked-Ancestors", "Verifying marked ancestor lookup") {
-        implicit val system = sysCreator()
+        implicit val system: S = sysCreator()
         var success = false
         try {
           Given("a randomly filled and marked tree, and a manually maintained duplicate")

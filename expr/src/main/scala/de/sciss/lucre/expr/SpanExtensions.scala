@@ -20,7 +20,6 @@ import de.sciss.serial.DataInput
 import de.sciss.span.Span
 
 import scala.annotation.switch
-import scala.language.higherKinds
 
 object SpanExtensions  {
   private[this] lazy val _init: Unit = {

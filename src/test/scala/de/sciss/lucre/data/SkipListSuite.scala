@@ -2,7 +2,8 @@ package de.sciss.lucre.data
 
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.immutable.IntMap
 import scala.collection.mutable.{Set => MSet}
@@ -14,7 +15,7 @@ import scala.concurrent.stm.{InTxn, Ref, TxnExecutor}
 test-only de.sciss.lucre.data.SkipListSuite
 
  */
-class SkipListSuite extends FeatureSpec with GivenWhenThen {
+class SkipListSuite extends AnyFeatureSpec with GivenWhenThen {
   val CONSISTENCY   = true
   val OBSERVATION   = true
   val REMOVAL       = true
@@ -38,7 +39,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
   def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S, sysCleanUp: S => Unit): Unit = {
     if (TWO_GAP_SIZES) {
       withList[S](s"HA-1 ($sysName)", { oo =>
-        implicit val sys = sysCreator()
+        implicit val sys: S = sysCreator()
         val l = sys.step { implicit tx =>
           HASkipList.Set.empty[S, Int](minGap = 1, keyObserver = oo)
         }
@@ -46,7 +47,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
       })
     }
     withList[S](s"HA-2 ($sysName)", { oo =>
-      implicit val sys = sysCreator()
+      implicit val sys: S = sysCreator()
       val l = sys.step { implicit tx =>
         HASkipList.Set.empty[S, Int](minGap = 2, keyObserver = oo)
       }
@@ -74,7 +75,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
 
   def randFill[S <: Sys[S]](l: SkipList.Set[S, Int], s: MSet[Int])(implicit cursor: Cursor[S]): Unit = {
     Given("a randomly filled structure")
-    for (i <- 0 until NUM1) {
+    for (_ <- 0 until NUM1) {
       val x = rnd.nextInt(0x7FFFFFFF)
       s.add(x)
     }
@@ -86,7 +87,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
   def randFill2(): Set[Int] = {
     Given("a set of random numbers")
     var res = Set.empty[Int]
-    for (i <- 0 until NUM2) {
+    for (_ <- 0 until NUM2) {
       res += rnd.nextInt() & ~1 // any int except MaxValue
     }
     res
@@ -94,7 +95,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
 
   def randFill3(): Set[Int] = {
     var res = Set.empty[Int]
-    for (i <- 0 until NUM3) {
+    for (_ <- 0 until NUM3) {
       res += rnd.nextInt(100)
     }
     Given(s"a small set of numbers : ${res.mkString(", ")}")
@@ -175,7 +176,7 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
   private def withList[S <: Sys[S]](name: String,
                                     lf: SkipList.KeyObserver[S#Tx, Int] => (S with Cursor[S], SkipList.Set[S, Int], () => Unit)): Unit = {
     def scenarioWithTime(descr: String)(body: => Unit): Unit =
-      scenario(descr) {
+      Scenario(descr) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -183,13 +184,13 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
       }
 
     if (CONSISTENCY) {
-      feature(s"The $name skip list structure should be consistent") {
+      Feature(s"The $name skip list structure should be consistent") {
         info("Several mass operations on the structure")
         info("are tried and expected behaviour verified")
 
         scenarioWithTime("Consistency is verified on a randomly filled structure") {
           val (_sys, l, cleanUp) = lf(SkipList.NoKeyObserver)
-          implicit val system = _sys
+          implicit val system: S with Cursor[S] = _sys
           try {
             val s = MSet.empty[Int]
             randFill(l, s)
@@ -208,14 +209,14 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
     }
 
     if (OBSERVATION) {
-      feature(s"The $name skip list structure should be observable") {
+      Feature(s"The $name skip list structure should be observable") {
         info("Several operations are performed on the structure while an")
         info("observer monitors key promotions and demotions")
 
         scenarioWithTime("Observation is verified on a randomly filled structure") {
           val obs = new Obs[S]
           val (_sys, l, cleanUp) = lf(obs)
-          implicit val system = _sys
+          implicit val system: S with Cursor[S] = _sys
           try {
             val s = randFill2() // randFill3
             When("all the elements of the set are added")
@@ -280,18 +281,18 @@ class SkipListSuite extends FeatureSpec with GivenWhenThen {
   }
 
   final class Obs[S <: Sys[S]] extends SkipList.KeyObserver[S#Tx, Int] {
-    val allUp = Ref(IntMap.empty[Int])
-    val allDn = Ref(IntMap.empty[Int])
-    val oneUp = Ref(IntMap.empty[Int])
+    val allUp: Ref[IntMap[Int]] = Ref(IntMap.empty[Int])
+    val allDn: Ref[IntMap[Int]] = Ref(IntMap.empty[Int])
+    val oneUp: Ref[IntMap[Int]] = Ref(IntMap.empty[Int])
 
     def keyUp(key: Int)(implicit tx: S#Tx) : Unit ={
-      implicit val itx = tx.peer
+      implicit val itx: InTxn = tx.peer
       allUp.transform(m => m + (key -> (m.getOrElse(key, 0) + 1)))
       oneUp.transform(m => m + (key -> (m.getOrElse(key, 0) + 1)))
     }
 
     def keyDown(key: Int)(implicit tx: S#Tx): Unit = {
-      implicit val itx = tx.peer
+      implicit val itx: InTxn = tx.peer
       allDn.transform(m => m + (key -> (m.getOrElse(key, 0) + 1)))
     }
   }

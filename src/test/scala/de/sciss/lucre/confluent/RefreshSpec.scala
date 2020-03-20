@@ -4,7 +4,9 @@ import de.sciss.lucre.stm
 import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataInput, DataOutput}
-import org.scalatest.{Matchers, Outcome, fixture}
+import org.scalatest.Outcome
+import org.scalatest.flatspec.FixtureAnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /*
 
@@ -13,7 +15,7 @@ To run only this test:
 test-only de.sciss.lucre.confluent.RefreshSpec
 
  */
-class RefreshSpec extends fixture.FlatSpec with Matchers {
+class RefreshSpec extends FixtureAnyFlatSpec with Matchers {
   type FixtureParam = stm.Cursor[Confluent]
   type S = Confluent
 
@@ -21,7 +23,7 @@ class RefreshSpec extends fixture.FlatSpec with Matchers {
 
   object Entity {
     implicit object Ser extends MutableSerializer[S, Entity] {
-      protected def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx) = {
+      protected def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx): Entity = {
         val field = tx.readIntVar(id, in)
         new Entity(id, field)
       }

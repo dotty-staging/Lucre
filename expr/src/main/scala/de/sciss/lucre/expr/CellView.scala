@@ -20,8 +20,6 @@ import de.sciss.lucre.stm.{Disposable, Obj, Sys}
 import de.sciss.lucre.{stm, event => evt, expr => _expr}
 import de.sciss.serial.Serializer
 
-import scala.language.higherKinds
-
 object CellView {
   def empty[Tx, A]: CellView[Tx, Option[A]] = Empty.asInstanceOf[CellView[Tx, Option[A]]]
 

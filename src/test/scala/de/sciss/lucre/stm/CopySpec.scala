@@ -3,7 +3,9 @@ package de.sciss.lucre.stm
 import de.sciss.lucre.expr.IntObj
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.store.BerkeleyDB
-import org.scalatest.{Outcome, Matchers, fixture}
+import org.scalatest.Outcome
+import org.scalatest.flatspec.FixtureAnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /*
   to run only this test
@@ -11,7 +13,7 @@ import org.scalatest.{Outcome, Matchers, fixture}
   test-only de.sciss.lucre.stm.CopySpec
 
  */
-class CopySpec extends fixture.FlatSpec with Matchers {
+class CopySpec extends FixtureAnyFlatSpec with Matchers {
   type S = Durable
   case class FixtureParam(s1: S, s2: S)
 

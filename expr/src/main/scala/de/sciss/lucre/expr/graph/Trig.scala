@@ -19,7 +19,7 @@ import de.sciss.lucre.event.{IEvent, IPull, ITargets}
 import de.sciss.lucre.expr.{Context, IAction, ITrigger, TrigOps}
 import de.sciss.lucre.stm.Sys
 
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 object Trig {
   final val Some: Option[Unit] = scala.Some(())

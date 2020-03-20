@@ -30,7 +30,6 @@ import de.sciss.span.{Span, SpanLike}
 
 import scala.annotation.elidable
 import scala.collection.immutable.{IndexedSeq => Vec}
-import scala.language.higherKinds
 
 object BiGroupImpl {
   import BiGroup.{Entry, Leaf, MaxCoordinate, MaxSide, MaxSquare, MinCoordinate, Modifiable}

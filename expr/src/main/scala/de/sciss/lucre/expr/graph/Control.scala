@@ -16,8 +16,6 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.expr.{Graph, IControl}
 import de.sciss.lucre.stm.Sys
 
-import scala.language.higherKinds
-
 object Control {
   final case class Configured(control: Control, properties: Map[String, Any]) {
     override def productPrefix: String = s"Control$$Configured"

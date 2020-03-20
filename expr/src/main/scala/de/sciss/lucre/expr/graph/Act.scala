@@ -17,8 +17,6 @@ import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IControl}
 import de.sciss.lucre.stm.Sys
 
-import scala.language.higherKinds
-
 object Act {
   def apply(xs: Act*): Act = SeqImpl(xs)
 

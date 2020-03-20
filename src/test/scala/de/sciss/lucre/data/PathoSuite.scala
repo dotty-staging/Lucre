@@ -2,7 +2,7 @@ package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.{IntPoint2D, IntSpace, IntSquare}
 import de.sciss.lucre.stm.InMemory
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
 /*
  To run only this suite
@@ -10,11 +10,11 @@ import org.scalatest.FunSpec
 test-only de.sciss.lucre.data.PathoSuite
 
   */
-class PathoSuite extends FunSpec {
+class PathoSuite extends AnyFunSpec {
   type S  = InMemory
   type D  = IntSpace.TwoDim
-  implicit val view = (p: IntPoint2D, _: S#Tx) => p
-  val i   = InMemory()
+  implicit val view: (IntPoint2D, S#Tx) => IntPoint2D = (p, _) => p
+  val i: S = InMemory()
   val j   = 8
 
   i.step { implicit tx =>

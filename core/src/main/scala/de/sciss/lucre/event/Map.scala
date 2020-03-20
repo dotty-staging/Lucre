@@ -18,7 +18,6 @@ import de.sciss.lucre.stm.{Elem, Form, MapLike, Obj, Sys}
 import de.sciss.serial.{DataInput, ImmutableSerializer, Serializer}
 
 import scala.annotation.switch
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object Map extends Obj.Type {

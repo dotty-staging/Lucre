@@ -9,7 +9,8 @@ import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntP
 import de.sciss.lucre.stm
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{InTxnRandom, Random}
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.mutable.{Set => MSet}
 import scala.concurrent.stm.InTxn
@@ -20,7 +21,7 @@ import scala.concurrent.stm.InTxn
 test-only de.sciss.lucre.confluent.OctreeSuite
 
  */
-class OctreeSuite extends FeatureSpec with GivenWhenThen {
+class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
    val CONSISTENCY   = true
    val RANGE_SEARCH  = true
    val NN_SEARCH     = true
@@ -309,12 +310,12 @@ class OctreeSuite extends FeatureSpec with GivenWhenThen {
   def withTree[S <: Sys[S]](name: String, tf: () => (stm.Cursor[S],
     stm.Source[S#Tx, DeterministicSkipOctree[S, ThreeDim, ThreeDim#Point]], Boolean => Unit)): Unit = {
 
-    feature( "The " + name + " octree structure should be consistent" ) {
+    Feature( "The " + name + " octree structure should be consistent" ) {
          info( "Several mass operations on the structure" )
          info( "are tried and expected behaviour verified" )
 
       def scenarioWithTime(descr: String)(body: => Unit): Unit =
-        scenario(descr) {
+        Scenario(descr) {
           val t1 = System.currentTimeMillis()
           body
           val t2 = System.currentTimeMillis()

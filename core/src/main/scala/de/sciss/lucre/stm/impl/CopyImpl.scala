@@ -15,7 +15,6 @@ package de.sciss.lucre.stm
 package impl
 
 import scala.collection.mutable
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 object CopyImpl {

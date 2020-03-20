@@ -1,7 +1,8 @@
 package de.sciss.lucre.confluent
 
 import de.sciss.lucre.confluent.impl.PathImpl
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.LongMap
 
@@ -12,7 +13,7 @@ To run only this test:
 test-only de.sciss.lucre.confluent.HashingSpec
 
  */
-class HashingSpec extends FlatSpec with Matchers {
+class HashingSpec extends AnyFlatSpec with Matchers {
   type S = Confluent
 
   "The hashing mechanism" should "find correct prefix lengths" in {

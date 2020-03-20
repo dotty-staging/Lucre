@@ -199,7 +199,7 @@ object Attr {
           val opt: Option[Form[S]] = ctx.attr.get(key)
           val firstVr = opt match {
             case Some(ex: Var.Expanded[S, _]) => Some(ex)
-            case _ => None
+            case _                            => None
           }
           new FlatVarCellView(firstP, firstVr, secondP)
 

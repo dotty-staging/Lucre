@@ -1,7 +1,8 @@
 package de.sciss.lucre.data
 
 import de.sciss.lucre.stm.InMemory
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.immutable.{Vector => Vec}
 
@@ -11,7 +12,7 @@ import scala.collection.immutable.{Vector => Vec}
 test-only de.sciss.lucre.data.SkipListMapSuite
 
   */
-class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
+class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
   val SEED  = 0L
   val N     = 1000
 
@@ -19,14 +20,14 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
   val rnd   = new util.Random(SEED)
 
   def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit =
-    scenario(descr) {
+    Scenario(descr) {
       val t1 = System.currentTimeMillis()
       body
       val t2 = System.currentTimeMillis()
       println("For " + name + " the tests took " + TestUtil.formatSeconds((t2 - t1) * 0.001))
     }
 
-  feature("The skip list map structure should be consistent") {
+  Feature("The skip list map structure should be consistent") {
     info("Several mass operations on the structure")
     info("are tried and expected behaviour verified")
 
@@ -102,8 +103,8 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
       When("the floor and ceil values for the elements are asked")
       val allHit = atomic { implicit tx =>
         seq.forall { tup =>
-          map.floor(tup._1) == Some(tup) &&
-          map.ceil (tup._1) == Some(tup)
+          map.floor (tup._1).contains(tup) &&
+          map.ceil  (tup._1).contains(tup)
         }
       }
       Then("they should return the elements themselves")
@@ -111,7 +112,7 @@ class SkipListMapSuite extends FeatureSpec with GivenWhenThen {
 
       When("get is called")
       val flat = atomic { implicit tx =>
-        seq.flatMap { case (key, value) =>
+        seq.flatMap { case (key, _ /*value*/) =>
           map.get(key)
         }
       }

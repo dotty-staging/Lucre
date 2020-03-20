@@ -5,7 +5,8 @@ import de.sciss.lucre.geom.{IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
 import de.sciss.serial.{DataInput, DataOutput, Reader, Serializer, Writable}
-import org.scalatest.{FeatureSpec, GivenWhenThen}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{Vector => Vec}
@@ -17,7 +18,7 @@ import scala.concurrent.stm.Ref
 test-only de.sciss.lucre.data.AncestorRetroSuite
 
 */
-class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
+class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
   val PARENT_LOOKUP             = true
   val MARKED_ANCESTOR           = true
   val NUM1                      = 5000 // 10000   // 4407 // 4407   // 10000 // 283 // 10000  // tree size in PARENT_LOOKUP
@@ -123,7 +124,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
       implicit val pointView: (FullVertex[S], S#Tx) => IntPoint3D = (p, tx) => p.toPoint(tx)
       new FullTree[S] {
         val system: S = tx.system
-        val cube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
+        val cube: IntCube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
         val t: SkipOctree[S, IntSpace.ThreeDim, FullVertex[S]] =
           SkipOctree.empty[S, IntSpace.ThreeDim, FullVertex[S]](cube)
 
@@ -236,7 +237,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
 
     def insertRetroParent(child: V)(implicit tx: S#Tx): V = {
       require(child != root)
-      val v = new FullVertex[S] {
+      val v: FullVertex[S] = new FullVertex[S] {
         //            val pre     = preOrder.insertBefore( child.preHeadKey, preHeadKey )
         //            val preTail = preOrder.insertAfter( child.preTailKey, preTailKey )
         //            val post    = postOrder.insertAfter( child, this )
@@ -306,7 +307,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
     //      final def y : Int = system.step { implicit tx => post.tag }
     //      final def z : Int = version
 
-    final def toPoint(implicit tx: S#Tx) = IntPoint3D(pre.tag, post.tag, version)
+    final def toPoint(implicit tx: S#Tx): IntPoint3D = IntPoint3D(pre.tag, post.tag, version)
 
     final def debugString(implicit tx: S#Tx) = s"$toString<post>@${post.tag}"
 
@@ -405,7 +406,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
       post.write(out)
     }
 
-    final def toPoint(implicit tx: S#Tx) = IntPoint3D(pre.tag, post.tag, version)
+    final def toPoint(implicit tx: S#Tx): IntPoint3D = IntPoint3D(pre.tag, post.tag, version)
 
     override def toString = s"Mark($version)"
 
@@ -581,7 +582,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
    //   }
 
     def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit =
-      scenario(descr) {
+      Scenario(descr) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -589,7 +590,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
       }
 
     if (PARENT_LOOKUP) {
-      feature(s"Tree parent node lookup should be possible in a $sysName octree representing pre-order, post-order and version") {
+      Feature(s"Tree parent node lookup should be possible in a $sysName octree representing pre-order, post-order and version") {
         info("The vertices of a tree are represented by their positions")
         info("in the tree's pre- and post-order traversals (as total orders), plus an incremental version.")
         info("NN search is possible with these orders representing")
@@ -632,7 +633,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
                     val f     = t.t.nearestNeighborOption(point, metric)
                     f
                   }
-                  assert(found == Some(parent), s"For child $child, found $found instead of $parent")
+                  assert(found.contains(parent), s"For child $child, found $found instead of $parent")
 
                 case Some(parent) =>
                   testChild(version, parent) // skip too new retro versions
@@ -652,7 +653,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
     }
 
     if (MARKED_ANCESTOR) {
-      feature(s"Marked ancestor lookup should be possible through isomorphic mapping between two $sysName octrees") {
+      Feature(s"Marked ancestor lookup should be possible through isomorphic mapping between two $sysName octrees") {
         info("Two trees are now maintained (as quadtrees with pre/post order coordinates).")
         info("One tree represents the full version tree, the other a subtree representing markers.")
         info("Marked ancestor lookup is performed by translating a coordinate from the")
@@ -875,7 +876,7 @@ class AncestorRetroSuite extends FeatureSpec with GivenWhenThen {
                     (_f, par, _pnt)
                   }
                 }
-                assert(found == Some(parent), s"For child $child (iso $point), found ${found.orNull} instead of $parent")
+                assert(found.contains(parent), s"For child $child (iso $point), found ${found.orNull} instead of $parent")
             }
             success = true
 

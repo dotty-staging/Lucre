@@ -19,7 +19,6 @@ import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
-import scala.language.higherKinds
 
 object LongExtensions {
   private[this] lazy val _init: Unit = {
