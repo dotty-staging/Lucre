@@ -313,6 +313,16 @@ object Folder {
     }
   }
 
+  private final class ClearExpanded[S <: Sys[S]](in: IExpr[S, Folder])
+    extends IActionImpl[S] {
+
+    def executeAction()(implicit tx: S#Tx): Unit = {
+      in.value.peer.foreach { f =>
+        EditFolder.clear(f)
+      }
+    }
+  }
+
   final case class Append[A](in: Ex[Folder], elem: Ex[A])(implicit source: Obj.Source[A])
     extends Act with ProductWithAdjuncts {
 
@@ -361,6 +371,17 @@ object Folder {
       new DropRightExpanded(in.expand[S], n.expand[S])
   }
 
+  final case class Clear(in: Ex[Folder])
+    extends Act {
+
+    override def productPrefix: String = s"Folder$$Clear" // serialization
+
+    type Repr[S <: Sys[S]] = IAction[S]
+
+    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+      new ClearExpanded(in.expand[S])
+  }
+
   implicit final class Ops(private val f: Ex[Folder]) extends AnyVal {
     /** Prepends an element to the folder */
     def prepend[A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Prepend(f, elem)
@@ -374,6 +395,8 @@ object Folder {
       * If the folder contains less elements than `n`, the folder will become empty.
       */
     def dropRight(n: Ex[Int]): Act = DropRight(f, n)
+    
+    def clear: Act = Clear(f)
 
     def size    : Ex[Int    ]   = Size    (f)
     def isEmpty : Ex[Boolean]   = IsEmpty (f)

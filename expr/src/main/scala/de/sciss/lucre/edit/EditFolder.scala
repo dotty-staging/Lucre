@@ -93,6 +93,19 @@ object EditFolder {
     res
   }
 
+  def clear[S <: Sys[S]](parent: Folder[S])(implicit tx: S#Tx): Unit =
+    UndoManager.find[S].fold(
+      clearDo  (parent)
+    ) { implicit undo =>
+      clearUndo(parent)
+    }
+
+  def clearUndo[S <: Sys[S]](parent: Folder[S])
+                            (implicit tx: S#Tx, undo: UndoManager[S]): Unit = {
+    val edit = new Clear(parent, tx)
+    undo.addEdit(edit)
+  }
+
   // ---- private: append ----
 
   private def appendDo[S <: Sys[S]](parent: Folder[S], child: Obj[S])(implicit tx: S#Tx): Unit =
@@ -230,5 +243,37 @@ object EditFolder {
     }
 
     def name: String = "Remove from Folder"
+  }
+
+  // ---- private: clear ----
+
+  private def clearDo[S <: Sys[S]](parent: Folder[S])(implicit tx: S#Tx): Unit =
+    parent.clear()
+
+  private final class Clear[S <: Sys[S]](parent0: Folder[S], tx0: S#Tx)
+    extends BasicUndoableEdit[S] {
+
+    private[this] val parentH   = tx0.newHandle(parent0)
+    private[this] val childrenH = {
+      val res = parent0.iterator(tx0).map(tx0.newHandle(_)).toList
+      clearDo(parent0)(tx0)
+      res
+    }
+
+    protected def undoImpl()(implicit tx: S#Tx): Unit = {
+      val p = parentH()
+      if (p.nonEmpty) throw new CannotUndoException(s"$name: contents has changed")
+      childrenH.foreach { childH =>
+        val c = childH()
+        p.addLast(c)
+      }
+    }
+
+    protected def redoImpl()(implicit tx: S#Tx): Unit = {
+      val p = parentH()
+      clearDo(p)
+    }
+
+    def name: String = "Clear Folder"
   }
 }
