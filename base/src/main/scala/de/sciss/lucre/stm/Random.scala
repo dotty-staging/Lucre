@@ -58,4 +58,12 @@ trait Random[-Tx] {
 
   /** Resets the internal seed value to the given argument. */
   def setSeed(seed: Long)(implicit tx: Tx): Unit
+
+  /** Resets the internal seed value to the given argument. This is a raw seed value
+    * as obtained from `getRawSeed`. For user operation, use `setSeed` instead,
+    * which further scrambles the seed value.
+    */
+  def rawSeed_=(seed: Long)(implicit tx: Tx): Unit
+
+  def rawSeed(implicit tx: Tx): Long
 }

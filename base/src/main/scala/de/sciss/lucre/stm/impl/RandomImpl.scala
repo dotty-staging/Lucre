@@ -49,8 +49,6 @@ object RandomImpl {
   def wrap[Tx](peer: stm.Var[Tx, Long]): Random[Tx] = new SysImpl[Tx](peer)
 
   abstract class BaseImpl[Tx] extends Random[Tx] {
-    protected def refSet(seed: Long)(implicit tx: Tx): Unit
-    protected def refGet(implicit tx: Tx): Long
 
     def nextBoolean()(implicit tx: Tx): Boolean = next(1) != 0
 
@@ -80,12 +78,13 @@ object RandomImpl {
 
     def nextLong()(implicit tx: Tx): Long = (next(32).toLong << 32) + next(32)
 
-    def setSeed(seed: Long)(implicit tx: Tx): Unit = refSet(initialScramble(seed))
+    def setSeed(seed: Long)(implicit tx: Tx): Unit =
+      rawSeed = initialScramble(seed)
 
     private def next(bits: Int)(implicit tx: Tx): Int = {
-      val oldSeed = refGet
-      val nextSeed = (oldSeed * multiplier + addend) & mask
-      refSet(nextSeed)
+      val oldSeed   = rawSeed
+      val nextSeed  = (oldSeed * multiplier + addend) & mask
+      rawSeed       = nextSeed
       (nextSeed >>> (48 - bits)).toInt
     }
   }
@@ -93,9 +92,8 @@ object RandomImpl {
   abstract class SysLike[Tx] extends BaseImpl[Tx] {
     protected def seedRef: stm.Var[Tx, Long]
 
-    protected final def refSet(value: Long)(implicit tx: Tx): Unit = seedRef() = value
-
-    protected final def refGet(implicit tx: Tx): Long = seedRef()
+    final def rawSeed_=(value: Long)(implicit tx: Tx): Unit = seedRef() = value
+    final def rawSeed               (implicit tx: Tx): Long = seedRef()
   }
 
   private final class SysImpl[Tx](protected val seedRef: stm.Var[Tx, Long]) extends SysLike[Tx]

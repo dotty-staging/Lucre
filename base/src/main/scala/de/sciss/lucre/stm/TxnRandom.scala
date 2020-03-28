@@ -21,7 +21,7 @@ object TxnRandom {
    private final class Impl[S <: Base[S]](val id: S#Id, protected val seedRef: stm.Var[S#Tx, Long])
     extends SysLike[S#Tx] with TxnRandom[S] {
 
-    override def copy[Out <:  Base[Out]]()(implicit tx: S#Tx, txOut: Out#Tx): TxnRandom[Out] = {
+     override def copy[Out <:  Base[Out]]()(implicit tx: S#Tx, txOut: Out#Tx): TxnRandom[Out] = {
       val idOut       = txOut.newId()
       val seedRefOut  = txOut.newLongVar(idOut, seedRef())
       new Impl[Out](id = idOut, seedRef = seedRefOut)
@@ -68,7 +68,5 @@ object TxnRandom {
   * behaves numerically like `java.util.Random`.
   */
 trait TxnRandom[S <: Base[S]] extends Random[S#Tx] with stm.Mutable[S#Id, S#Tx] {
-  // XXX TODO --- remove implementation for next major version
-  def copy[Out <:  Base[Out]]()(implicit tx: S#Tx, txOut: Out#Tx): TxnRandom[Out] =
-    throw new NotImplementedError()
+  def copy[Out <:  Base[Out]]()(implicit tx: S#Tx, txOut: Out#Tx): TxnRandom[Out]
 }

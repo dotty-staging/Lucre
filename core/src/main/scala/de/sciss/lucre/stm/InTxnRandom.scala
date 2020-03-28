@@ -22,8 +22,7 @@ object InTxnRandom {
   def apply(seed: Long): Random[InTxn] = new Impl(STMRef(initialScramble(seed)))
 
   private final class Impl(seedRef: STMRef[Long]) extends BaseImpl[InTxn] {
-    protected def refSet(value: Long)(implicit tx: InTxn): Unit = seedRef() = value
-
-    protected def refGet(implicit tx: InTxn): Long = seedRef()
+    def rawSeed_=(value: Long)(implicit tx: InTxn): Unit = seedRef() = value
+    def rawSeed               (implicit tx: InTxn): Long = seedRef()
   }
 }
