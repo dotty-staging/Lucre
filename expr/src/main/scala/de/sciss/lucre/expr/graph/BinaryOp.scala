@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.adjunct.Adjunct.{Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
+import de.sciss.lucre.adjunct.Adjunct.{HasDefault, Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IChangeEventImpl
 import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
@@ -465,6 +465,20 @@ object BinaryOp {
     def apply(a: Seq[A], b: B): Seq[B] = a :+ b
 
     def name = "SeqAppended"
+  }
+
+  final case class SeqApply[A]()(implicit d: HasDefault[A])
+    extends NamedOp[Seq[A], Int, A] with ProductWithAdjuncts {
+
+    def apply(a: Seq[A], b: Int): A = if (b < 0 || a.lengthCompare(b) <= 0) {
+      d.defaultValue
+    } else {
+      a.apply(b)
+    }
+
+    def name = "SeqApply"
+
+    override def adjuncts: Adjuncts = d :: Nil
   }
 
   final case class SeqApplyOption[A]() extends NamedOp[Seq[A], Int, Option[A]] {

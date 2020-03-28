@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import java.io.{File => _File}
 
-import de.sciss.lucre.adjunct.Adjunct.{Eq, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
+import de.sciss.lucre.adjunct.Adjunct.{Eq, HasDefault, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
 import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -220,6 +220,9 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** A new sequence with the element appended */
   def appended[B >: A](elem: Ex[B]): Ex[Seq[B]] = BinOp(BinOp.SeqAppended[A, B](), x, elem)
 
+  /** The element at a given `index` if the index is valid, otherwise the default value */
+  def apply(index: Ex[Int])(implicit d: HasDefault[A]): Ex[A] = BinOp(BinOp.SeqApply[A](), x, index)
+
   /** The element at a given `index` if the index is valid */
   def applyOption(index: Ex[Int]): Ex[Option[A]] = BinOp(BinOp.SeqApplyOption[A](), x, index)
 
@@ -296,6 +299,9 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   /** The first element if the sequence is non-empty */
   def headOption: Ex[Option[A]] = UnOp(UnOp.SeqHeadOption[A](), x)
 
+  /** The first element if the sequence is non-empty, otherwise the default value */
+  def head(implicit d: HasDefault[A]): Ex[A] = headOption.get
+
   /** The index of the first occurrence of `elem` in this sequence, or `-1` if not found */
   def indexOf(elem: Ex[A]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, A](), x, elem)
 //  def indexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, B](), x, elem)
@@ -347,6 +353,9 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   /** The last element if the sequence is non-empty */
   def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
+
+  /** The last element if the sequence is non-empty, otherwise the default value */
+  def last(implicit d: HasDefault[A]): Ex[A] = lastOption.get
 
   def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Seq, B, To]): To =
     m.map(x, f)
@@ -464,6 +473,8 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
   def isEmpty   : Ex[Boolean] = UnOp(UnOp.OptionIsEmpty   [A](), x)
   def isDefined : Ex[Boolean] = UnOp(UnOp.OptionIsDefined [A](), x)
   def nonEmpty  : Ex[Boolean] = isDefined
+
+  def get(implicit d: HasDefault[A]): Ex[A] = UnOp(UnOp.OptionGet(), x)
 
   def getOrElse [B >: A](default    : Ex[B])        : Ex[B]         = BinOp(BinOp.OptionGetOrElse[B](), x, default)
   def orElse    [B >: A](alternative: Ex[Option[B]]): Ex[Option[B]] = BinOp(BinOp.OptionOrElse   [B](), x, alternative)
@@ -682,6 +693,8 @@ final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
   */
 final class StringLiteralExOps(private val x: String) extends AnyVal {
   def attr[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr(x)
+
+//  def attr[A]()(implicit bridge: Obj.Bridge[A], d: HasDefault[A]): Attr[A] = Attr(x)
 
   def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
     Attr.WithDefault(x, default)

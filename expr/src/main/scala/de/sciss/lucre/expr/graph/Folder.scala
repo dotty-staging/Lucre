@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.adjunct.Adjunct.HasDefault
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.edit.EditFolder
 import de.sciss.lucre.event.impl.IChangeGenerator
@@ -90,10 +91,12 @@ object Folder {
       Serializer.option
   }
 
-  implicit object Bridge extends Obj.Bridge[Folder] with Adjunct.Factory {
+  implicit object Bridge extends Obj.Bridge[Folder] with HasDefault[Folder] with Adjunct.Factory {
     final val id = 2001
 
     type Repr[S <: Sys[S]] = stm.Folder[S]
+
+    def defaultValue: Folder = Empty
 
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 

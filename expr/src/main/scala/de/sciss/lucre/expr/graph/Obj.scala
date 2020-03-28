@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.adjunct.Adjunct.HasDefault
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.impl.IChangeGenerator
 import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
@@ -140,6 +141,8 @@ object Obj {
     def make: Act
   }
 
+  implicit def hasDefault: HasDefault[Obj] = Bridge.obj
+
   object Bridge {
     implicit val int      : Bridge[Int        ] = new ExObjBridgeImpl(IntObj       )
     implicit val long     : Bridge[Long       ] = new ExObjBridgeImpl(LongObj      )
@@ -151,10 +154,12 @@ object Obj {
     implicit val intVec   : Bridge[Seq[Int   ]] = new ExSeqObjBridgeImpl(IntVector    )
     implicit val doubleVec: Bridge[Seq[Double]] = new ExSeqObjBridgeImpl(DoubleVector )
 
-    implicit object obj extends Bridge[Obj] with Adjunct.Factory {
+    implicit object obj extends Bridge[Obj] with HasDefault[Obj] with Adjunct.Factory {
       final val id = 1005
 
       type Repr[S <: Sys[S]] = stm.Obj[S]
+
+      def defaultValue: Obj = Empty
 
       def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 

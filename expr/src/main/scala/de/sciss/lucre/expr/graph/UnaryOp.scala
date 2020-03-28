@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.adjunct.Adjunct.{Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
+import de.sciss.lucre.adjunct.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.event.impl.IEventImpl
@@ -384,6 +384,18 @@ object UnaryOp {
     def apply(a: Option[A]): scala.List[A] = a.toList
 
     override def name = "OptionToList"
+  }
+
+ // XXX TODO are we sure that this is the way to go
+ // and that we do not want to add an exception throwing mechanism to Ex?
+  final case class OptionGet[A]()(implicit d: HasDefault[A])
+    extends NamedOp[Option[A], A] with ProductWithAdjuncts {
+
+    def apply(a: Option[A]): A = a.getOrElse(d.defaultValue)
+
+    override def name = "OptionGet"
+
+    override def adjuncts: Adjuncts = d :: Nil
   }
 
   // ---- Tuple2 ----

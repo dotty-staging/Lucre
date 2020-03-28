@@ -408,7 +408,7 @@ object Adjunct {
     * initialize objects with explicit default values, but care must
     * be taken to take those conventional defaults into account.
     */
-  trait HasDefault[A] {
+  trait HasDefault[A] extends Adjunct {
     def defaultValue: A
   }
 

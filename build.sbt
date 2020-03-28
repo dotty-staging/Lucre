@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.16.4"
-lazy val mimaVersion      = "3.16.0"
+lazy val projectVersion   = "3.17.0-SNAPSHOT"
+lazy val mimaVersion      = "3.17.0"
 
 lazy val deps = new {
   val base = new {
@@ -61,7 +61,8 @@ lazy val root = project.withId(baseNameL).in(file("."))
     licenses := Seq(agpl),
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
-    publishArtifact in (Compile, packageSrc) := false  // there are no sources
+    publishArtifact in (Compile, packageSrc) := false, // there are no sources
+    mimaFailOnNoPrevious := false
   )
 
 lazy val base = project.withId(s"$baseNameL-base").in(file("base"))
