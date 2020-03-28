@@ -57,7 +57,7 @@ abstract class AbstractCtxCellView[S <: Sys[S], A](attr: Context.Attr[S], key: S
   }
 
   final def react(fun: S#Tx => Option[A] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
-    attr.changed.react { implicit tx => upd =>
+    val r1 = attr.changed.react { implicit tx => upd =>
       upd.changes.foreach {
         case MapLike.Added  (`key`, f) =>
           val opt = formValue(f)
@@ -74,6 +74,16 @@ abstract class AbstractCtxCellView[S <: Sys[S], A](attr: Context.Attr[S], key: S
 
         case _ => // ignore
       }
+    }
+    attr.get(key) match {
+      case Some(ex: ExprLike[S, _]) =>
+        val r2 = ex.changed.react { implicit tx => upd =>
+          val vOpt = tryParseValue(upd.now)
+          fun(tx)(vOpt)
+        }
+        Disposable.seq(r1, r2)
+
+      case _ => r1
     }
   }
 }
