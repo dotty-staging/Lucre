@@ -21,6 +21,16 @@ object IAction {
 
     def executeIfDefined()(implicit tx: S#Tx): Boolean
   }
+
+  def empty[S <: Base[S]]: IAction[S] = new Empty
+
+  private final class Empty[S <: Base[S]] extends IAction[S] {
+    def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit = ()
+
+    def executeAction()(implicit tx: S#Tx): Unit = ()
+
+    def dispose()(implicit tx: S#Tx): Unit = ()
+  }
 }
 trait IAction[S <: Base[S]] extends Form[S] with Disposable[S#Tx] {
   /** Directly adds a trigger input to the action.

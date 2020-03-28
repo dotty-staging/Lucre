@@ -27,7 +27,7 @@ import scala.annotation.tailrec
 import scala.concurrent.stm.Ref
 
 object Attr {
-  trait Like[A] extends ProductWithAdjuncts {
+  trait Like[A] {
     def update(in: Ex[A]): Control
     def set   (in: Ex[A]): Act
   }

@@ -15,7 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.file._
 import de.sciss.lucre.artifact.{ArtifactLocation => _ArtifactLocation}
-import de.sciss.lucre.adjunct.Adjunct
+import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
@@ -112,7 +112,7 @@ object ArtifactLocation {
   }
 }
 final case class ArtifactLocation(key: String, default: Ex[File] = file(""))
-  extends Attr.WithDefault[File] {
+  extends Attr.WithDefault[File] with ProductWithAdjuncts {
 
   type Repr[S <: Sys[S]] = IExpr[S, File]
 

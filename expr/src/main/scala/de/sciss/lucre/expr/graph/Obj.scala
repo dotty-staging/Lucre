@@ -330,7 +330,7 @@ object Obj {
 
   // XXX TODO --- this should be merged with graph.Attr ?
   final case class Attr[A](obj: Ex[Obj], key: String)(implicit val bridge: Bridge[A])
-    extends Ex[Option[A]] with _Attr.Like[A] {
+    extends Ex[Option[A]] with _Attr.Like[A] with ProductWithAdjuncts {
 
     type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
 
