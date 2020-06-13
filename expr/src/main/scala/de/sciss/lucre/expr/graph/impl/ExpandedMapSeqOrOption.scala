@@ -137,10 +137,11 @@ abstract class ExpandedMapSeqLike[S <: Sys[S], A, P, B](in: IExpr[S, Seq[A]], it
   protected final def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[S, P] => P)
                                  (implicit tx: S#Tx): Seq[B] = {
     if (tuples.size != inV.size) {
-      val err = new AssertionError(s"inV.size = ${inV.size}, tuples.size = ${tuples.size}")
-      err.fillInStackTrace()
-      Console.err.println(s"Assertion failed in $this")
-      err.printStackTrace()
+      val err = new AssertionError(s"inV.size = ${inV.size}, tuples.size = ${tuples.size} in $this")
+//      err.fillInStackTrace()
+//      Console.err.println(s"Assertion failed in $this")
+//      err.printStackTrace()
+      throw err
     }
     val iterator  = inV.iterator zip tuples.iterator
     val b         = Seq.newBuilder[B]
