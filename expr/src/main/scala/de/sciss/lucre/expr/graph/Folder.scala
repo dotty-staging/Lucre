@@ -46,6 +46,8 @@ object Folder {
   private final class ApplyExpanded[S <: Sys[S]](implicit targets: ITargets[S])
     extends ExpandedObjMakeImpl[S, Folder] {
 
+    override def toString: String = "Folder()"
+
     protected def empty: Folder = Empty
 
     protected def make()(implicit tx: S#Tx): Folder = {
@@ -240,6 +242,8 @@ object Folder {
   private final class ChildrenExpanded[S <: Sys[S]](in: IExpr[S, Folder], tx0: S#Tx)
                                                    (implicit targets: ITargets[S])
     extends ExpandedImpl[S, Seq[Obj]](in, Nil, tx0) {
+
+    override def toString: String = s"$in.children"
 
     protected def mapValue(f: stm.List[S, stm.Obj[S]])(implicit tx: S#Tx): Seq[Obj] = {
       val b = List.newBuilder[Obj]

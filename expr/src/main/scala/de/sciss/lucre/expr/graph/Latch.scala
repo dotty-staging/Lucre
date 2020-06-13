@@ -26,6 +26,8 @@ object Latch {
                                               (implicit protected val targets: ITargets[S])
     extends IExpr[S, A] with IChangeEventImpl[S, A] with Caching {
 
+    override def toString: String = s"$in.latch($trig)"
+
     private[this] val ref = Ref(in.value(tx0))
 
     trig.changed.--->(this)(tx0)

@@ -399,6 +399,8 @@ object Obj {
     private final case class Impl[A](obj: Ex[Obj])(implicit val bridge: Bridge[A])
       extends Ex[Option[A]] with ProductWithAdjuncts {
 
+      override def toString: String = s"$obj.as[$bridge]"
+
       type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
 
       def adjuncts: List[Adjunct] = bridge :: Nil

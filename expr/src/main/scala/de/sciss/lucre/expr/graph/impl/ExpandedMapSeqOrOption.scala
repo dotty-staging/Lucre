@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, ITargets}
+import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
 import de.sciss.lucre.expr.graph.{Ex, It}
 import de.sciss.lucre.expr.{Context, IExpr}
 import de.sciss.lucre.stm.TxnLike.peer
@@ -65,12 +65,12 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, In[_], P, Out](in: IExpr[S
 
   private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Out = {
     val inV = pull.expr(in)
+    if (pull.contains(in.changed) && phase.isNow) {
+      val refV = mkRef(inV)
+      disposeRef(ref.swap(refV))
+    }
     if (isEmpty(inV)) emptyOut
-    else /*pull.nonCached(it.changed)*/ {
-      if (pull.contains(in.changed) && phase.isNow) {
-        val refV = mkRef(inV)
-        disposeRef(ref.swap(refV))
-      }
+    else {
       buildResult(inV, ref())(pull.expr(_))
     }
   }
@@ -86,13 +86,14 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, In[_], P, Out](in: IExpr[S
       (f, d)
     }
 
-  final def value(implicit tx: S#Tx): Out = {
-    val inV = in.value
-    if (isEmpty(inV)) emptyOut
-    else {
-      buildResult(inV, ref())(_.value)
-    }
-  }
+  final def value(implicit tx: S#Tx): Out =
+    IPush.tryPull(this).fold({
+      val inV = in.value
+      if (isEmpty(inV)) emptyOut
+      else {
+        buildResult(inV, ref())(_.value)
+      }
+    })(_.now)
 
   final def dispose()(implicit tx: S#Tx): Unit = {
     in .changed.-/->(this)
@@ -135,7 +136,12 @@ abstract class ExpandedMapSeqLike[S <: Sys[S], A, P, B](in: IExpr[S, Seq[A]], it
 
   protected final def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[S, P] => P)
                                  (implicit tx: S#Tx): Seq[B] = {
-    assert (tuples.size == inV.size)
+    if (tuples.size != inV.size) {
+      val err = new AssertionError(s"inV.size = ${inV.size}, tuples.size = ${tuples.size}")
+      err.fillInStackTrace()
+      Console.err.println(s"Assertion failed in $this")
+      err.printStackTrace()
+    }
     val iterator  = inV.iterator zip tuples.iterator
     val b         = Seq.newBuilder[B]
     b.sizeHint(inV)
@@ -164,6 +170,8 @@ final class ExpandedFlatMapSeq[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it: It.E
                                                  (implicit targets: ITargets[S], ctx: Context[S])
   extends ExpandedMapSeqLike[S, A, Seq[B], B](in, it, fun, tx0) {
 
+  override def toString: String = s"$in.flatMap($fun)"
+
   protected def append(b: mutable.Builder[B, _], cc: Seq[B]): Unit =
     b ++= cc
 }
@@ -172,6 +180,8 @@ final class ExpandedFlatMapSeqOption[S <: Sys[S], A, B](in: IExpr[S, Seq[A]], it
                                                         /* closure: Graph, */ fun: Ex[Option[B]], tx0: S#Tx)
                                                        (implicit targets: ITargets[S], ctx: Context[S])
   extends ExpandedMapSeqLike[S, A, Option[B], B](in, it, fun, tx0) {
+
+  override def toString: String = s"$in.flatMap($fun)"
 
   protected def append(b: mutable.Builder[B, _], cc: Option[B]): Unit = cc match {
     case Some(c)  => b += c
