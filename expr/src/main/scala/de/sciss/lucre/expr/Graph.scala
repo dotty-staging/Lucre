@@ -125,6 +125,12 @@ object Graph {
 trait Graph extends Product {
   def controls: Vec[Control.Configured]
 
-  /** Expands the graph and unites all disposables and controls under the returned control value. */
+  /** Expands the graph and unites all disposables and controls under the returned control value.
+    * 
+    * ''Important:'' disposing the resulting `IControl` does not clean up any `IExpr` which are only
+    * captured by the provided `Context`. Therefore, to dispose the entire graph, it is crucial
+    * to make sure that `ctx` is disposed. This will automatically include all controls, so there
+    * is no need to dispose the returned `IControl` in that case.
+    */
   def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S]
 }
