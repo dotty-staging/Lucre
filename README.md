@@ -1,6 +1,6 @@
 # Lucre
 
-[![Build Status](https://travis-ci.org/Sciss/Lucre.svg?branch=master)](https://travis-ci.org/Sciss/Lucre)
+[![Build Status](https://travis-ci.org/Sciss/Lucre.svg?branch=main)](https://travis-ci.org/Sciss/Lucre)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13)
 
 ## statement
@@ -11,7 +11,7 @@ interface front-end [Mellite](https://git.iem.at/sciss/Mellite).
 
 Lucre is (C)opyright 2009&ndash;2020 by Hanns Holger Rutz. All rights reserved. 
 All modules are released under 
-the [GNU Affero General Public License](https://git.iem.at/sciss/Lucre/raw/master/LICENSE).
+the [GNU Affero General Public License](https://git.iem.at/sciss/Lucre/raw/main/LICENSE).
 The software comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
 Further reading:
