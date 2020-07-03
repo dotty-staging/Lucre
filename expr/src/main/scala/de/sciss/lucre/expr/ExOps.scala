@@ -16,7 +16,7 @@ package de.sciss.lucre.expr
 import java.io.{File => _File}
 
 import de.sciss.lucre.adjunct.Adjunct.{Eq, HasDefault, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuaternaryOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuinaryOp => QuinOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp, QuaternaryOp => QuadOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 // XXX TODO --- use constant optimizations
@@ -139,23 +139,31 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   //  def <--- (attr: ExAttrLike[A]): Unit = ...
   //  def <--> (attr: ExAttrLike[A]): Unit = ...
 
-//  def linLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
-//                    (implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] =
-//    LinLin[A, A1, A2](x, inLo = inLo, inHi = inHi, outLo = outLo, outHi = outHi)
-//
-//  def linExp[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
-//                    (implicit w: Widen2[A, A1, A2], num: NumDouble[A2]): Ex[A2] =
-//    LinExp[A, A1, A2](x, inLo = inLo, inHi = inHi, outLo = outLo, outHi = outHi)
-//
-//  def expLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
-//                    (implicit w: Widen2[A, A1, A2], num: NumDouble[A2]): Ex[A2] =
-//    ExpLin[A, A1, A2](x, inLo = inLo, inHi = inHi, outLo = outLo, outHi = outHi)
-//
-//  def expExp[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
-//                    (implicit w: Widen2[A, A1, A2], num: NumDouble[A2]): Ex[A2] =
-//    ExpExp[A, A1, A2](x, inLo = inLo, inHi = inHi, outLo = outLo, outHi = outHi)
-//
-//  def poll(label: Ex[String] = "poll", gate: Ex[Boolean] = true): Ex[A] =
+  def linLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
+                    (implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = {
+    val op = QuinOp.LinLin[A, A1, A2]()
+    QuinOp[A, A, A, A1, A1, A2](op, x, inLo, inHi, outLo, outHi)
+  }
+
+  def linExp[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
+                    (implicit w: Widen2[A, A1, A2], num: NumDouble[A2]): Ex[A2] = {
+    val op = QuinOp.LinExp[A, A1, A2]()
+    QuinOp[A, A, A, A1, A1, A2](op, x, inLo, inHi, outLo, outHi)
+  }
+
+  def expLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
+                    (implicit w: Widen2[A, A1, A2], num: NumDouble[A2]): Ex[A2] = {
+    val op = QuinOp.ExpLin[A, A1, A2]()
+    QuinOp[A, A, A, A1, A1, A2](op, x, inLo, inHi, outLo, outHi)
+  }
+
+  def expExp[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
+                    (implicit w: Widen2[A, A1, A2], num: NumDouble[A2]): Ex[A2] = {
+    val op = QuinOp.ExpExp[A, A1, A2]()
+    QuinOp[A, A, A, A1, A1, A2](op, x, inLo, inHi, outLo, outHi)
+  }
+
+  //  def poll(label: Ex[String] = "poll", gate: Ex[Boolean] = true): Ex[A] =
 //    Poll(x, gate = gate, label = label)
 
   // ---- bridge to trigger ----
@@ -369,14 +377,14 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   def mkString(sep: Ex[String]): Ex[String] = mkString("", sep, "")
 
   def mkString(start: Ex[String], sep: Ex[String], end: Ex[String]): Ex[String] =
-    QuaternaryOp(QuaternaryOp.SeqMkString[A](), x, start, sep, end)
+    QuadOp(QuadOp.SeqMkString[A](), x, start, sep, end)
 
   def nonEmpty: Ex[Boolean] = UnOp(UnOp.SeqNonEmpty[A](), x)
 
   def padTo[B >: A](len: Ex[Int], elem: Ex[B]): Ex[Seq[B]] = TernOp(TernOp.SeqPadTo[A, B](), x, len, elem)
 
   def patch[B >: A](from: Ex[Int], other: Ex[Seq[B]], replaced: Ex[Int]): Ex[Seq[B]] =
-    QuaternaryOp(QuaternaryOp.SeqPatch[A, B](), x, from, other, replaced)
+    QuadOp(QuadOp.SeqPatch[A, B](), x, from, other, replaced)
 
   def permutations: Ex[Seq[Seq[A]]] = UnOp(UnOp.SeqPermutations[A](), x)
 
