@@ -568,6 +568,24 @@ object UnaryOp {
     override def name = "StringLength"
   }
 
+  final case class StringToIntOption() extends NamedOp[String, Option[Int]] {
+    def apply(a: String): Option[Int] = a.toIntOption
+
+    override def name = "StringToIntOption"
+  }
+
+  final case class StringToDoubleOption() extends NamedOp[String, Option[Double]] {
+    def apply(a: String): Option[Double] = a.toDoubleOption
+
+    override def name = "StringToDoubleOption"
+  }
+
+  final case class StringToBooleanOption() extends NamedOp[String, Option[Boolean]] {
+    def apply(a: String): Option[Boolean] = a.toBooleanOption
+
+    override def name = "StringToBooleanOption"
+  }
+
   // ---- SpanLike ----
 
   final case class SpanLikeIsEmpty() extends NamedOp[_SpanLike, Boolean] {

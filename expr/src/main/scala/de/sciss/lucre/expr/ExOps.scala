@@ -197,9 +197,16 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   def isEmpty : Ex[Boolean] = UnOp(UnOp.StringIsEmpty(), x)
   def nonEmpty: Ex[Boolean] = UnOp(UnOp.StringNonEmpty(), x)
 
-  def ++      (that: Ex[String]): Ex[String]  = BinOp(BinOp.StringConcat  (), x, that)
-  def contains(that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringContains(), x, that)
-  def indexOf (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringIndexOf (), x, that)
+  def toIntOption     : Ex[Option[Int]]     = UnOp(UnOp.StringToIntOption     (), x)
+  def toDoubleOption  : Ex[Option[Double]]  = UnOp(UnOp.StringToDoubleOption  (), x)
+  def toBooleanOption : Ex[Option[Boolean]] = UnOp(UnOp.StringToBooleanOption (), x)
+
+  def ++          (that: Ex[String]): Ex[String]  = BinOp(BinOp.StringConcat      (), x, that)
+  def contains    (that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringContains    (), x, that)
+  def startsWith  (that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringStartsWith  (), x, that)
+  def endsWith    (that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringEndsWith    (), x, that)
+  def indexOf     (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringIndexOf     (), x, that)
+  def lastIndexOf (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringLastIndexOf (), x, that)
 
   def take(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringTake(), x, n)
   def drop(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringDrop(), x, n)
@@ -713,8 +720,11 @@ final class StringLiteralExOps(private val x: String) extends AnyVal {
 
   def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
 
-  def contains(that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringContains(), x, that)
-  def indexOf (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringIndexOf (), x, that)
+  def contains    (that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringContains    (), x, that)
+  def startsWith  (that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringStartsWith  (), x, that)
+  def endsWith    (that: Ex[String]): Ex[Boolean] = BinOp(BinOp.StringEndsWith    (), x, that)
+  def indexOf     (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringIndexOf     (), x, that)
+  def lastIndexOf (that: Ex[String]): Ex[Int]     = BinOp(BinOp.StringLastIndexOf (), x, that)
 
   def take(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringTake(), x, n)
   def drop(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringDrop(), x, n)

@@ -617,10 +617,28 @@ object BinaryOp {
     def name = "StringContains"
   }
 
+  final case class StringStartsWith() extends NamedOp[String, String, Boolean] {
+    def apply(a: String, b: String): Boolean = a.startsWith(b)
+
+    def name = "StringStartsWith"
+  }
+
+  final case class StringEndsWith() extends NamedOp[String, String, Boolean] {
+    def apply(a: String, b: String): Boolean = a.endsWith(b)
+
+    def name = "StringEndsWith"
+  }
+
   final case class StringIndexOf() extends NamedOp[String, String, Int] {
     def apply(a: String, b: String): Int = a.indexOf(b)
 
     def name = "StringIndexOf"
+  }
+
+  final case class StringLastIndexOf() extends NamedOp[String, String, Int] {
+    def apply(a: String, b: String): Int = a.lastIndexOf(b)
+
+    def name = "StringLastIndexOf"
   }
 
   final case class StringTake() extends NamedOp[String, Int, String] {
