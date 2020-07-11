@@ -569,19 +569,40 @@ object UnaryOp {
   }
 
   final case class StringToIntOption() extends NamedOp[String, Option[Int]] {
-    def apply(a: String): Option[Int] = a.toIntOption
+    def apply(a: String): Option[Int] = {
+      // Scala 2.13+ only: a.toIntOption
+      try {
+        val v = java.lang.Integer.parseInt(a)
+        Some(v)
+      } catch {
+        case _: NumberFormatException => None
+      }
+    }
 
     override def name = "StringToIntOption"
   }
 
   final case class StringToDoubleOption() extends NamedOp[String, Option[Double]] {
-    def apply(a: String): Option[Double] = a.toDoubleOption
+    def apply(a: String): Option[Double] = {
+      // Scala 2.13+ only: a.toDoubleOption
+      try {
+        val v = java.lang.Double.parseDouble(a)
+        Some(v)
+      } catch {
+        case _: NumberFormatException => None
+      }
+    }
 
     override def name = "StringToDoubleOption"
   }
 
   final case class StringToBooleanOption() extends NamedOp[String, Option[Boolean]] {
-    def apply(a: String): Option[Boolean] = a.toBooleanOption
+    def apply(a: String): Option[Boolean] = {
+      // Scala 2.13+ only: a.toBooleanOption
+      if      (a.equalsIgnoreCase("true"  )) Some(true  )
+      else if (a.equalsIgnoreCase("false" )) Some(false )
+      else None
+    }
 
     override def name = "StringToBooleanOption"
   }
