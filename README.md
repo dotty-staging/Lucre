@@ -48,7 +48,7 @@ Or just for a selected module:
 
 Where `{module}` is any of the above names.
 
-The current version `v` is `"3.17.3"`.
+The current version `v` is `"3.17.4"`.
 
 ## contributing
 

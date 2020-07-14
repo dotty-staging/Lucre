@@ -20,6 +20,29 @@ import de.sciss.lucre.stm.Sys
 object Act {
   def apply(xs: Act*): Act = SeqImpl(xs)
 
+  /** Creates an action that can link or loop back to itself.
+    * It does so by calling the function `f` with a trigger
+    * which is then linked to the output of `f`. This is useful
+    * for creating delays and feedback.
+    *
+    * Example:
+    *
+    * {{{
+    * val metro = Act.link { self =>
+    *   Act(
+    *     PrintLn("bang"),
+    *     Delay(1.0)(self)
+    *   )
+    * }
+    * }}}
+    */
+  def link(f: Act => Act): Act = {
+    val in  = Trig()
+    val out = f(in)
+    in ---> out
+    in
+  }
+
   private final class ExpandedSeq[S <: Sys[S]](xs: Seq[IAction[S]]) extends IActionImpl[S] {
     def executeAction()(implicit tx: S#Tx): Unit =
       xs.foreach(_.executeAction())
