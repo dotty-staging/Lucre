@@ -96,6 +96,9 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def |   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
   def ^   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
 
+  /** Integer division */
+  def /   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.IDiv[A](), x, that)
+
   /** Currently a shortcut for `&`. */
   def &&  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.And   [A](), x, that)
   /** Currently a shortcut for `|`. */

@@ -220,6 +220,16 @@ object BinaryOp {
     override def adjuncts: Adjuncts = num :: Nil
   }
 
+  final case class IDiv[A]()(implicit num: NumInt[A])
+    extends NamedOp[A, A, A] with ProductWithAdjuncts {
+
+    def apply(a: A, b: A): A = num.div(a, b)
+
+    def name = "IDiv"
+
+    override def adjuncts: Adjuncts = num :: Nil
+  }
+
   final case class Lcm[A]()(implicit num: NumInt[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 

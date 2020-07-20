@@ -276,6 +276,8 @@ object Adjunct {
     def <<      (a: A, b: A): A
     def >>      (a: A, b: A): A
     def >>>     (a: A, b: A): A
+
+    def div     (a: A, b: A): A = throw new NotImplementedError() // XXX TODO remove impl in major version
   }
 
   type ScalarNumInt[A] = NumInt[A] with Scalar[A]
@@ -448,6 +450,8 @@ object Adjunct {
     def >>  (a: In, b: In): In = binOp(a, b)(peer.>>)
     def >>> (a: In, b: In): In = binOp(a, b)(peer.>>>)
 
+    override def div (a: In, b: In): In = binOp(a, b)(peer.div)
+
     def fromAny(in: Any): Option[Seq[scala.Int]] = in match {
       case sq: Seq[_] =>
         val b   = Seq.newBuilder[scala.Int]
@@ -493,6 +497,8 @@ object Adjunct {
     def ^         (a: Int, b: Int): Int = a ^ b
     def lcm       (a: Int, b: Int): Int = ri.lcm(a, b)
     def gcd       (a: Int, b: Int): Int = ri.gcd(a, b)
+
+    override def div       (a: Int, b: Int): Int = a / b
 
     def roundTo   (a: Int, b: Int): Int = ri2.roundTo  (a, b)
     def roundUpTo (a: Int, b: Int): Int = ri2.roundUpTo(a, b)
@@ -590,6 +596,8 @@ object Adjunct {
     def ^         (a: Long, b: Long): Long = a ^ b
     def lcm       (a: Long, b: Long): Long = rl.lcm(a, b)
     def gcd       (a: Long, b: Long): Long = rl.gcd(a, b)
+
+    override def div       (a: Long, b: Long): Long = a / b
 
     def roundTo   (a: Long, b: Long): Long = rl2.roundTo  (a, b)
     def roundUpTo (a: Long, b: Long): Long = rl2.roundUpTo(a, b)
