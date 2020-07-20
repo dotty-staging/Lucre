@@ -90,12 +90,12 @@ object StringFormat {
   *
   * {{{
   * val n   = "name".attr[String]("?")
-  * val tmp = "Duke's name: %1$s!"
+  * val tmp = "Duke's name: %1\$s!"
   * PrintLn(tmp.format(n))
   * }}}
   *
   * The template
-  * contains one format specifier `"%1$s"`
+  * contains one format specifier `"%1\$s"`
   * which indicates how the argument should be processed and
   * where it should be inserted in the text. The remaining portions of the
   * template string are fixed text including `"Duke's name: "` and `"!"`.

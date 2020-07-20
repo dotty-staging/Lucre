@@ -46,7 +46,7 @@ abstract class ExpandedMapSeqOrOption[S <: Sys[S], A, In[_], P, Out](in: IExpr[S
 
   // ---- impl ----
 
-  private val ref = Ref.make[Tuples]
+  private val ref = Ref.make[Tuples]()
 
   private def init()(implicit tx: S#Tx): Unit = {
     in .changed.--->(this)

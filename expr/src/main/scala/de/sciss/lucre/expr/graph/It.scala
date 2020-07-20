@@ -32,7 +32,7 @@ object It {
   private final class ExpandedImpl[S <: Sys[S], A](val ref: AnyRef)(implicit protected val targets: ITargets[S])
     extends Expanded[S, A] with IChangeGenerator[S, A] {
 
-    private[this] val valueRef = Ref.make[A]
+    private[this] val valueRef = Ref.make[A]()
 
     def setValue(value: A /*, dispatch: Boolean*/)(implicit tx: S#Tx): Unit = {
       valueRef() = value

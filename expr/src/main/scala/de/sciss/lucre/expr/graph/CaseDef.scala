@@ -136,7 +136,7 @@ object Var {
     extends Expanded[S, A] with IChangeGenerator[S, A] {
 
     private[this] val ref     = Ref(init)
-    private[this] val selRef  = Ref.make[A]
+    private[this] val selRef  = Ref.make[A]()
 
     init.changed.--->(changed)(tx0)
 

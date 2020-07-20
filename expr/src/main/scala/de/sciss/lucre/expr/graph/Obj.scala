@@ -253,8 +253,8 @@ object Obj {
     override def toString: String = s"graph.Obj.AttrExpanded($obj, $key)@${hashCode().toHexString}"
 
     private[this] val viewRef   = Ref(Option.empty[CellView.Var[S#Tx, Option[A]]])
-    private[this] val valueRef  = Ref.make[Option[A]]
-    private[this] val obsRef    = Ref.make[Disposable[S#Tx]]
+    private[this] val valueRef  = Ref.make[Option[A]]()
+    private[this] val obsRef    = Ref.make[Disposable[S#Tx]]()
     private[this] val objObs    = obj.changed.react { implicit tx => upd =>
       setObj(upd.now, init = false)
     } (tx0)

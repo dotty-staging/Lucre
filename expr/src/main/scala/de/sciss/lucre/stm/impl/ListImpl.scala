@@ -105,7 +105,7 @@ object ListImpl {
 
     // ---- event behaviour ----
 
-    protected implicit object CellSer extends Serializer[S#Tx, S#Acc, C] {
+    protected implicit object CellSer extends Serializer[S#Tx, S#Acc, C] { self =>
       def write(cell: C, out: DataOutput): Unit =
         if (cell != null) {
           out.writeByte(1)
@@ -120,8 +120,8 @@ object ListImpl {
         (in.readByte: @switch) match {
           case 1 =>
             val elem = Elem.read(in, access).asInstanceOf[A]
-            val pred = tx.readVar[C](id, in)  // IntelliJ highlight bug
-            val succ = tx.readVar[C](id, in)  // IntelliJ highlight bug
+            val pred = tx.readVar[C](id, in)(self)
+            val succ = tx.readVar[C](id, in)(self)
             new Cell[S, A](elem, pred, succ)
           case 0 => null
           case cookie => sys.error(s"Unexpected cookie $cookie")
