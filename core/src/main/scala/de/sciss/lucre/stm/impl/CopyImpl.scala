@@ -99,11 +99,11 @@ final class CopyImpl[In <: Sys[In], Out <: Sys[Out]](implicit txIn: In#Tx, txOut
       case a: A => a
     })
 
-  def copyAttr(in: Obj[In], out: Obj[Out]): Unit = {
-    val inAttr  = in .attr
-    val outAttr = out.attr
-    inAttr.iterator.foreach { case (key, value) =>
-      outAttr.put(key, apply(value))
+  def copyAttr(in: Obj[In], out: Obj[Out]): Unit =
+    txIn.attrMapOption(in).foreach { inAttr =>
+      val outAttr = out.attr
+      inAttr.iterator.foreach { case (key, value) =>
+        outAttr.put(key, apply(value))
+      }
     }
-  }
 }

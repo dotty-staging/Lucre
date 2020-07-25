@@ -140,4 +140,7 @@ trait Txn[S <: Sys[S]] extends Executor[S] with TxnLike {
   // ---- attributes ----
 
   def attrMap(obj: Obj[S]): Obj.AttrMap[S]
+
+  def attrMapOption(obj: Obj[S]): Option[Obj.AttrMap[S]] =
+    throw new NotImplementedError()  // XXX TODO --- remove impl in next major version
 }

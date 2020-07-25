@@ -271,7 +271,13 @@ object DurableImpl {
       }
     }
 
-//    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = {
+    override def attrMapOption(obj: Obj[S]): Option[Obj.AttrMap[S]] = {
+      val mId = obj.id.id.toLong << 32
+      implicit val tx: S#Tx = this
+      system.tryRead(mId)(evt.Map.Modifiable.read[S, String, Obj](_, ()))
+    }
+
+    //    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = {
 //      val mId = obj.id.id.toLong << 32
 //      implicit val tx = this
 //      val mapOpt: Option[AttrMap] = system.tryRead(mId)(SkipList.Map.read[S, String, Obj[S]](_, ()))
@@ -542,8 +548,7 @@ object DurableImpl {
     lazy val inMemory: InMemory#Tx = system.inMemory.wrap(peer)
 
     override def toString = s"Durable.Txn@${hashCode.toHexString}"
-
- }
+  }
 
   private final class System(val store: DataStore)
     extends Mixin[Durable, InMemory] with Durable {

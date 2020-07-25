@@ -140,11 +140,11 @@ trait TxnMixin[S <: Sys[S]]
     }
   }
 
-//  def attrGet(obj: Obj[S], key: String): Option[Obj[S]] = ...
-//  def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = ...
-//  def attrRemove(obj: Obj[S], key: String): Unit = ...
-//
-//  def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] = ...
+  override def attrMapOption(obj: Obj[S]): Option[Obj.AttrMap[S]] = {
+    val id        = obj.id
+    val mBase     = id.base | 0x80000000  // XXX TODO --- a bit cheesy to throw away one bit entirely
+    fullCache.getCacheTxn[Obj.AttrMap[S]](mBase, id.path)(this, Obj.attrMapSerializer)
+  }
 
   // ----
 

@@ -17,6 +17,7 @@ import de.sciss.equal.Implicits._
 import de.sciss.lucre.event.impl.ReactionMapImpl
 import de.sciss.lucre.event.{Observer, ReactionMap}
 import de.sciss.lucre.stm.InMemoryLike.Var
+import de.sciss.lucre.stm.Obj.AttrMap
 import de.sciss.lucre.stm.{IdentifierMap, InMemory, InMemoryLike, Obj, Source, TxnLike}
 import de.sciss.lucre.{event => evt}
 import de.sciss.serial.{DataInput, DataOutput, Serializer}
@@ -175,32 +176,12 @@ object InMemoryImpl {
       })
     }
 
-//    def attrGet(obj: Obj[S], key: String): Option[Obj[S]] =
-//      system.attrMap.getOrElse(obj.id, Map.empty)(this).get(key)
-//
-//    def attrPut(obj: Obj[S], key: String, value: Obj[S]): Unit = {
-//      val a    = system.attrMap
-//      val id   = obj.id
-//      val map0 = a.getOrElse(id, Map.empty)(this)
-//      val map1 = map0 + (key -> value)
-//      a.put(id, map1)(this)
-//    }
-//
-//    def attrRemove(obj: Obj[S], key: String): Unit = {
-//      val a    = system.attrMap
-//      val id   = obj.id
-//      val map0 = a.getOrElse(id, Map.empty)(this)
-//      if (map0.nonEmpty) {
-//        val map1 = map0 - key
-//        if (map1.isEmpty)
-//          a.remove(id)(this)
-//        else
-//          a.put(id, map1)(this)
-//      }
-//    }
-//
-//    def attrIterator(obj: Obj[S]): Iterator[(String, Obj[S])] =
-//      system.attrMap.get(obj.id)(this).fold[Iterator[(String, Obj[S])]](Iterator.empty)(_.iterator)
+    override def attrMapOption(obj: Obj[S]): Option[AttrMap[S]] = {
+      implicit val tx: S#Tx = this
+      val am  = system.attrMap
+      val id  = obj.id
+      am.get(id)
+    }
   }
 
   private final class System extends Mixin[InMemory] with InMemory {
