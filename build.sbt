@@ -1,11 +1,11 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "3.17.6"
+lazy val projectVersion   = "3.17.7-SNAPSHOT"
 lazy val mimaVersion      = "3.17.0"
 
 lazy val deps = new {
   val base = new {
-    val serial        = "1.1.2"
+    val serial        = "1.1.3-SNAPSHOT"
   }
   val core = new {
     val equal         = "0.1.4"
@@ -14,8 +14,8 @@ lazy val deps = new {
   }
   val expr = new {
     def equal: String = core.equal
-    val fileUtil      = "1.1.4"
-    val numbers       = "0.2.0"
+    val fileUtil      = "1.1.5-SNAPSHOT"
+    val numbers       = "0.2.1-SNAPSHOT"
     val span          = "1.4.3"
   }
   val confluent = new {
@@ -25,7 +25,7 @@ lazy val deps = new {
     val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest     = "3.1.2"
+    val scalaTest     = "3.2.0"
   }
 }
 
@@ -35,11 +35,12 @@ lazy val commonSettings = Seq(
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.13.3",
-  crossScalaVersions  := Seq("2.13.3", "2.12.12"),
+  crossScalaVersions  := Seq("0.24.0-RC1", "2.13.3", "2.12.12"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
-  scalacOptions in (Compile, compile) ++= (if (scala.util.Properties.isJavaAtLeast("9")) Seq("-release", "8") else Nil), // JDK >8 breaks API; skip scala-doc
+  scalacOptions in (Compile, compile) ++= 
+    (if (scala.util.Properties.isJavaAtLeast("9") && scalaVersion.value.startsWith("2.")) Seq("-release", "8") else Nil), // JDK >8 breaks API; skip scala-doc
   scalacOptions      ++= {
     if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
