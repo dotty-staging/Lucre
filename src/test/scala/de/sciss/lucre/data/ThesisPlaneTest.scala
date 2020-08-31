@@ -23,11 +23,11 @@ object ThesisPlaneTest extends App {
     val tot   = TotalOrder.Set.empty[S](0)
 
     var pre   = Map[Char, E]('a' -> tot.root)
-    var post  = Map[Char, E]('a' -> tot.root.appendMax)
+    var post  = Map[Char, E]('a' -> tot.root.appendMax())
 
     val totM  = TotalOrder.Set.empty[S](0)
     var preM  = Map[Char, E]('a' -> totM.root)
-    var postM = Map[Char, E]('a' -> totM.root.appendMax)
+    var postM = Map[Char, E]('a' -> totM.root.appendMax())
 
     var isoPre  = Map[Int, E](pre ('a').tag -> preM ('a'))
     var isoPost = Map[Int, E](post('a').tag -> postM('a'))
@@ -41,8 +41,8 @@ object ThesisPlaneTest extends App {
       post += child -> cpost
 
       if (mSet.contains(child)) {
-        def findPred(full: E): E = isoPre .get(full.tag).getOrElse(findPred(full.prev.orNull))
-        def findSucc(full: E): E = isoPost.get(full.tag).getOrElse(findSucc(full.next.orNull))
+        def findPred(full: E): E = isoPre .getOrElse(full.tag, findPred(full.prev.orNull))
+        def findSucc(full: E): E = isoPost.getOrElse(full.tag, findSucc(full.next.orNull))
 
         val cpreMP  = findPred(cpre )
         val cpostMP = findSucc(cpost)
@@ -84,7 +84,7 @@ object ThesisPlaneTest extends App {
     def fix(m: Map[Char, E]) = m.map { case (key, e) => (key, e.tag) }
 
     def scale(m: Map[Char, Int], max: Int) = {
-      val rel = m.mapValues(t => math.sqrt(t.toDouble / max)).toIndexedSeq.sortBy(_._2)
+      val rel = m.iterator.map { case (k, t) => (k, math.sqrt(t.toDouble / max)) }.toIndexedSeq.sortBy(_._2)
       val dist = rel
 //      rel.zipWithIndex.map { case ((key, t), idx) =>
 //        val adj = (idx.toDouble / (rel.size - 1)) * 0.5 + t * 0.5

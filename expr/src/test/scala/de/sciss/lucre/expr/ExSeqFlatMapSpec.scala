@@ -30,7 +30,7 @@ class ExSeqFlatMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutp
         val self = IntObj.newConst(0): IntObj[S]
         val selfH = tx.newHandle(self)
         implicit val ctx: Context[S] = Context(Some(selfH))
-        val f   = stm.Folder[S]
+        val f   = stm.Folder[S]()
         def add(name: String): Unit = {
           val c = IntObj.newConst[S](0)
           c.attr.put("name", StringObj.newConst(name))

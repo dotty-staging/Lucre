@@ -13,10 +13,11 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.equal.Implicits._
 import de.sciss.file.{File => _File}
 import de.sciss.lucre.adjunct.Adjunct
-import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
-import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOptionAct, ExpandedMapOption, ExpandedMapSeq, ExpandedMapSeqAct}
+import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
+import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, IExpr}
 import de.sciss.lucre.stm.Sys
 import de.sciss.serial.DataInput
@@ -96,6 +97,7 @@ object Ex {
     Adjunct.addFactory(CanFlatMapSeqToAct     )
     Adjunct.addFactory(SpanLikeTop            )
     Adjunct.addFactory(SpanTop                )
+    Adjunct.addFactory(FileTop                )
   }
 
   def init(): Unit = _init
@@ -365,8 +367,9 @@ object Ex {
 
   // ---- further adjuncts ----
 
-  def spanLikeTop: FromAny[_SpanLike ] with HasDefault[_SpanLike] = SpanLikeTop
-  def spanTop    : FromAny[_Span     ] with HasDefault[_Span    ] = SpanTop
+  def spanLikeTop : FromAny[_SpanLike ] with HasDefault[_SpanLike]                        = SpanLikeTop
+  def spanTop     : FromAny[_Span     ] with HasDefault[_Span    ]                        = SpanTop
+  def fileTop     : FromAny[_File     ] with HasDefault[_File    ] with ScalarOrd[_File]  = FileTop
 
   private object SpanLikeTop extends FromAny[_SpanLike] with HasDefault[_SpanLike] with Adjunct.Factory {
     final val id = 1007
@@ -392,6 +395,28 @@ object Ex {
       case s: _Span     => Some(s)
       case _            => None
     }
+  }
+
+  private object FileTop extends FromAny[_File] with HasDefault[_File] with Ord[_File] with Scalar[_File]
+    with Adjunct.Factory {
+
+    final val id = 1015
+
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
+
+    def defaultValue: _File = new _File("") // by convention
+
+    def fromAny(in: Any): Option[_File] = in match {
+      case v: _File     => Some(v)
+      case _            => None
+    }
+
+    def lt  (a: _File, b: _File): Boolean = _File.NameOrdering.lt(a, b)
+    def leq (a: _File, b: _File): Boolean = _File.NameOrdering.lteq(a, b)
+    def gt  (a: _File, b: _File): Boolean = _File.NameOrdering.gt(a, b)
+    def geq (a: _File, b: _File): Boolean = _File.NameOrdering.gteq(a, b)
+    def eq  (a: _File, b: _File): Boolean = _File.NameOrdering.compare(a, b) === 0
+    def neq (a: _File, b: _File): Boolean = _File.NameOrdering.compare(a, b) !== 0
   }
 }
 trait Ex[+A] extends Lazy {

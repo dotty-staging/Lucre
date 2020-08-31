@@ -13,7 +13,8 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault}
+import de.sciss.file.{File => _File}
+import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault, ScalarOrd}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -32,6 +33,7 @@ object ExImport {
   type Span     = _Span
   type SpanLike = _SpanLike
 
-  implicit def spanLikeTop: FromAny[SpanLike] with HasDefault[SpanLike] = Ex.spanLikeTop
-  implicit def spanTop    : FromAny[Span    ] with HasDefault[Span]     = Ex.spanTop
+  implicit def spanLikeTop: FromAny[SpanLike] with HasDefault[SpanLike]                       = Ex.spanLikeTop
+  implicit def spanTop    : FromAny[Span    ] with HasDefault[Span    ]                       = Ex.spanTop
+  implicit def fileTop    : FromAny[_File   ] with HasDefault[_File   ] with ScalarOrd[_File] = Ex.fileTop
 }

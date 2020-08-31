@@ -170,9 +170,9 @@ object Adjunct {
 
   trait Ord[A] extends Eq[A] {
     def lt (a: A, b: A): Boolean
-    def leq(a: A, b: A): Boolean
+    def leq(a: A, b: A): Boolean  // XXX TODO should be called `lteq`
     def gt (a: A, b: A): Boolean
-    def geq(a: A, b: A): Boolean
+    def geq(a: A, b: A): Boolean  // XXX TODO should be called `gteq`
   }
 
   type ScalarOrd[A] = Ord[A] with Scalar[A]

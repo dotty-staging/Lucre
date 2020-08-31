@@ -787,4 +787,9 @@ final class ExFileOps(private val x: Ex[_File]) extends AnyVal {
 
   /** Creates the directory and possibly parent directories denoted by this file. */
   def mkDir : Act = File.MkDir(x)
+
+  // ---- hybrid ----
+
+  /** Lists the contains of a directory */
+  def list: Ex[Seq[_File]] with Act = File.List(x)
 }
