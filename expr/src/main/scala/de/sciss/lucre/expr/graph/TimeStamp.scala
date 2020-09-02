@@ -22,7 +22,7 @@ import de.sciss.lucre.expr.{Context, IAction, IExpr, ITrigger, graph}
 import de.sciss.lucre.stm.Sys
 import de.sciss.lucre.stm.TxnLike.peer
 
-import scala.concurrent.stm.Ref
+import scala.concurrent.stm.{Ref, TxnLocal}
 
 object TimeStamp {
   final case class Update(ts: TimeStamp) extends Act {
@@ -87,15 +87,17 @@ object TimeStamp {
       this.-/->(ts.changed)
   }
 
-  private final class Expanded[S <: Sys[S]](implicit protected val targets: ITargets[S])
+  private[lucre] val ref = TxnLocal(System.currentTimeMillis())
+
+  private final class Expanded[S <: Sys[S]](tx0: S#Tx)(implicit protected val targets: ITargets[S])
     extends IExpr[S, Long] with IChangeEventImpl[S, Long] with Caching {
 
     // should we use universe.scheduler?
-    private[this] val ref = Ref(System.currentTimeMillis())
+    private[this] val ref = Ref(TimeStamp.ref.get(tx0.peer))
 
     private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Long =
       if (phase.isBefore || { val p: Parents[S] = pull.parents(this); !p.exists(pull(_).isDefined) }) ref() else {
-        val now = System.currentTimeMillis()
+        val now = TimeStamp.ref() // System.currentTimeMillis()
         ref()   = now
         now
       }
@@ -117,6 +119,7 @@ object TimeStamp {
     def dispose()(implicit tx: S#Tx): Unit = ()
   }
 }
+// XXX TODO --- should move to SoundProcesses and use `ExprContext.get.universe.scheduler.time` ?
 final case class TimeStamp() extends Ex[Long] {
   type Repr[S <: Sys[S]] = IExpr[S, Long] // TimeStamp.Expanded[S]
 
@@ -433,6 +436,6 @@ final case class TimeStamp() extends Ex[Long] {
 
   protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
     import ctx.targets
-    new graph.TimeStamp.Expanded[S]
+    new graph.TimeStamp.Expanded[S](tx)
   }
 }
