@@ -125,7 +125,7 @@ object Expr extends expr.Ops {
         // to some erasure that scalac doesn't warn about
         // if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[T]]) else None
 
-        if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[T]]) else None
+        if (expr.isInstanceOf[lucre.Var[T, _]]) Some(expr.asInstanceOf[Var[T]]) else None
       }
     }
 
