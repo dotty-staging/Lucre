@@ -388,7 +388,7 @@ object DoubleExtensions {
     }
 
     trait Infix {
-      _: Op =>
+      this: Op =>
 
       override def toString[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T]): String =
         s"(${_1} $name ${_2})"

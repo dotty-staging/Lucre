@@ -34,7 +34,7 @@ trait ExprTuple1Op[A, T1, ReprA[~ <: Txn[~]] <: Expr[~, A], ReprT1[~ <: Txn[~]] 
 
 trait ExprTuple1[T <: Txn[T], A, T1, ReprA[~ <: Txn[~]] <: Expr[~, A], ReprT1[~ <: Txn[~]] <: Expr[~, T1]]
   extends ExprNodeImpl[T, A] {
-  _: ReprA[T] =>
+  this: ReprA[T] =>
 
   def op: ExprTuple1Op[A, T1, ReprA, ReprT1]
   def _1: ReprT1[T]
