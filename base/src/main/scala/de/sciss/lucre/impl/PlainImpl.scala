@@ -124,11 +124,15 @@ object PlainImpl {
 
     def inMemoryBridge: (Tx => Tx) = tx => tx
 
+    implicit def inMemoryCursor: Cursor[S] = this
+
     // ---- Cursor ----
 
     def step[A](fun: Tx => A): A = fun(this)
 
     def stepTag[A](systemTimeNanos: Long)(fun: Tx => A): A = fun(this)
+
+    implicit def cursor: Cursor[S] = this
 
     // ---- Executor ----
 

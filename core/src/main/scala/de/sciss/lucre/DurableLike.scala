@@ -23,8 +23,8 @@ object DurableLike {
     private[lucre] def id: Int
   }
 
-  trait Txn[T <: Txn[T]] extends lucre.Txn[T] {
-    def system: DurableLike[T]
+  trait Txn[T <: Txn[T]] extends lucre.Txn[T] { self =>
+    def system: DurableLike[T] { type I = self.I }
 
     type I <: InMemoryLike.Txn[I]
 

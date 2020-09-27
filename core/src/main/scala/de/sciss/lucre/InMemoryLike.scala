@@ -23,6 +23,8 @@ object InMemoryLike {
   }
 
   trait Txn[T <: Txn[T]] extends lucre.Txn[T] {
+    type I = T
+
     override def system: InMemoryLike[T]
 
     //    private[stm] def intId(id: Id): Int
@@ -38,7 +40,7 @@ object InMemoryLike {
     private[lucre] def peer: STMRef[A]
   }
 }
-trait InMemoryLike[Tx <: InMemoryLike.Txn[Tx]] extends Sys /*[S]*/ with Cursor[Tx] {
+trait InMemoryLike[Tx <: InMemoryLike.Txn[Tx]] extends Sys with Cursor[Tx] {
   final type Id       = InMemoryLike.Id[T]
 
   type T = Tx // InMemoryLike.Txn[T]

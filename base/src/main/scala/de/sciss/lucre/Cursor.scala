@@ -13,6 +13,19 @@
 
 package de.sciss.lucre
 
+object Cursor {
+  def bridge[T <: Exec[T], I <: Exec[I]](peer: Cursor[T])(implicit b: T => I): Cursor[I] = new Bridge(peer)
+
+  private final class Bridge[T <: Exec[T], I <: Exec[I]](peer: Cursor[T])(implicit b: T => I) extends Cursor[I] {
+    def step[A](fun: I => A): A = peer.step[A] { tx => fun(b(tx)) }
+
+    def stepTag[A](systemTimeNanos: Long)(fun: I => A): A = {
+      peer.stepTag[A](systemTimeNanos) { tx =>
+        fun(b(tx))
+      }
+    }
+  }
+}
 trait Cursor[T <: Exec[T]] {
   /** Issues a new transaction (executor), runs the function argument on it,
    * and returns the result.

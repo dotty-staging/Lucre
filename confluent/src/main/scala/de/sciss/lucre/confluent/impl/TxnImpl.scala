@@ -14,10 +14,11 @@
 package de.sciss.lucre.confluent
 package impl
 
+import de.sciss.lucre
 import de.sciss.lucre.confluent.Log.log
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.impl.BasicTxnImpl
-import de.sciss.lucre.{Confluent, Durable, DurableLike, IdentMap, InMemory, Obj, ReactionMap, MapObj}
+import de.sciss.lucre.{Confluent, Durable, DurableLike, IdentMap, InMemory, MapObj, Obj, ReactionMap}
 import de.sciss.serial.{ConstFormat, DataInput, TFormat}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Queue => IQueue}
@@ -30,6 +31,8 @@ trait TxnMixin[Tx <: Txn[Tx]]
   type T = Tx
 
   // ---- abstract ----
+
+  implicit def inMemoryCursor: lucre.Cursor[I] = system.inMemory
 
   protected def flushCaches(meld: MeldInfo[T], newVersion: Boolean, caches: Vec[Cache[T]]): Unit
 
@@ -310,6 +313,8 @@ private[impl] sealed trait TxnImpl extends Confluent.Txn /*Txn[Confluent.Txn]*/ 
 
   def inMemoryBridge: (Confluent.Txn => InMemory.Txn) = _.inMemory
   def durableBridge : (Confluent.Txn => Durable .Txn) = _.durable
+
+//  implicit def inMemoryCursor: lucre.Cursor[InMemory.Txn] = system.inMemory
 }
 
 private[impl] final class RegularTxn(val system: Confluent, val durable: Durable.Txn,

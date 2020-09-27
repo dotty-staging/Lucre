@@ -26,6 +26,8 @@ trait Exec[T <: Exec[T]] {
 
   def system: Base
 
+  implicit def inMemoryCursor: Cursor[I]
+
   def newId(): Id
 
   def newRef[A](init: A): Ref[T, A]

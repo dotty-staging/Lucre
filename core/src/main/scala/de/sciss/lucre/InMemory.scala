@@ -16,9 +16,7 @@ package de.sciss.lucre
 import de.sciss.lucre.impl.InMemoryImpl
 
 object InMemory {
-  trait Txn extends InMemoryLike.Txn[Txn] {
-    final type I = InMemory.Txn
-  }
+  trait Txn extends InMemoryLike.Txn[Txn]
 
   def apply(): InMemory = InMemoryImpl()
 }

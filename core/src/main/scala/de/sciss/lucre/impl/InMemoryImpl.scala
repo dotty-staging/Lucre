@@ -133,6 +133,8 @@ object InMemoryImpl {
   trait TxnMixin[T <: InMemoryLike.Txn[T]] extends BasicTxnImpl[T] with InMemoryLike.Txn[T] {
     self: T =>
 
+    implicit def inMemoryCursor: Cursor[I] = system
+
     final def newId(): Id = new IdImpl[T](this)(system.newIdValue()(this))
 
     final def newHandle[A](value: A)(implicit format: TFormat[T, A]): Source[T, A] =

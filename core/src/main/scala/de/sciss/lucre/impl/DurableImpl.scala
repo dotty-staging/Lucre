@@ -142,6 +142,8 @@ object DurableImpl {
   trait TxnMixin[T <: D[T]] extends DurableLike.Txn[T] with BasicTxnImpl[T] {
     self: T =>
 
+    implicit def inMemoryCursor: Cursor[I] = system.inMemory
+
     private[lucre] final def reactionMap: ReactionMap[T] = system.reactionMap
 
     final def newId(): Id = new IdImpl[T](system.newIdValue()(this))
