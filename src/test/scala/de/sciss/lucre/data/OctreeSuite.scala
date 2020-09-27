@@ -1,10 +1,23 @@
+/*
+ *  OctreeSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.IntDistanceMeasure3D.MS
 import de.sciss.lucre.geom.IntSpace.ThreeDim
-import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, QueryShape, Space}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
+import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, QueryShape}
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Cursor, Durable, InMemory, Sys, TestUtil, Txn}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 
@@ -12,9 +25,10 @@ import scala.collection.mutable.{Set => MSet}
 import scala.util.control.NonFatal
 
 /*
- To run this test copy + paste the following into sbt:
 
-test-only de.sciss.lucre.data.OctreeSuite
+  To run this test copy + paste the following into sbt:
+
+  testOnly de.sciss.lucre.data.OctreeSuite
 
  */
 class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
@@ -22,7 +36,7 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   val RANGE_SEARCH    = true
   val NN_SEARCH       = true
   val REMOVAL         = true
-  val INMEMORY        = true
+  val IN_MEMORY       = true
   val DATABASE        = true
 
   val n       = 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
@@ -32,31 +46,35 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
 
   val cube: IntCube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
 
-  def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S,
-                                          sysCleanUp: (S, Boolean) => Unit): Unit = {
-    withTree[S](sysName, () => {
-      implicit val sys: S = sysCreator()
-      val t = sys.step { implicit tx =>
-        import ThreeDim.pointSerializer
+  def withSys[S <: Sys, T <: Txn[T]](sysName: String, sysCreator: () => (S, Cursor[T]),
+                                     sysCleanUp: (S, Boolean) => Unit): Unit = {
+    withTree[T](sysName, () => {
+      val (system, cursor) = sysCreator()
+      val t = cursor.step { implicit tx =>
+        import ThreeDim.pointFormat
         implicit val pointView: (IntPoint3D, Any) => IntPoint3D = (p, _) => p
-        DeterministicSkipOctree.empty[S, ThreeDim, IntPoint3D](cube)
+        DetSkipOctree.empty[T, IntPoint3DLike, IntCube, IntPoint3D](cube)
       }
-      (sys, t, succ => sysCleanUp(sys, succ))
+      (cursor, t, succ => sysCleanUp(system, succ))
     })
   }
 
-  if (INMEMORY) {
-    withSys[InMemory]("Mem", () => InMemory(): InMemory /* please IDEA */ , (_, _) => ())
+  if (IN_MEMORY) {
+    withSys[InMemory, InMemory.Txn]("Mem", { () => 
+      val s = InMemory()
+      (s, s)
+    }, (_, _) => ())
   }
   if (DATABASE) {
     //BerkeleyDB.DB_CONSOLE_LOG_LEVEL = "ALL"
-    withSys[Durable]("BDB", () => {
-//      val dir = File.createTempFile("octree", "_database")
-//      dir.delete()
-//      dir.mkdir()
-//      println(dir.getAbsolutePath)
+    withSys[Durable, Durable.Txn]("BDB", () => {
+      //      val dir = File.createTempFile("octree", "_database")
+      //      dir.delete()
+      //      dir.mkdir()
+      //      println(dir.getAbsolutePath)
       val bdb = BerkeleyDB.tmp()
-      Durable(bdb)
+      val s = Durable(bdb)
+      (s, s)
     }, {
       case (bdb, success) =>
         //         println( "FINAL DB SIZE = " + bdb.numUserRecords )
@@ -71,8 +89,8 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
 
   val pointFun3D: Int => IntPoint3D = mask => IntPoint3D(rnd.nextInt() & mask, rnd.nextInt() & mask, rnd.nextInt() & mask)
 
-  def randFill[S <: Sys[S], D <: Space[D]](t: SkipOctree[S, D, D#Point], m: MSet[D#Point],
-                                           pointFun: Int => D#Point)(implicit cursor: Cursor[S]): Unit = {
+  def randFill[T <: Txn[T], PL, P, H](t: SkipOctree[T, PL, H, P], m: MSet[P],
+                                           pointFun: Int => P)(implicit cursor: Cursor[T]): Unit = {
     Given("a randomly filled structure")
 
     for (_ <- 0 until n) {
@@ -84,8 +102,8 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
     }
   }
 
-  def verifyConsistency[S <: Sys[S], D <: Space[D]](t: DeterministicSkipOctree[S, D, D#Point])
-                                                   (implicit cursor: Cursor[S]): Unit = {
+  def verifyConsistency[T <: Txn[T], PL, P, H](t: DetSkipOctree[T, PL, H, P])
+                                                   (implicit cursor: Cursor[T]): Unit = {
     When("the internals of the structure are checked")
     Then("they should be consistent with the underlying algorithm")
 
@@ -93,8 +111,8 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
     assert(res.isEmpty, res.mkString("\n"))
   }
 
-  def verifyElems[S <: Sys[S], D <: Space[D]](t: SkipOctree[S, D, D#Point],
-                                              m: MSet[D#Point])(implicit cursor: Cursor[S]): Unit = {
+  def verifyElems[T <: Txn[T], PL, P, H](t: SkipOctree[T, PL, H, P],
+                                              m: MSet[P])(implicit cursor: Cursor[T]): Unit = {
     When( "the structure t is compared to an independently maintained map m" )
     val onlyInM = cursor.step { implicit tx =>
       m.filterNot { e =>
@@ -112,12 +130,12 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
     assert(szT == szM, "octree has size " + szT + " / map has size " + szM)
   }
 
-  def verifyContainsNot[S <: Sys[S], D <: Space[D]](t: SkipOctree[S, D, D#Point],
-                                                    m: MSet[D#Point],
-                                                    pointFun: Int => D#Point)
-                                                   (implicit cursor: Cursor[S]): Unit = {
+  def verifyContainsNot[T <: Txn[T], PL, P, H](t: SkipOctree[T, PL, H, P],
+                                                    m: MSet[P],
+                                                    pointFun: Int => P)
+                                                   (implicit cursor: Cursor[T]): Unit = {
     When("the structure t is queried for keys not in the independently maintained map m")
-    var testSet = Set.empty[D#Point]
+    var testSet = Set.empty[P]
     while (testSet.size < 100) {
       val x = pointFun(0xFFFFFFFF)
       if (!m.contains(x)) testSet += x
@@ -131,14 +149,14 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
     assert(inT.isEmpty, inT.take(10).toString())
   }
 
-  def verifyAddRemoveAll[S <: Sys[S], D <: Space[D]](t: SkipOctree[S, D, D#Point],
-                                                     m: MSet[D#Point])
-                                                    (implicit cursor: Cursor[S]): Unit = {
+  def verifyAddRemoveAll[T <: Txn[T], PL, P <: PL, H](t: SkipOctree[T, PL, H, P],
+                                                     m: MSet[P])
+                                                    (implicit cursor: Cursor[T]): Unit = {
     When("all elements of the independently maintained map are added again to t")
     val szBefore  = cursor.step { implicit tx => t.size }
-    //println( "BEFORE " + t.system.step { implicit tx => t.toList })
+    //println( "BEFORE " + t.cursor.step { implicit tx => t.toList })
     val newInT    = cursor.step { implicit tx => m.filter(e => t.update(e).isEmpty) }
-    //println( "AFTER " + t.system.step { implicit tx => t.toList })
+    //println( "AFTER " + t.cursor.step { implicit tx => t.toList })
     val szAfter   = cursor.step { implicit tx => t.size }
     Then("all of the put operations should return 'Some'")
     assert(newInT.isEmpty, newInT.take(10).toString())
@@ -159,84 +177,61 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
 
   val sortFun3D: IntPoint3DLike => (Int, Int, Int) = p => (p.x, p.y, p.z)
 
-  def verifyRangeSearch[S <: Sys[S], A, D <: Space[D], Sort](t: SkipOctree[S, D, D#Point], m: MSet[D#Point],
-                                                             queryFun: (Int, Int, Int) => QueryShape[A, D],
-                                                             sortFun: D#PointLike => Sort)
-                                                            (implicit ord: math.Ordering[Sort], cursor: Cursor[S]): Unit = {
-    When( "the octree is range searched" )
-      val qs = Seq.fill( n2 )( queryFun( 0x7FFFFFFF, 0x40000000, 0x40000000 ))
-      val rangesT = cursor.step { implicit tx => qs.map( q => t.rangeQuery( q ).toSet )}
-      val ks      = m // keySet
-      val rangesM = qs.map( q => ks.filter( q.contains( _ )))
-      Then( "the results should match brute force with the corresponding set" )
-      rangesT.zip(rangesM).foreach { case (s1, s2) =>
-         assert( s1 == s2, s1.toList.sortBy( sortFun ).take( 10 ).toString + " -- " +
-                           s2.toList.sortBy( sortFun ).take( 10 ))
-      }
-   }
+  def verifyRangeSearch[T <: Txn[T], A, PL, P <: PL, H, Sort](t: SkipOctree[T, PL, H, P], m: MSet[P],
+                                                             queryFun: (Int, Int, Int) => QueryShape[A, PL, H],
+                                                             sortFun: PL => Sort)
+                                                            (implicit ord: math.Ordering[Sort], cursor: Cursor[T]): Unit = {
+    When("the octree is range searched")
+    val qs = Seq.fill(n2)(queryFun(0x7FFFFFFF, 0x40000000, 0x40000000))
+    val rangesT = cursor.step { implicit tx => qs.map(q => t.rangeQuery(q).toSet) }
+    val ks      = m // keySet
+    val rangesM = qs.map(q => ks.filter(q.containsP))
+    Then( "the results should match brute force with the corresponding set" )
+    rangesT.zip(rangesM).foreach { case (s1, s2) =>
+      assert(s1 == s2, s1.toList.sortBy(sortFun).take(10).toString + " -- " +
+        s2.toList.sortBy(sortFun).take(10))
+    }
+  }
 
-   val pointFilter3D: IntPoint3DLike => Boolean = { p =>
-      val dx = if( p.x < cube.cx ) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
-      val dy = if( p.y < cube.cy ) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
-      val dz = if( p.z < cube.cz ) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
-      dx <= 0xB504F300L && dy <= 0xB504F300L && dz <= 0xB504F300L &&
-         (dx * dx + dy * dy > 0L) &&
-         (dx * dx + dz * dz > 0L) &&
-         (dy * dy + dz * dz > 0L)
-   }
+  val pointFilter3D: IntPoint3DLike => Boolean = { p =>
+    val dx = if( p.x < cube.cx ) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
+    val dy = if( p.y < cube.cy ) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
+    val dz = if( p.z < cube.cz ) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
+    dx <= 0xB504F300L && dy <= 0xB504F300L && dz <= 0xB504F300L &&
+      (dx * dx + dy * dy > 0L) &&
+      (dx * dx + dz * dz > 0L) &&
+      (dy * dy + dz * dz > 0L)
+  }
 
-   val euclideanDist3D: MS = IntDistanceMeasure3D.euclideanSq
+  val euclideanDist3D: MS = IntDistanceMeasure3D.euclideanSq
 
-   // JUHUUUUU SPECIALIZATION BROKEN ONCE MORE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   def verifyNN[S <: Sys[S], M, D <: Space[D]](t: SkipOctree[S, D, D#Point], m: MSet[D#Point], pointFun: Int => D#Point,
-                                               pointFilter: D#PointLike => Boolean,
-                                               euclideanDist: DistanceMeasure[M, D])
-                                              (implicit ord: math.Ordering[M], cursor: Cursor[S]): Unit = {
+  def verifyNN[T <: Txn[T], M, PL, P <: PL, H](t: SkipOctree[T, PL, H, P], m: MSet[P], pointFun: Int => P,
+                                              pointFilter: PL => Boolean,
+                                              euclideanDist: DistanceMeasure[M, PL, H])
+                                             (implicit ord: math.Ordering[M], cursor: Cursor[T]): Unit = {
 
-     When("the quadtree is searched for nearest neighbours")
-     val ps0 = Seq.fill(n2)(pointFun(0xFFFFFFFF))
-     // tricky: this guarantees that there are no 63 bit overflows,
-     // while still allowing points outside the root hyperCube to enter the test
-     val ps : Seq[D#Point]          = ps0.filter(pointFilter)
-     val nnT: Map[D#Point, D#Point] = cursor.step { implicit tx =>
-       ps.iterator.map(p => p -> t.nearestNeighbor(p, euclideanDist)).toMap
-     }
-     val ks = m // .keySet
-     //      val nnM: Map[ D#Point, D#Point ] = ps.map( p => p -> ks.minBy( _.distanceSq( p ))( t.space.bigOrdering ))( breakOut )
-     val nnM: Map[D#Point, D#Point] = ps.iterator.map(p => p -> ks.minBy(p2 => euclideanDist.distance(p2, p))).toMap
-     Then("the results should match brute force with the corresponding set")
-     assert(nnT == nnM, {
-       nnT.collect {
-         case (q, v) if nnM(q) != v => (q, v, nnM(q))
-       }.take(10).toString()
-     })
-   }
+    When("the quadtree is searched for nearest neighbours")
+    val ps0 = Seq.fill(n2)(pointFun(0xFFFFFFFF))
+    // tricky: this guarantees that there are no 63 bit overflows,
+    // while still allowing points outside the root hyperCube to enter the test
+    val ps : Seq[P]          = ps0.filter(pointFilter)
+    val nnT: Map[P, P] = cursor.step { implicit tx =>
+      ps.iterator.map(p => p -> t.nearestNeighbor(p, euclideanDist)).toMap
+    }
+    val ks = m // .keySet
+    //      val nnM: Map[ P, P ] = ps.map( p => p -> ks.minBy( _.distanceSq( p ))( t.space.bigOrdering ))( breakOut )
+    val nnM: Map[P, P] = ps.iterator.map(p => p -> ks.minBy(p2 => euclideanDist.distance(p2, p))).toMap
+    Then("the results should match brute force with the corresponding set")
+    assert(nnT == nnM, {
+      nnT.collect {
+        case (q, v) if nnM(q) != v => (q, v, nnM(q))
+      }.take(10).toString()
+    })
+  }
 
-  //   def no[ S <: Sys[ S ], M, D <: Space[ D ]](
-  //      t: SkipOctree[ S, D, D#Point ], euclideanDist: DistanceMeasure[ M, D ]): Unit = {
-  //      t.system.step( implicit tx => () )
-  //   }
-  //
-  //   def yes1[ S <: Sys[ S ], M, D <: Space[ D ]](
-  //      t: SkipOctree[ S, D, D#Point ], euclideanDist: DistanceMeasure[ M, D ]): Unit = {
-  //      t.system.step( tx => () )
-  //   }
-  //
-  //   def yes2[ S <: Sys[ S ], M, D <: Space[ D ]](
-  //      t: SkipOctree[ S, D, D#Point ], euclideanDist: DistanceMeasure[ M, D ]): Unit = {
-  //      t.system.step( implicit tx => () )
-  //   }
-
-  //   def yes[ S <: Sys[ S ], D <: Space[ D ]]( t: SkipOctree[ S, D, D#Point ], pointFun: Int => D#Point ): Unit = {
-  //      val ps = Seq.empty[ D#Point ]
-  //      t.system.step { implicit tx =>
-  //         ps.map( p => p -> p )
-  //      }
-  //   }
-
-  def withTree[S <: Sys[S]](name: String,
-                            tf: () => (S with Cursor[S],
-                                       DeterministicSkipOctree[S, ThreeDim, ThreeDim#Point], Boolean => Unit)): Unit = {
+  def withTree[T <: Txn[T]](name: String,
+                            tf: () => (Cursor[T],
+                              DetSkipOctree[T, IntPoint3DLike, IntCube, IntPoint3D], Boolean => Unit)): Unit = {
     Feature("The " + name + " octree structure should be consistent") {
       info("Several mass operations on the structure")
       info("are tried and expected behaviour verified")
@@ -250,22 +245,22 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
         }
 
       scenarioWithTime("Consistency is verified on a randomly filled structure") {
-        val (_sys, t, cleanUp) = tf()
-        implicit val system: S with Cursor[S] = _sys
+        val (_cursor, t, cleanUp) = tf()
+        implicit val cursor: Cursor[T] = _cursor
         var success = false
         try {
           val m = MSet.empty[ThreeDim#Point]
 
-          randFill         [S, ThreeDim](t, m, pointFun3D)
-          if (CONSISTENCY) verifyConsistency[S, ThreeDim](t)
-          verifyElems      [S, ThreeDim](t, m)
-          verifyContainsNot[S, ThreeDim](t, m, pointFun3D)
+          randFill         [T, IntPoint3DLike, IntPoint3D, IntCube](t, m, pointFun3D)
+          if (CONSISTENCY) verifyConsistency[T, IntPoint3DLike, IntPoint3D, IntCube](t)
+          verifyElems      [T, IntPoint3DLike, IntPoint3D, IntCube](t, m)
+          verifyContainsNot[T, IntPoint3DLike, IntPoint3D, IntCube](t, m, pointFun3D)
 
-          if (RANGE_SEARCH) verifyRangeSearch [S, BigInt, ThreeDim, (Int, Int, Int)](t, m, queryFun3D, sortFun3D)
-          if (NN_SEARCH   ) verifyNN          [S, BigInt, ThreeDim]                 (t, m, pointFun3D, pointFilter3D, euclideanDist3D)
-          if (REMOVAL     ) verifyAddRemoveAll[S, ThreeDim]                         (t, m)
+          if (RANGE_SEARCH) verifyRangeSearch [T, BigInt, IntPoint3DLike, IntPoint3D, IntCube, (Int, Int, Int)](t, m, queryFun3D, sortFun3D)
+          if (NN_SEARCH   ) verifyNN          [T, BigInt, IntPoint3DLike, IntPoint3D, IntCube]                 (t, m, pointFun3D, pointFilter3D, euclideanDist3D)
+          if (REMOVAL     ) verifyAddRemoveAll[T, IntPoint3DLike, IntPoint3D, IntCube]                         (t, m)
 
-          system.step { implicit tx =>
+          cursor.step { implicit tx =>
             try {
               t.clear()
               t.dispose()

@@ -1,6 +1,6 @@
 /*
  *  Trig.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,11 +13,10 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.IPush.Parents
-import de.sciss.lucre.event.impl.IGenerator
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
+import de.sciss.lucre.IPush.Parents
 import de.sciss.lucre.expr.{Context, IAction, ITrigger, TrigOps}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.impl.IGeneratorEvent
+import de.sciss.lucre.{IEvent, IPull, ITargets, Txn}
 
 import scala.language.implicitConversions
 
@@ -30,36 +29,36 @@ object Trig {
     */
   def apply(): Act with Trig = Impl()
 
-  private final class Expanded[S <: Sys[S]](implicit protected val targets: ITargets[S])
-    extends ITrigger[S] with IAction[S] with IGenerator[S, Unit] {
+  private final class Expanded[T <: Txn[T]](implicit protected val targets: ITargets[T])
+    extends ITrigger[T] with IAction[T] with IGeneratorEvent[T, Unit] {
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Unit] = {
+    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Unit] = {
       if (pull.isOrigin(this)) Trig.Some
       else {
-        val p: Parents[S] = pull.parents(this)
+        val p: Parents[T] = pull.parents(this)
         if (p.exists(pull(_).isDefined)) Trig.Some else None
       }
     }
 
-    def changed: IEvent[S, Unit] = this
+    def changed: IEvent[T, Unit] = this
 
-    def executeAction()(implicit tx: S#Tx): Unit = fire(())
+    def executeAction()(implicit tx: T): Unit = fire(())
 
-    def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit =
+    def addSource(tr: ITrigger[T])(implicit tx: T): Unit =
       tr.changed ---> this
 
-    def dispose()(implicit tx: S#Tx): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
   }
 
 
   private final case class Impl() extends Act with Trig {
     override def productPrefix: String = "Trig" // serialization
 
-    type Repr[S <: Sys[S]] = IAction[S] with ITrigger[S]
+    type Repr[T <: Txn[T]] = IAction[T] with ITrigger[T]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new Expanded[S]
+      new Expanded[T]
     }
   }
 }
@@ -72,5 +71,5 @@ object Trig {
   * `Control` (and by extension, `Widget`).
   */
 trait Trig extends Lazy {
-  type Repr[S <: Sys[S]] <: ITrigger[S]
+  type Repr[T <: Txn[T]] <: ITrigger[T]
 }

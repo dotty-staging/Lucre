@@ -1,6 +1,6 @@
 /*
  *  ExpandedMapSeqAct.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,18 +13,17 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.{Act, It}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{Context, IAction, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.{Context, IAction}
+import de.sciss.lucre.{IExpr, ITargets, Txn}
 
-final class ExpandedMapSeqAct[S <: Sys[S], A](in: IExpr[S, Seq[A]], it: It.Expanded[S, A],
-                                              fun: Act, tx0: S#Tx)
-                                             (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IAction[S] with IActionImpl[S] {
+final class ExpandedMapSeqAct[T <: Txn[T], A](in: IExpr[T, Seq[A]], it: It.Expanded[T, A],
+                                              fun: Act, tx0: T)
+                                             (implicit protected val targets: ITargets[T], ctx: Context[T])
+  extends IAction[T] with IActionImpl[T] {
 
-  def executeAction()(implicit tx: S#Tx): Unit = {
+  def executeAction()(implicit tx: T): Unit = {
     val inV = in.value
     if (inV.isEmpty) return
 
@@ -33,7 +32,7 @@ final class ExpandedMapSeqAct[S <: Sys[S], A](in: IExpr[S, Seq[A]], it: It.Expan
       val vn = iterator.next()
       it.setValue(vn)
       val (_, d) = ctx.nested(it) {
-        val funEx = fun.expand[S] // ...which might be read here
+        val funEx = fun.expand[T] // ...which might be read here
         funEx.executeAction()
         ()
       }

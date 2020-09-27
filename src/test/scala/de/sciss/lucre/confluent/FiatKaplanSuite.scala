@@ -1,6 +1,20 @@
+/*
+ *  FiatKaplanSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, Ident => LIdent}
 import org.scalatest.GivenWhenThen
 import org.scalatest.funspec.AnyFunSpec
 
@@ -8,14 +22,15 @@ import scala.annotation.tailrec
 
 /*
 
-To run only this test:
+  To run only this test:
 
-test-only de.sciss.lucre.confluent.FiatKaplanSuite
+  testOnly de.sciss.lucre.confluent.FiatKaplanSuite
 
  */
 class FiatKaplanSuite extends AnyFunSpec with GivenWhenThen with TestHasLinkedList {
 
   type S = Confluent
+  type T = Confluent.Txn
 
   describe("A Confluently Persistent Linked List") {
     val store   = BerkeleyDB.tmp()
@@ -162,22 +177,22 @@ class FiatKaplanSuite extends AnyFunSpec with GivenWhenThen with TestHasLinkedLi
       }
 
       When("the result is converted to a plain list in a new transaction")
-        val (_, res4) = cursor.step { implicit tx =>
-          val node = access()
+      val (_, res4) = cursor.step { implicit tx =>
+        val node = access()
 
-          def loop(opt: Option[Node]): List[S#Id] = opt match {
-            case None => Nil
-            case Some(n) => n.id :: loop(n.next())
-          }
-
-          info(s"The node succession is ${loop(node).mkString}")
-
-          tx.inputAccess -> toList(node)
+        def loop(opt: Option[Node]): List[LIdent[T]] = opt match {
+          case None => Nil
+          case Some(n) => n.id :: loop(n.next())
         }
 
-        val exp4 = List("w1" -> 1, "w0" -> 2, "w1" -> 4, "w2" -> 6, "w1" -> 1, "w2" -> 3)
-        Then("is should equal " + exp4)
-        assert(res4 === exp4)
+        info(s"The node succession is ${loop(node).mkString}")
+
+        tx.inputAccess -> toList(node)
       }
-   }
+
+      val exp4 = List("w1" -> 1, "w0" -> 2, "w1" -> 4, "w2" -> 6, "w1" -> 1, "w2" -> 3)
+      Then("is should equal " + exp4)
+      assert(res4 === exp4)
+    }
+  }
 }

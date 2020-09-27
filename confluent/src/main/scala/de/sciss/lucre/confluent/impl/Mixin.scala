@@ -1,6 +1,6 @@
 /*
  *  Mixin.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,59 +14,56 @@
 package de.sciss.lucre.confluent
 package impl
 
+import de.sciss.lucre.confluent.Log.log
 import de.sciss.lucre.confluent.impl.DurableCacheMapImpl.Store
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.data.Ancestor
-import de.sciss.lucre.event.Observer
-import de.sciss.lucre.{event => evt}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.impl.RandomImpl
-import de.sciss.lucre.stm.{DataStore, IdentifierMap, Random, Txn, TxnLike}
-import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer, Serializer}
+import de.sciss.lucre.impl.{RandomImpl, ReactionMapImpl}
+import de.sciss.lucre.{ConfluentLike, DataStore, IdentMap, Observer, Random, TxnLike, Txn => LTxn}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.{InTxn, TxnExecutor}
 
-trait Mixin[S <: Sys[S]]
-  extends Sys[S] with IndexMapHandler[S] with PartialMapHandler[S] with evt.impl.ReactionMapImpl.Mixin[S] {
+trait Mixin[Tx <: Txn[Tx]]
+  extends ConfluentLike[Tx] with IndexMapHandler[Tx] with PartialMapHandler[Tx] with ReactionMapImpl.Mixin[Tx] {
 
-  system: S =>
+  self =>
 
   // ---- abstract methods ----
 
   protected def storeFactory: DataStore.Factory
 
-  protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
-                            systemTimeNanos: Long): S#Tx
+  protected def wrapRegular(dtx: D, inputAccess: Access[T], retroactive: Boolean, cursorCache: Cache[T],
+                            systemTimeNanos: Long): T
 
-  protected def wrapRoot(peer: InTxn): S#Tx
+  protected def wrapRoot(peer: InTxn): T
 
-  def durableTx(tx: S#Tx): D#Tx
+  def durableTx(tx: T): D
 
   // ---- init ----
 
   final val store: DataStore = storeFactory.open("k-main")
 
-  private[this] val varMap = DurablePersistentMap.newConfluentIntMap[S](store, this, isOblivious = false)
+  private[this] val varMap = DurablePersistentMap.newConfluentIntMap[T](store, this, isOblivious = false)
 
-  final val fullCache: CacheMap.Durable[S, Int, Store[S, Int]] = DurableCacheMapImpl.newIntCache(varMap)
+  final val fullCache: CacheMap.Durable[T, Int, Store[T, Int]] = DurableCacheMapImpl.newIntCache[T](varMap)
 
-  final protected val eventMap: IdentifierMap[S#Id, S#Tx, Map[Int, List[Observer[S, _]]]] = {
-    val map = InMemoryConfluentMap.newIntMap[S]
-    new InMemoryIdMapImpl[S, Map[Int, List[Observer[S, _]]]](map)
+  final protected val eventMap: IdentMap[T, Map[Int, List[Observer[T, _]]]] = {
+    val map = InMemoryConfluentMap.newIntMap[T]
+    new InMemoryIdMapImpl[T, Map[Int, List[Observer[T, _]]]](map)
   }
 
-  private val global: GlobalState[S, D] = 
+  private val global: GlobalState[T, D] =
     durable.step { implicit tx =>
       val root = durable.rootJoin { implicit tx =>
         val durRootId     = durable.newIdValue() // stm.DurableSurgery.newIdValue(durable)
         val idCnt         = tx.newCachedIntVar(0)
         val versionLinear = tx.newCachedIntVar(0)
         val versionRandom = tx.newCachedLongVar(RandomImpl.initialScramble(0L)) // scramble !!!
-        val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, Serializer.Long, _.toInt)
-        GlobalState[S, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
+        val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, TFormat.Long, _.toInt)
+        GlobalState[T, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
           versionRandom = versionRandom, partialTree = partialTree)
       }
       root()
@@ -78,113 +75,117 @@ trait Mixin[S <: Sys[S]]
 
   // ---- event ----
 
-  final def indexMap: IndexMapHandler[S] = this
+  final def indexMap: IndexMapHandler[T] = this
 
   @inline private def partialTree: Ancestor.Tree[D, Long] = global.partialTree
 
-  final def newVersionId(implicit tx: S#Tx): Long = {
-    implicit val dtx: D#Tx = durableTx(tx)
+  final def newVersionId(implicit tx: T): Long = {
+    implicit val dtx: D = durableTx(tx)
     val lin = global.versionLinear() + 1
     global.versionLinear() = lin
     var rnd = 0
-    do {
+    while ({
       rnd = versionRandom.nextInt()
-    } while (rnd == 0)
+
+      rnd == 0
+    }) ()
+
     (rnd.toLong << 32) | (lin.toLong & 0xFFFFFFFFL)
   }
 
-  final def newIdValue()(implicit tx: S#Tx): Int = {
-    implicit val dtx: D#Tx = durableTx(tx)
+  final def newIdValue()(implicit tx: T): Int = {
+    implicit val dtx: D = durableTx(tx)
     val res = global.idCnt() + 1
     global.idCnt() = res
     res
   }
 
-  final def createTxn(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
-                      systemTimeNanos: Long): S#Tx = {
+  final def createTxn(dtx: D, inputAccess: Access[T], retroactive: Boolean, cursorCache: Cache[T],
+                      systemTimeNanos: Long): T = {
     log(s"::::::: atomic - input access = $inputAccess${if (retroactive) " - retroactive" else ""} :::::::")
     wrapRegular(dtx, inputAccess, retroactive, cursorCache, systemTimeNanos)
   }
 
-  final def readPath(in: DataInput): S#Acc = Path.read[S](in)
+  final def readPath(in: DataInput): Access[T] = Path.read[T](in)
 
-  final def newCursor()(implicit tx: S#Tx): Cursor[S, D] = newCursor(tx.inputAccess)
+  final def newCursor()(implicit tx: T): Cursor[T, D] = newCursor(tx.inputAccess)
 
-  final def newCursor(init: S#Acc)(implicit tx: S#Tx): Cursor[S, D] = {
-    implicit val dtx: D#Tx = durableTx(tx)
-    implicit val s: S { type D = system.D } = this  // this is to please the IntelliJ IDEA presentation compiler
-    Cursor[S, D](init)
+  final def newCursor(init: Access[T])(implicit tx: T): Cursor[T, D] = {
+    implicit val dtx: D = durableTx(tx)
+    implicit val s: ConfluentLike[T] { type D = self.D } = this
+    Cursor[T, D](init)
   }
 
-  final def readCursor(in: DataInput)(implicit tx: S#Tx): Cursor[S, D] = {
-    implicit val dtx: D#Tx = durableTx(tx)
-    implicit val s: S { type D = system.D } = this  // this is to please the IntelliJ IDEA presentation compiler
-    Cursor.read[S, D](in)
+  final def readCursor(in: DataInput)(implicit tx: T): Cursor[T, D] = {
+    implicit val dtx: D = durableTx(tx)
+//    implicit val dAcc: Unit = ()
+    implicit val s: ConfluentLike[T] { type D = self.D } = this  // this is to please the IntelliJ IDEA presentation compiler
+    Cursor.read[T, D](in)
   }
 
-  final def root[A](init: S#Tx => A)(implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] =
+  final def root[A](init: T => A)(implicit format: TFormat[T, A]): Ref[T, A] =
     executeRoot { implicit tx =>
       rootBody(init)
     }
 
-  final def rootJoin[A](init: S#Tx => A)
-                       (implicit itx: TxnLike, serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+  final def rootJoin[A](init: T => A)
+                       (implicit itx: TxnLike, format: TFormat[T, A]): Ref[T, A] = {
     log("::::::: rootJoin :::::::")
     TxnExecutor.defaultAtomic { itx =>
-      implicit val tx: S#Tx = wrapRoot(itx)
+      implicit val tx: T = wrapRoot(itx)
       rootBody(init)
     }
   }
 
-  private def rootBody[A](init: S#Tx => A)
-                         (implicit tx: S#Tx, serializer: serial.Serializer[S#Tx, S#Acc, A]): S#Var[A] = {
+  private def rootBody[A](init: T => A)
+                         (implicit tx: T, format: TFormat[T, A]): Ref[T, A] = {
     val (rootVar, _, _) = initRoot(init, _ => (), _ => ())
     rootVar
   }
 
-  def cursorRoot[A, B](init: S#Tx => A)(result: S#Tx => A => B)
-                      (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): (S#Var[A], B) =
+  def cursorRoot[A, B](init: T => A)(result: T => A => B)
+                      (implicit format: TFormat[T, A]): (Ref[T, A], B) =
     executeRoot { implicit tx =>
       val (rootVar, rootVal, _) = initRoot(init, _ => (), _ => ())
       rootVar -> result(tx)(rootVal)
     }
 
-  final def rootWithDurable[A, B](confInt: S#Tx => A)(durInit: D#Tx => B)
-                                 (implicit aSer: serial.Serializer[S#Tx, S#Acc, A],
-                                  bSer: serial.Serializer[D#Tx, D#Acc, B]): (stm.Source[S#Tx, A], B) =
+  final def rootWithDurable[A, B](confInt: T => A)(durInit: D => B)
+                                 (implicit aFmt: TFormat[T, A], bFmt: TFormat[D, B]): (Source[T, A], B) =
     executeRoot { implicit tx =>
-      implicit val dtx: D#Tx = durableTx(tx)
-      val (_, confV, durV) = initRoot(confInt, { _ /* tx */ =>
+      implicit val dtx: D = durableTx(tx)
+      val (_, confV, durV) = initRoot[A, B](confInt, { _ /* tx */ =>
         // read durable
         val did = global.durRootId
-        // stm.DurableSurgery.read (durable)(did)(bSer.read(_, ()))
-        durable.read(did)(bSer.read(_, ()))
+        // stm.DurableSurgery.read (durable)(did)(bFmt.read(_, ()))
+        durable.read(did)(bFmt.readT(_)(dtx))
       }, { _ /* tx */ =>
         // create durable
         val _durV = durInit(dtx)
         val did = global.durRootId
-        // stm.DurableSurgery.write(durable)(did)(bSer.write(_durV, _))
-        durable.write(did)(bSer.write(_durV, _))
+        // stm.DurableSurgery.write(durable)(did)(bFmt.write(_durV, _))
+        durable.write(did)(bFmt.write(_durV, _))
         _durV
       })
       tx.newHandle(confV) -> durV
     }
 
-  private def executeRoot[A](fun: S#Tx => A): A = Txn.atomic { itx =>
+  private def executeRoot[A](fun: T => A): A = LTxn.atomic { itx =>
     log("::::::: root :::::::")
     val tx = wrapRoot(itx)
     fun(tx)
   }
 
-  private def initRoot[A, B](initA: S#Tx => A, readB: S#Tx => B, initB: S#Tx => B)
-                            (implicit tx: S#Tx, serA: serial.Serializer[S#Tx, S#Acc, A]): (S#Var[A], A, B) = {
-    val rootVar     = new RootVar[S, A](0, "Root") // serializer
+  private def initRoot[A, B](initA: T => A, readB: T => B, initB: T => B)
+                            (implicit tx: T, serA: TFormat[T, A]): (Ref[T, A], A, B) = {
+    val rootVar     = new RootVar[T, A](0, "Root") // format
     val rootPath    = tx.inputAccess
-    val arrOpt      = varMap.getImmutable[Array[Byte]](0, rootPath)(tx, ByteArraySerializer)
+    val arrOpt      = varMap.getImmutable[Array[Byte]](0, tx)(rootPath, ByteArrayFormat)
     val (aVal, bVal) = arrOpt match {
       case Some(arr) =>
         val in      = DataInput(arr)
-        val aRead   = serA.read(in, rootPath)
+        // in theory, the read access should already be equal to inputAccess here...
+        val aRead   = tx.withReadAccess(rootPath)(serA.readT(in)(tx))
         val bRead   = readB(tx)
         (aRead, bRead)
 
@@ -202,15 +203,15 @@ trait Mixin[S <: Sys[S]]
     (rootVar, aVal, bVal)
   }
 
-  final def flushRoot(meldInfo: MeldInfo[S], newVersion: Boolean, caches: Vec[Cache[S#Tx]])
-                     (implicit tx: S#Tx): Unit = {
+  final def flushRoot(meldInfo: MeldInfo[T], newVersion: Boolean, caches: Vec[Cache[T]])
+                     (implicit tx: T): Unit = {
     if (meldInfo.requiresNewTree) throw new IllegalStateException("Cannot meld in the root version")
     val outTerm = tx.inputAccess.term
     flush(outTerm, caches)
   }
 
-  final def flushRegular(meldInfo: MeldInfo[S], newVersion: Boolean, caches: Vec[Cache[S#Tx]])
-                        (implicit tx: S#Tx): Unit = {
+  final def flushRegular(meldInfo: MeldInfo[T], newVersion: Boolean, caches: Vec[Cache[T]])
+                        (implicit tx: T): Unit = {
     val newTree = meldInfo.requiresNewTree
     val outTerm = if (newTree) {
       if (tx.isRetroactive) throw new IllegalStateException("Cannot meld in a retroactive transaction")
@@ -224,7 +225,7 @@ trait Mixin[S <: Sys[S]]
   }
 
   // writes the version info (using cookie `4`).
-  private def writeVersionInfo(term: Long)(implicit tx: S#Tx): Unit = {
+  private def writeVersionInfo(term: Long)(implicit tx: T): Unit = {
     val tint = term.toInt
     store.put { out =>
       out.writeByte(4)
@@ -251,7 +252,7 @@ trait Mixin[S <: Sys[S]]
     opt.getOrElse(sys.error(s"No version information stored for $vInt"))
   }
 
-  final def versionUntil(access: S#Acc, timeStamp: Long)(implicit tx: S#Tx): S#Acc = {
+  final def versionUntil(access: Access[T], timeStamp: Long)(implicit tx: T): Access[T] = {
     @tailrec def loop(low: Int, high: Int): Int = {
       if (low <= high) {
         val index = ((high + low) >> 1) & ~1 // we want entry vertices, thus ensure index is even
@@ -302,11 +303,11 @@ trait Mixin[S <: Sys[S]]
     }
   }
 
-  private def flush(outTerm: Long, caches: Vec[Cache[S#Tx]])(implicit tx: S#Tx): Unit =
+  private def flush(outTerm: Long, caches: Vec[Cache[T]])(implicit tx: T): Unit =
     caches.foreach(_.flushCache(outTerm))
 
-  private def flushOldTree()(implicit tx: S#Tx): Long = {
-    implicit val dtx: D#Tx  = durableTx(tx)
+  private def flushOldTree()(implicit tx: T): Long = {
+    implicit val dtx: D     = durableTx(tx)
     val childTerm           = newVersionId(tx)
     val (index, parentTerm) = tx.inputAccess.splitIndex
     val tree                = readIndexTree(index.term)
@@ -336,8 +337,8 @@ trait Mixin[S <: Sys[S]]
     childTerm
   }
 
-  private def flushNewTree(level: Int)(implicit tx: S#Tx): Long = {
-    implicit val dtx: D#Tx  = durableTx(tx)
+  private def flushNewTree(level: Int)(implicit tx: T): Long = {
+    implicit val dtx: D     = durableTx(tx)
     val term                = newVersionId(tx)
     val oldPath             = tx.inputAccess
 
@@ -359,28 +360,31 @@ trait Mixin[S <: Sys[S]]
     durable   .close()
   }
 
-  def numRecords    (implicit tx: S#Tx): Int = store.numEntries
-  def numUserRecords(implicit tx: S#Tx): Int = math.max(0, numRecords - 1)
+  def numRecords    (implicit tx: T): Int = store.numEntries
+  def numUserRecords(implicit tx: T): Int = math.max(0, numRecords - 1)
 
   // ---- index tree handler ----
 
   private final class IndexMapImpl[A](protected val map: Ancestor.Map[D, Long, A])
-    extends IndexMap[S, A] {
+    extends IndexMap[T, A] {
 
     override def toString = s"IndexMap($map)"
 
-    def debugPrint(implicit tx: S#Tx): String = map.debugPrint(durableTx(tx))
+    def debugPrint(implicit tx: T): String = {
+      implicit val dtx: D = durableTx(tx)
+      map.debugPrint
+    }
 
-    def nearest(term: Long)(implicit tx: S#Tx): (Long, A) = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def nearest(term: Long)(implicit tx: T): (Long, A) = {
+      implicit val dtx: D = durableTx(tx)
       val v = readTreeVertex(map.full, term)._1
       val (v2, value) = map.nearest(v)
       (v2.version, value)
     }
 
     // XXX TODO: DRY
-    def nearestOption(term: Long)(implicit tx: S#Tx): Option[(Long, A)] = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def nearestOption(term: Long)(implicit tx: T): Option[(Long, A)] = {
+      implicit val dtx: D = durableTx(tx)
       val v = readTreeVertex(map.full, term)._1
       map.nearestOption(v) map {
         case (v2, value) => (v2.version, value)
@@ -388,8 +392,8 @@ trait Mixin[S <: Sys[S]]
     }
 
     // XXX TODO: DRY
-    def nearestUntil(timeStamp: Long, term: Long)(implicit tx: S#Tx): Option[(Long, A)] = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def nearestUntil(timeStamp: Long, term: Long)(implicit tx: T): Option[(Long, A)] = {
+      implicit val dtx: D = durableTx(tx)
       val v = readTreeVertex(map.full, /* index, */ term)._1
       // timeStamp lies somewhere between the time stamp for the tree's root vertex and
       // the exit vertex given by the `term` argument (it may indeed be greater than
@@ -407,7 +411,7 @@ trait Mixin[S <: Sys[S]]
       map.nearestWithFilter(v) { vInt =>
         if (vInt <= maxVersionInt) {
           // note: while versionInfo formally takes a `Long` term, it only really uses the 32-bit version int
-          val info = versionInfo(vInt)(dtx) // any txn will do
+          val info = versionInfo(vInt.toLong)(dtx) // any txn will do
           info.timeStamp <= timeStamp
         } else {
           false // query version higher than exit vertex, possibly an inexistent version!
@@ -417,8 +421,8 @@ trait Mixin[S <: Sys[S]]
       }
     }
 
-    def add(term: Long, value: A)(implicit tx: S#Tx): Unit = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def add(term: Long, value: A)(implicit tx: T): Unit = {
+      implicit val dtx: D = durableTx(tx)
       val v = readTreeVertex(map.full, term)._1
       map.add((v, value))
     }
@@ -427,24 +431,24 @@ trait Mixin[S <: Sys[S]]
   }
 
   // writes the vertex information (pre- and post-order entries) of a full tree's leaf (using cookie `0`).
-  private def writeTreeVertex(tree: IndexTree[D], v: Ancestor.Vertex[D, Long])(implicit tx: D#Tx): Unit =
+  private def writeTreeVertex(tree: IndexTree[D], v: Ancestor.Vertex[D, Long])(implicit tx: D): Unit =
     store.put { out =>
       out.writeByte(0)
       out.writeInt(v.version.toInt)
     } { out =>
       out./* PACKED */ writeInt(tree.term.toInt)
       out./* PACKED */ writeInt(tree.level     )
-      tree.tree.vertexSerializer.write(v, out)
+      tree.tree.vertexFormat.write(v, out)
     }
 
   // creates a new index tree. this _writes_ the tree (using cookie `1`), as well as the root vertex.
   // it also creates and writes an empty index map for the tree, used for timeStamp search
   // (using cookie `5`).
-  private def writeNewTree(index: S#Acc, level: Int)(implicit tx: S#Tx): Unit = {
+  private def writeNewTree(index: Access[T], level: Int)(implicit tx: T): Unit = {
     val dtx   = durableTx(tx)
     val term  = index.term
     log(s"txn new tree ${term.toInt}")
-    val tree  = Ancestor.newTree[D, Long](term)(dtx, Serializer.Long, _.toInt)
+    val tree  = Ancestor.newTree[D, Long](term)(dtx, implicitly[TFormat[D, Long]], _.toInt)
     val it    = new IndexTreeImpl(tree, level)
     val vInt  = term.toInt
     store.put { out =>
@@ -455,7 +459,7 @@ trait Mixin[S <: Sys[S]]
     }
     writeTreeVertex(it, tree.root)(dtx)
 
-    val map = newIndexMap(index, term, ())(tx, Serializer.Unit)
+    val map = newIndexMap(tx, term, ())(index, TFormat.Unit)
     store.put { out =>
       out.writeByte(5)
       out.writeInt(vInt)
@@ -464,27 +468,27 @@ trait Mixin[S <: Sys[S]]
     }
   }
 
-  def debugPrintIndex(index: S#Acc)(implicit tx: S#Tx): String = readTimeStampMap(index).debugPrint
+  def debugPrintIndex(index: Access[T])(implicit tx: T): String = readTimeStampMap(index).debugPrint
 
   // reads the index map maintained for full trees allowing time stamp search
   // (using cookie `5`).
-  private def readTimeStampMap(index: S#Acc)(implicit tx: S#Tx): IndexMap[S, Unit] = {
+  private def readTimeStampMap(index: Access[T])(implicit tx: T): IndexMap[T, Unit] = {
     val opt = store.get { out =>
       out.writeByte(5)
       out.writeInt(index.term.toInt)
     } { in =>
-      readIndexMap[Unit](in, index)(tx, Serializer.Unit)
+      readIndexMap[Unit](in, tx)(index, TFormat.Unit)
     }
     opt.getOrElse(sys.error(s"No time stamp map found for $index"))
   }
 
-  private def readIndexTree(term: Long)(implicit tx: D#Tx): IndexTree[D] = {
+  private def readIndexTree(term: Long)(implicit tx: D): IndexTree[D] = {
     val st = store
     st.get { out =>
       out.writeByte(1)
       out.writeInt(term.toInt)
     } { in =>
-      val tree = Ancestor.readTree[D, Long](in, ())(tx, Serializer.Long, _.toInt) // tx.durable
+      val tree = Ancestor.readTree[D, Long](in)(tx, TFormat.Long, _.toInt) // tx.durable
       val level = in./* PACKED */ readInt()
       new IndexTreeImpl(tree, level)
     } getOrElse {
@@ -497,7 +501,7 @@ trait Mixin[S <: Sys[S]]
       } { in =>
         val term2 = in./* PACKED */ readInt() // tree index!
         if (term2 == term) throw new IllegalStateException(s"Trying to access nonexistent tree ${term.toInt}")
-        readIndexTree(term2)
+        readIndexTree(term2.toLong)
       } getOrElse {
         throw new IllegalStateException(s"Trying to access nonexistent tree ${term.toInt}")
       }
@@ -506,34 +510,34 @@ trait Mixin[S <: Sys[S]]
 
   // reeds the vertex along with the tree level
   final def readTreeVertex(tree: Ancestor.Tree[D, Long], term: Long)
-                          (implicit tx: D#Tx): (Ancestor.Vertex[D, Long], Int) = {
+                          (implicit tx: D): (Ancestor.Vertex[D, Long], Int) = {
     store.get { out =>
       out.writeByte(0)
       out.writeInt(term.toInt)
     } { in =>
       in./* PACKED */ readInt() // tree index!
       val level   = in./* PACKED */ readInt()
-      val v       = tree.vertexSerializer.read(in, ())
+      val v       = tree.vertexFormat.readT(in)
       (v, level)
     } getOrElse sys.error(s"Trying to access nonexistent vertex ${term.toInt}")
   }
 
   // writes the partial tree leaf information, i.e. pre- and post-order entries (using cookie `3`).
-  private def writePartialTreeVertex(v: Ancestor.Vertex[D, Long])(implicit tx: S#Tx): Unit =
+  private def writePartialTreeVertex(v: Ancestor.Vertex[D, Long])(implicit tx: T): Unit =
     store.put { out =>
       out.writeByte(3)
       out.writeInt(v.version.toInt)
     } { out =>
-      partialTree.vertexSerializer.write(v, out)
+      partialTree.vertexFormat.write(v, out)
     }
 
   // ---- index map handler ----
 
   // creates a new index map for marked values and returns that map. it does not _write_ that map
   // anywhere.
-  final def newIndexMap[A](index: S#Acc, rootTerm: Long, rootValue: A)
-                          (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx: D#Tx  = durableTx(tx)
+  override final def newIndexMap[A](tx: T, rootTerm: Long, rootValue: A)
+                          (implicit index: tx.Acc, format: ConstFormat[A]): IndexMap[T, A] = {
+    implicit val dtx: D     = durableTx(tx)
     val tree                = readIndexTree(index.term)
     val full                = tree.tree
     val rootVertex          = if (rootTerm == tree.term) {
@@ -545,18 +549,18 @@ trait Mixin[S <: Sys[S]]
     new IndexMapImpl[A](map)
   }
 
-  final def readIndexMap[A](in: DataInput, index: S#Acc)
-                           (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx: D#Tx  = durableTx(tx)
+  override final def readIndexMap[A](in: DataInput, tx: T)
+                           (implicit index: tx.Acc, format: ConstFormat[A]): IndexMap[T, A] = {
+    implicit val dtx: D     = durableTx(tx)
     val term                = index.term
     val tree                = readIndexTree(term)
-    val map                 = Ancestor.readMap[D, Long, A](in, (), tree.tree)
+    val map                 = Ancestor.readMap[D, Long, A](in, dtx, tree.tree)
     new IndexMapImpl[A](map)
   }
 
   // true is term1 is ancestor of term2
-  def isAncestor(term1: Long, term2: Long)(implicit tx: S#Tx): Boolean = {
-    implicit val dtx: D#Tx = durableTx(tx)
+  def isAncestor(term1: Long, term2: Long)(implicit tx: T): Boolean = {
+    implicit val dtx: D = durableTx(tx)
     if (term1 == term2) return true // same vertex
     if (term1.toInt > term2.toInt) return false // can't be an ancestor if newer
 
@@ -571,32 +575,35 @@ trait Mixin[S <: Sys[S]]
   // ---- partial map handler ----
 
   private final class PartialMapImpl[A](protected val map: Ancestor.Map[D, Long, A])
-    extends IndexMap[S, A] {
+    extends IndexMap[T, A] {
 
     override def toString = s"PartialMap($map)"
 
-    def debugPrint(implicit tx: S#Tx): String = map.debugPrint(durableTx(tx))
+    def debugPrint(implicit tx: T): String = {
+      implicit val dtx: D = durableTx(tx)
+      map.debugPrint
+    }
 
-    def nearest(term: Long)(implicit tx: S#Tx): (Long, A) = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def nearest(term: Long)(implicit tx: T): (Long, A) = {
+      implicit val dtx: D = durableTx(tx)
       val v = readPartialTreeVertex(term)
       val (v2, value) = map.nearest(v)
       (v2.version, value)
     }
 
     // XXX TODO: DRY
-    def nearestOption(term: Long)(implicit tx: S#Tx): Option[(Long, A)] = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def nearestOption(term: Long)(implicit tx: T): Option[(Long, A)] = {
+      implicit val dtx: D = durableTx(tx)
       val v = readPartialTreeVertex(term)
       map.nearestOption(v).map {
         case (v2, value) => (v2.version, value)
       }
     }
 
-    def nearestUntil(timeStamp: Long, term: Long)(implicit tx: S#Tx): Option[(Long, A)] = ???
+    def nearestUntil(timeStamp: Long, term: Long)(implicit tx: T): Option[(Long, A)] = ???
 
-    def add(term: Long, value: A)(implicit tx: S#Tx): Unit = {
-      implicit val dtx: D#Tx = durableTx(tx)
+    def add(term: Long, value: A)(implicit tx: T): Unit = {
+      implicit val dtx: D = durableTx(tx)
       val v = readPartialTreeVertex(term)
       map.add((v, value))
     }
@@ -604,34 +611,34 @@ trait Mixin[S <: Sys[S]]
     def write(out: DataOutput): Unit = map.write(out)
   }
 
-  private def readPartialTreeVertex(term: Long)(implicit tx: D#Tx): Ancestor.Vertex[D, Long] =
+  private def readPartialTreeVertex(term: Long)(implicit tx: D): Ancestor.Vertex[D, Long] =
     store.get { out =>
       out.writeByte(3)
       out.writeInt(term.toInt)
     } { in =>
-      partialTree.vertexSerializer.read(in, ())
+      partialTree.vertexFormat.readT(in)
     } getOrElse {
       sys.error(s"Trying to access nonexistent vertex ${term.toInt}")
     }
 
   // ---- PartialMapHandler ----
 
-  final def getIndexTreeTerm(term: Long)(implicit tx: S#Tx): Long = {
-    implicit val dtx: D#Tx = durableTx(tx)
+  final def getIndexTreeTerm(term: Long)(implicit tx: T): Long = {
+    implicit val dtx: D = durableTx(tx)
     readIndexTree(term).term
   }
 
   final def newPartialMap[A](rootValue: A)
-                            (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx: D#Tx = durableTx(tx)
+                            (implicit tx: T, format: ConstFormat[A]): IndexMap[T, A] = {
+    implicit val dtx: D = durableTx(tx)
     val map   = Ancestor.newMap[D, Long, A](partialTree, partialTree.root, rootValue)
     new PartialMapImpl[A](map)
   }
 
   final def readPartialMap[A](in: DataInput)
-                             (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A] = {
-    implicit val dtx: D#Tx = durableTx(tx)
-    val map   = Ancestor.readMap[D, Long, A](in, (), partialTree)
+                             (implicit tx: T, format: ConstFormat[A]): IndexMap[T, A] = {
+    implicit val dtx: D     = durableTx(tx)
+    val map   = Ancestor.readMap[D, Long, A](in, dtx, partialTree)
     new PartialMapImpl[A](map)
   }
 }

@@ -1,6 +1,6 @@
 /*
  *  TimeStamp.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,12 +15,11 @@ package de.sciss.lucre.expr.graph
 
 import java.util.Locale
 
-import de.sciss.lucre.event.IPush.Parents
-import de.sciss.lucre.event.impl.{IChangeEventImpl, IGenerator}
-import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.{Context, IAction, IExpr, ITrigger, graph}
-import de.sciss.lucre.stm.Sys
-import de.sciss.lucre.stm.TxnLike.peer
+import de.sciss.lucre.IPush.Parents
+import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.{Context, IAction, ITrigger, graph}
+import de.sciss.lucre.impl.{IChangeEventImpl, IGeneratorEvent}
+import de.sciss.lucre.{Caching, IChangeEvent, IExpr, IPull, IPush, ITargets, Txn}
 
 import scala.concurrent.stm.{Ref, TxnLocal}
 
@@ -28,23 +27,23 @@ object TimeStamp {
   final case class Update(ts: TimeStamp) extends Act {
     override def productPrefix: String = s"TimeStamp$$Update" // serialization
 
-    type Repr[S <: Sys[S]] = IAction[S]
+    type Repr[T <: Txn[T]] = IAction[T]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new ExpandedUpdate[S](ts.expand[S], tx)
+      new ExpandedUpdate[T](ts.expand[T], tx)
     }
   }
 
 //  final case class Format__(ts: TimeStamp, s: Ex[String]) extends Ex[String] {
 //    override def productPrefix: String = s"TimeStamp$$Format" // serialization
 //
-//    type Repr[S <: Sys[S]] = IExpr[S, String]
+//    type Repr[T <: Txn[T]] = IExpr[T, String]
 //
-//    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = ...
+//    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = ...
 //  }
 
-  final case class Format[S <: Sys[S]]() extends BinaryOp.Op[Long, String, String] {
+  final case class Format[T <: Txn[T]]() extends BinaryOp.Op[Long, String, String] {
     override def productPrefix = s"TimeStamp$$Format" // serialization
 
     def apply(a: Long, b: String): String =
@@ -57,53 +56,53 @@ object TimeStamp {
       }
   }
 
-//  trait Expanded[S <: Sys[S]] extends IExpr[S, Long] {
-//    def update(epochMillis: Long)(implicit tx: S#Tx): Unit
+//  trait Expanded[T <: Txn[T]] extends IExpr[T, Long] {
+//    def update(epochMillis: Long)(implicit tx: T): Unit
 //  }
 
   // ---- impl ----
 
   // XXX TODO --- perhaps use this as a general relay building block
-  private final class ExpandedUpdate[S <: Sys[S]](ts: IExpr[S, Long], tx0: S#Tx)
-                                                 (implicit protected val targets: ITargets[S])
-    extends IAction[S] with IGenerator[S, Unit] {
+  private final class ExpandedUpdate[T <: Txn[T]](ts: IExpr[T, Long], tx0: T)
+                                                 (implicit protected val targets: ITargets[T])
+    extends IAction[T] with IGeneratorEvent[T, Unit] {
 
     this.--->(ts.changed)(tx0)
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Unit] = {
+    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Unit] = {
       if (pull.isOrigin(this)) Trig.Some
       else {
-        val p: Parents[S] = pull.parents(this)
+        val p: Parents[T] = pull.parents(this)
         if (p.exists(pull(_).isDefined)) Trig.Some else None
       }
     }
 
-    def executeAction()(implicit tx: S#Tx): Unit = fire(())
+    def executeAction()(implicit tx: T): Unit = fire(())
 
-    def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit =
+    def addSource(tr: ITrigger[T])(implicit tx: T): Unit =
       tr.changed ---> this
 
-    def dispose()(implicit tx: S#Tx): Unit =
+    def dispose()(implicit tx: T): Unit =
       this.-/->(ts.changed)
   }
 
   private[lucre] val ref = TxnLocal(System.currentTimeMillis())
 
-  private final class Expanded[S <: Sys[S]](tx0: S#Tx)(implicit protected val targets: ITargets[S])
-    extends IExpr[S, Long] with IChangeEventImpl[S, Long] with Caching {
+  private final class Expanded[T <: Txn[T]](tx0: T)(implicit protected val targets: ITargets[T])
+    extends IExpr[T, Long] with IChangeEventImpl[T, Long] with Caching {
 
     // should we use universe.scheduler?
     private[this] val ref = Ref(TimeStamp.ref.get(tx0.peer))
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Long =
-      if (phase.isBefore || { val p: Parents[S] = pull.parents(this); !p.exists(pull(_).isDefined) }) ref() else {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): Long =
+      if (phase.isBefore || { val p: Parents[T] = pull.parents(this); !p.exists(pull(_).isDefined) }) ref() else {
         val now = TimeStamp.ref() // System.currentTimeMillis()
         ref()   = now
         now
       }
 
-//    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx) : Option[Change[Long]] = {
-//      val p: Parents[S] = pull.parents(this)
+//    private[lucre] def pullUpdateXXX(pull: IPull[T])(implicit tx: T) : Option[Change[Long]] = {
+//      val p: Parents[T] = pull.parents(this)
 //      if (p.exists(pull(_).isDefined)) {
 //        val now     = System.currentTimeMillis()
 //        val before  = ref.swap(now)
@@ -111,17 +110,17 @@ object TimeStamp {
 //      } else None
 //    }
 
-    def value(implicit tx: S#Tx): Long =
+    def value(implicit tx: T): Long =
       IPush.tryPull(this).fold(ref())(_.now)
 
-    def changed: IChangeEvent[S, Long] = this
+    def changed: IChangeEvent[T, Long] = this
 
-    def dispose()(implicit tx: S#Tx): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
   }
 }
 // XXX TODO --- should move to SoundProcesses and use `ExprContext.get.universe.scheduler.time` ?
 final case class TimeStamp() extends Ex[Long] {
-  type Repr[S <: Sys[S]] = IExpr[S, Long] // TimeStamp.Expanded[S]
+  type Repr[T <: Txn[T]] = IExpr[T, Long] // TimeStamp.Expanded[T]
 
   /** Creates a string representation based on `java.text.SimpleDateFormat`, US locale, and
     * default (system) time-zone.
@@ -434,8 +433,8 @@ final case class TimeStamp() extends Ex[Long] {
   /** Trigger this to update the time stamp to the current time. */
   def update: Act = TimeStamp.Update(this)
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    new graph.TimeStamp.Expanded[S](tx)
+    new graph.TimeStamp.Expanded[T](tx)
   }
 }

@@ -1,6 +1,6 @@
 /*
  *  Context.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,66 +11,67 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre
+package expr
 
-import de.sciss.lucre.event.{ITargets, Observable}
+import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.graph.{Control, It}
 import de.sciss.lucre.expr.impl.ContextImpl
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Cursor, Disposable, Form, MapLike, NoSys, Obj, Sys, UndoManager, Workspace}
 
 object Context {
-  type Attr[S <: Sys[S]] = MapLike[S, String, Form]
+  type Attr[T <: Txn[T]] = MapObjLike[T, String, Form[T]]
 
-  def emptyAttr[S <: Sys[S]]: Attr[S] = anyEmptyAttr.asInstanceOf[EmptyAttr[S]]
+  def emptyAttr[T <: Txn[T]]: Attr[T] = anyEmptyAttr.asInstanceOf[EmptyAttr[T]]
 
-  private val anyEmptyAttr = new EmptyAttr[NoSys]
+  private val anyEmptyAttr = new EmptyAttr[AnyTxn]
 
-  private final class EmptyAttr[S <: Sys[S]] extends Attr[S] {
+  private final class EmptyAttr[T <: Txn[T]] extends Attr[T] {
     override def toString = "empty"
 
-    def isEmpty (implicit tx: S#Tx): Boolean = true
-    def nonEmpty(implicit tx: S#Tx): Boolean = false
+    type V = Form[T]
 
-    def contains(key: String)(implicit tx: S#Tx): Boolean = false
+    def isEmpty (implicit tx: T): Boolean = true
+    def nonEmpty(implicit tx: T): Boolean = false
 
-    def get(key: String)(implicit tx: S#Tx): Option[V] = None
+    def contains(key: String)(implicit tx: T): Boolean = false
 
-//    def $[R[~ <: Sys[~]] <: Form[~]](key: String)(implicit tx: S#Tx, ct: ClassTag[R[S]]): Option[R[S]] = None
+    def get(key: String)(implicit tx: T): Option[V] = None
 
-    def changed: Observable[S#Tx, MapLike.Update[S, String, Form]] =
+    //    def $[R[~ <: Txn[~]] <: Form[~]](key: String)(implicit tx: T, ct: ClassTag[R[T]]): Option[R[T]] = None
+
+    def changed: Observable[T, MapObjLike.Update[String, Form[T]]] =
       Observable.empty
 
-    def dispose()(implicit tx: S#Tx): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
   }
 
-  def apply[S <: Sys[S]](selfH: Option[stm.Source[S#Tx, Obj[S]]] = None, attr: Attr[S] = emptyAttr[S])
-                        (implicit workspace: Workspace[S], cursor: Cursor[S],
-                         undoManager: UndoManager[S]): Context[S] =
-    new ContextImpl[S](selfH, attr)
+  def apply[T <: Txn[T]](selfH: Option[Source[T, Obj[T]]] = None, attr: Attr[T] = emptyAttr[T])
+                        (implicit workspace: Workspace[T], cursor: Cursor[T],
+                         undoManager: UndoManager[T]): Context[T] =
+    new ContextImpl[T](selfH, attr)
 }
-trait Context[S <: Sys[S]] extends Disposable[S#Tx] {
-  implicit def targets    : ITargets    [S]
-  implicit def cursor     : Cursor      [S]
-  implicit def workspace  : Workspace   [S]
-  implicit def undoManager: UndoManager [S]
+trait Context[T <: Txn[T]] extends Disposable[T] {
+  implicit def targets    : ITargets    [T]
+  implicit def cursor     : Cursor      [T]
+  implicit def workspace  : Workspace   [T]
+  implicit def undoManager: UndoManager [T]
 
-  def attr/*(implicit tx: S#Tx)*/: Context.Attr[S]
+  def attr/*(implicit tx: T)*/: Context.Attr[T]
 
   /** Prepares graph expansion by copying control properties over
-    * for subsequent look-up through `getProperty`.
-    */
-  def initGraph(g: Graph)(implicit tx: S#Tx): Unit
+   * for subsequent look-up through `getProperty`.
+   */
+  def initGraph(g: Graph)(implicit tx: T): Unit
 
   /** Creates a temporary nested context into which all `visit` calls are
-    * redirected, thus a compound `Disposable` can be returned.
-    */
-  def nested[A](it: It.Expanded[S, _])(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx])
+   * redirected, thus a compound `Disposable` can be returned.
+   */
+  def nested[A](it: It.Expanded[T, _])(body: => A)(implicit tx: T): (A, Disposable[T])
 
-  def getProperty[A](control: Control, key: String)(implicit tx: S#Tx): Option[A]
+  def getProperty[A](control: Control, key: String)(implicit tx: T): Option[A]
 
-  def selfOption(implicit tx: S#Tx): Option[Obj[S]]
+  def selfOption(implicit tx: T): Option[Obj[T]]
 
-  def visit[U <: Disposable[S#Tx]](ref: AnyRef, init: => U)(implicit tx: S#Tx): U
+  def visit[U <: Disposable[T]](ref: AnyRef, init: => U)(implicit tx: T): U
 }
 

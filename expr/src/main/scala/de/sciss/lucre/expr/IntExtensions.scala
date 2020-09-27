@@ -1,6 +1,6 @@
 /*
  *  IntExtensions.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,9 +13,9 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.{Tuple1Op, Tuple2Op}
-import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
+import de.sciss.lucre.Event.Targets
+import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.{BooleanObj, Copy, Elem, Expr, IntObj, Obj, Txn}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
@@ -28,17 +28,17 @@ object IntExtensions {
 
   def init(): Unit = _init
 
-  type _Ex[S <: Sys[S]] = IntObj[S]
+  type _Ex[T <: Txn[T]] = IntObj[T]
 
-  private[this] object IntTuple1s extends Type.Extension1[IntObj] {
+  private[this] object IntTuple1s extends Expr.Type.Extension1[IntObj] {
     // final val arity = 1
     final val opLo: Int = Neg         .id
     final val opHi: Int = BooleanToInt.id
 
     val name = "Int-1 Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       val op /* : UnaryOp[_, _] */ = (opId: @switch) match {
         // ---- Int => Int ----
         case Neg    .id => Neg
@@ -50,19 +50,19 @@ object IntExtensions {
         // ---- Boolean => Int ----
         case BooleanToInt.id => BooleanToInt
       }
-      op.read(in, access, targets)
+      op.read(in, targets)
     }
   }
 
-  private[this] object IntTuple2s extends Type.Extension1[IntObj] {
+  private[this] object IntTuple2s extends Expr.Type.Extension1[IntObj] {
     // final val arity = 2
     final val opLo: Int = Plus  .id
-    final val opHi: Int = Absdif.id
+    final val opHi: Int = AbsDif.id
 
     val name = "Int-2 Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       val op: BinaryOp = (opId: @switch) match {
         case Plus               .id => Plus
         case Minus              .id => Minus
@@ -85,43 +85,43 @@ object IntExtensions {
         // case 18 => Gcd
         //               case 19 => Round
         //               case 20 => Roundup
-        case ShiftLeft          .id => ShiftLeft
-        case ShiftRight         .id => ShiftRight
-        case UnsignedShiftRight .id => UnsignedShiftRight
-        case Absdif             .id => Absdif
+        case LeftShift          .id => LeftShift
+        case RightShift         .id => RightShift
+        case UnsignedRightShift .id => UnsignedRightShift
+        case AbsDif             .id => AbsDif
         //               case 42 => Clip2
         //               case 44 => Fold2
         //               case 45 => Wrap2
       }
-      val _1 = IntObj.read(in, access)
-      val _2 = IntObj.read(in, access)
-      new Tuple2[S, Int, IntObj, Int, IntObj](targets, op, _1, _2)
+      val _1 = IntObj.read(in)
+      val _2 = IntObj.read(in)
+      new Tuple2[T, Int, IntObj, Int, IntObj](targets, op, _1, _2)
     }
   }
 
-  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
-                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
-      protected val targets: Targets[S], val op: Tuple2Op[Int, T1, T2, IntObj, ReprT1, ReprT2],
-      val _1: ReprT1[S], val _2: ReprT2[S])
-    extends impl.Tuple2[S, Int, T1, T2, IntObj, ReprT1, ReprT2] with IntObj[S] {
+  final class Tuple2[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1],
+    T2, ReprT2[~ <: Txn[~]] <: Expr[~, T2]](
+                                             protected val targets: Targets[T], val op: ExprTuple2Op[Int, T1, T2, IntObj, ReprT1, ReprT2],
+                                             val _1: ReprT1[T], val _2: ReprT2[T])
+    extends ExprTuple2[T, Int, T1, T2, IntObj, ReprT1, ReprT2] with IntObj[T] {
 
     def tpe: Obj.Type = IntObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out](), op, context(_1), context(_2)).connect()
   }
 
   // ---- operators ----
 
-  sealed trait UnaryOp[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] extends impl.Tuple1Op[Int, T1, IntObj, ReprT1] {
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                         (implicit tx: S#Tx): _Ex[S] //  impl.Tuple1[S, Int, T1]
+  sealed trait UnaryOp[T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]] extends ExprTuple1Op[Int, T1, IntObj, ReprT1] {
+    def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                         (implicit tx: T): _Ex[T] //  ExprTuple1[T, Int, T1]
 
-    def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"${_1}.$name"
+    def toString[T <: Txn[T]](_1: ReprT1[T]): String = s"${_1}.$name"
 
-    def apply[S <: Sys[S]](a: ReprT1[S])(implicit tx: S#Tx): _Ex[S] = a match {
-      case Expr.Const(c)  => IntObj.newConst[S](value(c))
-      case _              => new Tuple1[S, T1, ReprT1](Targets[S], this, a).connect()
+    def apply[T <: Txn[T]](a: ReprT1[T])(implicit tx: T): _Ex[T] = a match {
+      case Expr.Const(c)  => IntObj.newConst[T](value(c))
+      case _              => new Tuple1[T, T1, ReprT1](Targets[T](), this, a).connect()
     }
 
     def name: String = {
@@ -132,30 +132,31 @@ object IntExtensions {
     }
   }
 
-  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
-      protected val targets: Targets[S], val op: Tuple1Op[Int, T1, IntObj, ReprT1], val _1: ReprT1[S])
-    extends impl.Tuple1[S, Int, T1, IntObj, ReprT1] with IntObj[S] {
+  final class Tuple1[T <: Txn[T], T1,
+    ReprT1[~ <: Txn[~]] <: Expr[~, T1]](protected val targets: Targets[T],
+                                        val op: ExprTuple1Op[Int, T1, IntObj, ReprT1], val _1: ReprT1[T])
+    extends ExprTuple1[T, Int, T1, IntObj, ReprT1] with IntObj[T] {
 
     def tpe: Obj.Type = IntObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1[Out, T1, ReprT1](Targets[Out], op, context(_1)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple1[Out, T1, ReprT1](Targets[Out](), op, context(_1)).connect()
   }
 
   // ---- Int => Int ----
 
   private[this] sealed abstract class IntUnaryOp extends UnaryOp[Int, IntObj] {
-    final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                               (implicit tx: S#Tx): _Ex[S] = {
-      val _1 = IntObj.read(in, access)
-      new Tuple1[S, Int, IntObj](targets, this, _1)
+    final def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                               (implicit tx: T): _Ex[T] = {
+      val _1 = IntObj.read(in)
+      new Tuple1[T, Int, IntObj](targets, this, _1)
     }
   }
 
   private[this] case object Neg extends IntUnaryOp {
     final val id = 0
     def value(a: Int): Int = -a
-    override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"-${_1}"
+    override def toString[T <: Txn[T]](_1: _Ex[T]): String = s"-${_1}"
   }
 
   private[this] case object Abs extends IntUnaryOp {
@@ -166,7 +167,7 @@ object IntExtensions {
   private[this] case object BitNot extends IntUnaryOp {
     final val id = 2
     def value(a: Int): Int = ~a
-    override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"~${_1}"
+    override def toString[T <: Txn[T]](_1: _Ex[T]): String = s"~${_1}"
   }
 
   // case object ToLong     extends Op(  6 )
@@ -189,10 +190,10 @@ object IntExtensions {
   // ---- Boolean => Int ----
 
   sealed trait BooleanUnaryOp extends UnaryOp[Boolean, BooleanObj] {
-    final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: Targets[S])
-                               (implicit tx: S#Tx): _Ex[S] = {
-      val _1 = BooleanObj.read(in, access)
-      new Tuple1[S, Boolean, BooleanObj](targets, this, _1)
+    final def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                               (implicit tx: T): _Ex[T] = {
+      val _1 = BooleanObj.read(in)
+      new Tuple1[T, Boolean, BooleanObj](targets, this, _1)
     }
   }
 
@@ -203,18 +204,18 @@ object IntExtensions {
 
   // ---- (Int, Int) => Int ----
 
-  private[this] sealed trait BinaryOp extends impl.Tuple2Op[Int, Int, Int, IntObj, IntObj, IntObj] {
-    final def apply[S <: Sys[S]](a: _Ex[S], b: _Ex[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
+  private[this] sealed trait BinaryOp extends ExprTuple2Op[Int, Int, Int, IntObj, IntObj, IntObj] {
+    final def apply[T <: Txn[T]](a: _Ex[T], b: _Ex[T])(implicit tx: T): _Ex[T] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => IntObj.newConst(value(ca, cb))
       case _ =>
-        new Tuple2[S, Int, IntObj, Int, IntObj](Targets[S], this,  a, b).connect()
+        new Tuple2[T, Int, IntObj, Int, IntObj](Targets[T](), this,  a, b).connect()
     }
 
     def value(a: Int, b: Int): Int
 
     def isInfix: Boolean
 
-    final def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String =
+    final def toString[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T]): String =
       if (isInfix) s"(${_1} $name ${_2})" else s"${_1}.$name(${_2})"
 
     def name: String = {
@@ -283,28 +284,28 @@ object IntExtensions {
     val isInfix = false
   }
 
-  private[this] case object ShiftLeft extends BinaryOp {
+  private[this] case object LeftShift extends BinaryOp {
     final val id = 16
     override val name = "<<"
     def value(a: Int, b: Int): Int = a << b
     val isInfix = false
   }
 
-  private[this] case object ShiftRight extends BinaryOp {
+  private[this] case object RightShift extends BinaryOp {
     final val id = 17
     override val name = ">>"
     def value(a: Int, b: Int): Int = a >> b
     val isInfix = false
   }
 
-  private[this] case object UnsignedShiftRight extends BinaryOp {
+  private[this] case object UnsignedRightShift extends BinaryOp {
     final val id = 18
     override val name = ">>>"
     def value(a: Int, b: Int): Int = a >>> b
     val isInfix = false
   }
 
-  private[this] case object Absdif extends BinaryOp {
+  private[this] case object AbsDif extends BinaryOp {
     final val id = 19
     def value(a: Int, b: Int): Int = math.abs(a - b)
     val isInfix = false
@@ -320,50 +321,50 @@ object IntExtensions {
   //         def value( a: Int, b: Int ) : Int = ri_wrap2( a, b )
   //      }
 
-  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
+  final class Ops[T <: Txn[T]](val `this`: _Ex[T]) extends AnyVal { me =>
     import me.{`this` => a}
 
-    private type E = _Ex[S]
+    private type E = _Ex[T]
 
     // ---- Int => Int ----
 
-    def unary_- (implicit tx: S#Tx): E = Neg   (a)
-    def unary_~ (implicit tx: S#Tx): E = BitNot(a)
+    def unary_- (implicit tx: T): E = Neg   (a)
+    def unary_~ (implicit tx: T): E = BitNot(a)
 
     // ---- (Int, Int) => Int ----
 
-    def +   (b: E)(implicit tx: S#Tx): E = Plus              (a, b)
-    def -   (b: E)(implicit tx: S#Tx): E = Minus             (a, b)
-    def *   (b: E)(implicit tx: S#Tx): E = Times             (a, b)
-    def /   (b: E)(implicit tx: S#Tx): E = IDiv              (a, b)
-    def &   (b: E)(implicit tx: S#Tx): E = BitAnd            (a, b)
-    def |   (b: E)(implicit tx: S#Tx): E = BitOr             (a, b)
-    def ^   (b: E)(implicit tx: S#Tx): E = BitXor            (a, b)
-    def <<  (b: E)(implicit tx: S#Tx): E = ShiftLeft         (a, b)
-    def >>  (b: E)(implicit tx: S#Tx): E = ShiftRight        (a, b)
-    def >>> (b: E)(implicit tx: S#Tx): E = UnsignedShiftRight(a, b)
+    def +   (b: E)(implicit tx: T): E = Plus              (a, b)
+    def -   (b: E)(implicit tx: T): E = Minus             (a, b)
+    def *   (b: E)(implicit tx: T): E = Times             (a, b)
+    def /   (b: E)(implicit tx: T): E = IDiv              (a, b)
+    def &   (b: E)(implicit tx: T): E = BitAnd            (a, b)
+    def |   (b: E)(implicit tx: T): E = BitOr             (a, b)
+    def ^   (b: E)(implicit tx: T): E = BitXor            (a, b)
+    def <<  (b: E)(implicit tx: T): E = LeftShift         (a, b)
+    def >>  (b: E)(implicit tx: T): E = RightShift        (a, b)
+    def >>> (b: E)(implicit tx: T): E = UnsignedRightShift(a, b)
 
     // ---- (Int, Int) => Boolean ----
 
-    def sig_==(b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntEq (a, b)
-    def sig_!=(b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntNeq(a, b)
-    def <     (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntLt (a, b)
-    def >     (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntGt (a, b)
-    def <=    (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntLeq(a, b)
-    def >=    (b: E)(implicit tx: S#Tx): BooleanObj[S] = BooleanExtensions.IntGeq(a, b)
+    def sig_==(b: E)(implicit tx: T): BooleanObj[T] = BooleanExtensions.IntEq (a, b)
+    def sig_!=(b: E)(implicit tx: T): BooleanObj[T] = BooleanExtensions.IntNeq(a, b)
+    def <     (b: E)(implicit tx: T): BooleanObj[T] = BooleanExtensions.IntLt (a, b)
+    def >     (b: E)(implicit tx: T): BooleanObj[T] = BooleanExtensions.IntGt (a, b)
+    def <=    (b: E)(implicit tx: T): BooleanObj[T] = BooleanExtensions.IntLeq(a, b)
+    def >=    (b: E)(implicit tx: T): BooleanObj[T] = BooleanExtensions.IntGeq(a, b)
 
     // ---- more ops ----
 
-    def abs     (implicit tx: S#Tx): E = Abs     (a)
+    def abs     (implicit tx: T): E = Abs     (a)
     // def toLong : E	         = UnOp.make( 'asLong, ex )
     // def toInteger : E	      = UnOp.make( 'asInteger, ex )
-    def signum  (implicit tx: S#Tx): E = Signum  (a)
-    def squared (implicit tx: S#Tx): E = Squared (a)
-    def cubed   (implicit tx: S#Tx): E = Cubed   (a)
+    def signum  (implicit tx: T): E = Signum  (a)
+    def squared (implicit tx: T): E = Squared (a)
+    def cubed   (implicit tx: T): E = Cubed   (a)
 
-    def min   (b: E)(implicit tx: S#Tx): E = Min   (a, b)
-    def max   (b: E)(implicit tx: S#Tx): E = Max   (a, b)
-    def absdif(b: E)(implicit tx: S#Tx): E = Absdif(a, b)
+    def min   (b: E)(implicit tx: T): E = Min   (a, b)
+    def max   (b: E)(implicit tx: T): E = Max   (a, b)
+    def absDif(b: E)(implicit tx: T): E = AbsDif(a, b)
 
     //      def clip2( b: E ) : E      = Clip2.make( ex, b )
     //      def fold2( b: E ) : E      = Fold2.make( ex, b )

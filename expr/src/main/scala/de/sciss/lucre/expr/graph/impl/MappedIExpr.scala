@@ -1,6 +1,6 @@
 /*
  *  MappedIExpr.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,35 +13,33 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.expr.IExpr
-import de.sciss.lucre.stm.Base
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{Exec, IChangeEvent, IExpr, IPull, ITargets}
 
-abstract class MappedIExpr[S <: Base[S], A1, A](in: IExpr[S, A1], tx0: S#Tx)
-                                             (implicit protected val targets: ITargets[S])
-  extends IExpr[S, A] with IChangeEventImpl[S, A] {
+abstract class MappedIExpr[T <: Exec[T], A1, A](in: IExpr[T, A1], tx0: T)
+                                             (implicit protected val targets: ITargets[T])
+  extends IExpr[T, A] with IChangeEventImpl[T, A] {
 
   in.changed.--->(this)(tx0)
 
-  protected def mapValue(inValue: A1)(implicit tx: S#Tx): A
+  protected def mapValue(inValue: A1)(implicit tx: T): A
 
-  def value(implicit tx: S#Tx): A = mapValue(in.value)
+  def value(implicit tx: T): A = mapValue(in.value)
 
-  private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+  private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
     val v = pull.applyChange(in.changed)
     mapValue(v)
   }
 
-//  private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+//  private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[A]] =
 //    pull(in.changed).flatMap { ch =>
 //      val before  = mapValue(ch.before )
 //      val now     = mapValue(ch.now    )
 //      if (before == now) None else Some(Change(before, now))
 //    }
 
-  def dispose()(implicit tx: S#Tx): Unit =
+  def dispose()(implicit tx: T): Unit =
     in.changed.-/->(this)
 
-  def changed: IChangeEvent[S, A] = this
+  def changed: IChangeEvent[T, A] = this
 }

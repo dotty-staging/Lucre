@@ -1,6 +1,6 @@
 /*
  *  Hashing.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -147,11 +147,13 @@ object Hashing {
 
     var j  = -1
     var ij = -1
-    do {
+    while ({
       j += 1
       if (j == m) return sz // all prefixes already contained
       ij = isPre(j)
-    } while (contains(s.sumUntil(ij)))
+
+      contains(s.sumUntil(ij))
+    }) ()
 
     val ijm = if (j == 0) 0 else isPre(j - 1)
 

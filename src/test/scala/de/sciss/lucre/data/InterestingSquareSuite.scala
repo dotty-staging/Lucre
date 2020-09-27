@@ -1,17 +1,31 @@
+/*
+ *  InterestingSquareSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.{IntPoint2D => P, IntSquare => Q}
 import org.scalatest.funspec.AnyFunSpec
 
 /*
- To run only this suite
 
-test-only de.sciss.lucre.data.InterestingSquareSuite
+  To run only this suite
+
+  testOnly de.sciss.lucre.data.InterestingSquareSuite
 
   */
 class InterestingSquareSuite extends AnyFunSpec {
   val p: Q = Q(64, 64, 64)
-  import p.{greatestInteresting => gi}
+  import p.{greatestInterestingP => gi}
 
   for (shift <- 0 to 5) {
     val ext = 1 << shift

@@ -1,6 +1,6 @@
 /*
  *  IndexMapHandler.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,15 +13,15 @@
 
 package de.sciss.lucre.confluent
 
-import de.sciss.serial.{ImmutableSerializer, DataInput}
+import de.sciss.serial.{ConstFormat, DataInput}
 
-trait IndexMapHandler[S <: Sys[S]] {
-  def readIndexMap[A](in: DataInput, index: S#Acc)
-                     (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A]
+trait IndexMapHandler[T <: Txn[T]] {
+  def readIndexMap[A](in: DataInput, tx: T)
+                     (implicit index: tx.Acc, format: ConstFormat[A]): IndexMap[T, A]
 
-  def newIndexMap[A](index: S#Acc, rootTerm: Long, rootValue: A)
-                    (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A]
+  def newIndexMap[A](tx: T, rootTerm: Long, rootValue: A)
+                    (implicit index: tx.Acc, format: ConstFormat[A]): IndexMap[T, A]
 
   // true is term1 is ancestor of term2
-  def isAncestor(term1: Long, term2: Long)(implicit tx: S#Tx): Boolean
+  def isAncestor(term1: Long, term2: Long)(implicit tx: T): Boolean
 }

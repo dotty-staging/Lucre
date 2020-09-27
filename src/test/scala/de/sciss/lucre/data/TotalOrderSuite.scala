@@ -1,38 +1,49 @@
+/*
+ *  TotalOrderSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
 import de.sciss.lucre.data.TotalOrder.Map.RelabelObserver
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
-import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput, Writable}
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Cursor, Durable, InMemory, Sys, TestUtil, Txn}
+import de.sciss.serial.{DataInput, DataOutput, Writable, WritableFormat}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.immutable.{Vector => Vec}
 
 /*
- To run this test copy + paste the following into sbt:
 
-test-only de.sciss.lucre.data.TotalOrderSuite
+  To run this test copy + paste the following into sbt:
+
+  testOnly de.sciss.lucre.data.TotalOrderSuite
 
  */
 object TotalOrderSuite {
   object MapHolder {
-    final class Serializer[S <: Sys[S]](observer: RelabelObserver[S#Tx, MapHolder[S]], tx0: S#Tx)
-      extends serial.Serializer[S#Tx, S#Acc, MapHolder[S]] {
+    final class Format[T <: Txn[T]](observer: RelabelObserver[T, MapHolder[T]], tx0: T)
+      extends WritableFormat[T, MapHolder[T]] {
 
-      val map: TotalOrder.Map[S, MapHolder[S]] = TotalOrder.Map.empty[S, MapHolder[S]](observer, _.entry)(tx0, this)
+      val map: TotalOrder.Map[T, MapHolder[T]] = TotalOrder.Map.empty[T, MapHolder[T]](observer, _.entry)(tx0, this)
 
-      def write(v: MapHolder[S], out: DataOutput): Unit = v.write(out)
-
-      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): MapHolder[S] = {
+      override def readT(in: DataInput)(implicit tx: T): MapHolder[T] = {
         val num = in.readInt()
-        val e = map.readEntry(in, access)
+        val e = map.readEntry(in)
         new MapHolder(num, e)
       }
     }
   }
-  final case class MapHolder[S <: Sys[S]](num: Int, entry: TotalOrder.Map.Entry[S, MapHolder[S]])
+  final case class MapHolder[T <: Txn[T]](num: Int, entry: TotalOrder.Map.Entry[T, MapHolder[T]])
     extends Writable {
 
     def write(out: DataOutput): Unit = {
@@ -44,7 +55,7 @@ object TotalOrderSuite {
 class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   import TotalOrderSuite.MapHolder
 
-  val INMEMORY         = true
+  val IN_MEMORY        = true
   val DATABASE         = true
   val TEST1            = true   // large consistency test
   val TEST2            = true   // small boundary cases test
@@ -52,14 +63,18 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   val NUM = 0x10000    // 0x80000  // 0x200000
   val RND_SEED = 0L
 
-  if (INMEMORY) {
-    withSys[InMemory]("Mem", () => InMemory(): InMemory /* please IDEA */ , _ => ())
+  if (IN_MEMORY) {
+    withSys[InMemory, InMemory.Txn]("Mem", { () => 
+      val s = InMemory()
+      (s, s)
+    }, _ => ())
   }
 
   if (DATABASE) {
-    withSys[Durable]("BDB", () => {
+    withSys[Durable, Durable.Txn]("BDB", { () =>
       val bdb = BerkeleyDB.tmp() // open( dir )
-      Durable(bdb)
+      val s = Durable(bdb)
+      (s, s)
     }, bdb => {
       val sz = bdb.step(bdb.numUserRecords(_))
       assert(sz == 0, "Final DB user size should be 0, but is " + sz)
@@ -67,10 +82,10 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
     })
   }
 
-  def withSys[S <: Sys[S]](sysName: String, sysCreator: () => S with Cursor[S],
+  def withSys[S <: Sys, T <: Txn[T]](sysName: String, sysCreator: () => (S, Cursor[T]),
                            sysCleanUp: S => Unit): Unit = {
-    def scenarioWithTime(descr: String)(body: => Unit): Unit = {
-      Scenario(descr) {
+    def scenarioWithTime(description: String)(body: => Unit): Unit = {
+      Scenario(description) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -85,19 +100,19 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
       scenarioWithTime("Ordering is verified on a randomly filled " + sysName + " structure") {
         Given("a randomly filled structure (" + sysName + ")")
 
-        implicit val system: S with Cursor[S] = sysCreator()
+        val (system, cursor) = sysCreator()
         try {
-          val to = system.step { implicit tx =>
-            TotalOrder.Set.empty[S]
+          val to = cursor.step { implicit tx =>
+            TotalOrder.Set.empty[T]()
           }
           val rnd = new util.Random(RND_SEED)
           // would be nice to test maximum possible number of labels
           // but we're running out of heap space ...
           val n = NUM // 113042 // 3041
 
-          val set = system.step { implicit tx =>
+          val set = cursor.step { implicit tx =>
             var e = to.root
-            var coll = Set[TotalOrder.Set.Entry[S]]() // ( e )
+            var coll = Set.empty[TotalOrder.Set.Entry[T]]
             for (_ <- 1 until n) {
               //if( (i % 1000) == 0 ) println( "i = " + i )
               if (rnd.nextBoolean()) {
@@ -111,12 +126,12 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           }
 
           When("the structure size is determined")
-          val sz = system.step { implicit tx => to.size }
+          val sz = cursor.step { implicit tx => to.size }
           Then("it should be equal to the number of elements inserted")
           assert(sz == n, sz.toString + " != " + n)
 
           When("the structure is mapped to its pairwise comparisons")
-          val result = system.step { implicit tx =>
+          val result = cursor.step { implicit tx =>
             var res = Set.empty[Int]
             var prev = to.head
             var next = prev.next.orNull
@@ -130,10 +145,10 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           }
 
           Then("the resulting set should only contain -1")
-          assert(result == Set(-1), result.toString + " -- " + system.step(implicit tx => to.tagList(to.head)))
+          assert(result == Set(-1), result.toString + " -- " + cursor.step(implicit tx => to.tagList(to.head)))
 
           When("the structure is emptied")
-          val sz2 = system.step { implicit tx =>
+          val sz2 = cursor.step { implicit tx =>
             //                  set.foreach( _.remove() )
             set.foreach(_.removeAndDispose())
             to.size
@@ -141,7 +156,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           Then("the order should have size 1")
           assert(sz2 == 1, "Size is " + sz2 + " and not 1")
 
-          system.step { implicit tx =>
+          cursor.step { implicit tx =>
             to.dispose()
           }
 
@@ -153,17 +168,17 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
 
     if (TEST2) Feature("The structure should accept boundary cases") {
       scenarioWithTime(s"Triggering overflows at the boundaries in a $sysName structure") {
-        implicit val system: S with Cursor[S] = sysCreator()
+        val (system, cursor) = sysCreator()
         try {
           Given("an empty map structure")
 
-          val order = system.step { implicit tx =>
-            val ser = new MapHolder.Serializer(new RelabelObserver[S#Tx, MapHolder[S]] {
-              def beforeRelabeling(dirty: Iterator[MapHolder[S]])(implicit tx: S#Tx): Unit = {
+          val order = cursor.step { implicit tx =>
+            val ser = new MapHolder.Format(new RelabelObserver[T, MapHolder[T]] {
+              def beforeRelabeling(dirty: Iterator[MapHolder[T]])(implicit tx: T): Unit = {
                 dirty.toIndexedSeq // just to make sure the iterator succeeds
               }
 
-              def afterRelabeling(clean: Iterator[MapHolder[S]])(implicit tx: S#Tx): Unit = {
+              def afterRelabeling(clean: Iterator[MapHolder[T]])(implicit tx: T): Unit = {
                 clean.toIndexedSeq // just to make sure the iterator succeeds
               }
             }, tx)
@@ -171,11 +186,11 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           }
 
           When("the structure is filled by 1000x repeated appending")
-          val rootHolder = new MapHolder(0, order.root)
+          val rootHolder = new MapHolder[T](0, order.root)
           var e = rootHolder
           var holders = Vec(e)
           for (i <- 1 to 1000) {
-            e = system.step { implicit tx =>
+            e = cursor.step { implicit tx =>
               val prev = e
               val next = new MapHolder(i, order.insert())
               order.placeAfter(prev, next)
@@ -184,7 +199,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
             holders :+= e
           }
           Then("the resulting sequence should match (0 to 1000)")
-          val checkApp = system.step { implicit tx =>
+          val checkApp = cursor.step { implicit tx =>
             holders.sliding(2, 1).forall {
               case Seq(prev, next) => prev.num.compare(next.num) == prev.entry.compare(next.entry)
             }
@@ -192,7 +207,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           assert(checkApp)
 
           When("all elements are removed")
-          val szApp = system.step { implicit tx =>
+          val szApp = cursor.step { implicit tx =>
             holders.drop(1).foreach { h =>
               h.entry.removeAndDispose()
             }
@@ -205,7 +220,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           e = rootHolder
           holders = Vec(e)
           for (i <- 1 to 1000) {
-            e = system.step { implicit tx =>
+            e = cursor.step { implicit tx =>
               val prev = e
               val next = new MapHolder(i, order.insert())
               order.placeBefore(prev, next)
@@ -214,7 +229,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
             holders :+= e
           }
           Then("the resulting sequence should match (0 to 1000)")
-          val checkPrep = system.step { implicit tx =>
+          val checkPrep = cursor.step { implicit tx =>
             holders.sliding(2, 1).forall {
               case Seq(prev, next) => next.num.compare(prev.num) == prev.entry.compare(next.entry)
             }
@@ -222,7 +237,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           assert(checkPrep)
 
           When("all elements are removed")
-          val szPrep = system.step { implicit tx =>
+          val szPrep = cursor.step { implicit tx =>
             holders.drop(1).foreach { h =>
               h.entry.removeAndDispose()
             }
@@ -232,7 +247,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           assert(szPrep === 1)
 
           // dispose
-          system.step { implicit tx => order.dispose() }
+          cursor.step { implicit tx => order.dispose() }
 
         } finally {
           sysCleanUp(system)

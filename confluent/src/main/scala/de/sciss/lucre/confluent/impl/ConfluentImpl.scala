@@ -1,6 +1,6 @@
 /*
  *  ConfluentImpl.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,31 +14,30 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.stm.{DataStore, Durable}
+import de.sciss.lucre.{Confluent, DataStore, Durable, InMemory}
 
 import scala.concurrent.stm.InTxn
 
 object ConfluentImpl {
   def apply(storeFactory: DataStore.Factory): Confluent = {
     val mainStore   = storeFactory.open("data")
-    // val eventStore  = storeFactory.open("event", overwrite = true)
-    val durable     = Durable(mainStore /* , eventStore */)
-    new System(storeFactory, /* eventStore, */ durable)
+    val durable     = Durable(mainStore)
+    new System(storeFactory, durable)
   }
 
-  private final class System(protected val storeFactory: DataStore.Factory, // protected val eventStore: DataStore,
+  private final class System(protected val storeFactory: DataStore.Factory,
                              val durable: Durable)
-    extends Mixin[Confluent] with Confluent {
+    extends Mixin[Confluent.Txn] with Confluent {
 
-    def inMemory: I = durable.inMemory
+    def inMemory: InMemory = durable.inMemory
 
-    def durableTx (tx: S#Tx): D#Tx = tx.durable
-    def inMemoryTx(tx: S#Tx): I#Tx = tx.inMemory
+    def durableTx (tx: T): D = tx.durable
+//    def inMemoryTx(tx: T): I = tx.inMemory
 
-    protected def wrapRegular(dtx: D#Tx, inputAccess: S#Acc, retroactive: Boolean, cursorCache: Cache[S#Tx],
-                              systemTimeNanos: Long): S#Tx =
+    protected def wrapRegular(dtx: D, inputAccess: Access[T], retroactive: Boolean, cursorCache: Cache[T],
+                              systemTimeNanos: Long): T =
       new RegularTxn(this, dtx, inputAccess, retroactive, cursorCache)
 
-    protected def wrapRoot(peer: InTxn): S#Tx = new RootTxn(this, peer)
+    protected def wrapRoot(peer: InTxn): T = new RootTxn(this, peer)
   }
 }

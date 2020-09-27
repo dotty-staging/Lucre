@@ -1,6 +1,6 @@
 /*
  *  IAction.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,41 +11,40 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-
-import de.sciss.lucre.stm.{Base, Disposable, Form}
+package de.sciss.lucre
+package expr
 
 object IAction {
-  trait Option[S <: Base[S]] extends IAction[S] {
-    def isDefined(implicit tx: S#Tx): Boolean
+  trait Option[T <: Exec[T]] extends IAction[T] {
+    def isDefined(implicit tx: T): Boolean
 
-    def executeIfDefined()(implicit tx: S#Tx): Boolean
+    def executeIfDefined()(implicit tx: T): Boolean
   }
 
-  def empty[S <: Base[S]]: IAction[S] = new Empty
+  def empty[T <: Exec[T]]: IAction[T] = new Empty
 
-  private final class Empty[S <: Base[S]] extends IAction[S] {
-    def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit = ()
+  private final class Empty[T <: Exec[T]] extends IAction[T] {
+    def addSource(tr: ITrigger[T])(implicit tx: T): Unit = ()
 
-    def executeAction()(implicit tx: S#Tx): Unit = ()
+    def executeAction()(implicit tx: T): Unit = ()
 
-    def dispose()(implicit tx: S#Tx): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
   }
 }
-trait IAction[S <: Base[S]] extends Form[S] with Disposable[S#Tx] {
+trait IAction[T <: Exec[T]] extends Form[T] with Disposable[T] {
   /** Directly adds a trigger input to the action.
-    * Actions that do not produce successive events can
-    * simply rewrite this as
-    *
-    * {{{
-    * tr.changed.react { implicit tx => _ => executeAction() }
-    * }}}
-    *
-    * If the action produces successive events, it should
-    * prevent this indirection, as triggered cannot be logically
-    * combined that way.
-    */
-  def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit
+   * Actions that do not produce successive events can
+   * simply rewrite this as
+   *
+   * {{{
+   * tr.changed.react { implicit tx => _ => executeAction() }
+   * }}}
+   *
+   * If the action produces successive events, it should
+   * prevent this indirection, as triggered cannot be logically
+   * combined that way.
+   */
+  def addSource(tr: ITrigger[T])(implicit tx: T): Unit
 
-  def executeAction()(implicit tx: S#Tx): Unit
+  def executeAction()(implicit tx: T): Unit
 }

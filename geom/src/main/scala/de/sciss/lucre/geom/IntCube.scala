@@ -1,6 +1,6 @@
 /*
  *  IntCube.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,8 +14,8 @@
 package de.sciss.lucre
 package geom
 
-import IntSpace.ThreeDim
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.lucre.geom.IntSpace.ThreeDim
+import de.sciss.serial.ConstFormat
 
 /**
  * A three dimensional cube.
@@ -49,9 +49,9 @@ import de.sciss.serial.ImmutableSerializer
  * - 6 (binary 110) - left-bottom-back
  * - 7 (binary 111) - right-bottom-back
  */
-trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] {
-  import ThreeDim.{HyperCube => Cube3D, _}
+trait IntCubeLike extends HyperCube[IntPoint3DLike, IntCube] with QueryShape[BigInt, IntPoint3DLike, IntCube] {
   import Space.bigZero
+  import ThreeDim.{HyperCube => Cube3D, _}
 
   /**
    * X coordinate of the cube's center
@@ -88,7 +88,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     IntCube(cx + dx, cy + dy, cz + dz, e)
   }
 
-  final def contains(point: PointLike): Boolean = {
+  final def containsP(point: PointLike): Boolean = {
     val em1 = extent - 1
     val px  = point.x
     val py  = point.y
@@ -99,7 +99,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     (cz - extent <= pz) && (cz + em1 >= pz)
   }
 
-  final def contains(cube: Cube3D): Boolean = {
+  final def containsH(cube: Cube3D): Boolean = {
     val bcx   = cube.cx
     val bcy   = cube.cy
     val bcz   = cube.cz
@@ -237,7 +237,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     BigInt(dx * dx + dy * dy) + BigInt(dz * dz)
   }
 
-  final def indexOf(a: PointLike): Int = {
+  final def indexOfP(a: PointLike): Int = {
     val ax  = a.x
     val ay  = a.y
     val az  = a.z
@@ -264,7 +264,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     xPos | yPos | zPos
   }
 
-  final def indexOf(b: Cube3D): Int = {
+  final def indexOfH(b: Cube3D): Int = {
     val bcx   = b.cx
     val bcy   = b.cy
     val bcz   = b.cz
@@ -306,9 +306,9 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
     xPos | yPos | zPos
   }
 
-  final def greatestInteresting(a: PointLike, b: PointLike): Cube3D = gi(a.x, a.y, a.z, 1, b)
+  final def greatestInterestingP(a: PointLike, b: PointLike): Cube3D = gi(a.x, a.y, a.z, 1, b)
 
-  final def greatestInteresting(a: Cube3D, b: PointLike): Cube3D = {
+  final def greatestInterestingH(a: Cube3D, b: PointLike): Cube3D = {
     val ae = a.extent
     gi(a.cx - ae, a.cy - ae, a.cz - ae, ae << 1, b)
   }
@@ -388,7 +388,7 @@ trait IntCubeLike extends HyperCube[ThreeDim] with QueryShape[BigInt, ThreeDim] 
 }
 
 object IntCube {
-  implicit def serializer: ImmutableSerializer[IntCube] = IntSpace.ThreeDim.hyperCubeSerializer
+  implicit def format: ConstFormat[IntCube] = IntSpace.ThreeDim.hyperCubeFormat
 }
 final case class IntCube(cx: Int, cy: Int, cz: Int, extent: Int)
   extends IntCubeLike

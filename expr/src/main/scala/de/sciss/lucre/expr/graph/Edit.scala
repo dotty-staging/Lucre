@@ -1,6 +1,6 @@
 /*
  *  Edit.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,18 +13,19 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{Context, IAction, IExpr}
-import de.sciss.lucre.stm.{Sys, UndoManager}
+import de.sciss.lucre.expr.{Context, IAction}
+import de.sciss.lucre.{IExpr, Sys, Txn}
 
 object Edit {
   def apply(): Ex[Edit] = Impl()
 
-  private final class ApplyExpanded[S <: Sys[S]](e: IExpr[S, Edit], act: IAction[S])
-    extends IActionImpl[S] {
+  private final class ApplyExpanded[T <: Txn[T]](e: IExpr[T, Edit], act: IAction[T])
+    extends IActionImpl[T] {
 
-    def executeAction()(implicit tx: S#Tx): Unit = {
-      val undo = e.value.peer[S]
+    def executeAction()(implicit tx: T): Unit = {
+      val undo = e.value.peer[T]
       UndoManager.using(undo) {
         act.executeAction()
       }
@@ -32,23 +33,23 @@ object Edit {
   }
 
   private[lucre] object Empty extends Edit {
-    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S] = UndoManager.dummy
+    private[lucre] def peer[T <: Txn[T]](implicit tx: T): UndoManager[T] = UndoManager.dummy
   }
 
   final case class Apply(e: Ex[Edit], act: Act) extends Act {
     override def productPrefix: String = s"Edit$$Apply"  // serialization
 
-    type Repr[S <: Sys[S]] = IAction[S]
+    type Repr[T <: Txn[T]] = IAction[T]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      new ApplyExpanded(e.expand[S], act.expand[S])
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new ApplyExpanded(e.expand[T], act.expand[T])
   }
 
-  private final class NamedExpanded[S <: Sys[S]](e: IExpr[S, Edit], name: IExpr[S, String], xs: Seq[IAction[S]])
-    extends IActionImpl[S] {
+  private final class NamedExpanded[T <: Txn[T]](e: IExpr[T, Edit], name: IExpr[T, String], xs: Seq[IAction[T]])
+    extends IActionImpl[T] {
 
-    def executeAction()(implicit tx: S#Tx): Unit = {
-      val undo  = e.value.peer[S]
+    def executeAction()(implicit tx: T): Unit = {
+      val undo  = e.value.peer[T]
       val nameV = name.value
       UndoManager.using(undo) {
         undo.capture(nameV) {
@@ -61,26 +62,26 @@ object Edit {
   final case class Named(e: Ex[Edit], name: Ex[String], act: Act*) extends Act {
     override def productPrefix: String = s"Edit$$Named"  // serialization
 
-    type Repr[S <: Sys[S]] = IAction[S]
+    type Repr[T <: Txn[T]] = IAction[T]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      new NamedExpanded(e.expand[S], name.expand[S], act.map(_.expand[S]))
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new NamedExpanded(e.expand[T], name.expand[T], act.map(_.expand[T]))
   }
 
-  private final class Expanded[In <: Sys[In]](in: UndoManager[In], system: In) extends Edit {
-    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S] = {
+  private final class Expanded[In <: Txn[In]](in: UndoManager[In], system: Sys) extends Edit {
+    private[lucre] def peer[T <: Txn[T]](implicit tx: T): UndoManager[T] = {
       require (tx.system == system)
-      in.asInstanceOf[UndoManager[S]]
+      in.asInstanceOf[UndoManager[T]]
     }
   }
 
   private final case class Impl() extends Ex[Edit] {
     override def productPrefix: String = "Edit"  // serialization
 
-    type Repr[S <: Sys[S]] = IExpr[S, Edit]
+    type Repr[T <: Txn[T]] = IExpr[T, Edit]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      new Const.Expanded(new Expanded[S](ctx.undoManager, tx.system))
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new Const.Expanded(new Expanded[T](ctx.undoManager, tx.system))
   }
 
   implicit final class Ops(private val x: Ex[Edit]) extends AnyVal {
@@ -89,5 +90,5 @@ object Edit {
   }
 }
 trait Edit {
-  private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): UndoManager[S]
+  private[lucre] def peer[T <: Txn[T]](implicit tx: T): UndoManager[T]
 }

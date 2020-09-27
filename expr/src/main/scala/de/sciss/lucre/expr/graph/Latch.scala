@@ -1,6 +1,6 @@
 /*
  *  Latch.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,18 +13,17 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
-import de.sciss.lucre.expr.{Context, IExpr, ITrigger, graph}
-import de.sciss.lucre.stm.Sys
-import de.sciss.lucre.stm.TxnLike.peer
+import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.{Context, ITrigger, graph}
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{Caching, IChangeEvent, IExpr, IPull, IPush, ITargets, Txn}
 
 import scala.concurrent.stm.Ref
 
 object Latch {
-  private final class Expanded[S <: Sys[S], A](in: IExpr[S, A], trig: ITrigger[S], tx0: S#Tx)
-                                              (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IChangeEventImpl[S, A] with Caching {
+  private final class Expanded[T <: Txn[T], A](in: IExpr[T, A], trig: ITrigger[T], tx0: T)
+                                              (implicit protected val targets: ITargets[T])
+    extends IExpr[T, A] with IChangeEventImpl[T, A] with Caching {
 
     override def toString: String = s"$in.latch($trig)"
 
@@ -32,27 +31,20 @@ object Latch {
 
     trig.changed.--->(this)(tx0)
 
-    def value(implicit tx: S#Tx): A =
+    def value(implicit tx: T): A =
       IPush.tryPull(this).fold(ref())(_.now)
 
-    def dispose()(implicit tx: S#Tx): Unit =
+    def dispose()(implicit tx: T): Unit =
       trig.changed.-/->(this)
 
-    def changed: IChangeEvent[S, A] = this
+    def changed: IChangeEvent[T, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A =
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A =
       if (phase.isBefore || pull(trig.changed).isEmpty) ref() else {
         val newValue  = in.value
         ref()         = newValue
         newValue
       }
-
-//    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
-//      if (pull(trig.changed).isEmpty) None else {
-//        val newValue  = in.value
-//        val oldValue  = ref.swap(newValue)
-//        if (oldValue == newValue) None else Some(Change(oldValue, newValue))
-//      }
   }
 }
 /** Latches the expression based on the trigger argument.
@@ -61,10 +53,10 @@ object Latch {
   * updated and cached only when a trigger occurs.
   */
 final case class Latch[A](in: Ex[A], trig: Trig) extends Ex[A] {
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    new graph.Latch.Expanded(in.expand[S], trig.expand[S], tx)
+    new graph.Latch.Expanded(in.expand[T], trig.expand[T], tx)
   }
 }

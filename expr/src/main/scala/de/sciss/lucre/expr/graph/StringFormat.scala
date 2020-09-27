@@ -1,6 +1,6 @@
 /*
  *  StringFormat.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,21 +15,20 @@ package de.sciss.lucre.expr.graph
 
 import java.util.Locale
 
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.expr.{Context, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.Context
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{IChangeEvent, IExpr, IPull, ITargets, Txn}
 
 object StringFormat {
-  private final class Expanded[S <: Sys[S]](in: IExpr[S, String], args: Seq[IExpr[S, Any]], tx0: S#Tx)
-                                           (implicit protected val targets: ITargets[S])
-    extends IExpr[S, String] with IChangeEventImpl[S, String] {
+  private final class Expanded[T <: Txn[T]](in: IExpr[T, String], args: Seq[IExpr[T, Any]], tx0: T)
+                                           (implicit protected val targets: ITargets[T])
+    extends IExpr[T, String] with IChangeEventImpl[T, String] {
 
     args.foreach { a =>
       a.changed.--->(this)(tx0)
     }
 
-    def value(implicit tx: S#Tx): String = {
+    def value(implicit tx: T): String = {
       val inV   = in.value
       val argsV = args.map(_.value)
       tryFormat(inV, argsV)
@@ -44,7 +43,7 @@ object StringFormat {
           s"Format error: inV - $m"
       }
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): String = {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): String = {
       val inV   = pull.expr(in)
       val argsV = args.map { arg =>
         pull.expr(arg)
@@ -52,7 +51,7 @@ object StringFormat {
       tryFormat(inV, argsV)
     }
 
-//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[String]] = {
+//    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[String]] = {
 //      val inEvt   = in.changed
 //      val inChOpt = if (pull.contains(inEvt)) pull (inEvt) else None
 //      val inCh    = inChOpt.getOrElse {
@@ -74,12 +73,12 @@ object StringFormat {
 //      if (ch.isSignificant) Some(ch) else None
 //    }
 
-    def dispose()(implicit tx: S#Tx): Unit =
+    def dispose()(implicit tx: T): Unit =
       args.foreach { a =>
         a.changed.-/->(this)
       }
 
-    def changed: IChangeEvent[S, String] = this
+    def changed: IChangeEvent[T, String] = this
   }
 }
 
@@ -344,10 +343,10 @@ object StringFormat {
   * @param args   the arguments to apply to the template
   */
 final case class StringFormat(in: Ex[String], args: Seq[Ex[Any]]) extends Ex[String] {
-  type Repr[S <: Sys[S]] = IExpr[S, String]
+  type Repr[T <: Txn[T]] = IExpr[T, String]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    new StringFormat.Expanded(in.expand[S], args.map(_.expand[S]), tx)
+    new StringFormat.Expanded(in.expand[T], args.map(_.expand[T]), tx)
   }
 }

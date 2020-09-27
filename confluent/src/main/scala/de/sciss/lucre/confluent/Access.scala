@@ -1,6 +1,6 @@
 /*
  *  Access.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,31 +14,33 @@
 package de.sciss.lucre.confluent
 
 import de.sciss.fingertree.FingerTree
-import de.sciss.lucre.stm.TxnLike
+import de.sciss.lucre.TxnLike
 import de.sciss.serial.{DataInput, Writable}
 
 object Access {
-  def root[S <: Sys[S]]: S#Acc /* Access[S] */ = impl.PathImpl.root[S]
-  def info[S <: Sys[S]](access: S#Acc /* Access[S] */)(implicit tx: TxnLike, system: S): VersionInfo =
+  def root[T <: Txn[T]]: Access[T] = impl.PathImpl.root[T]
+  def info[T <: Txn[T]](access: Access[T])(implicit tx: TxnLike, system: Sys): VersionInfo =
     system.versionInfo(access.term)
 
-  def read[S <: Sys[S]](in: DataInput): S#Acc = impl.PathImpl.read(in)
+  def read[T <: Txn[T]](in: DataInput): Access[T] = impl.PathImpl.read(in)
 }
 
-trait Access[S <: Sys[S]] extends Writable with PathLike {
+trait Access[T <: Txn[T]] extends Writable with PathLike {
+  def ! (implicit tx: T): tx.Acc
+
   def mkString(prefix: String, sep: String, suffix: String): String
 
   /** Prepends a single element. */
-  def +:(head: Long): S#Acc
+  def +:(head: Long): Access[T]
 
   /** Appends a single element. */
-  def :+(last: Long): S#Acc
+  def :+(last: Long): Access[T]
 
   /** Drops the last element. */
-  def index: S#Acc
+  def index: Access[T]
 
   /** Drops the head element. */
-  def tail:  S#Acc
+  def tail:  Access[T]
 
   def term: Long
 
@@ -48,43 +50,37 @@ trait Access[S <: Sys[S]] extends Writable with PathLike {
 
   private[confluent] def maxPrefixLength(term: Long): Int
 
-  def seminal: S#Acc
+  def seminal: Access[T]
 
-  private[confluent] def partial: S#Acc
+//  private[confluent] def partial: Access[T]
 
   private[confluent] def tree: FingerTree[(Int, Long), Long] // :-( it's unfortunate having to expose this
 
   /** Splits off last term, returning index (init) and that last term. */
-  def splitIndex: (S#Acc, Long)
+  def splitIndex: (Access[T], Long)
 
   // split an index and term at a given point. that is
   // return the `idx` first elements of the path, and the one
   // following (the one found when applying `idx`).
   // although not enforced, `idx` should be an odd number,
   // greater than zero and less than `size`.
-  private[confluent] def splitAtIndex(idx: Int): (S#Acc, Long)
+  private[confluent] def splitAtIndex(idx: Int): (Access[T], Long)
 
-  private[confluent] def splitAtSum(hash: Long): (S#Acc, Long)
+  private[confluent] def splitAtSum(hash: Long): (Access[T], Long)
 
   /** Replaces the terminal version with the given `term`.
     * If the new term is on the same tree level as the old term,
     * the term is replaced, otherwise a new tree is entered
     * (the new term is appended twice).
     */
-  def addTerm(term: Long)(implicit tx: S#Tx): S#Acc
+  def addTerm(term: Long)(implicit tx: T): Access[T]
 
   // drop initial elements
-  def drop(num: Int): S#Acc
-  def take(num: Int): S#Acc
-
-  def head: Long
-  def last: Long
-
-  def isEmpty:  Boolean
-  def nonEmpty: Boolean
+  def drop(num: Int): Access[T]
+  def take(num: Int): Access[T]
 
   /** Retrieves the version information associated with the access path. */
-  def info(implicit tx: S#Tx): VersionInfo
+  def info(implicit tx: T): VersionInfo
 
   /** Truncates the path to a prefix corresponding to the most recent
     * transaction along the path which has occurred not after a given
@@ -105,5 +101,5 @@ trait Access[S <: Sys[S]] extends Writable with PathLike {
     *
     * @param   timeStamp  the query time (in terms of `System.currentTimeMillis`)
     */
-  def takeUntil(timeStamp: Long)(implicit tx: S#Tx): S#Acc
+  def takeUntil(timeStamp: Long)(implicit tx: T): Access[T]
 }

@@ -1,8 +1,24 @@
+/*
+ *  ThesisPlaneTest.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.InMemory
+import de.sciss.lucre.InMemory
 
 /*
+
+XXX TODO --- the output is different now
+
 Output:
 
 PRE:
@@ -15,17 +31,18 @@ v: 189, u: 200, t: 211, s: 222, r: 233, q: 244, p: 254, o: 265, n: 276, j: 289, 
 object ThesisPlaneTest extends App {
   val m = InMemory()
   type S = InMemory
+  type T = InMemory.Txn
 
   val mSet = Set('a', 'b', 'g', 'm', 'n')
 
   m.step { implicit tx =>
-    type E    = TotalOrder.Set.Entry[S]
-    val tot   = TotalOrder.Set.empty[S](0)
+    type E    = TotalOrder.Set.Entry[T]
+    val tot   = TotalOrder.Set.empty[T](0)
 
     var pre   = Map[Char, E]('a' -> tot.root)
     var post  = Map[Char, E]('a' -> tot.root.appendMax())
 
-    val totM  = TotalOrder.Set.empty[S](0)
+    val totM  = TotalOrder.Set.empty[T](0)
     var preM  = Map[Char, E]('a' -> totM.root)
     var postM = Map[Char, E]('a' -> totM.root.appendMax())
 
@@ -33,27 +50,27 @@ object ThesisPlaneTest extends App {
     var isoPost = Map[Int, E](post('a').tag -> postM('a'))
 
     def insert(parent: Char, child: Char): Unit = {
-//      println(s"Insert $child")
-      val ppre  = pre(parent)
-      val cpre  = ppre.append() // 0.125
-      val cpost = cpre.append() // 0.875
-      pre  += child -> cpre
-      post += child -> cpost
+      //      println(s"Insert $child")
+      val pPre  = pre(parent)
+      val cPre  = pPre.append() // 0.125
+      val cPost = cPre.append() // 0.875
+      pre  += child -> cPre
+      post += child -> cPost
 
       if (mSet.contains(child)) {
         def findPred(full: E): E = isoPre .getOrElse(full.tag, findPred(full.prev.orNull))
         def findSucc(full: E): E = isoPost.getOrElse(full.tag, findSucc(full.next.orNull))
 
-        val cpreMP  = findPred(cpre )
-        val cpostMP = findSucc(cpost)
+        val cPreMP  = findPred(cPre )
+        val cPostMP = findSucc(cPost)
 
-        val cpreM   = cpreMP .append()
-        val cpostM  = cpostMP.prepend()
-        isoPre  += cpre.tag  -> cpreM
-        isoPost += cpost.tag -> cpostM
+        val cPreM   = cPreMP .append()
+        val cPostM  = cPostMP.prepend()
+        isoPre  += cPre.tag  -> cPreM
+        isoPost += cPost.tag -> cPostM
 
-        preM     += child -> cpreM
-        postM    += child -> cpostM
+        preM     += child -> cPreM
+        postM    += child -> cPostM
       }
     }
 
@@ -86,10 +103,10 @@ object ThesisPlaneTest extends App {
     def scale(m: Map[Char, Int], max: Int) = {
       val rel = m.iterator.map { case (k, t) => (k, math.sqrt(t.toDouble / max)) }.toIndexedSeq.sortBy(_._2)
       val dist = rel
-//      rel.zipWithIndex.map { case ((key, t), idx) =>
-//        val adj = (idx.toDouble / (rel.size - 1)) * 0.5 + t * 0.5
-//        (key, adj)
-//      }
+      //      rel.zipWithIndex.map { case ((key, t), idx) =>
+      //        val adj = (idx.toDouble / (rel.size - 1)) * 0.5 + t * 0.5
+      //        (key, adj)
+      //      }
       val str = dist.map {
         case (key, v) => f"$key: ${v*500}%1.0f"
       }

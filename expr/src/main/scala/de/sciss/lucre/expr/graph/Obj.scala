@@ -1,6 +1,6 @@
 /*
  *  Obj.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,19 +13,16 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.adjunct.Adjunct.HasDefault
-import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IChangeGenerator
-import de.sciss.lucre.event.{Caching, IChangeEvent, IPull, IPush, ITargets}
+import de.sciss.lucre.Adjunct.HasDefault
+import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl, ITriggerConsumer}
-import de.sciss.lucre.expr.{BooleanObj, CellView, Context, DoubleObj, DoubleVector, IAction, IControl, IExpr, IntObj, IntVector, LongObj, SpanLikeObj, SpanObj, StringObj}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.expr.{CellView, Context, IAction, IControl}
+import de.sciss.lucre.impl.IChangeGeneratorEvent
+import de.sciss.lucre.{Adjunct, BooleanObj, Caching, Disposable, DoubleObj, DoubleVector, IChangeEvent, IExpr, IPull, IPush, ITargets, IntObj, IntVector, LongObj, ProductWithAdjuncts, SpanLikeObj, SpanObj, StringObj, Sys, Txn, Obj => LObj, Source => LSource}
 import de.sciss.model.Change
-import de.sciss.serial.{DataInput, Serializer}
+import de.sciss.serial.{DataInput, TFormat}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.concurrent.stm.Ref
@@ -52,11 +49,11 @@ object Obj {
   }
 
   // used by Mellite (no transaction available)
-  private[lucre] def wrapH[S <: Sys[S]](peer: stm.Source[S#Tx, stm.Obj[S]], system: S): Obj =
-    new Impl[S](peer, system)
+  private[lucre] def wrapH[T <: Txn[T]](peer: LSource[T, LObj[T]], system: Sys): Obj =
+    new Impl[T](peer, system)
 
-  private[lucre] def wrap[S <: Sys[S]](peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
-    new Impl[S](tx.newHandle(peer), tx.system)
+  private[lucre] def wrap[T <: Txn[T]](peer: LObj[T])(implicit tx: T): Obj =
+    new Impl[T](tx.newHandle(peer), tx.system)
 
   def empty: Ex[Obj] = Const(Empty)
 
@@ -64,55 +61,55 @@ object Obj {
     override def productPrefix: String = s"Obj$$Empty$$"  // serialization
     override def toString     : String = "Obj<empty>"
 
-    type Peer[~ <: Sys[~]] = stm.Obj[~]
+    type Peer[~ <: Txn[~]] = LObj[~]
 
-    private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]] =
+    private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] =
       None // throw new IllegalStateException("Object has not been created yet")
   }
 
-  private final class Impl[In <: Sys[In]](in: stm.Source[In#Tx, stm.Obj[In]], system: In)
-    extends ObjImplBase[In, stm.Obj](in, system) {
+  private final class Impl[In <: Txn[In]](in: LSource[In, LObj[In]], system: Sys)
+    extends ObjImplBase[In, LObj](in, system) {
 
     override def toString: String = s"Obj($in)"
   }
 
-  private abstract class AbstractMakeExpanded[S <: Sys[S]]
-    extends IExpr[S, Obj]
-      with IAction[S]
-      with IChangeGenerator [S, Obj]
-      with ITriggerConsumer [S, Obj]
+  private abstract class AbstractMakeExpanded[T <: Txn[T]]
+    extends IExpr[T, Obj]
+      with IAction[T]
+      with IChangeGeneratorEvent [T, Obj]
+      with ITriggerConsumer [T, Obj]
       with Caching {
 
     // ---- abstract ----
 
-    protected def make()(implicit tx: S#Tx): Obj
+    protected def make()(implicit tx: T): Obj
 
     // ---- impl ----
 
     private[this] val ref = Ref[Obj](Empty)
 
-    final def value(implicit tx: S#Tx): Obj =
+    final def value(implicit tx: T): Obj =
       IPush.tryPull(this).fold(ref())(_.now)
 
-    final def executeAction()(implicit tx: S#Tx): Unit =
+    final def executeAction()(implicit tx: T): Unit =
       trigReceived() // .foreach(fire) --- we don't need to fire, there is nobody listening;
 
-    final protected def trigReceived()(implicit tx: S#Tx): Obj = {
+    final protected def trigReceived()(implicit tx: T): Obj = {
       val now = make()
       ref() = now
       now
     }
 
-    protected def valueBefore()(implicit tx: S#Tx): Obj = ref()
+    protected def valueBefore()(implicit tx: T): Obj = ref()
 
-    final def changed: IChangeEvent[S, Obj] = this
+    final def changed: IChangeEvent[T, Obj] = this
   }
 
-  private final class MakeExpanded[S <: Sys[S], A](ex: IExpr[S, A])(implicit protected val targets: ITargets[S],
+  private final class MakeExpanded[T <: Txn[T], A](ex: IExpr[T, A])(implicit protected val targets: ITargets[T],
                                                                     cm: CanMake[A])
-    extends AbstractMakeExpanded[S] {
+    extends AbstractMakeExpanded[T] {
 
-    protected def make()(implicit tx: S#Tx): Obj = {
+    protected def make()(implicit tx: T): Obj = {
       val v     = ex.value
       val peer  = cm.toObj(v)
       wrap(peer)
@@ -122,8 +119,10 @@ object Obj {
   object Make {
     def apply[A](ex: Ex[A])(implicit cm: CanMake[A]): Make = Impl(ex)
 
-    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) extends Make with Act with ProductWithAdjuncts {
-      type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
+    private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) 
+      extends Make with Act with ProductWithAdjuncts {
+      
+      type Repr[T <: Txn[T]] = IExpr[T, Obj] with IAction[T]
 
       override def productPrefix: String = s"Obj$$Make" // serialization
 
@@ -131,9 +130,9 @@ object Obj {
 
       def adjuncts: List[Adjunct] = cm :: Nil
 
-      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
         import ctx.targets
-        new MakeExpanded(ex.expand[S])
+        new MakeExpanded(ex.expand[T])
       }
     }
   }
@@ -157,64 +156,63 @@ object Obj {
     implicit object obj extends Bridge[Obj] with HasDefault[Obj] with Adjunct.Factory {
       final val id = 1005
 
-      type Repr[S <: Sys[S]] = stm.Obj[S]
+      type Repr[T <: Txn[T]] = LObj[T]
 
       def defaultValue: Obj = Empty
 
       def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
-      def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[Obj]] =
-        new ObjCellViewVarImpl[S, stm.Obj, Obj](tx.newHandle(obj), key) {
-          protected def lower(peer: stm.Obj[S])(implicit tx: S#Tx): Obj =
+      def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[Obj]] =
+        new ObjCellViewVarImpl[T, LObj, Obj](tx.newHandle(obj), key) {
+          protected def lower(peer: LObj[T])(implicit tx: T): Obj =
             wrap(peer)
         }
 
-      def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[Obj]] = {
-        new AbstractCtxCellView[S, Obj](context.attr, key) {
-          protected def tryParseValue(value: Any)(implicit tx: S#Tx): Option[Obj] = value match {
+      def contextCellView[T <: Txn[T]](key: String)(implicit tx: T, context: Context[T]): CellView[T, Option[Obj]] = {
+        new AbstractCtxCellView[T, Obj](context.attr, key) {
+          protected def tryParseValue(value: Any)(implicit tx: T): Option[Obj] = value match {
             case obj: Obj => Some(obj)
             case _        => None
           }
 
-          protected def tryParseObj(peer: stm.Obj[S])(implicit tx: S#Tx): Option[Obj] =
+          protected def tryParseObj(peer: LObj[T])(implicit tx: T): Option[Obj] =
             Some(wrap(peer))
         }
       }
 
-      def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[Obj] =
+      def cellValue[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): Option[Obj] =
         obj.attr.get(key).map(wrap(_))
 
-      def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[Obj] =
+      def tryParseObj[T <: Txn[T]](obj: LObj[T])(implicit tx: T): Option[Obj] =
         Some(wrap(obj))
     }
   }
   trait Bridge[A] extends Adjunct {
-    /** Creates a bidirectional view between `stm.Obj` and the expression side representation type `A`.
+    /** Creates a bidirectional view between `LObj` and the expression side representation type `A`.
       * If possible, implementations should look at `UndoManager.find` when updating values.
       */
-    def cellView[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): CellView.Var[S#Tx, Option[A]]
+    def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[A]]
 
     /** Creates a unidirectional view between a context's attribute or self object and the expression side
       * representation type `A`.
       */
-    def contextCellView[S <: Sys[S]](key: String)(implicit tx: S#Tx, context: Context[S]): CellView[S#Tx, Option[A]]
+    def contextCellView[T <: Txn[T]](key: String)(implicit tx: T, context: Context[T]): CellView[T, Option[A]]
 
-    def cellValue[S <: Sys[S]](obj: stm.Obj[S], key: String)(implicit tx: S#Tx): Option[A]
+    def cellValue[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): Option[A]
 
-    def tryParseObj[S <: Sys[S]](obj: stm.Obj[S])(implicit tx: S#Tx): Option[A]
+    def tryParseObj[T <: Txn[T]](obj: LObj[T])(implicit tx: T): Option[A]
   }
 
   object Source {
     implicit object obj extends Source[Obj] with Adjunct.Factory {
       final val id = 1006
 
-      type Repr[S <: Sys[S]] = stm.Obj[S]
+      type Repr[T <: Txn[T]] = LObj[T]
 
-      def toObj[S <: Sys[S]](value: Obj)(implicit tx: S#Tx): stm.Obj[S] =
+      def toObj[T <: Txn[T]](value: Obj)(implicit tx: T): LObj[T] =
         value.peer.getOrElse(throw new IllegalStateException("Object has not yet been instantiated"))
 
-      implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, stm.Obj[S]] =
-        stm.Obj.serializer
+      implicit def reprTFormat[T <: Txn[T]]: TFormat[T, LObj[T]] = LObj.format
 
       def readIdentifiedAdjunct(in: DataInput): Adjunct = this
     }
@@ -222,15 +220,15 @@ object Obj {
     implicit def canMake[A](implicit peer: CanMake[A]): Source[A] = peer
   }
 
-  /** An `Obj.Source` either has an `stm.Obj` peer, or it can make one.
+  /** An `Obj.Source` either has an `LObj` peer, or it can make one.
     * The latter is represented by sub-trait `CanMake`.
     */
   trait Source[-A] extends Adjunct {
-    type Repr[S <: Sys[S]] <: stm.Obj[S]
+    type Repr[T <: Txn[T]] <: LObj[T]
 
-    def toObj[S <: Sys[S]](value: A)(implicit tx: S#Tx): Repr[S]
+    def toObj[T <: Txn[T]](value: A)(implicit tx: T): Repr[T]
 
-    implicit def reprSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Repr[S]]
+    implicit def reprTFormat[T <: Txn[T]]: TFormat[T, Repr[T]]
   }
 
   object CanMake {
@@ -246,31 +244,31 @@ object Obj {
   }
   trait CanMake[A] extends Source[A]
 
-  private final class AttrExpanded[S <: Sys[S], A](obj: IExpr[S, Obj], key: String, tx0: S#Tx)
-                                                  (implicit protected val targets: ITargets[S], bridge: Bridge[A])
-    extends IExpr[S, Option[A]] with IChangeGenerator[S, Option[A]] {
+  private final class AttrExpanded[T <: Txn[T], A](obj: IExpr[T, Obj], key: String, tx0: T)
+                                                  (implicit protected val targets: ITargets[T], bridge: Bridge[A])
+    extends IExpr[T, Option[A]] with IChangeGeneratorEvent[T, Option[A]] {
 
     override def toString: String = s"graph.Obj.AttrExpanded($obj, $key)@${hashCode().toHexString}"
 
-    private[this] val viewRef   = Ref(Option.empty[CellView.Var[S#Tx, Option[A]]])
+    private[this] val viewRef   = Ref(Option.empty[CellView.Var[T, Option[A]]])
     private[this] val valueRef  = Ref.make[Option[A]]()
-    private[this] val obsRef    = Ref.make[Disposable[S#Tx]]()
+    private[this] val obsRef    = Ref.make[Disposable[T]]()
     private[this] val objObs    = obj.changed.react { implicit tx => upd =>
       setObj(upd.now, init = false)
     } (tx0)
 
-    private def setNewValue(now: Option[A])(implicit tx: S#Tx): Unit = {
+    private def setNewValue(now: Option[A])(implicit tx: T): Unit = {
       val before = valueRef.swap(now)
       if (before != now) {
         fire(Change(before, now))
       }
     }
 
-    private def setObj(newObj: Obj, init: Boolean)(implicit tx: S#Tx): Unit = {
+    private def setObj(newObj: Obj, init: Boolean)(implicit tx: T): Unit = {
       // println(s"newObj = $newObj, bridge = $bridge, key = $key")
       val newView = newObj.peer.map(p => bridge.cellView(p, key))
       viewRef()   = newView
-      val obsNew = newView.fold[Disposable[S#Tx]](Disposable.empty)(_.react { implicit tx => now =>
+      val obsNew = newView.fold[Disposable[T]](Disposable.empty)(_.react { implicit tx => now =>
         setNewValue(now)
       })
       val now: Option[A] = newView.flatMap(_.apply())
@@ -286,14 +284,14 @@ object Obj {
     // ---- init ----
     setObj(obj.value(tx0), init = true)(tx0)
 
-    def value(implicit tx: S#Tx): Option[A] = viewRef().flatMap(_.apply())
+    def value(implicit tx: T): Option[A] = viewRef().flatMap(_.apply())
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): Option[A] =
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): Option[A] =
       pull.resolveExpr(this)
 
-    def changed: IChangeEvent[S, Option[A]] = this
+    def changed: IChangeEvent[T, Option[A]] = this
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    def dispose()(implicit tx: T): Unit = {
       objObs  .dispose()
       obsRef().dispose()
     }
@@ -305,10 +303,10 @@ object Obj {
 
       override def productPrefix: String = s"Obj$$Attr$$Update"  // serialization
 
-      type Repr[S <: Sys[S]] = IControl[S]
+      type Repr[T <: Txn[T]] = IControl[T]
 
-      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-        val peer = new ExpandedAttrUpdateIn[S, A](obj.expand[S], key, value.expand[S], tx)
+      protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+        val peer = new ExpandedAttrUpdateIn[T, A](obj.expand[T], key, value.expand[T], tx)
         IControl.wrap(peer)
       }
 
@@ -319,10 +317,10 @@ object Obj {
 
       override def productPrefix: String = s"Obj$$Attr$$Set"  // serialization
 
-      type Repr[S <: Sys[S]] = IAction[S]
+      type Repr[T <: Txn[T]] = IAction[T]
 
-      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-        new ExpandedAttrSetIn[S, A](obj.expand[S], key, value.expand[S], tx)
+      protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+        new ExpandedAttrSetIn[T, A](obj.expand[T], key, value.expand[T], tx)
 
       override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
@@ -332,13 +330,13 @@ object Obj {
   final case class Attr[A](obj: Ex[Obj], key: String)(implicit val bridge: Bridge[A])
     extends Ex[Option[A]] with _Attr.Like[A] with ProductWithAdjuncts {
 
-    type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
+    type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
 
     override def productPrefix: String = s"Obj$$Attr" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new AttrExpanded(obj.expand[S], key, tx)
+      new AttrExpanded(obj.expand[T], key, tx)
     }
 
     def update(in: Ex[A]): Control  = Obj.Attr.Update (obj, key, in)
@@ -347,14 +345,14 @@ object Obj {
     def adjuncts: List[Adjunct] = bridge :: Nil
   }
 
-  private final class CopyExpanded[S <: Sys[S]](ex: IExpr[S, Obj])(implicit protected val targets: ITargets[S])
-    extends AbstractMakeExpanded[S] {
+  private final class CopyExpanded[T <: Txn[T]](ex: IExpr[T, Obj])(implicit protected val targets: ITargets[T])
+    extends AbstractMakeExpanded[T] {
 
-    protected def make()(implicit tx: S#Tx): Obj = {
+    protected def make()(implicit tx: T): Obj = {
       val v = ex.value
       v.peer match {
         case Some(orig) =>
-          val cpy: stm.Obj[S] = stm.Obj.copy(orig)
+          val cpy: LObj[T] = LObj.copy(orig)
           wrap(cpy)
 
         case None => Empty
@@ -368,15 +366,15 @@ object Obj {
     private final case class Impl(obj: Ex[Obj])
       extends Copy with Act {
 
-      type Repr[S <: Sys[S]] = IExpr[S, Obj] with IAction[S]
+      type Repr[T <: Txn[T]] = IExpr[T, Obj] with IAction[T]
 
       def make: Act = this
 
       override def productPrefix: String = s"Obj$$Copy" // serialization
 
-      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
         import ctx.targets
-        new CopyExpanded[S](obj.expand[S])
+        new CopyExpanded[T](obj.expand[T])
       }
     }
   }
@@ -388,11 +386,11 @@ object Obj {
 
     // XXX TODO --- we should use cell-views instead, because this way we won't notice
     // changes to the value representation (e.g. a `StringObj.Var` contents change)
-    private final class Expanded[S <: Sys[S], A](in: IExpr[S, Obj], tx0: S#Tx)
-                                                           (implicit targets: ITargets[S], bridge: Obj.Bridge[A])
-      extends MappedIExpr[S, Obj, Option[A]](in, tx0) {
+    private final class Expanded[T <: Txn[T], A](in: IExpr[T, Obj], tx0: T)
+                                                           (implicit targets: ITargets[T], bridge: Obj.Bridge[A])
+      extends MappedIExpr[T, Obj, Option[A]](in, tx0) {
 
-      protected def mapValue(inValue: Obj)(implicit tx: S#Tx): Option[A] =
+      protected def mapValue(inValue: Obj)(implicit tx: T): Option[A] =
         inValue.peer.flatMap(bridge.tryParseObj(_))
     }
 
@@ -401,21 +399,21 @@ object Obj {
 
       override def toString: String = s"$obj.as[$bridge]"
 
-      type Repr[S <: Sys[S]] = IExpr[S, Option[A]]
+      type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
 
       def adjuncts: List[Adjunct] = bridge :: Nil
 
       override def productPrefix: String = s"Obj$$As" // serialization
 
-      protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+      protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
         import ctx.targets
-        new Expanded[S, A](obj.expand[S], tx)
+        new Expanded[T, A](obj.expand[T], tx)
       }
     }
   }
 }
 trait Obj {
-  type Peer[~ <: Sys[~]] <: stm.Obj[~]
+  type Peer[~ <: Txn[~]] <: LObj[~]
 
-  private[lucre] def peer[S <: Sys[S]](implicit tx: S#Tx): Option[Peer[S]]
+  private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]]
 }

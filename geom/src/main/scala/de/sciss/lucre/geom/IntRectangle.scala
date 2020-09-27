@@ -1,6 +1,6 @@
 /*
  *  IntRectangle.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,7 +15,7 @@ package de.sciss.lucre
 package geom
 
 /** A 2D rectangular query shape. */
-trait IntRectangleLike extends QueryShape[Long, IntSpace.TwoDim] {
+trait IntRectangleLike extends QueryShape[Long, IntPoint2DLike, IntSquare] {
   import IntSpace.TwoDim.{HyperCube => Square, _}
 
   def left : Int
@@ -26,7 +26,7 @@ trait IntRectangleLike extends QueryShape[Long, IntSpace.TwoDim] {
   final def bottom: Int = top  + (height - 1)
   final def right : Int = left + (width - 1)
 
-  def contains(point: PointLike): Boolean = {
+  def containsP(point: PointLike): Boolean = {
     val px = point.x
     val py = point.y
     left <= px && right >= px && top <= py && bottom >= py

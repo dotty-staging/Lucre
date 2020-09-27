@@ -1,6 +1,6 @@
 /*
  *  LongDistanceMeasure2D.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -22,8 +22,8 @@ object LongDistanceMeasure2D {
   import DistanceMeasure.Ops
 
   private type Sqr  = BigInt
-  private type ML   = Ops[Long, TwoDim]
-  private type MS   = Ops[Sqr, TwoDim]
+  private type ML   = Ops[Long, LongPoint2DLike, LongSquare]
+  private type MS   = Ops[Sqr , LongPoint2DLike, LongSquare]
   private val MaxDistance: Sqr = {
     val n = BigInt(Long.MaxValue)
     n * n
@@ -209,9 +209,9 @@ object LongDistanceMeasure2D {
 
     override def toString = s"$underlying.clip($quad)"
 
-    final def distance   (a: PointLike, b: PointLike): M = if (quad.contains(b)) underlying.distance   (a, b) else maxValue
-    final def minDistance(a: PointLike, b: Square   ): M = if (quad.contains(b)) underlying.minDistance(a, b) else maxValue
-    final def maxDistance(a: PointLike, b: Square   ): M = if (quad.contains(b)) underlying.maxDistance(a, b) else maxValue
+    final def distance   (a: PointLike, b: PointLike): M = if (quad.containsP(b)) underlying.distance   (a, b) else maxValue
+    final def minDistance(a: PointLike, b: Square   ): M = if (quad.containsH(b)) underlying.minDistance(a, b) else maxValue
+    final def maxDistance(a: PointLike, b: Square   ): M = if (quad.containsH(b)) underlying.maxDistance(a, b) else maxValue
   }
 
   private final class LongClip(protected val underlying: LongImpl, protected val quad: Square)
@@ -425,7 +425,7 @@ object LongDistanceMeasure2D {
     }
   }
 
-  private sealed trait Impl[M] extends Ops[M, TwoDim] {
+  private sealed trait Impl[M] extends Ops[M, LongPoint2DLike, LongSquare] {
     def zeroValue: M
 
     //      final def filter( p: PointLike ) : Boolean = new Filter( this, p )

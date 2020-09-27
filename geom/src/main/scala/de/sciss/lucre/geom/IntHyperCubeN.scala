@@ -1,6 +1,6 @@
 /*
  *  IntHyperCubeN.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,11 +13,16 @@
 
 package de.sciss.lucre.geom
 
-import collection.immutable.{IndexedSeq => Vec}
-import IntSpace.NDim
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.ConstFormat
 
-sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, NDim] {
+import scala.collection.immutable.{IndexedSeq => Vec}
+
+sealed trait IntHyperCubeNLike 
+  extends HyperCube[IntPointNLike, IntHyperCubeN] with QueryShape[BigInt, IntPointNLike, IntHyperCubeN] {
+  
+  type P = IntPointNLike
+  type H = IntHyperCubeN
+  
   import Space.bigZero
 
   def dim: Int
@@ -27,13 +32,13 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
   /** The extent is the half side length of the cube */
   def extent: Int
 
-  final def orthant(idx: Int): NDim#HyperCube = {
+  final def orthant(idx: Int): H = {
     val e = extent >> 1
     val d = Vector.tabulate(dim)(i => if ((idx & (1 << i)) == 0) -e else e)
     IntHyperCubeN(d, e)
   }
 
-  final def contains(point: NDim#PointLike): Boolean = {
+  final def containsP(point: P): Boolean = {
     val em1 = extent - 1
     var i = 0; while (i < dim) {
       val cc = center(i)
@@ -44,7 +49,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     true
   }
 
-  final def contains(cube: NDim#HyperCube): Boolean = {
+  final def containsH(cube: H): Boolean = {
     val be    = cube.extent
     val bem1  = be - 1
     val em1   = extent - 1
@@ -65,7 +70,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
 
   // -- QueryShape --
 
-  final def overlapArea(b: NDim#HyperCube): BigInt = {
+  final def overlapArea(b: H): BigInt = {
     val be    = b.extent
     val bem1  = be - 1
     val em1   = extent - 1
@@ -85,21 +90,21 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     prod
   }
 
-  final def isAreaGreater(a: NDim#HyperCube, b: BigInt): Boolean = a.area > b
+  final def isAreaGreater(a: H, b: BigInt): Boolean = a.area > b
 
   final def isAreaNonEmpty(area: BigInt): Boolean = area > bigZero
 
-  final def minDistance(point: NDim#PointLike): Double =
+  final def minDistance(point: P): Double =
     math.sqrt(minDistanceSq(point).toDouble) // or use this: http://www.merriampark.com/bigsqrt.htm ?
 
-  final def maxDistance(point: NDim#PointLike): Double =
+  final def maxDistance(point: P): Double =
     math.sqrt(maxDistanceSq(point).toDouble)
 
   /** The squared (euclidean) distance of the closest of the cube's corners
     * or sides to the point, if the point is outside the cube,
     * or zero, if the point is contained
     */
-  final def minDistanceSq(point: NDim#PointLike): BigInt = {
+  final def minDistanceSq(point: P): BigInt = {
     val em1     = extent - 1
     var sumSqr  = bigZero
 
@@ -125,7 +130,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     * This is the distance (squared) to the corner which is the furthest from
     * the `point`, no matter if it lies within the hyper-cube or not.
     */
-  final def maxDistanceSq(point: NDim#PointLike): BigInt = {
+  final def maxDistanceSq(point: P): BigInt = {
     val em1     = extent - 1
     var sumSqr  = bigZero
 
@@ -146,7 +151,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     sumSqr
   }
 
-  final def indexOf( a: NDim#PointLike ) : Int = {
+  final def indexOfP(a: P) : Int = {
     val em1 = extent - 1
     var res = 0
 
@@ -165,7 +170,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     res
   }
 
-  final def indexOf(b: NDim#HyperCube): Int = {
+  final def indexOfH(b: H): Int = {
     val be    = b.extent
     val bem1  = be - 1
     val em1   = extent - 1
@@ -190,15 +195,15 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
     res
   }
 
-  final def greatestInteresting(a: NDim#PointLike, b: NDim#PointLike): NDim#HyperCube = gi(a.components, 1, b)
+  final def greatestInterestingP(a: P, b: P): H = gi(a.components, 1, b)
 
-  final def greatestInteresting(a: NDim#HyperCube, b: NDim#PointLike): NDim#HyperCube = {
+  final def greatestInterestingH(a: H, b: P): H = {
     val ae = a.extent
     val ac = a.components.map(_ - ae)
     gi(ac, ae << 1, b)
   }
 
-  private[this] def gi(a: Vec[Int], aSize: Int, b: NDim#PointLike): NDim#HyperCube = {
+  private[this] def gi(a: Vec[Int], aSize: Int, b: P): H = {
     var mmc = Int.MaxValue
     var mi  = Int.MaxValue
     var i = 0; while (i < dim) {
@@ -241,7 +246,7 @@ sealed trait IntHyperCubeNLike extends HyperCube[NDim] with QueryShape[BigInt, N
 }
 
 object IntHyperCubeN {
-  implicit def serializer: ImmutableSerializer[IntHyperCubeN] = IntSpace.NDim.hyperCubeSerializer
+  implicit def format: ConstFormat[IntHyperCubeN] = IntSpace.NDim.hyperCubeFormat
 }
 final case class IntHyperCubeN(components: Vec[Int], extent: Int) extends IntHyperCubeNLike {
   def center(idx: Int): Int = components(idx)

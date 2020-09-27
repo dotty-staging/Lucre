@@ -1,6 +1,6 @@
 /*
  *  IntRectangle.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,12 +14,13 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.lucre.geom.IntSpace.NDim
-
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 /** An n-dimensional rectangular query shape. */
-trait IntHyperRectangleNLike extends QueryShape[BigInt, NDim] {
+trait IntHyperRectangleNLike extends QueryShape[BigInt, IntPointNLike, IntHyperCubeN] {
+  type P = IntPointNLike
+  type H = IntHyperCubeN
+  
   def dim: Int
 
   def min(dim: Int): Int
@@ -29,7 +30,7 @@ trait IntHyperRectangleNLike extends QueryShape[BigInt, NDim] {
     */
   def max(dim: Int): Int
 
-  final def contains(point: NDim#PointLike): Boolean = {
+  final def containsP(point: P): Boolean = {
     var i = 0
     while (i < dim) {
       val pc = point(i)
@@ -39,7 +40,7 @@ trait IntHyperRectangleNLike extends QueryShape[BigInt, NDim] {
     true
   }
 
-  final def overlapArea(b: NDim#HyperCube): BigInt = {
+  final def overlapArea(b: H): BigInt = {
     val be    = b.extent
     val bem1  = be - 1
     var prod  = Space.bigOne
@@ -58,7 +59,7 @@ trait IntHyperRectangleNLike extends QueryShape[BigInt, NDim] {
     prod
   }
 
-  final def isAreaGreater(a: NDim#HyperCube, b: BigInt): Boolean = a.area > b
+  final def isAreaGreater(a: H, b: BigInt): Boolean = a.area > b
 
   final def isAreaNonEmpty(area: BigInt): Boolean = area > Space.bigZero
 }

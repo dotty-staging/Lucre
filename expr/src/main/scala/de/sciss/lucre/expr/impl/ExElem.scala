@@ -1,6 +1,6 @@
 /*
  *  ExElem.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,15 +11,15 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr.impl
+package de.sciss.lucre
+package expr
+package impl
 
 import java.io.File
 import java.util
 
-import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
 import de.sciss.lucre.expr.graph.Const
-import de.sciss.lucre.stm.Base
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
 import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -34,11 +34,11 @@ object ExElem {
     var count = 0
   }
 
-  def makeVar[S <: Base[S], A](id: S#Id)(implicit tx: S#Tx): S#Var[A] =
-    tx.newVar[A](id, null.asInstanceOf[A])(serializer)
+  def makeVar[T <: Exec[T], A](id: Ident[T])(implicit tx: T): Var[T, A] =
+    id.newVar[A](null.asInstanceOf[A])(tx, format)
 
-  def readVar[S <: Base[S], A](id: S#Id, in: DataInput)(implicit tx: S#Tx): S#Var[A] =
-    tx.readVar[A](id, in)(serializer)
+  def readVar[T <: Exec[T], A](id: Ident[T], in: DataInput): Var[T, A] =
+    id.readVar[A](in)(format)
 
   def read[A](in: DataInput): A = read(in, null).asInstanceOf[A]
 
@@ -273,16 +273,16 @@ object ExElem {
     ref
   }
 
-  implicit def serializer   [A]: ImmutableSerializer[A]       = Ser   .asInstanceOf[ImmutableSerializer[A]]
-  implicit def vecSerializer[A]: ImmutableSerializer[Vec[A]]  = VecSer.asInstanceOf[ImmutableSerializer[Vec[A]]]
-  implicit def setSerializer[A]: ImmutableSerializer[Set[A]]  = SetSer.asInstanceOf[ImmutableSerializer[Set[A]]]
+  implicit def format   [A]: ConstFormat[A]       = Fmt   .asInstanceOf[ConstFormat[A]]
+  implicit def vecFormat[A]: ConstFormat[Vec[A]]  = VecFmt.asInstanceOf[ConstFormat[Vec[A]]]
+  implicit def setFormat[A]: ConstFormat[Set[A]]  = SetFmt.asInstanceOf[ConstFormat[Set[A]]]
 
-  private object Ser extends ImmutableSerializer[Any] {
+  private object Fmt extends ConstFormat[Any] {
     def write(v: Any, out: DataOutput): Unit  = ExElem.write(v, out)
     def read          (in: DataInput ): Any   = ExElem.read(in)
   }
 
-  private abstract class CollectionSer[That <: Traversable[Any]] extends ImmutableSerializer[That] {
+  private abstract class CollectionFmt[That <: Traversable[Any]] extends ConstFormat[That] {
     def newBuilder: mutable.Builder[Any, That]
     def empty: That
 
@@ -312,12 +312,12 @@ object ExElem {
     }
   }
 
-  private object VecSer extends CollectionSer[Vec[Any]] {
+  private object VecFmt extends CollectionFmt[Vec[Any]] {
     def newBuilder: mutable.Builder[Any, Vec[Any]] = Vector.newBuilder
     def empty: Vec[Any] = Vector.empty
   }
 
-  private object SetSer extends CollectionSer[Set[Any]] {
+  private object SetFmt extends CollectionFmt[Set[Any]] {
     def newBuilder: mutable.Builder[Any, Set[Any]] = Set.newBuilder
     def empty: Set[Any] = Set.empty
   }

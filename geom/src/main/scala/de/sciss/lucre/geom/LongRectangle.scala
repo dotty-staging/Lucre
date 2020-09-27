@@ -1,6 +1,6 @@
 /*
  *  LongRectangle.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,7 +15,7 @@ package de.sciss.lucre
 package geom
 
 /** A 2D rectangular query shape. */
-trait LongRectangleLike extends QueryShape[BigInt, LongSpace.TwoDim] {
+trait LongRectangleLike extends QueryShape[BigInt, LongPoint2DLike, LongSquare] {
   import LongSpace.TwoDim.{HyperCube => Square, _}
   import Space.bigZero
 
@@ -27,7 +27,7 @@ trait LongRectangleLike extends QueryShape[BigInt, LongSpace.TwoDim] {
   final def bottom: Long = top  + (height - 1)
   final def right : Long = left + (width  - 1)
 
-  def contains(point: PointLike): Boolean = {
+  def containsP(point: PointLike): Boolean = {
     val px = point.x
     val py = point.y
     left <= px && right >= px && top <= py && bottom >= py

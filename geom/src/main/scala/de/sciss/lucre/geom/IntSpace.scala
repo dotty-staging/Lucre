@@ -1,6 +1,6 @@
 /*
  *  IntSpace.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,12 +14,12 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
 import scala.annotation.tailrec
 
 object IntSpace {
-  sealed trait TwoDim extends Space[TwoDim] {
+  sealed trait TwoDim extends Space[IntPoint2DLike, IntSquare] {
     type PointLike      = IntPoint2DLike
     type Point          = IntPoint2D
     type HyperCubeLike  = IntSquareLike
@@ -42,7 +42,7 @@ object IntSpace {
       }
     }
 
-    implicit object pointSerializer extends ImmutableSerializer[IntPoint2D] {
+    implicit object pointFormat extends ConstFormat[IntPoint2D] {
       def read(in: DataInput): IntPoint2D = {
         val x = in.readInt()
         val y = in.readInt()
@@ -55,7 +55,7 @@ object IntSpace {
       }
     }
 
-    implicit object hyperCubeSerializer extends ImmutableSerializer[IntSquare] {
+    implicit object hyperCubeFormat extends ConstFormat[IntSquare] {
       def read(in: DataInput): IntSquare = {
         val cx = in.readInt()
         val cy = in.readInt()
@@ -71,7 +71,7 @@ object IntSpace {
     }
   }
 
-  sealed trait ThreeDim extends Space[ThreeDim] {
+  sealed trait ThreeDim extends Space[IntPoint3DLike, IntCube] {
     type PointLike      = IntPoint3DLike
     type Point          = IntPoint3D
     type HyperCubeLike  = IntCubeLike
@@ -98,7 +98,7 @@ object IntSpace {
       }
     }
 
-    implicit object pointSerializer extends ImmutableSerializer[IntPoint3D] {
+    implicit object pointFormat extends ConstFormat[IntPoint3D] {
       def read(in: DataInput): IntPoint3D = {
         val x = in.readInt()
         val y = in.readInt()
@@ -113,7 +113,7 @@ object IntSpace {
       }
     }
 
-    implicit object hyperCubeSerializer extends ImmutableSerializer[IntCube] {
+    implicit object hyperCubeFormat extends ConstFormat[IntCube] {
       def read(in: DataInput): IntCube = {
         val cx  = in.readInt()
         val cy  = in.readInt()
@@ -146,7 +146,7 @@ object IntSpace {
       }
     }
 
-    implicit object pointSerializer extends ImmutableSerializer[NDim#Point] {
+    implicit object pointFormat extends ConstFormat[NDim#Point] {
       def write(v: NDim#Point, out: DataOutput): Unit = {
         val c = v.components
         out.writeShort(c.size)
@@ -154,13 +154,13 @@ object IntSpace {
       }
 
       def read(in: DataInput): NDim#Point = {
-        val sz = in.readShort()
+        val sz = in.readShort().toInt
         val c = Vector.fill(sz)(in.readInt())
         IntPointN(c)
       }
     }
 
-    implicit object hyperCubeSerializer extends ImmutableSerializer[NDim#HyperCube] {
+    implicit object hyperCubeFormat extends ConstFormat[NDim#HyperCube] {
       def write(v: NDim#HyperCube, out: DataOutput): Unit = {
         val c = v.components
         out.writeShort(c.size)
@@ -169,14 +169,14 @@ object IntSpace {
       }
 
       def read(in: DataInput): NDim#HyperCube = {
-        val sz  = in.readShort()
+        val sz  = in.readShort().toInt
         val c   = Vector.fill(sz)(in.readInt())
         val ext = in.readInt()
         IntHyperCubeN(c, ext)
       }
     }
   }
-  final case class NDim(dim: Int) extends Space[NDim] {
+  final case class NDim(dim: Int) extends Space[IntPointNLike, IntHyperCubeN] {
     space =>
 
     type PointLike      = IntPointNLike
@@ -186,8 +186,8 @@ object IntSpace {
     val maxPoint        = IntPointN(Vector.fill(dim)(Int.MaxValue))
 
     def lexicalOrder       : Ordering[PointLike]            = NDim.lexicalOrder
-    def pointSerializer    : ImmutableSerializer[Point]     = NDim.pointSerializer
-    def hyperCubeSerializer: ImmutableSerializer[HyperCube] = NDim.hyperCubeSerializer
+    def pointFormat    : ConstFormat[Point]      = NDim.pointFormat
+    def hyperCubeFormat: ConstFormat[HyperCube]  = NDim.hyperCubeFormat
   }
 
   /** A helper method which efficiently calculates the unique integer in an interval [a, b] which has

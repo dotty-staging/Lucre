@@ -1,6 +1,6 @@
 /*
  *  Const.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,27 +14,27 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.event.{IChangeEvent, IDummy}
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.impl.IDummyEvent
+import de.sciss.lucre.{Exec, IChangeEvent, IExpr, Txn}
 
 object Const {
-  private[sciss] final class Expanded[S <: Base[S], A](peer: A)
-    extends IExpr[S, A] {
+  private[sciss] final class Expanded[T <: Exec[T], A](peer: A)
+    extends IExpr[T, A] {
 
     override def toString: String = peer.toString
 
-    def changed: IChangeEvent[S, A] = IDummy.applyChange
+    def changed: IChangeEvent[T, A] = IDummyEvent.applyChange
 
-    def value(implicit tx: S#Tx): A = peer
+    def value(implicit tx: T): A = peer
 
-    def dispose()(implicit tx: S#Tx): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
   }
 }
 final case class Const[A](value: A) extends Ex[A] {
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-    new Const.Expanded[S, A](value)
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+    new Const.Expanded[T, A](value)
 
   override def toString: String = value.toString
 }

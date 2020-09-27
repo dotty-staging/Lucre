@@ -1,11 +1,24 @@
+/*
+ *  DoubleLinkedListSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
 import java.io.File
 
-import de.sciss.lucre.stm.Mutable
-import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.impl.MutableImpl
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, Durable, Mutable, Var => LVar}
+import de.sciss.serial.{DataInput, DataOutput, TFormat, WritableFormat}
 import org.scalatest.GivenWhenThen
 import org.scalatest.funspec.AnyFunSpec
 
@@ -13,14 +26,15 @@ import scala.annotation.tailrec
 
 /*
 
-To run only this test:
+  To run only this test:
 
-test-only de.sciss.lucre.confluent.DoubleLinkedListSuite
+  testOnly de.sciss.lucre.confluent.DoubleLinkedListSuite
 
  */
 class  DoubleLinkedListSuite extends AnyFunSpec with GivenWhenThen {
   type S = Confluent
-  type D = S#D
+  type T = Confluent.Txn
+  type D = Durable  .Txn
 
   describe("A Confluently Persistent Double Linked List") {
     val dir = File.createTempFile("database", "db")
@@ -36,8 +50,8 @@ class  DoubleLinkedListSuite extends AnyFunSpec with GivenWhenThen {
       ///////////////////////////// v0 /////////////////////////////
 
       Given("v0 : Allocate node w0, with x = 1")
-      implicit val whyOhWhy = Node.ser
-      val (access, cursor) = s.cursorRoot[Option[Node], Cursor[S, D]] { implicit tx =>
+      implicit val whyOhWhy: TFormat[T, Node] = Node.ser
+      val (access, cursor) = s.cursorRoot[Option[Node], Cursor[T, D]] { implicit tx =>
         val w0 = Node("w0", 1)
         Some(w0)
       } { implicit tx => _ => tx.system.newCursor() }
@@ -157,38 +171,41 @@ class  DoubleLinkedListSuite extends AnyFunSpec with GivenWhenThen {
     }
   }
 
-  class Types[T <: Sys[T]](val s: T) {
-    type Sys = T
-
+  class Types(val s: S) {
     object Node {
-      implicit object ser extends MutableSerializer[T, Node] {
-        def readData(in: DataInput, _id: T#Id)(implicit tx: T#Tx): Node = new Node with MutableImpl[T] {
-          val id    = _id
-          val name  = in.readUTF()
-          val value = tx.readIntVar(id, in)
-          val prev  = tx.readVar[Option[Node]](id, in)
-          val next  = tx.readVar[Option[Node]](id, in)
+      implicit object ser extends WritableFormat[T, Node] {
+        override def readT(in: DataInput)(implicit tx: T): Node = {
+          val id = tx.readId(in)
+          readData(in, id)
+        }
+
+        private def readData(in: DataInput, _id: Ident[T]): Node = new Node with MutableImpl[T] {
+          val id    : Ident[T]              = _id
+          val name  : String                = in.readUTF()
+          val value : LVar[T, Int]          = id.readIntVar(in)
+          val prev  : LVar[T, Option[Node]] = id.readVar[Option[Node]](in)
+          val next  : LVar[T, Option[Node]] = id.readVar[Option[Node]](in)
         }
       }
 
-      def apply(_name: String, init: Int)(implicit tx: T#Tx): Node = new Node with MutableImpl[T] {
-        val id    = tx.newId()
-        val name  = _name
-        val value = tx.newIntVar(id, init)
-        val prev  = tx.newVar[Option[Node]](id, None)
-        val next  = tx.newVar[Option[Node]](id, None)
+      def apply(_name: String, init: Int)(implicit tx: T): Node = new Node with MutableImpl[T] {
+        val id    : Ident[T]              = tx.newId()
+        val name  : String                = _name
+        val value : LVar[T, Int]          = id.newIntVar(init)
+        val prev  : LVar[T, Option[Node]] = id.newVar[Option[Node]](None)
+        val next  : LVar[T, Option[Node]] = id.newVar[Option[Node]](None)
       }
     }
 
-    trait Node extends Mutable[T#Id, T#Tx] {
+    trait Node extends Mutable[T] {
       def name: String
 
-      def value: T#Var[Int]
+      def value: LVar[T, Int]
 
-      def prev: T#Var[Option[Node]]
-      def next: T#Var[Option[Node]]
+      def prev: LVar[T, Option[Node]]
+      def next: LVar[T, Option[Node]]
 
-      protected def disposeData()(implicit tx: T#Tx): Unit = {
+      protected def disposeData()(implicit tx: T): Unit = {
         value.dispose()
         prev .dispose()
         next .dispose()
@@ -204,7 +221,7 @@ class  DoubleLinkedListSuite extends AnyFunSpec with GivenWhenThen {
       override def toString = s"Node($name, $id)"
     }
 
-    def toList(next: Option[Node])(implicit tx: T#Tx): List[(String, Int)] = next match {
+    def toList(next: Option[Node])(implicit tx: T): List[(String, Int)] = next match {
       case Some(n)  => (n.name, n.value()) :: toList(n.next())
       case _        => Nil
     }

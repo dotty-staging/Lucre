@@ -1,19 +1,32 @@
+/*
+ *  TotalOrderSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
 import java.io.File
 
 import de.sciss.lucre.data.TotalOrder
-import de.sciss.lucre.stm.InTxnRandom
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial.Serializer
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, ConfluentLike, InTxnRandom, TestUtil}
+import de.sciss.serial.TFormat
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 
 /*
 
-To run this test copy + paste the following into sbt:
+  To run this test copy + paste the following into sbt:
 
-test-only de.sciss.lucre.confluent.TotalOrderSuite
+  testOnly de.sciss.lucre.confluent.TotalOrderSuite
 
  */
 class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
@@ -23,10 +36,10 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   val RND_SEED         = 0L
 
   // make sure we don't look tens of thousands of actions
-  showLog = false
+  Log.showLog = false
 
-  withSys[Confluent]("Confluent", () => {
-    val dir = File.createTempFile("totalorder", "_database")
+  withSys[Confluent, Confluent.Txn]("Confluent", () => {
+    val dir = File.createTempFile("total-order", "_database")
     dir.delete()
     dir.mkdir()
     println(dir.getAbsolutePath)
@@ -42,9 +55,9 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
     s.close()
   })
 
-  def withSys[S <: Sys[S]](sysName: String, sysCreator: () => S, sysCleanUp: S => Unit): Unit = {
-    def scenarioWithTime(descr: String)(body: => Unit): Unit =
-      Scenario(descr) {
+  def withSys[S <: ConfluentLike[T], T <: Txn[T]](sysName: String, sysCreator: () => S, sysCleanUp: S => Unit): Unit = {
+    def scenarioWithTime(description: String)(body: => Unit): Unit =
+      Scenario(description) {
         val t1 = System.currentTimeMillis()
         body
         val t2 = System.currentTimeMillis()
@@ -60,10 +73,10 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
 
         implicit val system: S = sysCreator()
         try {
-          implicit val ser: Serializer[S#Tx, Access[S], TotalOrder.Set[S]] = TotalOrder.Set.serializer[S]
+          implicit val format: TFormat[T, TotalOrder.Set[T]] = TotalOrder.Set.format[T]
           val (access, cursor) = system.cursorRoot {
             implicit tx =>
-              TotalOrder.Set.empty[S] /* ( new RelabelObserver[ S#Tx, E ] {
+              TotalOrder.Set.empty[T]() /* ( new RelabelObserver[ S#Tx, E ] {
                      def beforeRelabeling( first: E, num: Int )( implicit tx: S#Tx ): Unit = {
                         if( MONITOR_LABELING ) {
    //                     Txn.afterCommit( _ =>
@@ -87,7 +100,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           /* val set = */ cursor.step {
             implicit tx =>
               var e = access().root
-              var coll = Set[TotalOrder.Set.Entry[S]]() // ( e )
+              var coll = Set[TotalOrder.Set.Entry[T]]() // ( e )
               for (_ <- 1 until n) {
                 if (rnd.nextBoolean()(tx.peer)) {
                   e = e.append() // to.insertAfter( e ) // to.insertAfter( i )
@@ -128,9 +141,9 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
 
           Then("the resulting set should only contain -1")
           assert(result === Set(-1))
-//          , s"$result -- ${cursor.step(implicit tx =>
-//            access().tagList(access().head)
-//          )}")
+          //          , s"$result -- ${cursor.step(implicit tx =>
+          //            access().tagList(access().head)
+          //          )}")
 
           When("the structure is emptied")
           val sz2 = cursor.step { implicit tx =>

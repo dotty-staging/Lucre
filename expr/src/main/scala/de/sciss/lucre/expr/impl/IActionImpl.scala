@@ -1,6 +1,6 @@
 /*
  *  IActionImpl.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,24 +11,24 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr.impl
+package de.sciss.lucre.expr
+package impl
 
-import de.sciss.lucre.expr.{IAction, ITrigger}
-import de.sciss.lucre.stm.TxnLike.{peer => txPeer}
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.{Disposable, Txn}
 
 import scala.concurrent.stm.Ref
 
-trait IActionImpl[S <: Sys[S]] extends IAction[S] {
-  private[this] val disposables = Ref(List.empty[Disposable[S#Tx]])
+trait IActionImpl[T <: Txn[T]] extends IAction[T] {
+  private[this] val disposables = Ref(List.empty[Disposable[T]])
 
-  protected final def addDisposable(d: Disposable[S#Tx])(implicit tx: S#Tx): Unit =
+  protected final def addDisposable(d: Disposable[T])(implicit tx: T): Unit =
     disposables.transform(d :: _)
 
-  def dispose()(implicit tx: S#Tx): Unit =
+  def dispose()(implicit tx: T): Unit =
     disposables.swap(Nil).foreach(_.dispose())
 
-  def addSource(tr: ITrigger[S])(implicit tx: S#Tx): Unit = {
+  def addSource(tr: ITrigger[T])(implicit tx: T): Unit = {
     val obs = tr.changed.react { implicit tx => _ => executeAction() }
     addDisposable(obs)
   }

@@ -1,6 +1,6 @@
 /*
  *  ExImport.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.file.{File => _File}
-import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault, ScalarOrd}
+import de.sciss.lucre.Adjunct.{FromAny, HasDefault, ScalarOrd}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 

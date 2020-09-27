@@ -1,7 +1,7 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.Durable
-import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.lucre.{Cursor, Durable, Expr, IntObj, Txn}
+import de.sciss.lucre.store.BerkeleyDB
 import de.sciss.model.Change
 
 object BasicTest {
@@ -19,14 +19,14 @@ object BasicTest {
     }
   }
 
-  def run(system: S): Unit = {
+  def run[T <: Txn[T]](cursor: Cursor[T]): Unit = {
     LucreExpr.init()
 
-    import Ops._
+//    import Ops._
 
-    val res1 = system.step { implicit tx =>
-      val a = IntObj.newConst[S](1234)
-      val b = IntObj.newConst[S](5678)
+    val res1 = cursor.step { implicit tx =>
+      val a = IntObj.newConst[T](1234)
+      val b = IntObj.newConst[T](5678)
       val c = b - a
       c.value
     }
@@ -35,11 +35,11 @@ object BasicTest {
 
     var observations = Vector.empty[Int]
 
-    val (res2, aH) = system.step { implicit tx =>
+    val (res2, aH) = cursor.step { implicit tx =>
       observations = Vector.empty
 
-      val a = IntObj.newVar[S](1234)
-      val b = IntObj.newVar[S](5678)
+      val a = IntObj.newVar[T](1234)
+      val b = IntObj.newVar[T](5678)
       val c = b - a
 
 
@@ -47,8 +47,8 @@ object BasicTest {
         case Change(_, now) => observations :+= now // println(s"c = $now")
       }}
 
-      implicitly[Int => IntObj[S]]
-      implicitly[Int => Expr[S, Int]](implicitly[Int => IntObj[S]])
+      implicitly[Int => IntObj[T]]
+      implicitly[Int => Expr[T, Int]](implicitly[Int => IntObj[T]])
 
       a() = 333
       b() = 666
@@ -61,7 +61,7 @@ object BasicTest {
     assert(res2 == 666 - 333)
     assert(observations == Vector(5678 - 333, 666 - 333))
 
-    system.step { implicit tx =>
+    cursor.step { implicit tx =>
       observations = Vector.empty
       val a = aH()
       a() = 444

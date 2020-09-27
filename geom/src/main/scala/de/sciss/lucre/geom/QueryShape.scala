@@ -1,6 +1,6 @@
 /*
  *  QueryShape.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -17,10 +17,10 @@ package geom
 /** A shape for range queries. Type `A` indicates the results
   * of area calculations, and may be specialized.
   */
-trait QueryShape[Area, D <: Space[D]] {
-  def overlapArea(q: D#HyperCube): Area
+trait QueryShape[Area, P, H] {
+  def overlapArea(q: H): Area
 
-  def isAreaGreater(a: D#HyperCube, b: Area): Boolean
+  def isAreaGreater(a: H, b: Area): Boolean
 
   def isAreaNonEmpty(area: Area): Boolean
 
@@ -31,5 +31,5 @@ trait QueryShape[Area, D <: Space[D]] {
     * @return  `true` if this shape contains or partly overlaps
     *          the given point
     */
-  def contains(p: D#PointLike): Boolean
+  def containsP(p: P): Boolean
 }

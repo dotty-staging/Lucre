@@ -1,7 +1,7 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.bitemp.BiGroup
-import de.sciss.span.{SpanLike, Span}
+import de.sciss.lucre.{BiGroup, IntObj, SpanLikeObj, StringObj}
+import de.sciss.span.{Span, SpanLike}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -9,7 +9,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 /*
  To run only this suite:
 
- test-only de.sciss.lucre.expr.BiGroupSpec
+ testOnly de.sciss.lucre.expr.BiGroupSpec
 
  */
 //object BiGroupSpec {
@@ -74,7 +74,7 @@ class BiGroupSpec extends ConfluentEventSpec {
       Span(28604671,32187329)
     )
 
-    // val dummy = event.Dummy[S, Unit]
+    // val dummy = event.Dummy[T, Unit]
     // implicit val sl = SpanLike
 
     def withSpans(spanLikes: Vec[SpanLike]): Unit = {
@@ -96,7 +96,7 @@ class BiGroupSpec extends ConfluentEventSpec {
       val manual = calcManual()
 
       system.step { implicit tx =>
-        val g = BiGroup.Modifiable[S, IntObj]
+        val g = BiGroup.Modifiable[T, IntObj]
 
         // import Ops._
         spanLikes.foreach(g.add(_, 0))
@@ -117,9 +117,9 @@ class BiGroupSpec extends ConfluentEventSpec {
 
   "BiGroup" should "update cache correctly" in { system =>
     val (bipH, nH) = system.step { implicit tx =>
-      val bip = BiGroup.Modifiable[S, IntObj]
+      val bip = BiGroup.Modifiable[T, IntObj]
       bip.add(Span(10L, 11L), 1)
-      val n   = SpanLikeObj.newVar[S](Span(20L, 21L))
+      val n   = SpanLikeObj.newVar[T](Span(20L, 21L))
       bip.add(n, 2)
       bip.add(Span(30L, 31L), 3)
       (tx.newHandle(bip), tx.newHandle(n))
@@ -158,9 +158,9 @@ class BiGroupSpec extends ConfluentEventSpec {
       (Span( 50000, 60000), "span4" )
     )
 
-    implicit val ser = BiGroup.Modifiable.serializer[S, StringObj[S]] // WTF -- why is this not inferred?
+    implicit val ser = BiGroup.Modifiable.format[T, StringObj[T]] // WTF -- why is this not inferred?
     val groupH = system.step { implicit tx =>
-      val g = BiGroup.Modifiable[S, StringObj]
+      val g = BiGroup.Modifiable[T, StringObj]
       putSpans.foreach { case (span, name) =>
         g.add(span, name)
       }

@@ -1,6 +1,6 @@
 /*
  *  IntDistanceMeasure2D.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -19,7 +19,7 @@ object IntDistanceMeasure2D {
   import TwoDim._
   import DistanceMeasure.Ops
 
-  private type M = DistanceMeasure[Long, TwoDim] with Ops[Long, TwoDim]
+  private type M = DistanceMeasure[Long, IntPoint2DLike, IntSquare] with Ops[Long, IntPoint2DLike, IntSquare]
 
   /**
    * A measure that uses the euclidean squared distance
@@ -194,9 +194,9 @@ object IntDistanceMeasure2D {
   private final class Clip(underlying: Impl, quad: IntSquare) extends Impl {
     override def toString = s"$underlying.clip($quad)"
 
-    def distance   (a: PointLike, b: PointLike): Long = if (quad.contains(b)) underlying.distance   (a, b) else Long.MaxValue
-    def minDistance(a: PointLike, b: IntSquare): Long = if (quad.contains(b)) underlying.minDistance(a, b) else Long.MaxValue
-    def maxDistance(a: PointLike, b: IntSquare): Long = if (quad.contains(b)) underlying.maxDistance(a, b) else Long.MaxValue
+    def distance   (a: PointLike, b: PointLike): Long = if (quad.containsP(b)) underlying.distance   (a, b) else Long.MaxValue
+    def minDistance(a: PointLike, b: IntSquare): Long = if (quad.containsH(b)) underlying.minDistance(a, b) else Long.MaxValue
+    def maxDistance(a: PointLike, b: IntSquare): Long = if (quad.containsH(b)) underlying.maxDistance(a, b) else Long.MaxValue
   }
 
   private final class Approximate(underlying: Impl, thresh: Long) extends Impl {
@@ -211,7 +211,7 @@ object IntDistanceMeasure2D {
     }
   }
 
-  private final class Quadrant(underlying: DistanceMeasure[Long, TwoDim], idx: Int)
+  private final class Quadrant(underlying: DistanceMeasure[Long, IntPoint2DLike, IntSquare], idx: Int)
     extends Impl {
 
     private[this] val right = idx == 0 || idx == 3
@@ -250,44 +250,44 @@ object IntDistanceMeasure2D {
     }
   }
 
-  private final class ExceptQuadrant( underlying: DistanceMeasure[ Long, TwoDim ], idx: Int )
-   extends Impl {
+  private final class ExceptQuadrant(underlying: DistanceMeasure[Long, IntPoint2DLike, IntSquare], idx: Int)
+    extends Impl {
 
-      private[this] val right    = idx == 0 || idx == 3
-      private[this] val bottom   = idx >= 2
+    private[this] val right   = idx == 0 || idx == 3
+    private[this] val bottom  = idx >= 2
 
-      override def toString = s"$underlying.exceptQuadrant($idx)"
+    override def toString = s"$underlying.exceptQuadrant($idx)"
 
-      def distance( a: PointLike, b: PointLike ) : Long = {
-         if( (if( right  ) b.x <= a.x else b.x >= a.x) ||
-             (if( bottom ) b.y <= a.y else b.y >= a.y) ) {
+    def distance(a: PointLike, b: PointLike): Long = {
+      if ((if (right) b.x <= a.x else b.x >= a.x) ||
+         (if (bottom) b.y <= a.y else b.y >= a.y)) {
 
-            underlying.distance( a, b )
-         } else Long.MaxValue
-      }
+        underlying.distance(a, b)
+      } else Long.MaxValue
+    }
 
-      def minDistance( p: PointLike, q: IntSquare ) : Long = {
-         val qe   = q.extent
-         val qem1 = qe - 1
+    def minDistance(p: PointLike, q: IntSquare): Long = {
+      val qe = q.extent
+      val qem1 = qe - 1
 
-         if( (if( right  ) (q.cx - qe) <= p.x else (q.cx + qem1) >= p.x) ||
-             (if( bottom ) (q.cy - qe) <= p.y else (q.cy + qem1) >= p.y) ) {
+      if ((if (right) (q.cx - qe) <= p.x else (q.cx + qem1) >= p.x) ||
+         (if (bottom) (q.cy - qe) <= p.y else (q.cy + qem1) >= p.y)) {
 
-            underlying.minDistance( p, q )
-         } else Long.MaxValue
-      }
+        underlying.minDistance(p, q)
+      } else Long.MaxValue
+    }
 
-      def maxDistance( p: PointLike, q: IntSquare ) : Long = {
-         val qe   = q.extent
-         val qem1 = qe - 1
+    def maxDistance(p: PointLike, q: IntSquare): Long = {
+      val qe = q.extent
+      val qem1 = qe - 1
 
-         if( (if( right  ) (q.cx + qem1) <= p.x else (q.cx - qe) >= p.x) ||
-             (if( bottom ) (q.cy + qem1) <= p.y else (q.cy - qe) >= p.y) ) {
+      if ((if (right) (q.cx + qem1) <= p.x else (q.cx - qe) >= p.x) ||
+         (if (bottom) (q.cy + qem1) <= p.y else (q.cy - qe) >= p.y)) {
 
-            underlying.maxDistance( p, q )
-         } else Long.MaxValue
-      }
-   }
+        underlying.maxDistance(p, q)
+      } else Long.MaxValue
+    }
+  }
 
   private sealed trait ChebyshevLike extends Impl {
     protected def apply   (dx: Long, dy: Long): Long
@@ -382,7 +382,9 @@ object IntDistanceMeasure2D {
     }
   }
 
-  private sealed trait Impl extends DistanceMeasure[Long, TwoDim] with Ops[Long, TwoDim] {
+  private sealed trait Impl 
+    extends DistanceMeasure[Long, IntPoint2DLike, IntSquare] with Ops[Long, IntPoint2DLike, IntSquare] {
+    
     //      final def manifest : Manifest[ Long ] = Manifest.Long
     final def newArray(size: Int) = new Array[Long](size)
 

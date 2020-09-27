@@ -1,6 +1,6 @@
 /*
- *  ByteArraySerializer.scala
- *  (Lucre)
+ *  ByteArrayFormat.scala
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,9 +13,9 @@
 
 package de.sciss.lucre.confluent
 
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
-object ByteArraySerializer extends ImmutableSerializer[Array[Byte]] {
+object ByteArrayFormat extends ConstFormat[Array[Byte]] {
   def write(v: Array[Byte], out: DataOutput): Unit = {
     out./* PACKED */ writeInt(v.length)
     out.write(v)

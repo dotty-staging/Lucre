@@ -1,6 +1,6 @@
 /*
  *  PathLike.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -19,4 +19,10 @@ trait PathLike {
   def size: Int
 
   def sumUntil(n: Int): Long
+
+  def head: Long
+  def last: Long
+
+  def isEmpty : Boolean
+  def nonEmpty: Boolean
 }

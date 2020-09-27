@@ -1,6 +1,6 @@
 /*
  *  TernaryOp.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,11 +14,9 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.adjunct.Adjunct.{Num, Widen2}
-import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.Adjunct.{Num, Widen2}
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 
 object TernaryOp {
   abstract class Op[A, B, C, D] extends Product {
@@ -135,11 +133,11 @@ object TernaryOp {
 
   // ----
 
-  private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
-                                                                   a: IExpr[S, A1], b: IExpr[S, A2],
-                                                                   c: IExpr[S, A3], tx0: S#Tx)
-                                                                  (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IChangeEventImpl[S, A] {
+  private[lucre] final class Expanded[T <: Exec[T], A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A],
+                                                                   a: IExpr[T, A1], b: IExpr[T, A2],
+                                                                   c: IExpr[T, A3], tx0: T)
+                                                                  (implicit protected val targets: ITargets[T])
+    extends IExpr[T, A] with IChangeEventImpl[T, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
@@ -147,9 +145,9 @@ object TernaryOp {
 
     override def toString: String = s"TernaryOp($op, $a, $b, $c)"
 
-    def changed: IChangeEvent[S, A] = this
+    def changed: IChangeEvent[T, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
       val _1v = pull.expr(a)
       val _2v = pull.expr(b)
       val _3v = pull.expr(c)
@@ -157,7 +155,7 @@ object TernaryOp {
       value1(_1v, _2v, _3v)
     }
 
-//    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+//    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[A]] = {
 //      val _1c = a.changed
 //      val _2c = b.changed
 //      val _3c = c.changed
@@ -208,14 +206,14 @@ object TernaryOp {
       op.apply(av, bv, cv)
     }
 
-    def value(implicit tx: S#Tx): A = {
+    def value(implicit tx: T): A = {
       val av = a.value
       val bv = b.value
       val cv = c.value
       value1(av, bv, cv)
     }
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    def dispose()(implicit tx: T): Unit = {
       a.changed -/-> changed
       b.changed -/-> changed
       c.changed -/-> changed
@@ -225,13 +223,13 @@ object TernaryOp {
 final case class TernaryOp[A1, A2, A3, A](op: TernaryOp.Op[A1, A2, A3, A], a: Ex[A1], b: Ex[A2], c: Ex[A3])
   extends Ex[A] {
 
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    val ax = a.expand[S]
-    val bx = b.expand[S]
-    val cx = c.expand[S]
-    new TernaryOp.Expanded[S, A1, A2, A3, A](op, ax, bx, cx, tx)
+    val ax = a.expand[T]
+    val bx = b.expand[T]
+    val cx = c.expand[T]
+    new TernaryOp.Expanded[T, A1, A2, A3, A](op, ax, bx, cx, tx)
   }
 }

@@ -1,6 +1,6 @@
 /*
  *  GraphBuilderMixin.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,11 +11,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr.impl
+package de.sciss.lucre
+package expr
+package impl
 
 import java.util
 
-import de.sciss.lucre.expr.Graph
 import de.sciss.lucre.expr.graph.{Control, It}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -52,12 +53,12 @@ trait GraphBuilderMixin extends Graph.Builder {
   }
 
   def allocToken[U](): It[U] =
-//    if (parent.isOutside)
-    {
-      val res = tokenId
-      tokenId += 1
-      It(res)
-//    } else {
-//      parent.allocToken()
-    }
+  //    if (parent.isOutside)
+  {
+    val res = tokenId
+    tokenId += 1
+    It(res)
+    //    } else {
+    //      parent.allocToken()
+  }
 }

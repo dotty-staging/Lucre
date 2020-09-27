@@ -1,6 +1,6 @@
 /*
  *  MeldInfo.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,13 +13,15 @@
 
 package de.sciss.lucre.confluent
 
-object MeldInfo {
-  def empty[S <: Sys[S]]: MeldInfo[S] = anyMeldInfo.asInstanceOf[MeldInfo[S]]
+import de.sciss.lucre.Confluent
 
-  private val anyMeldInfo = MeldInfo[Confluent](-1, Set.empty)
+object MeldInfo {
+  def empty[T <: Txn[T]]: MeldInfo[T] = anyMeldInfo.asInstanceOf[MeldInfo[T]]
+
+  private val anyMeldInfo = MeldInfo[Confluent.Txn](-1, Set.empty)
 }
 
-final case class MeldInfo[S <: Sys[S]](highestLevel: Int, highestTrees: Set[S#Acc]) {
+final case class MeldInfo[T <: Txn[T]](highestLevel: Int, highestTrees: Set[Access[T]]) {
   def requiresNewTree: Boolean = highestTrees.size > 1
 
   def outputLevel: Int = if (requiresNewTree) highestLevel + 1 else highestLevel
@@ -28,11 +30,11 @@ final case class MeldInfo[S <: Sys[S]](highestLevel: Int, highestTrees: Set[S#Ac
     * highest level, or if it has the same level but was not recorded in the set
     * of highest trees.
     */
-  def isRelevant(level: Int, seminal: S#Acc): Boolean =
+  def isRelevant(level: Int, seminal: Access[T]): Boolean =
     level > highestLevel || level == highestLevel && !highestTrees.contains(seminal)
 
-  def add(level: Int, seminal: S#Acc): MeldInfo[S] =
-    if (isRelevant(level, seminal)) MeldInfo[S](level, highestTrees + seminal) else this
+  def add(level: Int, seminal: Access[T]): MeldInfo[T] =
+    if (isRelevant(level, seminal)) MeldInfo[T](level, highestTrees + seminal) else this
 
   def isEmpty: Boolean = highestLevel < 0
 }

@@ -1,6 +1,6 @@
 /*
  *  Span.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.{Context, IExpr, graph}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.{Context, graph}
+import de.sciss.lucre.{IExpr, Txn}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 object Span {
@@ -29,18 +29,18 @@ object Span {
   final case class All() extends Ex[_SpanLike] {
     override def productPrefix: String = s"Span$$All" // serialization
 
-    type Repr[S <: Sys[S]] = IExpr[S, _SpanLike]
+    type Repr[T <: Txn[T]] = IExpr[T, _SpanLike]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
       new Const.Expanded(_Span.All)
   }
 
   final case class Void() extends Ex[_SpanLike] {
     override def productPrefix: String = s"Span$$All" // serialization
 
-    type Repr[S <: Sys[S]] = IExpr[S, _SpanLike]
+    type Repr[T <: Txn[T]] = IExpr[T, _SpanLike]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
       new Const.Expanded(_Span.Void)
   }
 
@@ -53,11 +53,11 @@ object Span {
   private final case class Apply(start: Ex[Long], stop: Ex[Long]) extends Ex[_Span] {
     override def productPrefix: String = "Span" // serialization
 
-    type Repr[S <: Sys[S]] = IExpr[S, _Span]
+    type Repr[T <: Txn[T]] = IExpr[T, _Span]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new graph.BinaryOp.Expanded(ApplyOp(), start.expand[S], stop.expand[S], tx)
+      new graph.BinaryOp.Expanded(ApplyOp(), start.expand[T], stop.expand[T], tx)
     }
   }
 
@@ -76,22 +76,22 @@ object Span {
   case class From(start: Ex[Long]) extends Ex[_SpanLike] {
     override def productPrefix: String = s"Span$$From" // serialization
 
-    type Repr[S <: Sys[S]] = IExpr[S, _SpanLike]
+    type Repr[T <: Txn[T]] = IExpr[T, _SpanLike]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new graph.UnaryOp.Expanded(FromOp(), start.expand[S], tx)
+      new graph.UnaryOp.Expanded(FromOp(), start.expand[T], tx)
     }
   }
 
   case class Until(stop: Ex[Long]) extends Ex[_SpanLike] {
     override def productPrefix: String = s"Span$$Until" // serialization
 
-    type Repr[S <: Sys[S]] = IExpr[S, _SpanLike]
+    type Repr[T <: Txn[T]] = IExpr[T, _SpanLike]
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new graph.UnaryOp.Expanded(UntilOp(), stop.expand[S], tx)
+      new graph.UnaryOp.Expanded(UntilOp(), stop.expand[T], tx)
     }
   }
 }

@@ -1,6 +1,6 @@
 /*
  *  ContextMixin.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,34 +11,33 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr.impl
+package de.sciss.lucre
+package expr
+package impl
 
-import de.sciss.lucre.event.ITargets
+import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.graph.{Control, It}
-import de.sciss.lucre.expr.{Context, Graph}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.TxnLike.peer
-import de.sciss.lucre.stm.{Cursor, Disposable, Obj, Sys, UndoManager, Workspace}
 
 import scala.annotation.tailrec
 import scala.concurrent.stm.{Ref, TMap, TxnLocal}
 
-trait ContextMixin[S <: Sys[S]] extends Context[S] {
+trait ContextMixin[T <: Txn[T]] extends Context[T] {
   // ---- abstract ----
 
-  protected def selfH: Option[stm.Source[S#Tx, Obj[S]]]
+  protected def selfH: Option[Source[T, Obj[T]]]
 
   // ---- impl ----
 
-  final val targets: ITargets[S] = ITargets[S]
+  final val targets: ITargets[T] = ITargets[T]
 
-  private type SourceMap  = Map [AnyRef, Disposable[S#Tx]]
+  private type SourceMap  = Map [AnyRef, Disposable[T]]
   private type Properties = TMap[AnyRef, Map[String, Any]]
 
   private[this] val globalMap : Ref[SourceMap]  = Ref(Map.empty)
   private[this] val properties: Properties      = TMap.empty
 
-  def initGraph(g: Graph)(implicit tx: S#Tx): Unit = {
+  def initGraph(g: Graph)(implicit tx: T): Unit = {
     properties.clear()
     g.controls.foreach { conf =>
       properties.put(conf.control.token, conf.properties)
@@ -52,7 +51,7 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     var sourceMap: SourceMap = Map.empty
   }
 
-  def nested[A](it: It.Expanded[S, _])(body: => A)(implicit tx: S#Tx): (A, Disposable[S#Tx]) = {
+  def nested[A](it: It.Expanded[T, _])(body: => A)(implicit tx: T): (A, Disposable[T]) = {
     val tOld    = terminals()
     val n       = new Nested(it.ref, level = tOld.size)
     terminals() = tOld :+ n // n :: tOld
@@ -61,7 +60,7 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     markers.transform(_ - n.level)
 
     val disposableIt = n.sourceMap.values
-    val disposable: Disposable[S#Tx] =
+    val disposable: Disposable[T] =
       if (disposableIt.isEmpty) Disposable.empty
       else disposableIt.toList match {
         case single :: Nil  => single
@@ -71,13 +70,13 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
     (res, disposable)
   }
 
-  def dispose()(implicit tx: S#Tx): Unit = {
+  def dispose()(implicit tx: T): Unit = {
     require (terminals().isEmpty, "Must not call dispose in a nested operation")
     val m = globalMap.swap(Map.empty)
     m.foreach(_._2.dispose())
   }
 
-  final def visit[U <: Disposable[S#Tx]](ref: AnyRef, init: => U)(implicit tx: S#Tx): U = {
+  final def visit[U <: Disposable[T]](ref: AnyRef, init: => U)(implicit tx: T): U = {
     val t = terminals()
     if (t.nonEmpty) t.find(_.ref == ref) match {
       case Some(n)  => markers.transform(_ + n.level)
@@ -113,12 +112,12 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
           }
 
         loop(t)
-     }
+    }
   }
 
-  def selfOption(implicit tx: S#Tx): Option[Obj[S]] = selfH.map(_.apply())
+  def selfOption(implicit tx: T): Option[Obj[T]] = selfH.map(_.apply())
 
-  def getProperty[A](c: Control, key: String)(implicit tx: S#Tx): Option[A] = {
+  def getProperty[A](c: Control, key: String)(implicit tx: T): Option[A] = {
     val m0: Map[String, Any] = properties.get(c.token).orNull
     if (m0 == null) None else {
       m0.get(key).asInstanceOf[Option[A]]
@@ -126,8 +125,8 @@ trait ContextMixin[S <: Sys[S]] extends Context[S] {
   }
 }
 
-final class ContextImpl[S <: Sys[S]](protected val selfH: Option[stm.Source[S#Tx, Obj[S]]],
-                                     val attr: Context.Attr[S])
-                                    (implicit val workspace: Workspace[S], val cursor: Cursor[S],
-                                     val undoManager: UndoManager[S])
-  extends ContextMixin[S]
+final class ContextImpl[T <: Txn[T]](protected val selfH: Option[Source[T, Obj[T]]],
+                                     val attr: Context.Attr[T])
+                                    (implicit val workspace: Workspace[T], val cursor: Cursor[T],
+                                     val undoManager: UndoManager[T])
+  extends ContextMixin[T]

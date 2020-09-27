@@ -1,7 +1,8 @@
 package de.sciss.lucre.expr.examples
 
-import de.sciss.lucre.expr.{CellView, Context, ExImport, Graph, StringObj, graph}
-import de.sciss.lucre.stm.{InMemory, Obj, UndoManager, Workspace}
+import de.sciss.lucre.edit.UndoManager
+import de.sciss.lucre.expr.{CellView, Context, ExImport, Graph, graph}
+import de.sciss.lucre.{InMemory, Obj, StringObj, Workspace}
 
 /*
   expected output
@@ -20,6 +21,7 @@ import de.sciss.lucre.stm.{InMemory, Obj, UndoManager, Workspace}
  */
 object MapToActTest extends App {
   type S = InMemory
+  type T = InMemory.Txn
 
   val g = Graph {
     import ExImport._
@@ -35,19 +37,19 @@ object MapToActTest extends App {
   }
 
   implicit val system: S = InMemory()
-  implicit val undo: UndoManager[S] = UndoManager()
+  implicit val undo: UndoManager[T] = UndoManager()
 
   import Workspace.Implicits._
 
   val (ctl, selfH, ctx) = system.step { implicit tx =>
-    val self: Obj[S] = StringObj.newConst("foo")
+    val self: Obj[T] = StringObj.newConst("foo")
     val _selfH = tx.newHandle(self)
-    implicit val _ctx: Context[S] = Context[S](Some(_selfH))
+    implicit val _ctx: Context[T] = Context[T](Some(_selfH))
     println("[expand]")
     val _ctl = g.expand
     _ctl.initControl()
 
-    val view = CellView.attr[S, String, StringObj](self.attr, "bar")
+    val view = CellView.attr[T, String, StringObj](self.attr, "bar")
     view.react { _ => upd =>
       println(s"[update] $upd")
     }

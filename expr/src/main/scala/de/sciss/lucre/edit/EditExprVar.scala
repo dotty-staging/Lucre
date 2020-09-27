@@ -1,6 +1,6 @@
 /*
  *  EditExprVar.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,41 +11,39 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.edit
+package de.sciss.lucre
+package edit
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.expr.{Expr, Type}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.UndoManager.{CannotRedoException, CannotUndoException}
-import de.sciss.lucre.stm.impl.BasicUndoableEdit
-import de.sciss.lucre.stm.{Sys, UndoManager}
+import de.sciss.lucre.edit.UndoManager.{CannotRedoException, CannotUndoException}
+import de.sciss.lucre.edit.impl.BasicUndoableEdit
 
 object EditExprVar {
-  def apply[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](vr: E[S] with stm.Var[S#Tx, E[S]], value: E[S])
-                                                         (implicit tx: S#Tx, tpe: Type.Expr[A, E]): Unit =
-    UndoManager.find[S].fold(
-      applyDo   [S, A, E](vr, value)
+  def apply[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
+                                                         (implicit tx: T, tpe: Expr.Type[A, E]): Unit =
+    UndoManager.find[T].fold(
+      applyDo   [T, A, E](vr, value)
     ) { implicit undo =>
-      applyUndo [S, A, E](vr, value)
+      applyUndo [T, A, E](vr, value)
     }
 
-  def applyDo[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](vr: E[S] with stm.Var[S#Tx, E[S]], value: E[S])
-                                                           (implicit tx: S#Tx): Unit =
+  def applyDo[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
+                                                           (implicit tx: T): Unit =
     vr() = value
 
-  def applyUndo[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](vr: E[S] with stm.Var[S#Tx, E[S]], value: E[S])
-                                                             (implicit tx: S#Tx, tpe: Type.Expr[A, E],
-                                                              undo: UndoManager[S]): Unit = {
-    val edit = new Apply[S, A, E](vr, value, tx)
+  def applyUndo[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
+                                                             (implicit tx: T, tpe: Expr.Type[A, E],
+                                                              undo: UndoManager[T]): Unit = {
+    val edit = new Apply[T, A, E](vr, value, tx)
     undo.addEdit(edit)
   }
 
-  private final class Apply[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](vr0: E[S] with stm.Var[S#Tx, E[S]],
-                                                                          value0: E[S], tx0: S#Tx)
-                                                                         (implicit tpe: Type.Expr[A, E])
-    extends BasicUndoableEdit[S] {
+  private final class Apply[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr0: E[T] with Var[T, E[T]],
+                                                                          value0: E[T], tx0: T)
+                                                                         (implicit tpe: Expr.Type[A, E])
+    extends BasicUndoableEdit[T] {
 
-    import tpe.{serializer, varSerializer}
+    import tpe.{format, varFormat}
 
     private[this] val vrH       = tx0.newHandle(vr0)
     private[this] val valueH    = tx0.newHandle(value0)
@@ -59,7 +57,7 @@ object EditExprVar {
     private def cannotRedo(): Nothing =
       throw new CannotRedoException(invalidMessage)
 
-    protected def undoImpl()(implicit tx: S#Tx): Unit = {
+    protected def undoImpl()(implicit tx: T): Unit = {
       val vr    = vrH()
       val v     = valueH()
       val prev  = prevH()
@@ -69,7 +67,7 @@ object EditExprVar {
       if (found !== v) cannotUndo()
     }
 
-    protected def redoImpl()(implicit tx: S#Tx): Unit = {
+    protected def redoImpl()(implicit tx: T): Unit = {
       val vr    = vrH()
       val v     = valueH()
       val prev  = prevH()

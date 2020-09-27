@@ -1,24 +1,38 @@
-package de.sciss
-package lucre
+/*
+ *  ProjectionTest.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
+package de.sciss.lucre
 package confluent
 
 import de.sciss.serial.DataOutput
+import de.sciss.lucre.{Txn => LTxn, Var => LVar, Sys => LSys}
 
+// XXX TODO -- this is no longer useful, just remove
 trait ProjectionTest {
 
   object KTx {
     implicit def downCast(implicit tx: BiTx): KTx[KTemp] = sys.error("TODO")
   }
 
-  trait KTx[S <: KTempLike[S]] extends stm.Txn[S]
+  trait KTx[S <: KTempLike[S]] extends LTxn[S]
 
-  trait KTempLike[S <: KTempLike[S]] extends stm.Sys[S] {
+  trait KTempLike[S <: KTempLike[S]] extends LTxn[S] {
     type Tx <: KTx[S]
   }
 
   trait KTemp extends KTempLike[KTemp] {
     final type Tx = KTx[KTemp]
-    final type Var[@specialized ~] = stm.Var[KTemp#Tx, ~]
+    final type Var[@specialized ~] = LVar[Tx, ~]
   }
 
   trait BiTx extends KTx[BiTemp]
@@ -39,7 +53,7 @@ trait ProjectionTest {
   ////      x.set( 33 )
   //   }
 
-  def test3[S <: stm.Sys[S], Time](dynVar: stm.Var[Time, Int])(implicit tx: S#Tx, dynView: S#Tx => Time): Unit = {
+  def test3[T, S <: LSys /*[S]*/, Time](dynVar: LVar[Time, Int])(implicit tx: T, dynView: T => Time): Unit = {
     implicit val dtx: Time = dynView(tx)
     // dynVar.transform(_ + 33)(tx)
     dynVar() = dynVar() + 33
@@ -51,28 +65,30 @@ trait ProjectionTest {
     def peer: Tx
   }
 
-  class DynamicVar[-Tx, A] extends stm.Var[PCursor[Tx], A] {
-    def apply()(implicit tx: PCursor[Tx]): A = getAt(tx.time)(tx.peer)
+  class DynamicVar[/*-*/Tx, A](tx: PCursor[Tx]) extends LVar[PCursor[Tx], A] {
+    type T = PCursor[Tx]
 
-    def getAt(time: Double)(implicit tx: Tx): A = notImplemented()
+    def apply()(implicit tx: T): A = getAt(tx.time) // (tx.peer)
 
-    def transform(fun: A => A)(implicit tx: PCursor[Tx]): Unit = this() = fun(this())
+    def getAt(time: Double): A = notImplemented()
 
-    def update(v: A)(implicit tx: PCursor[Tx]): Unit = setAt(tx.time, v)(tx.peer)
+    def transform(fun: A => A)(implicit tx: T): Unit = this() = fun(this())
 
-    def swap(v: A)(implicit tx: PCursor[Tx]): A = {
+    def update(v: A)(implicit tx: T): Unit = setAt(tx.time, v) // (tx.peer)
+
+    def swap(v: A)(implicit tx: T): A = {
       val res = apply()
       update(v)
       res
     }
 
-    def setAt(time: Double, v: A)(implicit tx: Tx): Unit = notImplemented()
+    def setAt(time: Double, v: A): Unit = notImplemented()
 
-    def dispose()(implicit tx: PCursor[Tx]): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
 
     def write(out: DataOutput): Unit = ()
 
-    def isFresh(implicit tx: PCursor[Tx]): Boolean = notImplemented()
+    def isFresh: Boolean = notImplemented()
 
     private def notImplemented(): Nothing = sys.error("Not implemented")
   }

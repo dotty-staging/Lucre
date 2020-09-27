@@ -1,6 +1,6 @@
 /*
  *  ExpandedAttrSet.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,28 +13,28 @@
 
 package de.sciss.lucre.expr.graph.impl
 
+import de.sciss.lucre.expr.CellView
 import de.sciss.lucre.expr.graph.{Attr, Obj}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{CellView, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.{IExpr, Txn}
 
-final class ExpandedAttrSet[S <: Sys[S], A](attrView: CellView.Var[S#Tx, Option[A]], value: IExpr[S, A], tx0: S#Tx)
-  extends IActionImpl[S] {
+final class ExpandedAttrSet[T <: Txn[T], A](attrView: CellView.Var[T, Option[A]], value: IExpr[T, A], tx0: T)
+  extends IActionImpl[T] {
 
-  def executeAction()(implicit tx: S#Tx): Unit = {
+  def executeAction()(implicit tx: T): Unit = {
     val v = value.value
     attrView.update(Some(v))
   }
 }
 
-final class ExpandedAttrSetIn[S <: Sys[S], A](in: IExpr[S, Obj], key: String, value: IExpr[S, A], tx0: S#Tx)
+final class ExpandedAttrSetIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, A], tx0: T)
                                              (implicit bridge: Obj.Bridge[A])
-  extends IActionImpl[S] {
+  extends IActionImpl[T] {
 
-  def executeAction()(implicit tx: S#Tx): Unit = {
+  def executeAction()(implicit tx: T): Unit = {
     val v       = value.value
     val obj     = in.value
-    val viewOpt = Attr.resolveNestedIn[S, A](obj.peer, key)
+    val viewOpt = Attr.resolveNestedIn[T, A](obj.peer, key)
     viewOpt.foreach { attrView =>
       attrView.update(Some(v))
     }

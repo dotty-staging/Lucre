@@ -1,6 +1,6 @@
 /*
  *  CellView.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,46 +13,44 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.Observable
 import de.sciss.lucre.expr.impl.CellViewImpl.{FlatMapImpl, MapImpl, OptionOrElseImpl}
 import de.sciss.lucre.expr.impl.{CellViewImpl => Impl}
-import de.sciss.lucre.stm.{Disposable, Obj, Sys}
-import de.sciss.lucre.{stm, event => evt, expr => _expr}
-import de.sciss.serial.Serializer
+import de.sciss.lucre.{Disposable, Expr, MapObj, Obj, Observable, Sink, Source, StringObj, Txn}
+import de.sciss.serial.TFormat
 
 object CellView {
   def empty[Tx, A]: CellView[Tx, Option[A]] = Empty.asInstanceOf[CellView[Tx, Option[A]]]
 
-  def expr[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])(implicit tx: S#Tx,
-                                                                    tpe: Type.Expr[A, _Ex]): CellView[S#Tx, A] =
-    Impl.expr[S, A, _Ex](x)
+  def expr[T <: Txn[T], A, _Ex[~ <: Txn[~]] <: Expr[~, A]](x: _Ex[T])(implicit tx: T,
+                                                                      tpe: Expr.Type[A, _Ex]): CellView[T, A] =
+    Impl.expr[T, A, _Ex](x)
 
-  def exprMap[S <: Sys[S], K, A, _Ex[~ <: Sys[~]] <: _expr.Expr[~, A]](map: evt.Map[S, K, _Ex], key: K)
-                                                                     (implicit tx: S#Tx, tpe: Type.Expr[A, _Ex],
-                                                                      keyType: evt.Map.Key[K]): CellView[S#Tx, Option[A]] =
-    Impl.exprMap[S, K, A, _Ex](map, key)
+  def exprMap[T <: Txn[T], K, A, _Ex[~ <: Txn[~]] <: Expr[~, A]](map: MapObj[T, K, _Ex], key: K)
+                                                                (implicit tx: T, tpe: Expr.Type[A, _Ex],
+                                                                 keyType: MapObj.Key[K]): CellView[T, Option[A]] =
+    Impl.exprMap[T, K, A, _Ex](map, key)
 
-  def attr[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                        (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] =
-    Impl.attr[S, A, E](map, key)
+  def attr[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](map: Obj.AttrMap[T], key: String)
+                                                        (implicit tx: T, tpe: Expr.Type[A, E]): CellView.Var[T, Option[A]] =
+    Impl.attr[T, A, E](map, key)
 
   /** Additionally uses undo manager when present. */
-  def attrUndoOpt[S <: Sys[S], A, E[~ <: Sys[~]] <: Expr[~, A]](map: Obj.AttrMap[S], key: String)
-                                                               (implicit tx: S#Tx, tpe: Type.Expr[A, E]): CellView.Var[S#Tx, Option[A]] =
-    Impl.attrUndoOpt[S, A, E](map, key)
+  def attrUndoOpt[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](map: Obj.AttrMap[T], key: String)
+                                                               (implicit tx: T, tpe: Expr.Type[A, E]): CellView.Var[T, Option[A]] =
+    Impl.attrUndoOpt[T, A, E](map, key)
 
-  def name[S <: Sys[S]](obj: Obj[S])(implicit tx: S#Tx): CellView[S#Tx, String] = {
-    implicit val stringEx: Type.Expr[String, StringObj] = StringObj
-    attr[S, String, StringObj](obj.attr, Obj.attrName).map(_.getOrElse("<unnamed>"))
+  def name[T <: Txn[T]](obj: Obj[T])(implicit tx: T): CellView[T, String] = {
+    implicit val stringEx: Expr.Type[String, StringObj] = StringObj
+    attr[T, String, StringObj](obj.attr, Obj.attrName).map(_.getOrElse("<unnamed>"))
   }
 
-  def exprLike[S <: Sys[S], A, _Ex[~ <: Sys[~]] <: Expr[~, A]](x: _Ex[S])
-                                                             (implicit tx: S#Tx,
-                                                              serializer: Serializer[S#Tx, S#Acc, _Ex[S]]): CellView[S#Tx, A] =
-    Impl.exprLike[S, A, _Ex](x)
+  def exprLike[T <: Txn[T], A, _Ex[~ <: Txn[~]] <: Expr[~, A]](x: _Ex[T])
+                                                              (implicit tx: T,
+                                                               format: TFormat[T, _Ex[T]]): CellView[T, A] =
+    Impl.exprLike[T, A, _Ex](x)
 
-  def const[S <: Sys[S], A](value: A): CellView[S#Tx, A] =
-    Impl.const[S, A](value)
+  def const[T <: Txn[T], A](value: A): CellView[T, A] =
+    Impl.const[T, A](value)
 
   object Var {
     def unapply[Tx, A](view: CellView[Tx, A]): Option[Var[Tx, A]] = view match {
@@ -71,25 +69,25 @@ object CellView {
       def update(v: Option[Nothing])(implicit tx: Any): Unit = ()
     }
   }
-  trait Var[Tx, A] extends CellView[Tx, A] with stm.Sink[Tx, A]
+  trait Var[Tx, A] extends CellView[Tx, A] with Sink[Tx, A]
 
   object VarR {
-    def unapply[S <: Sys[S], A](view: CellView[S#Tx, A]): Option[VarR[S, A]] = view match {
-      case vr: VarR[S, A] => Some(vr)
+    def unapply[T <: Txn[T], A](view: CellView[T, A]): Option[VarR[T, A]] = view match {
+      case vr: VarR[T, A] => Some(vr)
       case _              => None
     }
   }
   /** A mutable cell view representing serializable elements. */
-  trait VarR[S <: Sys[S], A] extends Var[S#Tx, A] {
+  trait VarR[T <: Txn[T], A] extends Var[T, A] {
     type Repr
 
-    def repr(implicit tx: S#Tx): Repr
+    def repr(implicit tx: T): Repr
 
-    def repr_=(value: Repr)(implicit tx: S#Tx): Unit
+    def repr_=(value: Repr)(implicit tx: T): Unit
 
-    def lift(value: A)(implicit tx: S#Tx): Repr
+    def lift(value: A)(implicit tx: T): Repr
 
-    implicit def serializer: Serializer[S#Tx, S#Acc, Repr]
+    implicit def format: TFormat[T, Repr]
   }
 
   implicit final class Ops[Tx, A](private val in: CellView[Tx, A]) extends AnyVal {
@@ -115,8 +113,8 @@ object CellView {
 }
 
 /** A `CellView` is an in-memory view of a transactional object that fires updates when the object changes.
-  *
-  * It is important that the cell-view is ''not'' a `Disposable`, which means we do not have to track its
-  * life cycle. A `Disposable` of course is generated from the `react` call.
-  */
-trait CellView[Tx, +A] extends Observable[Tx, A] with stm.Source[Tx, A]
+ *
+ * It is important that the cell-view is ''not'' a `Disposable`, which means we do not have to track its
+ * life cycle. A `Disposable` of course is generated from the `react` call.
+ */
+trait CellView[Tx, +A] extends Observable[Tx, A] with Source[Tx, A]

@@ -1,13 +1,27 @@
+/*
+ *  NewSkipListSpec.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.Durable
-import de.sciss.lucre.stm.store.BerkeleyDB
+import de.sciss.lucre.Durable
+import de.sciss.lucre.store.BerkeleyDB
 import org.scalatest.Outcome
 import org.scalatest.flatspec.FixtureAnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class NewSkipListSpec extends FixtureAnyFlatSpec with Matchers {
   type S = Durable
+  type T = Durable.Txn
   type FixtureParam = Durable
 
   final def withFixture(test: OneArgTest): Outcome = {
@@ -22,7 +36,7 @@ class NewSkipListSpec extends FixtureAnyFlatSpec with Matchers {
 
   "SkipList.Map" should "allow head/last, firstKey/lastKey operations" in { implicit sys =>
     sys.step { implicit tx =>
-      val m = SkipList.Map.empty[S, Int, String]
+      val m = SkipList.Map.empty[T, Int, String]
       assertThrows[NoSuchElementException] { m.head     }
       assertThrows[NoSuchElementException] { m.last     }
       assertThrows[NoSuchElementException] { m.firstKey }

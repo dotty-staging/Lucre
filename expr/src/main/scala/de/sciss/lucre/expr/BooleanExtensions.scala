@@ -1,6 +1,6 @@
 /*
  *  BooleanExtensions.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,10 +13,9 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Elem, Copy, Obj, Sys}
-import de.sciss.lucre.{event => evt}
+import de.sciss.lucre.Event.Targets
+import de.sciss.lucre.impl.{ExprNodeImpl, ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.{BooleanObj, Copy, Elem, Expr, IntObj, Obj, Pull, Txn}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput}
 
@@ -30,44 +29,44 @@ object BooleanExtensions  {
 
   def init(): Unit = _init
 
-  private[this] type _Ex[S <: Sys[S]] = BooleanObj[S]
+  private[this] type _Ex[T <: Txn[T]] = BooleanObj[T]
 
-  private[this] object BooleanTuple1s extends Type.Extension1[BooleanObj] {
+  private[this] object BooleanTuple1s extends Expr.Type.Extension1[BooleanObj] {
     // final val arity = 1
     final val opLo: Int = Not.id
     final val opHi: Int = Not.id
 
     val name = "Boolean-1 Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       val op: UnaryOp[Boolean, BooleanObj] = opId /* : @switch */ match {
         case Not.id => Not
       }
-      val _1 = BooleanObj.read(in, access)
-      new Tuple1[S, Boolean, BooleanObj](targets, op, _1)
+      val _1 = BooleanObj.read(in)
+      new Tuple1[T, Boolean, BooleanObj](targets, op, _1)
     }
   }
 
-  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
-    protected val targets: Targets[S], val op: Tuple1Op[Boolean, T1, BooleanObj, ReprT1], val _1: ReprT1[S])
-    extends impl.Tuple1[S, Boolean, T1, BooleanObj, ReprT1] with BooleanObj[S] {
+  final class Tuple1[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]](
+                                                                           protected val targets: Targets[T], val op: ExprTuple1Op[Boolean, T1, BooleanObj, ReprT1], val _1: ReprT1[T])
+    extends ExprTuple1[T, Boolean, T1, BooleanObj, ReprT1] with BooleanObj[T] {
 
     def tpe: Obj.Type = BooleanObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1[Out, T1, ReprT1](Targets[Out], op, context(_1)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple1[Out, T1, ReprT1](Targets[Out](), op, context(_1)).connect()
   }
 
-  private[this] object BooleanTuple2s extends Type.Extension1[BooleanObj] {
+  private[this] object BooleanTuple2s extends Expr.Type.Extension1[BooleanObj] {
     // final val arity = 2
     final val opLo: Int = And   .id
     final val opHi: Int = IntGeq.id
 
     val name = "Boolean-2 Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       val op /* : BinaryOp[_, _] */ = (opId: @switch) match {
         case And   .id => And
         case Or    .id => Or
@@ -80,57 +79,57 @@ object BooleanExtensions  {
         case IntLeq.id => IntLeq
         case IntGeq.id => IntGeq
       }
-      op.read(in, access, targets)
+      op.read(in, targets)
     }
   }
 
   // ----- operators -----
 
-  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
+  final class Ops[T <: Txn[T]](val `this`: _Ex[T]) extends AnyVal { me =>
     import me.{`this` => a}
-    private type E = _Ex[S]
+    private type E = _Ex[T]
 
     // ---- Boolean => Boolean ----
 
-    def unary_!(implicit tx: S#Tx): E = Not(a)
+    def unary_!(implicit tx: T): E = Not(a)
 
     // ---- (Boolean, Boolean) => Boolean ----
 
-    def && (b: E)(implicit tx: S#Tx): E = And(a, b)
-    def || (b: E)(implicit tx: S#Tx): E = Or (a, b)
-    def ^  (b: E)(implicit tx: S#Tx): E = Xor(a, b)
+    def && (b: E)(implicit tx: T): E = And(a, b)
+    def || (b: E)(implicit tx: T): E = Or (a, b)
+    def ^  (b: E)(implicit tx: T): E = Xor(a, b)
 
     // ---- Boolean => Int ----
 
-    def toInt(implicit tx: S#Tx): IntObj[S] = IntExtensions.BooleanToInt(a)
+    def toInt(implicit tx: T): IntObj[T] = IntExtensions.BooleanToInt(a)
   }
 
   // ----- impl -----
 
-  private[this] abstract class UnaryOp[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]]
-    extends impl.Tuple1Op[Boolean, T1, BooleanObj, ReprT1] {
+  private[this] abstract class UnaryOp[T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]]
+    extends ExprTuple1Op[Boolean, T1, BooleanObj, ReprT1] {
 
-    final def apply[S <: Sys[S]](_1: ReprT1[S])(implicit tx: S#Tx): _Ex[S] = _1 match {
-      case Expr.Const(a) => BooleanObj.newConst[S](value(a))  // IntelliJ highlight error
+    final def apply[T <: Txn[T]](_1: ReprT1[T])(implicit tx: T): _Ex[T] = _1 match {
+      case Expr.Const(a) => BooleanObj.newConst[T](value(a))  // IntelliJ highlight error
       case _ =>
-        new Tuple1[S, T1, ReprT1](Targets[S], this, _1).connect()
+        new Tuple1[T, T1, ReprT1](Targets[T](), this, _1).connect()
     }
 
-    def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"$name${_1}"
+    def toString[T <: Txn[T]](_1: ReprT1[T]): String = s"$name${_1}"
 
     def name: String
   }
 
-  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
-                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
-       protected val targets: Targets[S], val op: Tuple2Op[Boolean, T1, T2, BooleanObj, ReprT1, ReprT2],
-       val _1: ReprT1[S], val _2: ReprT2[S])
-    extends impl.Tuple2[S, Boolean, T1, T2, BooleanObj, ReprT1, ReprT2] with BooleanObj[S] {
+  final class Tuple2[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1],
+    T2, ReprT2[~ <: Txn[~]] <: Expr[~, T2]](
+                                             protected val targets: Targets[T], val op: ExprTuple2Op[Boolean, T1, T2, BooleanObj, ReprT1, ReprT2],
+                                             val _1: ReprT1[T], val _2: ReprT2[T])
+    extends ExprTuple2[T, Boolean, T1, T2, BooleanObj, ReprT1, ReprT2] with BooleanObj[T] {
 
     def tpe: Obj.Type = BooleanObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out](), op, context(_1), context(_2)).connect()
   }
 
   private[this] case object Not extends UnaryOp[Boolean, BooleanObj] {
@@ -139,73 +138,73 @@ object BooleanExtensions  {
     def name = "!"
   }
 
-  sealed trait BinaryOp[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]]
-    extends impl.Tuple2Op[Boolean, T1, T1, BooleanObj, ReprT1, ReprT1] {
+  sealed trait BinaryOp[T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]]
+    extends ExprTuple2Op[Boolean, T1, T1, BooleanObj, ReprT1, ReprT1] {
 
     def name: String
 
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): _Ex[S]
+    def read[T <: Txn[T]](in: DataInput, targets: Targets[T])(implicit tx: T): _Ex[T]
 
-    final def toString[S <: Sys[S]](_1: ReprT1[S], _2: ReprT1[S]): String = s"(${_1} $name ${_2})"
+    final def toString[T <: Txn[T]](_1: ReprT1[T], _2: ReprT1[T]): String = s"(${_1} $name ${_2})"
   }
 
   private[this] trait BooleanBinaryOp extends BinaryOp[Boolean, BooleanObj] { op =>
-    def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): _Ex[S] = {
-      val _1 = BooleanObj.read(in, access)
-      val _2 = BooleanObj.read(in, access)
-      new LazyTuple2[S](targets, op, _1, _2)
+    def read[T <: Txn[T]](in: DataInput, targets: Targets[T])(implicit tx: T): _Ex[T] = {
+      val _1 = BooleanObj.read(in)
+      val _2 = BooleanObj.read(in)
+      new LazyTuple2[T](targets, op, _1, _2)
     }
 
     def isLazy: Boolean
 
-    def lazyValue[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S])(implicit tx: S#Tx): Boolean
+    def lazyValue[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T])(implicit tx: T): Boolean
 
-    // def tryValue_1[S <: Sys[S]](_1: Boolean): Option[Boolean]
+    // def tryValue_1[T <: Txn[T]](_1: Boolean): Option[Boolean]
 
-    final def apply[S <: Sys[S]](a: _Ex[S], b: _Ex[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
+    final def apply[T <: Txn[T]](a: _Ex[T], b: _Ex[T])(implicit tx: T): _Ex[T] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanObj.newConst(value(ca, cb))
-      case _ => new LazyTuple2[S](Targets[S], this, a, b).connect()
+      case _ => new LazyTuple2[T](Targets[T](), this, a, b).connect()
     }
   }
 
   sealed trait IntBinaryOp extends BinaryOp[Int, IntObj] { op =>
-    final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): _Ex[S] = {
-      val _1 = IntObj.read(in, access)
-      val _2 = IntObj.read(in, access)
-      new Tuple2[S, Int, IntObj, Int, IntObj](targets, op, _1, _2)
+    final def read[T <: Txn[T]](in: DataInput, targets: Targets[T])(implicit tx: T): _Ex[T] = {
+      val _1 = IntObj.read(in)
+      val _2 = IntObj.read(in)
+      new Tuple2[T, Int, IntObj, Int, IntObj](targets, op, _1, _2)
     }
 
     // ---- impl ----
 
-    final def apply[S <: Sys[S]](a: IntObj[S], b: IntObj[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
+    final def apply[T <: Txn[T]](a: IntObj[T], b: IntObj[T])(implicit tx: T): _Ex[T] = (a, b) match {
       case (Expr.Const(ca), Expr.Const(cb)) => BooleanObj.newConst(value(ca, cb))
-      case _ => new Tuple2[S, Int, IntObj, Int, IntObj](Targets[S], this, a, b).connect()
+      case _ => new Tuple2[T, Int, IntObj, Int, IntObj](Targets[T](), this, a, b).connect()
     }
   }
 
-  private final class LazyTuple2[S <: Sys[S]](protected val targets: evt.Targets[S], op: BooleanBinaryOp,
-                                              _1: _Ex[S], _2: _Ex[S])
-    extends impl.NodeImpl[S, Boolean] with BooleanObj[S] {
+  private final class LazyTuple2[T <: Txn[T]](protected val targets: Targets[T], op: BooleanBinaryOp,
+                                              _1: _Ex[T], _2: _Ex[T])
+    extends ExprNodeImpl[T, Boolean] with BooleanObj[T] {
 
     def tpe: Obj.Type = BooleanObj
 
-    def connect()(implicit tx: S#Tx): this.type = {
+    def connect()(implicit tx: T): this.type = {
       _1.changed ---> changed
       _2.changed ---> changed
       this
     }
 
-    private[this] def disconnect()(implicit tx: S#Tx): Unit = {
+    private[this] def disconnect()(implicit tx: T): Unit = {
       _1.changed -/-> changed
       _2.changed -/-> changed
     }
 
-    protected def disposeData()(implicit tx: S#Tx): Unit = disconnect()
+    protected def disposeData()(implicit tx: T): Unit = disconnect()
 
-    def value(implicit tx: S#Tx): Boolean = op.lazyValue(_1, _2)
+    def value(implicit tx: T): Boolean = op.lazyValue(_1, _2)
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new LazyTuple2(Targets[Out], op, context(_1), context(_2)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new LazyTuple2(Targets[Out](), op, context(_1), context(_2)).connect()
 
     protected def writeData(out: DataOutput): Unit = {
       out.writeByte(1)  // 'node not var'
@@ -216,7 +215,7 @@ object BooleanExtensions  {
     }
 
     object changed extends Changed {
-      def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Change[Boolean]] = {
+      def pullUpdate(pull: Pull[T])(implicit tx: T): Option[Change[Boolean]] = {
         val _1c = _1.changed
         val _2c = _2.changed
 
@@ -256,12 +255,12 @@ object BooleanExtensions  {
     def value(a: Boolean, b: Boolean): Boolean = a && b
     def name = "&&"
 
-    def lazyValue[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S])(implicit tx: S#Tx): Boolean =
+    def lazyValue[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T])(implicit tx: T): Boolean =
       _1.value && _2.value
 
     def isLazy = true
 
-    // def tryValue_1[S <: Sys[S]](_1: Boolean): Option[Boolean] = if (_1) None else Some(false)
+    // def tryValue_1[T <: Txn[T]](_1: Boolean): Option[Boolean] = if (_1) None else Some(false)
   }
 
   private[this] case object Or extends BooleanBinaryOp {
@@ -269,12 +268,12 @@ object BooleanExtensions  {
     def value(a: Boolean, b: Boolean): Boolean = a || b
     def name = "||"
 
-    def lazyValue[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S])(implicit tx: S#Tx): Boolean =
+    def lazyValue[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T])(implicit tx: T): Boolean =
       _1.value || _2.value
 
     def isLazy = true
 
-    // def tryValue_1[S <: Sys[S]](_1: Boolean): Option[Boolean] = if (_1) Some(true) else None
+    // def tryValue_1[T <: Txn[T]](_1: Boolean): Option[Boolean] = if (_1) Some(true) else None
   }
 
   private[this] case object Xor extends BooleanBinaryOp {
@@ -282,12 +281,12 @@ object BooleanExtensions  {
     def value(a: Boolean, b: Boolean): Boolean = a ^ b
     def name = "^"
 
-    def lazyValue[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S])(implicit tx: S#Tx): Boolean =
+    def lazyValue[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T])(implicit tx: T): Boolean =
       _1.value ^ _2.value   // eager actually
 
     def isLazy = false
 
-    // def tryValue_1[S <: Sys[S]](_1: Boolean): Option[Boolean] = None
+    // def tryValue_1[T <: Txn[T]](_1: Boolean): Option[Boolean] = None
   }
 
   // ---- (Int, Int) => Boolean ----

@@ -1,21 +1,35 @@
+/*
+ *  AncestorRetroSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
 import de.sciss.lucre.data.TotalOrder.Map
-import de.sciss.lucre.geom.{IntCube, IntDistanceMeasure3D, IntPoint3D, IntSpace}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
-import de.sciss.serial.{DataInput, DataOutput, Reader, Serializer, Writable}
+import de.sciss.lucre.geom.{IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, IntSpace}
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Cursor, Durable, InMemory, Sys, TestUtil, Txn}
+import de.sciss.serial.{DataInput, DataOutput, TReader, TFormat, Writable, WritableFormat}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.annotation.tailrec
-import scala.collection.immutable.{Vector => Vec}
+import scala.collection.immutable.{IndexedSeq => Vec, Map => IMap, Set => ISet}
 import scala.concurrent.stm.Ref
 
 /*
- To run this test copy + paste the following into sbt:
 
-test-only de.sciss.lucre.data.AncestorRetroSuite
+  To run this test copy + paste the following into sbt:
+
+  testOnly de.sciss.lucre.data.AncestorRetroSuite
 
 */
 class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
@@ -40,17 +54,23 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
   var verbose                   = false
   val DEBUG_LAST                = false   // if enabled, switches to verbosity for the last element in the sequence
 
+  implicit val space: IntSpace.ThreeDim = IntSpace.ThreeDim
+
   if (INMEMORY) {
-    withSys[InMemory]("Mem", () => InMemory(): InMemory /* please IDEA */ , (_, _) => ())
+    withSys[InMemory, InMemory.Txn]("Mem", { () =>
+      val s = InMemory()
+      (s, s)
+    }, (_, _) => ())
   }
   if (DATABASE) {
-    withSys[Durable]("BDB", () => {
-//      val dir = File.createTempFile("ancestor", "_database")
-//      dir.delete()
-//      dir.mkdir()
-//      println(dir.getAbsolutePath)
+    withSys[Durable, Durable.Txn]("BDB", { () =>
+      //      val dir = File.createTempFile("ancestor", "_database")
+      //      dir.delete()
+      //      dir.mkdir()
+      //      println(dir.getAbsolutePath)
       val bdb = BerkeleyDB.tmp()
-      Durable(bdb)
+      val s = Durable(bdb)
+      (s, s)
     }, {
       case (bdb, success) =>
         if (success) {
@@ -63,23 +83,22 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
   }
 
   object FullVertexPre {
-    implicit def serializer[S <: Sys[S]](implicit vertexReader: Reader[S#Tx, S#Acc, FullVertex[S]]): Serializer[S#Tx, S#Acc, FullVertexPre[S]] =
-      new SerImpl[S](vertexReader)
+    implicit def format[T <: Txn[T]](implicit vertexReader: TReader[T, FullVertex[T]]): TFormat[T, FullVertexPre[T]] =
+      new FmtImpl[T](vertexReader)
 
-    private final class SerImpl[S <: Sys[S]](vertexReader: Reader[S#Tx, S#Acc, FullVertex[S]])
-      extends Serializer[S#Tx, S#Acc, FullVertexPre[S]] {
-      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): FullVertexPre[S] = {
+    private final class FmtImpl[T <: Txn[T]](vertexReader: TReader[T, FullVertex[T]])
+      extends WritableFormat[T, FullVertexPre[T]] {
+
+      override def readT(in: DataInput)(implicit tx: T): FullVertexPre[T] = {
         val id  = in.readByte()
-        val v   = vertexReader.read(in, access)
+        val v   = vertexReader.readT(in)
         if (id == 0) v.preHeadKey else v.preTailKey
       }
-
-      def write(v: FullVertexPre[S], out: DataOutput): Unit = v.write(out)
     }
   }
 
-  sealed trait FullVertexPre[S <: Sys[S]] extends Writable with VertexSource[S, FullVertex[S]] {
-    def order: FullPreOrder[S]
+  sealed trait FullVertexPre[T <: Txn[T]] extends Writable with VertexSource[T, FullVertex[T]] {
+    def order: FullPreOrder[T]
 
     def id: Int
 
@@ -95,62 +114,61 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
       }
   }
 
-  final class FullVertexPreHead[S <: Sys[S]](val source: FullVertex[S])
-    extends FullVertexPre[S] {
+  final class FullVertexPreHead[T <: Txn[T]](val source: FullVertex[T])
+    extends FullVertexPre[T] {
 
-    def order: FullPreOrder[S] = source.pre
+    def order: FullPreOrder[T] = source.pre
 
     def id = 0
 
     override def toString = s"$source<pre>"
 
-    def debugString(implicit tx: S#Tx) = s"$this@${source.pre.tag}"
+    def debugString(implicit tx: T) = s"$this@${source.pre.tag}"
   }
 
-  final class FullVertexPreTail[S <: Sys[S]](val source: FullVertex[S])
-    extends FullVertexPre[S] {
+  final class FullVertexPreTail[T <: Txn[T]](val source: FullVertex[T])
+    extends FullVertexPre[T] {
 
-    def order: FullPreOrder[S] = source.preTail
+    def order: FullPreOrder[T] = source.preTail
 
     def id = 1
 
     override def toString = s"$source<pre-tail>"
 
-    def debugString(implicit tx: S#Tx) = s"$this@${source.preTail.tag}"
+    def debugString(implicit tx: T) = s"$this@${source.preTail.tag}"
   }
 
   object FullTree {
-    def apply[S <: Sys[S]]()(implicit tx: S#Tx): FullTree[S] = {
-      implicit val pointView: (FullVertex[S], S#Tx) => IntPoint3D = (p, tx) => p.toPoint(tx)
-      new FullTree[S] {
-        val system: S = tx.system
+    def apply[T <: Txn[T]]()(implicit tx: T): FullTree[T] = {
+      implicit val pointView: (FullVertex[T], T) => IntPoint3D = (p, tx) => p.toPoint(tx)
+      new FullTree[T] {
+//        val system: T = tx.system
         val cube: IntCube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
-        val t: SkipOctree[S, IntSpace.ThreeDim, FullVertex[S]] =
-          SkipOctree.empty[S, IntSpace.ThreeDim, FullVertex[S]](cube)
+        val t: SkipOctree[T, IntPoint3DLike, IntCube, FullVertex[T]] =
+          SkipOctree.empty[T, IntPoint3DLike, IntCube, FullVertex[T]](cube)
 
-        val orderObserver = new RelabelObserver[ S, FullVertex[ S ]]( "full", t )
-        val preOrder : TotalOrder.Map[S, FullVertexPre[S]] = TotalOrder.Map.empty(orderObserver, _.order, 0)
-        val postOrder: TotalOrder.Map[S, FullVertex   [S]] = TotalOrder.Map.empty(orderObserver, _.post, Int.MaxValue /* - 1 */)
-        implicit lazy val vertexSer: Serializer[S#Tx, S#Acc, FullVertex[S]] = new Serializer[S#Tx, S#Acc, FullVertex[S]] {
-          def write(v: FullVertex[S], out: DataOutput): Unit = v.write(out)
+        val orderObserver = new RelabelObserver[ T, FullVertex[ T ]]( "full", t )
+        val preOrder : TotalOrder.Map[T, FullVertexPre[T]] = TotalOrder.Map.empty(orderObserver, _.order, 0)
+        val postOrder: TotalOrder.Map[T, FullVertex   [T]] = TotalOrder.Map.empty(orderObserver, _.post, Int.MaxValue /* - 1 */)
 
-          def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): FullVertex[S] = {
-            new FullVertex[S] {
+        implicit object vertexFmt extends WritableFormat[T, FullVertex[T]] {
+          override def readT(in: DataInput)(implicit tx: T): FullVertex[T] = {
+            new FullVertex[T] {
               val version: Int = in.readInt()
-              val pre     : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.readEntry(in, access)
-              val post    : TotalOrder.Map.Entry[S, FullVertex   [S]] = postOrder.readEntry(in, access)
-              val preTail : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.readEntry(in, access)
+              val pre     : TotalOrder.Map.Entry[T, FullVertexPre[T]] = preOrder  .readEntry(in)
+              val post    : TotalOrder.Map.Entry[T, FullVertex   [T]] = postOrder .readEntry(in)
+              val preTail : TotalOrder.Map.Entry[T, FullVertexPre[T]] = preOrder  .readEntry(in)
             }
           }
         }
-        val root: FullVertex[S] = new FullVertex[S] {
+        val root: FullVertex[T] = new FullVertex[T] {
           //               val pre: FullPreOrder[ S ]       = preOrder.root
           //               val post: FullPostOrder[ S ]     = postOrder.root // insertAfter( this, this )
           //               val preTail: FullPreOrder[ S ]   = preOrder.insertAfter( preHeadKey, preTailKey )
-          val pre    : FullPreOrder [S] = preOrder .root
-          val post   : FullPostOrder[S] = postOrder.root
+          val pre    : FullPreOrder [T] = preOrder .root
+          val post   : FullPostOrder[T] = postOrder.root
           // insertAfter( this, this )
-          val preTail: FullPreOrder [S] = preOrder.insert()
+          val preTail: FullPreOrder [T] = preOrder.insert()
           val version = 0
           preOrder.placeAfter(preHeadKey, preTailKey) // preTailKey must come last
           //               override def toString = "full-root"
@@ -159,44 +177,44 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
       }
     }
   }
-//   final class FullTree[ S <: Sys[ S ]] private (
-//      val t: SkipOctree[ S, Space.IntThreeDim, FullVertex[ S ]],
-//      val root: FullRootVertex[ S ],
-//      val preOrder: TotalOrder.Map[ S, FullVertexPre[ S ]],
-//      val postOrder: TotalOrder.Map[ S, FullVertex[ S ]],
-//      val vertexSer: Serializer[ FullVertex[ S ]]
-//   ) {
+  //   final class FullTree[ S <: Sys[ S ]] private (
+  //      val t: SkipOctree[ S, Space.IntThreeDim, FullVertex[ S ]],
+  //      val root: FullRootVertex[ S ],
+  //      val preOrder: TotalOrder.Map[ S, FullVertexPre[ S ]],
+  //      val postOrder: TotalOrder.Map[ S, FullVertex[ S ]],
+  //      val vertexFmt: Format[ FullVertex[ S ]]
+  //   ) {
 
-  sealed trait FullTree[S <: Sys[S]] {
-    def system: S
+  sealed trait FullTree[T <: Txn[T]] {
+//    def system: T
 
-    def t: SkipOctree[S, IntSpace.ThreeDim, FullVertex[S]]
+    def t: SkipOctree[T, IntPoint3DLike, IntCube, FullVertex[T]]
 
-    def root: FullVertex[S]
+    def root: FullVertex[T]
 
-    def preOrder : TotalOrder.Map[S, FullVertexPre[S]]
-    def postOrder: TotalOrder.Map[S, FullVertex[S]]
+    def preOrder : TotalOrder.Map[T, FullVertexPre[T]]
+    def postOrder: TotalOrder.Map[T, FullVertex[T]]
 
-    def vertexSer: Serializer[S#Tx, S#Acc, FullVertex[S]]
+    def vertexFmt: TFormat[T, FullVertex[T]]
 
-    private type V = FullVertex[ S ]
+    private type V = FullVertex[T]
 
     private val versionCnt = Ref(1)
 
-    def nextVersion()(implicit tx: S#Tx): Int = {
+    def nextVersion()(implicit tx: T): Int = {
       val res = versionCnt.get(tx.peer)
       versionCnt.set(res + 1)(tx.peer)
       res
     }
 
-    def insertChild(parent: V)(implicit tx: S#Tx): V = {
-      val v: FullVertex[S] = new FullVertex[S] {
+    def insertChild(parent: V)(implicit tx: T): V = {
+      val v: FullVertex[T] = new FullVertex[T] {
         //            val pre     = preOrder.insertBefore( parent.preTailKey, preHeadKey )
         //            val preTail = preOrder.insertAfter( preHeadKey, preTailKey )
         //            val post    = postOrder.insertBefore( parent, this )
-        val pre    : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.insert()
-        val preTail: TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder.insert()
-        val post   : TotalOrder.Map.Entry[S, FullVertex   [S]] = postOrder.insert()
+        val pre    : TotalOrder.Map.Entry[T, FullVertexPre[T]] = preOrder.insert()
+        val preTail: TotalOrder.Map.Entry[T, FullVertexPre[T]] = preOrder.insert()
+        val post   : TotalOrder.Map.Entry[T, FullVertex   [T]] = postOrder.insert()
         val version: Int = nextVersion()
         //if( version == 411 ) {
         //   println( "AHAAAA" )
@@ -214,14 +232,14 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
       v
     }
 
-    def insertRetroChild(parent: V)(implicit tx: S#Tx): V = {
-      val v: FullVertex[S] = new FullVertex[S] {
+    def insertRetroChild(parent: V)(implicit tx: T): V = {
+      val v: FullVertex[T] = new FullVertex[T] {
         //            val pre     = preOrder.insertAfter( parent.preHeadKey, preHeadKey )
         //            val preTail = preOrder.insertBefore( parent.preTailKey, preTailKey )
         //            val post    = postOrder.insertBefore( parent, this )
-        val pre    : TotalOrder.Map.Entry[S, FullVertexPre[S]]  = preOrder .insert()
-        val preTail: TotalOrder.Map.Entry[S, FullVertexPre[S]]  = preOrder .insert()
-        val post   : TotalOrder.Map.Entry[S, FullVertex   [S]]  = postOrder.insert()
+        val pre    : TotalOrder.Map.Entry[T, FullVertexPre[T]]  = preOrder .insert()
+        val preTail: TotalOrder.Map.Entry[T, FullVertexPre[T]]  = preOrder .insert()
+        val post   : TotalOrder.Map.Entry[T, FullVertex   [T]]  = postOrder.insert()
         val version: Int = nextVersion()
         preOrder .placeAfter (parent.preHeadKey, preHeadKey)
         postOrder.placeBefore(parent, this)
@@ -235,15 +253,15 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
       v
     }
 
-    def insertRetroParent(child: V)(implicit tx: S#Tx): V = {
+    def insertRetroParent(child: V)(implicit tx: T): V = {
       require(child != root)
-      val v: FullVertex[S] = new FullVertex[S] {
+      val v: FullVertex[T] = new FullVertex[T] {
         //            val pre     = preOrder.insertBefore( child.preHeadKey, preHeadKey )
         //            val preTail = preOrder.insertAfter( child.preTailKey, preTailKey )
         //            val post    = postOrder.insertAfter( child, this )
-        val pre    : TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder .insert()
-        val preTail: TotalOrder.Map.Entry[S, FullVertexPre[S]] = preOrder .insert()
-        val post   : TotalOrder.Map.Entry[S, FullVertex   [S]] = postOrder.insert()
+        val pre    : TotalOrder.Map.Entry[T, FullVertexPre[T]] = preOrder .insert()
+        val preTail: TotalOrder.Map.Entry[T, FullVertexPre[T]] = preOrder .insert()
+        val post   : TotalOrder.Map.Entry[T, FullVertex   [T]] = postOrder.insert()
         val version: Int = nextVersion()
         preOrder .placeBefore(child.preHeadKey, preHeadKey)
         postOrder.placeAfter (child, this)
@@ -268,30 +286,30 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
     //      }
   }
 
-  type FullPreOrder [S <: Sys[S]] = TotalOrder.Map.Entry[S, FullVertexPre[S]]
-  type FullPostOrder[S <: Sys[S]] = TotalOrder.Map.Entry[S, FullVertex   [S]]
+  type FullPreOrder [T <: Txn[T]] = TotalOrder.Map.Entry[T, FullVertexPre[T]]
+  type FullPostOrder[T <: Txn[T]] = TotalOrder.Map.Entry[T, FullVertex   [T]]
 
-  sealed trait VertexSource[S <: Sys[S], V] {
+  sealed trait VertexSource[T <: Txn[T], V] {
     def source: V
 
-    def debugString(implicit tx: S#Tx): String
+    def debugString(implicit tx: T): String
   }
 
-  sealed trait VertexLike[S <: Sys[S], Repr] extends Writable with VertexSource[S, Repr] {
+  sealed trait VertexLike[T <: Txn[T], Repr] extends Writable with VertexSource[T, Repr] {
     def version: Int
 
-    def toPoint(implicit tx: S#Tx): IntPoint3D
+    def toPoint(implicit tx: T): IntPoint3D
   }
 
-  sealed trait FullVertex[S <: Sys[S]] extends VertexLike[S, FullVertex[S]] {
-    def source: FullVertex[S] = this
+  sealed trait FullVertex[T <: Txn[T]] extends VertexLike[T, FullVertex[T]] {
+    def source: FullVertex[T] = this
 
-    final val preHeadKey = new FullVertexPreHead[S](this)
-    final val preTailKey = new FullVertexPreTail[S](this)
+    final val preHeadKey = new FullVertexPreHead[T](this)
+    final val preTailKey = new FullVertexPreTail[T](this)
 
-    def pre    : FullPreOrder [S]
-    def post   : FullPostOrder[S]
-    def preTail: FullPreOrder [S]
+    def pre    : FullPreOrder [T]
+    def post   : FullPostOrder[T]
+    def preTail: FullPreOrder [T]
 
     final def write(out: DataOutput): Unit = {
       out.writeInt(version)
@@ -307,24 +325,24 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
     //      final def y : Int = system.step { implicit tx => post.tag }
     //      final def z : Int = version
 
-    final def toPoint(implicit tx: S#Tx): IntPoint3D = IntPoint3D(pre.tag, post.tag, version)
+    final def toPoint(implicit tx: T): IntPoint3D = IntPoint3D(pre.tag, post.tag, version)
 
-    final def debugString(implicit tx: S#Tx) = s"$toString<post>@${post.tag}"
+    final def debugString(implicit tx: T) = s"$toString<post>@${post.tag}"
 
     override def toString = s"Full($version)"
   }
 
   //   sealed trait FullRootVertex[ S <: Sys[ S ]] extends FullVertex[ S ] {
-  ////      implicit def vertexSer : Serializer[ FullVertex[ S ]]
+  ////      implicit def vertexFmt : Format[ FullVertex[ S ]]
   ////      def preOrder  : TotalOrder.Map[ S, FullVertexPre[ S ]]
   ////      def postOrder : TotalOrder.Map[ S, FullVertex[ S ]]
   //   }
 
-  final class RelabelObserver[S <: Sys[S], V <: VertexLike[S, V]](name: String,
-                                                                  t: SkipOctree[S, IntSpace.ThreeDim, V])
-  extends TotalOrder.Map.RelabelObserver[ S#Tx, VertexSource[ S, V ]] {
-    def beforeRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[S, V]])
-                        (implicit tx: S#Tx): Unit = {
+  final class RelabelObserver[T <: Txn[T], V <: VertexLike[T, V]](name: String,
+                                                                  t: SkipOctree[T, IntPoint3DLike, IntCube, V])
+    extends TotalOrder.Map.RelabelObserver[ T, VertexSource[ T, V ]] {
+    def beforeRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[T, V]])
+                        (implicit tx: T): Unit = {
       if (verbose) println(s"RELABEL $name - begin")
       //         val v0 = v0s.source
       iter.foreach { vs =>
@@ -349,8 +367,8 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
       if (verbose) println(s"RELABEL $name - end")
     }
 
-    def afterRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[S, V]])
-                       (implicit tx: S#Tx): Unit = {
+    def afterRelabeling(/* v0s: VertexSource[ V ], */ iter: Iterator[VertexSource[T, V]])
+                       (implicit tx: T): Unit = {
       if (verbose) println(s"RELABEL $name + begin")
       //         val v0 = v0s.source
       iter.foreach { vs =>
@@ -376,7 +394,7 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
     }
   }
 
-  type MarkOrder[S <: Sys[S]] = TotalOrder.Map.Entry[S, MarkVertex[S]]
+  type MarkOrder[T <: Txn[T]] = TotalOrder.Map.Entry[T, MarkVertex[T]]
 
   //   object MarkVertex {
   //      implicit def reader[ S <: Sys[ S ]] : Reader[ MarkVertex[ S ]] = new ReaderImpl[ S ]
@@ -387,12 +405,12 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
   //         }
   //      }
   //   }
-  sealed trait MarkVertex[S <: Sys[S]] extends VertexLike[S, MarkVertex[S]] {
-    final def source: MarkVertex[S] = this
+  sealed trait MarkVertex[T <: Txn[T]] extends VertexLike[T, MarkVertex[T]] {
+    final def source: MarkVertex[T] = this
 
-    def full: FullVertex[S]
-    def pre : MarkOrder [S]
-    def post: MarkOrder [S]
+    def full: FullVertex[T]
+    def pre : MarkOrder [T]
+    def post: MarkOrder [T]
 
     //      final def x : Int = system.step { implicit tx => pre.tag }
     //      final def y : Int = system.step { implicit tx => post.tag }
@@ -406,75 +424,72 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
       post.write(out)
     }
 
-    final def toPoint(implicit tx: S#Tx): IntPoint3D = IntPoint3D(pre.tag, post.tag, version)
+    final def toPoint(implicit tx: T): IntPoint3D = IntPoint3D(pre.tag, post.tag, version)
 
     override def toString = s"Mark($version)"
 
-    def debugString(implicit tx: S#Tx): String = toString
+    def debugString(implicit tx: T): String = toString
 
     override def equals(that: Any): Boolean =
       that.isInstanceOf[MarkVertex[_]] && (that.asInstanceOf[MarkVertex[_]].version == version)
   }
 
-  sealed trait MarkRootVertex[S <: Sys[S]] extends MarkVertex[S] {
-    implicit def vertexSer: Serializer[S#Tx, S#Acc, MarkVertex[S]]
+  sealed trait MarkRootVertex[T <: Txn[T]] extends MarkVertex[T] {
+    implicit def vertexFmt: TFormat[T, MarkVertex[T]]
 
-    def preOrder : TotalOrder.Map[S, MarkVertex[S]]
-    def postOrder: TotalOrder.Map[S, MarkVertex[S]]
+    def preOrder : TotalOrder.Map[T, MarkVertex[T]]
+    def postOrder: TotalOrder.Map[T, MarkVertex[T]]
   }
 
   object MarkTree {
-    def apply[S <: Sys[S]](ft: FullTree[S])(implicit tx: S#Tx): MarkTree[S] = {
-      implicit val pointView: (MarkVertex[S], S#Tx) => IntPoint3D = (p, tx) => p.toPoint(tx)
-      lazy val orderObserver = new RelabelObserver[S, MarkVertex[S]]("mark", t)
-      lazy val _vertexSer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = new Serializer[S#Tx, S#Acc, MarkVertex[S]] {
-        def write(v: MarkVertex[S], out: DataOutput): Unit = v.write(out)
+    def apply[T <: Txn[T]](ft: FullTree[T])(implicit tx: T): MarkTree[T] = {
+      implicit val pointView: (MarkVertex[T], T) => IntPoint3D = (p, tx) => p.toPoint(tx)
 
-        def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): MarkVertex[S] = {
-          new MarkVertex[S] {
-            val full: FullVertex[S] = ft.vertexSer.read(in, access)
-            val pre : TotalOrder.Map.Entry[S, MarkVertex[S]] = root.preOrder .readEntry(in, access)
-            val post: TotalOrder.Map.Entry[S, MarkVertex[S]] = root.postOrder.readEntry(in, access)
+      lazy val orderObserver = new RelabelObserver[T, MarkVertex[T]]("mark", t)
+
+      lazy val _vertexFmt: TFormat[T, MarkVertex[T]] = new WritableFormat[T, MarkVertex[T]] {
+        override def readT(in: DataInput)(implicit tx: T): MarkVertex[T] = {
+          new MarkVertex[T] {
+            val full: FullVertex[T] = ft.vertexFmt.readT(in)
+            val pre : TotalOrder.Map.Entry[T, MarkVertex[T]] = root.preOrder .readEntry(in)
+            val post: TotalOrder.Map.Entry[T, MarkVertex[T]] = root.postOrder.readEntry(in)
           }
         }
       }
-      lazy val root: MarkRootVertex[S] = new MarkRootVertex[S] {
-        implicit val vertexSer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
+      lazy val root: MarkRootVertex[T] = new MarkRootVertex[T] {
+        implicit val vertexFmt: TFormat[T, MarkVertex[T]] = _vertexFmt
 
-        def full: FullVertex[S] = ft.root
+        def full: FullVertex[T] = ft.root
 
-        lazy val preOrder : TotalOrder.Map[S, MarkVertex[S]] = TotalOrder.Map.empty(orderObserver, _.pre)
-        lazy val postOrder: TotalOrder.Map[S, MarkVertex[S]] = TotalOrder.Map.empty(orderObserver, _.post, rootTag = Int.MaxValue)
+        lazy val preOrder : TotalOrder.Map[T, MarkVertex[T]] = TotalOrder.Map.empty(orderObserver, _.pre)
+        lazy val postOrder: TotalOrder.Map[T, MarkVertex[T]] = TotalOrder.Map.empty(orderObserver, _.post, rootTag = Int.MaxValue)
         //            lazy val pre: MarkOrder[ S ]  = preOrder.root
         //            lazy val post: MarkOrder[ S ] = postOrder.root.append( this )
-        lazy val pre : MarkOrder[S] = preOrder.root
-        lazy val post: MarkOrder[S] = postOrder.root // postOrder.insertAfter( root, this )
+        lazy val pre : MarkOrder[T] = preOrder.root
+        lazy val post: MarkOrder[T] = postOrder.root // postOrder.insertAfter( root, this )
       }
       lazy val t = {
-        implicit val keySer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
-        SkipOctree.empty[S, IntSpace.ThreeDim, MarkVertex[S]](ft.t.hyperCube)
+        implicit val keyFmt: TFormat[T, MarkVertex[T]] = _vertexFmt
+        SkipOctree.empty[T, IntPoint3DLike, IntCube, MarkVertex[T]](ft.t.hyperCube)
       }
       t += root
 
-//      implicit val orderSer: Serializer[S#Tx, S#Acc, TotalOrder.Map.Entry[S, MarkVertex[S]]] =
-//        root.preOrder.EntrySerializer
-
       lazy val preList = {
-        implicit val ord: Ordering[S#Tx, MarkVertex[S]] = new Ordering[S#Tx, MarkVertex[S]] {
-          def compare(a: MarkVertex[S], b: MarkVertex[S])(implicit tx: S#Tx): Int = a.pre.compare(b.pre)
+        implicit val ord: scala.Ordering[MarkVertex[T]] = new scala.Ordering[MarkVertex[T]] {
+          def compare(a: MarkVertex[T], b: MarkVertex[T]): Int = a.pre.compare(b.pre)
         }
-        implicit val keySer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
-        val res = SkipList.Set.empty[S, MarkVertex[S]]
+        implicit val keyFmt: TFormat[T, MarkVertex[T]] = _vertexFmt
+        val res = SkipList.Set.empty[T, MarkVertex[T]]
         res.add(root)
         res
       }
 
       lazy val postList = {
-        implicit val ord: Ordering[S#Tx, MarkVertex[S]] = new Ordering[S#Tx, MarkVertex[S]] {
-          def compare(a: MarkVertex[S], b: MarkVertex[S])(implicit tx: S#Tx): Int = a.post.compare(b.post)
+        implicit val ord: scala.Ordering[MarkVertex[T]] = new scala.Ordering[MarkVertex[T]] {
+          def compare(a: MarkVertex[T], b: MarkVertex[T]): Int = a.post.compare(b.post)
         }
-        implicit val keySer: Serializer[S#Tx, S#Acc, MarkVertex[S]] = _vertexSer
-        val res = SkipList.Set.empty[S, MarkVertex[S]]
+        implicit val keyFmt: TFormat[T, MarkVertex[T]] = _vertexFmt
+        val res = SkipList.Set.empty[T, MarkVertex[T]]
         res.add(root)
         res
       }
@@ -484,15 +499,15 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
     }
   }
 
-  final class MarkTree[S <: Sys[S]] private(val ft: FullTree[S],
-                                            val t: SkipOctree[S, IntSpace.ThreeDim, MarkVertex[S]],
-                                            val root: MarkRootVertex[S], val preList: SkipList.Set[S, MarkVertex[S]],
-                                            val postList: SkipList.Set[S, MarkVertex[S]]) {
-    type V = MarkVertex[S]
+  final class MarkTree[T <: Txn[T]] private(val ft: FullTree[T],
+                                            val t: SkipOctree[T, IntPoint3DLike, IntCube, MarkVertex[T]],
+                                            val root: MarkRootVertex[T], val preList: SkipList.Set[T, MarkVertex[T]],
+                                            val postList: SkipList.Set[T, MarkVertex[T]]) {
+    type V = MarkVertex[T]
 
-    def system: S = ft.system
+//    def system: T = ft.system
 
-    def printInsertion(vm: V)(implicit cursor: Cursor[S]): Unit = {
+    def printInsertion(vm: V)(implicit cursor: Cursor[T]): Unit = {
       val (mStr, fStr) = cursor.step {
         implicit tx => vm.toPoint -> vm.full.toPoint
       }
@@ -500,19 +515,19 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
     }
   }
 
-  class Config[S <: Sys[S]](val t: FullTree[S], val treeSeq: Vec[FullVertex[S]],
-                            val parents: scala.collection.immutable.Map[FullVertex[S], FullVertex[S]])
+  class Config[T <: Txn[T]](val t: FullTree[T], val treeSeq: Vec[FullVertex[T]],
+                            val parents: IMap[FullVertex[T], FullVertex[T]])
 
-  def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S,
+  def withSys[S <: Sys, T <: Txn[T]](sysName: String, sysCreator: () => (S, Cursor[T]),
                                           sysCleanUp: (S, Boolean) => Unit): Unit = {
-    def randomlyFilledTree(n: Int)(implicit system: S): Config[S] = {
+    def randomlyFilledTree(n: Int)(implicit cursor: Cursor[T]): Config[T] = {
       Given("a randomly filled tree, corresponding node orders and their quadtree")
-      val (t, treeSeq, parents) = system.step { implicit tx =>
-        val tr        = FullTree[S]()
+      val (t, treeSeq, parents) = cursor.step { implicit tx =>
+        val tr        = FullTree[T]()
         val rnd       = new util.Random(seed)
-        var treeSeq   = Vec[FullVertex[S]](tr.root)
-        var parents   = scala.collection.immutable.Map.empty[FullVertex[S], FullVertex[S]]
-        var children  = scala.collection.immutable.Map.empty[FullVertex[S], Set[FullVertex[S]]]
+        var treeSeq   = Vec[FullVertex[T]](tr.root)
+        var parents   = IMap.empty[FullVertex[T], FullVertex[T]]
+        var children  = IMap.empty[FullVertex[T], ISet[FullVertex[T]]]
 
         for (i <- 1 to n) {
           if (DEBUG_LAST && i == n) {
@@ -573,13 +588,13 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
         }
         (tr, treeSeq, parents)
       }
-      new Config[S](t, treeSeq, parents)
+      new Config[T](t, treeSeq, parents)
     }
 
     //   private def printPrePost( t: FullTree, treeSeq: IndexedSeq[ FullTree#Vertex ]) {
-   //      println( " PRE ORDER: " + t.r.head.tagList.map( pre => treeSeq.find( _.pre.tag == pre )).collect({ case Some( v ) => v.version }).mkString( ", " ))
-   //      println( "POST ORDER: " + t.postOrder.head.tagList.map( post => treeSeq.find( _.post.tag == post ).get.version ).mkString( ", " ))
-   //   }
+    //      println( " PRE ORDER: " + t.r.head.tagList.map( pre => treeSeq.find( _.pre.tag == pre )).collect({ case Some( v ) => v.version }).mkString( ", " ))
+    //      println( "POST ORDER: " + t.postOrder.head.tagList.map( post => treeSeq.find( _.post.tag == post ).get.version ).mkString( ", " ))
+    //   }
 
     def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit =
       Scenario(descr) {
@@ -597,7 +612,8 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
         info("the x, y and z coordinates of an octree.")
 
         scenarioWithTime("Parent-Lookup", "Verifying parent node lookup") {
-          implicit val system: S = sysCreator()
+          val (system, _cursor) = sysCreator()
+          implicit val cursor: Cursor[T] = _cursor
           var success = false
           try {
             val config = randomlyFilledTree(NUM1)
@@ -621,12 +637,12 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
 
             //         if( verbose ) printPrePost( t, treeSeq )
 
-            @tailrec def testChild(version: Int, child: FullVertex[S]): Unit = {
+            @tailrec def testChild(version: Int, child: FullVertex[T]): Unit = {
               parents.get(child) match {
                 case None =>
 
                 case Some(parent) if parent.version <= version =>
-                  val found: Option[FullVertex[S]] = system.step { implicit tx =>
+                  val found: Option[FullVertex[T]] = cursor.step { implicit tx =>
                     val p0    = child.toPoint
                     //                     val point = IntPoint3D( child.x - 1, child.y + 1, child.version ) // make sure we skip the child itself
                     val point = p0.copy(x = p0.x - 1, y = p0.y + 1)
@@ -660,80 +676,45 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
         info("full tree into the marker tree, followed by NN search.")
 
         scenarioWithTime("Marked-Ancestors", "Verifying marked ancestor lookup") {
-          implicit val system: S = sysCreator()
+          val (system, _cursor) = sysCreator()
+          implicit val cursor: Cursor[T] = _cursor
           var success = false
           try {
             Given("a randomly filled tree, corresponding node orders and their octree")
             Given("a random marking of a subset of the vertices")
 
-            val config: Config[S] = randomlyFilledTree(NUM2)
+            val config: Config[T] = randomlyFilledTree(NUM2)
             import config._
             if (DEBUG_LAST) verbose = false
-//            type V  = FullVertex[S]
-            val tm  = system.step { implicit tx => MarkTree(t) }
+            val tm  = cursor.step { implicit tx => MarkTree(t) }
             val rnd = new util.Random(seed)
 
-//            implicit val ord: Ordering[S#Tx, MarkOrder[S]] = new Ordering[S#Tx, MarkOrder[S]] {
-//              def compare(a: MarkOrder[S], b: MarkOrder[S])(implicit tx: S#Tx): Int = {
-//                val ta = a.tag
-//                val tb = b.tag
-//                if (ta < tb) -1 else if (ta > tb) 1 else 0
-//              }
-//            }
-
-            //         val mPreList   = {
-            //            import tm.orderSer
-            //            implicit def s = tm.t.system
-            //            tm.t.system.step { implicit tx =>
-            //               val res = SkipList.empty[ S, tm.Order ]
-            //               res.add( tm.preOrder.root )
-            //               res
-            //            }
-            //         }
-            //         val mPostList = {
-            //            import tm.orderSer
-            //            implicit def s = tm.t.system
-            //            tm.t.system.step { implicit tx =>
-            //               val res = SkipList.empty[ S, tm.Order ]
-            //               res.add( tm.postOrder.root )
-            //               res
-            //            }
-            //         }
-
-            //         var preTagIsoMap     = Map( tm.preOrder.root -> t.root.pre )
-            //         var postTagIsoMap    = Map( tm.postOrder.root -> t.root.post )
-            //         var preTagValueMap   = Map( tm.preOrder.root -> 0 )
-            //         var postTagValueMap  = Map( tm.postOrder.root -> 0 )
             var markSet = Set(0)
 
             treeSeq.zipWithIndex.drop(1).foreach {
               case (child, i) =>
                 if (DEBUG_LAST && i == NUM2 - 1) verbose = true
                 if (rnd.nextDouble() < MARKER_PERCENTAGE) {
-                  system.step { implicit tx =>
+                  cursor.step { implicit tx =>
                     if (verbose) println(":: mark insert for full " + child.toPoint)
                     val cfPre = child.pre
-                    val (cmPreN, cmPreCmp) = tm.preList.isomorphicQuery(new Ordered[S#Tx, MarkVertex[S]] {
-                      def compare(that: MarkVertex[S])(implicit tx: S#Tx): Int = {
-                        val res = cfPre.compare(that.full.pre)
-                        if (verbose) println(":: mark insert pre :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
-                        res
-                      }
-                    })
+                    val (cmPreN, cmPreCmp) = tm.preList.isomorphicQuery { (that: MarkVertex[T]) =>
+                      val res = cfPre.compare(that.full.pre)
+                      if (verbose) println(":: mark insert pre :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
+                      res
+                    }
                     val cfPost = child.post
-                    val (cmPostN, cmPostCmp) = tm.postList.isomorphicQuery(new Ordered[S#Tx, MarkVertex[S]] {
-                      def compare(that: MarkVertex[S])(implicit tx: S#Tx): Int = {
-                        val res = cfPost.compare(that.full.post)
-                        if (verbose) println(":: mark insert post :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
-                        res
-                      }
-                    })
+                    val (cmPostN, cmPostCmp) = tm.postList.isomorphicQuery { (that: MarkVertex[T]) =>
+                      val res = cfPost.compare(that.full.post)
+                      if (verbose) println(":: mark insert post :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
+                      res
+                    }
                     if (verbose) println(":: mark insert pre " + (if (cmPreCmp <= 0) "before" else "after") + " " + cmPreN.toPoint)
                     if (verbose) println(":: mark insert post " + (if (cmPostCmp <= 0) "before" else "after") + " " + cmPostN.toPoint)
-                    val vm: MarkVertex[S] = new MarkVertex[S] {
-                      val pre : Map.Entry[S, MarkVertex[S]] = tm.root.preOrder .insert()
-                      val post: Map.Entry[S, MarkVertex[S]] = tm.root.postOrder.insert()
-                      val full: FullVertex[S] = child
+                    val vm: MarkVertex[T] = new MarkVertex[T] {
+                      val pre : Map.Entry[T, MarkVertex[T]] = tm.root.preOrder .insert()
+                      val post: Map.Entry[T, MarkVertex[T]] = tm.root.postOrder.insert()
+                      val full: FullVertex[T] = child
                       if (cmPreCmp <= 0) {
                         tm.root.preOrder.placeBefore(cmPreN, this) // cmPreN.prepend(  this )
                       } else {
@@ -758,11 +739,11 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
 
             When("full and marked tree are decomposed into pre and post order traversals")
 
-            val preVals   = system.step { implicit tx => treeSeq.sortBy(_.pre.tag).map(_.version) }
-            val postVals  = system.step { implicit tx => treeSeq.sortBy(_.post.tag).map(_.version) }
-            val mPreSeq   = system.step { implicit tx => tm.preList.toIndexedSeq }
+            val preVals   = cursor.step { implicit tx => treeSeq.sortBy(_.pre .tag).map(_.version) }
+            val postVals  = cursor.step { implicit tx => treeSeq.sortBy(_.post.tag).map(_.version) }
+            val mPreSeq   = cursor.step { implicit tx => tm.preList.toIndexedSeq }
             val mPreVals  = mPreSeq.map(_.version) // ( t => t.value.version preTagValueMap( t ))
-            val mPostSeq  = system.step { implicit tx => tm.postList.toIndexedSeq }
+            val mPostSeq  = cursor.step { implicit tx => tm.postList.toIndexedSeq }
             val mPostVals = mPostSeq.map(_.version) // ( t => postTagValueMap( t ))
 
             if (PRINT_ORDERS) {
@@ -773,7 +754,7 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
             }
 
             Then("the order of the marked vertices is isomorphic to their counterparts in the full lists")
-            assert(preVals.intersect(mPreVals) == mPreVals, preVals.take(20).toString + " versus " + mPreVals.take(20))
+            assert(preVals .intersect(mPreVals ) == mPreVals , preVals .take(20).toString + " versus " + mPreVals.take(20))
             assert(postVals.intersect(mPostVals) == mPostVals, postVals.take(20).toString + " versus " + mPreVals.take(20))
 
             if (PRINT_DOT) {
@@ -801,7 +782,7 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
             //println()
             //verbose = false
             if (VERIFY_MARKTREE_CONTENTS) {
-              val markPt = system.step {
+              val markPt = cursor.step {
                 implicit tx => tm.t.toIndexedSeq.map(_.toPoint)
               }
               val obsPre  = markPt.sortBy(_.x).map(_.z)
@@ -821,25 +802,19 @@ class AncestorRetroSuite extends AnyFeatureSpec with GivenWhenThen {
             treeSeq.zipWithIndex.foreach {
               case (child, i) =>
                 if (DEBUG_LAST && i == NUM2 - 1) verbose = true
-                val (found, parent, point) = system.step { implicit tx =>
+                val (found, parent, point) = cursor.step { implicit tx =>
                   val cfPre = child.pre
-                  val (preIso, preIsoCmp) = tm.preList.isomorphicQuery(new Ordered[S#Tx, MarkVertex[S]] {
-                    def compare(that: MarkVertex[S])(implicit tx: S#Tx): Int = {
-                      val res = cfPre.compare(that.full.pre)
-                      if (verbose) println(":: mark find pre :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
-                      res
-                      //                  preTagIsoMap.get( that ).map( _.compare( child.pre )).getOrElse( 1 )
-                         }
-                  })
+                  val (preIso, preIsoCmp) = tm.preList.isomorphicQuery { (that: MarkVertex[T]) =>
+                    val res = cfPre.compare(that.full.pre)
+                    if (verbose) println(":: mark find pre :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
+                    res
+                  }
                   val cfPost = child.post
-                  val (postIso, postIsoCmp) = tm.postList.isomorphicQuery(new Ordered[S#Tx, MarkVertex[S]] {
-                    def compare(that: MarkVertex[S])(implicit tx: S#Tx): Int = {
-                      val res = cfPost.compare(that.full.post)
-                      if (verbose) println(":: mark find post :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
-                      res
-                      //                  postTagIsoMap.get( that ).map( _.compare( child.post )).getOrElse( 1 )
-                    }
-                  })
+                  val (postIso, postIsoCmp) = tm.postList.isomorphicQuery { (that: MarkVertex[T]) =>
+                    val res = cfPost.compare(that.full.post)
+                    if (verbose) println(":: mark find post :: compare to m=" + that.toPoint + ", f=" + that.full.toPoint + " -> " + res)
+                    res
+                  }
 
                   // condition for ancestor candidates: <= iso-pre, >= iso-post, <= version
                   // thus: we need to check the comparison result of the iso-search

@@ -1,6 +1,6 @@
 /*
  *  LongSpace.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
 import scala.annotation.tailrec
 
@@ -24,7 +24,7 @@ import scala.annotation.tailrec
   * they should be >= -0x2000000000000000L and < 0x2000000000000000L
   */
 object LongSpace {
-  sealed trait TwoDim extends Space[TwoDim] {
+  sealed trait TwoDim extends Space[LongPoint2DLike, LongSquare] {
     type PointLike      = LongPoint2DLike
     type Point          = LongPoint2D
     type HyperCubeLike  = LongSquareLike
@@ -48,7 +48,7 @@ object LongSpace {
     }
 
 
-    implicit object pointSerializer extends ImmutableSerializer[LongPoint2D] {
+    implicit object pointFormat extends ConstFormat[LongPoint2D] {
       def read(in: DataInput): LongPoint2D = {
         val x = in.readLong()
         val y = in.readLong()
@@ -61,7 +61,7 @@ object LongSpace {
       }
     }
 
-    implicit object hyperCubeSerializer extends ImmutableSerializer[LongSquare] {
+    implicit object hyperCubeFormat extends ConstFormat[LongSquare] {
       def read(in: DataInput): LongSquare = {
         val cx = in.readLong()
         val cy = in.readLong()

@@ -1,11 +1,13 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
+import de.sciss.lucre.edit.UndoManager
+import de.sciss.lucre.{BooleanObj, InMemory, IntObj, Workspace}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class ExIfThenSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
+  type T = InMemory.Txn
 
   def run(condV: Boolean): String = {
     import de.sciss.lucre.expr.ExImport._
@@ -22,15 +24,15 @@ class ExIfThenSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
     }
 
     implicit val system: S = InMemory()
-    implicit val undo: UndoManager[S] = UndoManager()
+    implicit val undo: UndoManager[T] = UndoManager()
 
     import Workspace.Implicits._
 
     captureConsole {
       system.step { implicit tx =>
-        val self = IntObj.newConst(0): IntObj[S]
+        val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
-        implicit val ctx: Context[S] = Context(Some(selfH))
+        implicit val ctx: Context[T] = Context(Some(selfH))
         self.attr.put("cond", BooleanObj.newConst(condV))
         g.expand.initControl()
       }

@@ -1,6 +1,6 @@
 /*
  *  Cursor.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,47 +14,46 @@
 package de.sciss.lucre.confluent
 
 import de.sciss.lucre.confluent.impl.{CursorImpl => Impl}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.Disposable
-import de.sciss.serial
-import de.sciss.serial.{Serializer, DataInput, Writable}
+import de.sciss.lucre.{ConfluentLike, Disposable, DurableLike, Ident => LIdent, Cursor => LCursor, Txn => LTxn, Var => LVar}
+import de.sciss.serial.{DataInput, TFormat, Writable}
 
 object Cursor {
-  def apply[S <: Sys[S], D1 <: stm.DurableLike[D1]](init: S#Acc = Access.root[S])
-                                                   (implicit tx: D1#Tx, system: S { type D = D1 }): Cursor[S, D1] =
+  def apply[T <: Txn[T], D1 <: DurableLike.Txn[D1]](init: Access[T] = Access.root[T])
+                                                   (implicit tx: D1, system: ConfluentLike[T] { type D = D1 }): Cursor[T, D1] =
     wrap(Data(init))
 
-  def wrap[S <: Sys[S], D1 <: stm.DurableLike[D1]](data: Data[S, D1])
-                                                  (implicit system: S { type D = D1 }): Cursor[S, D1] =
-    Impl[S, D1](data)
+  def wrap[T <: Txn[T], D1 <: DurableLike.Txn[D1]](data: Data[T, D1])
+                                                  (implicit system: ConfluentLike[T] { type D = D1 }): Cursor[T, D1] =
+    Impl[T, D1](data)
 
-  def read[S <: Sys[S], D1 <: stm.DurableLike[D1]](in: DataInput)
-                                                  (implicit tx: D1#Tx, system: S { type D = D1 }): Cursor[S, D1] =
-    Impl.read[S, D1](in)
+  def read[T <: Txn[T], D1 <: DurableLike.Txn[D1]](in: DataInput)
+                                                  (implicit tx: D1, system: ConfluentLike[T] { type D = D1 }): Cursor[T, D1] =
+    Impl.read[T, D1](in)
 
-  implicit def serializer[S <: Sys[S], D1 <: stm.DurableLike[D1]](
-    implicit system: S { type D = D1 }): serial.Serializer[D1#Tx, D1#Acc, Cursor[S, D1]] = Impl.serializer[S, D1]
+  implicit def format[T <: Txn[T], D1 <: DurableLike.Txn[D1]](
+    implicit system: ConfluentLike[T] { type D = D1 }): TFormat[D1, Cursor[T, D1]] = Impl.format[T, D1]
 
   object Data {
-    def apply[S <: Sys[S], D <: stm.Sys[D]](init: S#Acc = Access.root[S])(implicit tx: D#Tx): Data[S, D] =
-      Impl.newData[S, D](init)
+    def apply[T <: Txn[T], D <: LTxn[D]](init: Access[T] = Access.root[T])(implicit tx: D): Data[T, D] =
+      Impl.newData[T, D](init)
 
-    def read[S <: Sys[S], D <: stm.Sys[D]](in: DataInput, access: D#Acc)(implicit tx: D#Tx): Data[S, D] =
-      Impl.readData[S, D](in, access)
+    def read[T <: Txn[T], D <: LTxn[D]](in: DataInput)(implicit tx: D): Data[T, D] =
+      Impl.readData[T, D](in)
 
-    implicit def serializer[S <: Sys[S], D <: stm.Sys[D]]: Serializer[D#Tx, D#Acc, Data[S, D]] =
-      Impl.dataSerializer[S, D]
+    implicit def format[T <: Txn[T], D <: LTxn[D]]: TFormat[D, Data[T, D]] =
+      Impl.dataFormat[T, D]
   }
-  trait Data[S <: Sys[S], D <: stm.Sys[D]] extends Disposable[D#Tx] with Writable {
-    def id  : D#Id
-    def path: D#Var[S#Acc]
+  trait Data[T <: Txn[T], D <: LTxn[D]] extends Disposable[D] with Writable {
+    def id  : LIdent[D] // D#Id
+    def path: LVar[D, Access[T]] // D#Var[S#Acc]
   }
 }
-trait Cursor[S <: Sys[S], D <: stm.Sys[D]]
-  extends stm.Cursor[S] with Disposable[D#Tx] with Writable {
+trait Cursor[T <: Txn[T], D <: LTxn[D]]
+  extends LCursor[T] with Disposable[D] with Writable {
 
-  def data: Cursor.Data[S, D]
+  def data: Cursor.Data[T, D]
 
-  def stepFrom[A](path: S#Acc, retroactive: Boolean = false, systemTimeNanos: Long = 0L)(fun: S#Tx => A): A
-  def position(implicit tx: D#Tx): S#Acc
+  def stepFrom[A](path: Access[T], retroactive: Boolean = false, systemTimeNanos: Long = 0L)(fun: T => A): A
+  
+  def positionD(implicit tx: D): Access[T]
 }

@@ -1,6 +1,6 @@
 /*
  *  Graph.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,12 +11,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
+package de.sciss.lucre
+package expr
 
 import de.sciss.lucre.expr.graph.{Control, It}
-import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphSerializerMixin}
-import de.sciss.lucre.stm.Sys
-import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
+import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphFormatMixin}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
 
@@ -76,7 +76,7 @@ object Graph {
     override def toString = s"lucre.expr.Graph.Builder@${hashCode.toHexString}"
   }
 
-  implicit object serializer extends ImmutableSerializer[Graph] with GraphSerializerMixin {
+  implicit object format extends ConstFormat[Graph] with GraphFormatMixin {
     private final val SER_VERSION = 0x4378  // "Cx"
 
     def write(g: Graph, out: DataOutput): Unit = {
@@ -95,13 +95,13 @@ object Graph {
     }
   }
 
-  private final class ExpandedImpl[S <: Sys[S]](controls: ISeq[IControl[S]] /*, disposable: Disposable[S#Tx]*/ )
-    extends IControl[S] {
+  private final class ExpandedImpl[T <: Txn[T]](controls: ISeq[IControl[T]] /*, disposable: Disposable[T]*/ )
+    extends IControl[T] {
 
-    def initControl()(implicit tx: S#Tx): Unit =
+    def initControl()(implicit tx: T): Unit =
       controls.foreach(_.initControl())
 
-    def dispose()(implicit tx: S#Tx): Unit =
+    def dispose()(implicit tx: T): Unit =
       controls.foreach(_.dispose())
   }
 
@@ -113,11 +113,11 @@ object Graph {
 
     override def productPrefix: String = "Graph"
 
-    def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S] = {
-      if (controls.isEmpty) IControl.empty[S] else {
+    def expand[T <: Txn[T]](implicit tx: T, ctx: Context[T]): IControl[T] = {
+      if (controls.isEmpty) IControl.empty[T] else {
         ctx.initGraph(this)
-        val iControls = controls.map(_.control.expand[S])
-        new Graph.ExpandedImpl[S](iControls)
+        val iControls = controls.map(_.control.expand[T])
+        new Graph.ExpandedImpl[T](iControls)
       }
     }
   }
@@ -126,11 +126,11 @@ trait Graph extends Product {
   def controls: Vec[Control.Configured]
 
   /** Expands the graph and unites all disposables and controls under the returned control value.
-    * 
-    * ''Important:'' disposing the resulting `IControl` does not clean up any `IExpr` which are only
-    * captured by the provided `Context`. Therefore, to dispose the entire graph, it is crucial
-    * to make sure that `ctx` is disposed. This will automatically include all controls, so there
-    * is no need to dispose the returned `IControl` in that case.
-    */
-  def expand[S <: Sys[S]](implicit tx: S#Tx, ctx: Context[S]): IControl[S]
+   *
+   * ''Important:'' disposing the resulting `IControl` does not clean up any `IExpr` which are only
+   * captured by the provided `Context`. Therefore, to dispose the entire graph, it is crucial
+   * to make sure that `ctx` is disposed. This will automatically include all controls, so there
+   * is no need to dispose the returned `IControl` in that case.
+   */
+  def expand[T <: Txn[T]](implicit tx: T, ctx: Context[T]): IControl[T]
 }

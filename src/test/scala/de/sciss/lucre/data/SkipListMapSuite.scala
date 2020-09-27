@@ -1,15 +1,29 @@
+/*
+ *  SkipListMapSuite.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.InMemory
+import de.sciss.lucre.{InMemory, TestUtil}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 
 import scala.collection.immutable.{Vector => Vec}
 
 /*
- To run this test copy + paste the following into sbt:
 
-test-only de.sciss.lucre.data.SkipListMapSuite
+  To run this test copy + paste the following into sbt:
+
+  testOnly de.sciss.lucre.data.SkipListMapSuite
 
   */
 class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
@@ -17,10 +31,11 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
   val N     = 1000
 
   type S    = InMemory
+  type T    = InMemory.Txn
   val rnd   = new util.Random(SEED)
 
-  def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit =
-    Scenario(descr) {
+  def scenarioWithTime(name: String, description: String)(body: => Unit): Unit =
+    Scenario(description) {
       val t1 = System.currentTimeMillis()
       body
       val t2 = System.currentTimeMillis()
@@ -32,10 +47,10 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
     info("are tried and expected behaviour verified")
 
     val system = InMemory()
-    def atomic[A](fun: S#Tx => A): A = system.step(fun)
+    def atomic[A](fun: T => A): A = system.step(fun)
 
     val map = atomic { implicit tx =>
-      SkipList.Map.empty[S, Int, Int]
+      SkipList.Map.empty[T, Int, Int]
     }
 
     def onEmptyList(): Unit = {
@@ -47,18 +62,18 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
       assert(szTup == ((0, true, false, 0)), "found " + szTup)
 
       When("the (floor, ceil, contains) of a number if queried")
-      val flcl = atomic {
+      val flCl = atomic {
         implicit tx => (map.floor(42), map.ceil(42), map.contains(42))
       }
       Then("they should be (None, None, false)")
-      assert(flcl == ((None, None, false)), "found " + flcl)
+      assert(flCl == ((None, None, false)), "found " + flCl)
 
       When("the iterator and sequence methods are called")
-      val colls = atomic {
+      val collections = atomic {
         implicit tx => (map.iterator.isEmpty, map.toSeq.isEmpty, map.toSet.isEmpty, map.toIndexedSeq.isEmpty)
       }
       Then("they should all return empty collections")
-      assert(colls == ((true, true, true, true)), "found " + colls)
+      assert(collections == ((true, true, true, true)), "found " + collections)
     }
 
     scenarioWithTime("empty", "Consistency is verified on an empty map") {
@@ -88,7 +103,7 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
       val fc = atomic { implicit tx =>
         q.map { v =>
           (map.floor(v).getOrElse((Int.MinValue, 0)),
-           map.ceil (v).getOrElse((Int.MaxValue, 0)))
+            map.ceil (v).getOrElse((Int.MaxValue, 0)))
         }
       }
       Then("they should be the same as with brute force search")
@@ -104,7 +119,7 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
       val allHit = atomic { implicit tx =>
         seq.forall { tup =>
           map.floor (tup._1).contains(tup) &&
-          map.ceil  (tup._1).contains(tup)
+            map.ceil  (tup._1).contains(tup)
         }
       }
       Then("they should return the elements themselves")
@@ -116,9 +131,9 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
           map.get(key)
         }
       }
-      val seqVals = seq.map(_._2)
+      val seqValues = seq.map(_._2)
       Then("the correct values should be retrieved")
-      assert(flat === seqVals)
+      assert(flat === seqValues)
 
       val seqKeys: Set[Int] = seq.iterator.map(_._1).toSet
       val keys = q.toSet -- seqKeys
@@ -134,8 +149,8 @@ class SkipListMapSuite extends AnyFeatureSpec with GivenWhenThen {
         seq.flatMap(v => map.remove(v._1))
       }
       Then("the returned elements should be same as the seq")
-      val seqVals = seq.map(_._2)
-      assert(rem == seqVals, s"Differ: ${(rem.take(5), seqVals.take(5))}")
+      val seqValues = seq.map(_._2)
+      assert(rem == seqValues, s"Differ: ${(rem.take(5), seqValues.take(5))}")
 
       onEmptyList()
     }

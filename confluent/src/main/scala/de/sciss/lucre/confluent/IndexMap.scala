@@ -1,6 +1,6 @@
 /*
  *  IndexMap.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,13 +15,13 @@ package de.sciss.lucre.confluent
 
 import de.sciss.serial.Writable
 
-trait IndexMap[S <: Sys[S], A] extends Writable {
-  def add(term: Long, value: A)(implicit tx: S#Tx): Unit
+trait IndexMap[-T, A] extends Writable {
+  def add(term: Long, value: A)(implicit tx: T): Unit
 
-  def nearest      (term: Long)(implicit tx: S#Tx): (Long, A)
-  def nearestOption(term: Long)(implicit tx: S#Tx): Option[(Long, A)]
+  def nearest      (term: Long)(implicit tx: T): (Long, A)
+  def nearestOption(term: Long)(implicit tx: T): Option[(Long, A)]
 
-  def nearestUntil(timeStamp: Long, term: Long)(implicit tx: S#Tx): Option[(Long, A)]
+  def nearestUntil(timeStamp: Long, term: Long)(implicit tx: T): Option[(Long, A)]
 
-  def debugPrint(implicit tx: S#Tx): String
+  def debugPrint(implicit tx: T): String
 }

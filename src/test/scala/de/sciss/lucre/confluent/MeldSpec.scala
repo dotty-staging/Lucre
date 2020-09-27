@@ -1,12 +1,27 @@
+/*
+ *  MeldSpec.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
+
+import de.sciss.lucre.{Var => LVar}
 
 import scala.annotation.tailrec
 
 /*
 
-To run only this test:
+  To run only this test:
 
-test-only de.sciss.lucre.confluent.MeldSpec
+  testOnly de.sciss.lucre.confluent.MeldSpec
 
  */
 class MeldSpec extends ConfluentSpec with TestHasLinkedList {
@@ -157,7 +172,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
     def iterate(i1: Int, j1: Int, split1: Int, i2: Int, j2: Int, split2: Int): Unit = {
       val path1 = cursor.step { implicit tx => tx.inputAccess }
 
-      def crossover(i: Int, j: Int, split: Int): (Source[S, List[Node]], S#Acc) = {
+      def crossover(i: Int, j: Int, split: Int): (Source[T, List[Node]], Access[T]) = {
         val h = forkCursor.stepFrom(path1) { implicit tx =>
           val acc = access()
           val a = acc(i)
@@ -165,7 +180,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
 
           // @tailrec def skip(n: Node, rem: Int): Node = if (rem == 0) n else skip(n.next().get, rem - 1)
 
-          @tailrec def skip(rem: Int, next: S#Var[Option[Node]]): S#Var[Option[Node]] =
+          @tailrec def skip(rem: Int, next: LVar[T, Option[Node]]): LVar[T, Option[Node]] =
             if (rem == 0) next else {
               val nn = next().get
               skip(rem - 1, nn.next)

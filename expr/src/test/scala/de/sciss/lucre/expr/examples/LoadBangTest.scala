@@ -1,7 +1,8 @@
 package de.sciss.lucre.expr.examples
 
+import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.{Context, Graph, graph}
-import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
+import de.sciss.lucre.{InMemory, Workspace}
 
 /*
   expected output:
@@ -11,6 +12,7 @@ import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
  */
 object LoadBangTest extends App {
   type S = InMemory
+  type T = InMemory.Txn
 
   val g = Graph {
     import graph._
@@ -19,11 +21,11 @@ object LoadBangTest extends App {
   }
 
   implicit val system: S = InMemory()
-  implicit val undo: UndoManager[S] = UndoManager()
+  implicit val undo: UndoManager[T] = UndoManager()
 
   import Workspace.Implicits._
 
-  implicit val ctx: Context[S] = Context()
+  implicit val ctx: Context[T] = Context()
 
   system.step { implicit tx =>
     g.expand.initControl()

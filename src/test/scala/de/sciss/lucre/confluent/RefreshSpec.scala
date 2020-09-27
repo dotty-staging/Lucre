@@ -1,43 +1,58 @@
+/*
+ *  RefreshSpec.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.impl.MutableImpl
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, Cursor => LCursor, Var => LVar}
+import de.sciss.serial.{DataInput, DataOutput, WritableFormat}
 import org.scalatest.Outcome
 import org.scalatest.flatspec.FixtureAnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 /*
 
-To run only this test:
+  To run only this test:
 
-test-only de.sciss.lucre.confluent.RefreshSpec
+  testOnly de.sciss.lucre.confluent.RefreshSpec
 
  */
 class RefreshSpec extends FixtureAnyFlatSpec with Matchers {
-  type FixtureParam = stm.Cursor[Confluent]
-  type S = Confluent
+  type S            = Confluent
+  type T            = Confluent.Txn
+  type FixtureParam = LCursor[T]
 
   // confluent.showLog = true
 
   object Entity {
-    implicit object Ser extends MutableSerializer[S, Entity] {
-      protected def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx): Entity = {
-        val field = tx.readIntVar(id, in)
+    implicit object Fmt extends WritableFormat[T, Entity] {
+      override def readT(in: DataInput)(implicit tx: T): Entity = {
+        val id    = tx.readId(in)
+        val field = id.readIntVar(in)
         new Entity(id, field)
       }
     }
 
-    def apply(init: Int)(implicit tx: S#Tx): Entity = {
-      val id = tx.newId()
-      val field = tx.newIntVar(id, init)
+    def apply(init: Int)(implicit tx: T): Entity = {
+      val id    = tx.newId()
+      val field = id.newIntVar(init)
       new Entity(id, field)
     }
   }
 
-  class Entity(val id: S#Id, val field: S#Var[Int]) extends MutableImpl[S] {
-    protected def disposeData()(implicit tx: S#Tx): Unit = field.dispose()
+  class Entity(val id: Ident[T], val field: LVar[T, Int]) extends MutableImpl[T] {
+    protected def disposeData()(implicit tx: T): Unit = field.dispose()
 
     protected def writeData(out: DataOutput): Unit = field.write(out)
   }

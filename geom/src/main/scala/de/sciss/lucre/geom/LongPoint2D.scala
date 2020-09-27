@@ -1,6 +1,6 @@
 /*
  *  LongPoint2D.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.ConstFormat
 
 trait LongPoint2DLike {
   def x: Long
@@ -69,7 +69,7 @@ trait LongPoint2DLike {
 }
 
 object LongPoint2D {
-  implicit def serializer: ImmutableSerializer[LongPoint2D] = LongSpace.TwoDim.pointSerializer
+  implicit def format: ConstFormat[LongPoint2D] = LongSpace.TwoDim.pointFormat
 }
 final case class LongPoint2D(x: Long, y: Long) extends LongPoint2DLike {
   def +(p: LongPoint2D) = LongPoint2D(x + p.x, y + p.y)

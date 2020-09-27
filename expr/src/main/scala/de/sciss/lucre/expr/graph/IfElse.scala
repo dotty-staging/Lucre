@@ -1,6 +1,6 @@
 /*
  *  IfElse.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,11 +13,10 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{Context, IAction, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.{Context, IAction}
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{IChangeEvent, IExpr, IPull, ITargets, Txn}
 
 import scala.annotation.tailrec
 
@@ -65,14 +64,14 @@ final case class ElseIfThen[+A](pred: Then[A], cond: Ex[Boolean], result: Ex[A])
   extends Then[A]
 
 object Else {
-  private type Case[S <: Sys[S], A] = (IExpr[S, Boolean], IExpr[S, A])
+  private type Case[T <: Txn[T], A] = (IExpr[T, Boolean], IExpr[T, A])
 
-  private def gather[S <: Sys[S], A](e: Then[A])(implicit ctx: Context[S],
-                                                        tx: S#Tx): List[Case[S, A]] = {
+  private def gather[T <: Txn[T], A](e: Then[A])(implicit ctx: Context[T],
+                                                        tx: T): List[Case[T, A]] = {
     @tailrec
-    def loop(t: Then[A], res: List[Case[S, A]]): List[Case[S, A]] = {
-      val condEx  = t.cond  .expand[S]
-      val resEx   = t.result.expand[S]
+    def loop(t: Then[A], res: List[Case[T, A]]): List[Case[T, A]] = {
+      val condEx  = t.cond  .expand[T]
+      val resEx   = t.result.expand[T]
       val res1 = (condEx, resEx) :: res
       t match {
         case hd: ElseIfThen[A] => loop(hd.pred, res1)
@@ -83,9 +82,9 @@ object Else {
     loop(e, Nil)
   }
 
-  private final class Expanded[S <: Sys[S], A](cases: List[Case[S, A]], default: IExpr[S, A], tx0: S#Tx)
-                                              (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IChangeEventImpl[S, A] {
+  private final class Expanded[T <: Txn[T], A](cases: List[Case[T, A]], default: IExpr[T, A], tx0: T)
+                                              (implicit protected val targets: ITargets[T])
+    extends IExpr[T, A] with IChangeEventImpl[T, A] {
 
     cases.foreach { case (cond, res) =>
       cond.changed.--->(this)(tx0)
@@ -93,9 +92,9 @@ object Else {
     }
     default.changed.--->(this)(tx0)
 
-    def value(implicit tx: S#Tx): A = {
+    def value(implicit tx: T): A = {
       @tailrec
-      def loop(rem: List[Case[S, A]]): A = rem match {
+      def loop(rem: List[Case[T, A]]): A = rem match {
         case (cond, branch) :: tail =>
           if (cond.value) branch.value else loop(tail)
 
@@ -105,14 +104,14 @@ object Else {
       loop(cases)
     }
 
-    def changed: IChangeEvent[S, A] = this
+    def changed: IChangeEvent[T, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
       type CaseValue = (Boolean, A)
 
       // XXX TODO --- this evaluates all branches; we could optimize
       @tailrec
-      def loop1(rem: List[Case[S, A]], res: List[CaseValue]): List[CaseValue] = rem match {
+      def loop1(rem: List[Case[T, A]], res: List[CaseValue]): List[CaseValue] = rem match {
         case (cond, branch) :: tail =>
           val condV     = pull.expr(cond  )
           val branchV   = pull.expr(branch)
@@ -135,12 +134,12 @@ object Else {
       loop2(casesCh)
     }
 
-//    private[lucre] def pullUpdateXXX(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+//    private[lucre] def pullUpdateXXX(pull: IPull[T])(implicit tx: T): Option[Change[A]] = {
 //      type CaseChange = (Change[Boolean], Change[A])
 //
 //      // XXX TODO --- this evaluates all branches; we could optimize
 //      @tailrec
-//      def loop1(rem: List[Case[S, A]], res: List[CaseChange]): List[CaseChange] = rem match {
+//      def loop1(rem: List[Case[T, A]], res: List[CaseChange]): List[CaseChange] = rem match {
 //        case (cond, branch) :: tail =>
 //          val condEvt     = cond  .changed
 //          val branchEvt   = branch.changed
@@ -187,7 +186,7 @@ object Else {
 //      if (valueCh.isSignificant) Some(valueCh) else None
 //    }
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    def dispose()(implicit tx: T): Unit = {
       cases.foreach { case (cond, res) =>
         cond.changed.-/->(this)
         res .changed.-/->(this)
@@ -197,13 +196,13 @@ object Else {
   }
 }
 final case class Else[A](pred: Then[A], default: Ex[A]) extends Ex[A] {
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
   def cond: Ex[Boolean] = true
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     val cases     = Else.gather(pred)
-    val defaultEx = default.expand[S]
+    val defaultEx = default.expand[T]
 
     import ctx.targets
     new Else.Expanded(cases, defaultEx, tx)
@@ -218,14 +217,14 @@ final case class ElseIfAct(pred: ThenAct, cond: Ex[Boolean]) {
 }
 
 object ThenAct {
-  private type Case[S <: Sys[S]] = (IExpr[S, Boolean], IAction[S])
+  private type Case[T <: Txn[T]] = (IExpr[T, Boolean], IAction[T])
 
-  private def gather[S <: Sys[S]](e: ThenAct)(implicit ctx: Context[S],
-                                                 tx: S#Tx): List[Case[S]] = {
+  private def gather[T <: Txn[T]](e: ThenAct)(implicit ctx: Context[T],
+                                                 tx: T): List[Case[T]] = {
     @tailrec
-    def loop(t: ThenAct, res: List[Case[S]]): List[Case[S]] = {
-      val condEx  = t.cond  .expand[S]
-      val resEx   = t.result.expand[S]
+    def loop(t: ThenAct, res: List[Case[T]]): List[Case[T]] = {
+      val condEx  = t.cond  .expand[T]
+      val resEx   = t.result.expand[T]
       val res1 = (condEx, resEx) :: res
       t match {
         case hd: ElseIfThenAct => loop(hd.pred, res1)
@@ -236,16 +235,16 @@ object ThenAct {
     loop(e, Nil)
   }
 
-  private final class Expanded[S <: Sys[S]](cases: List[Case[S]])
-    extends IAction.Option[S] with IActionImpl[S] {
+  private final class Expanded[T <: Txn[T]](cases: List[Case[T]])
+    extends IAction.Option[T] with IActionImpl[T] {
 
-    def isDefined(implicit tx: S#Tx): Boolean = cases.exists(_._1.value)
+    def isDefined(implicit tx: T): Boolean = cases.exists(_._1.value)
 
-    def executeAction()(implicit tx: S#Tx): Unit = executeIfDefined()
+    def executeAction()(implicit tx: T): Unit = executeIfDefined()
 
-    def executeIfDefined()(implicit tx: S#Tx): Boolean = {
+    def executeIfDefined()(implicit tx: T): Boolean = {
       @tailrec
-      def loop(rem: List[Case[S]]): Boolean = rem match {
+      def loop(rem: List[Case[T]]): Boolean = rem match {
         case (hdCond, hdAct) :: tail =>
           if (hdCond.value) {
             hdAct.executeAction()
@@ -263,7 +262,7 @@ object ThenAct {
 }
 
 sealed trait ThenAct extends Act {
-  type Repr[S <: Sys[S]] = IAction.Option[S]
+  type Repr[T <: Txn[T]] = IAction.Option[T]
 
   def cond  : Ex[Boolean]
   def result: Act
@@ -274,28 +273,28 @@ sealed trait ThenAct extends Act {
   final def ElseIf (cond: Ex[Boolean]): ElseIfAct =
     ElseIfAct(this, cond)
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     val cases = ThenAct.gather(this)
     new ThenAct.Expanded(cases)
   }
 }
 
 object ElseAct {
-  private final class Expanded[S <: Sys[S]](pred: IAction.Option[S], default: IAction[S])
-    extends IActionImpl[S] {
+  private final class Expanded[T <: Txn[T]](pred: IAction.Option[T], default: IAction[T])
+    extends IActionImpl[T] {
 
-    def executeAction()(implicit tx: S#Tx): Unit =
+    def executeAction()(implicit tx: T): Unit =
       if (!pred.executeIfDefined()) default.executeAction()
   }
 }
 final case class ElseAct(pred: ThenAct, default: Act) extends Act {
-  type Repr[S <: Sys[S]] = IAction[S]
+  type Repr[T <: Txn[T]] = IAction[T]
 
   def cond: Ex[Boolean] = true
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-    val predEx    = pred    .expand[S]
-    val defaultEx = default .expand[S]
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+    val predEx    = pred    .expand[T]
+    val defaultEx = default .expand[T]
     new ElseAct.Expanded(predEx, defaultEx)
   }
 }

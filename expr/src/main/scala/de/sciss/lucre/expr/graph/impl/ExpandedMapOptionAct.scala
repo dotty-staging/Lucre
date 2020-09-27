@@ -1,6 +1,6 @@
 /*
  *  ExpandedMapOptionAct.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,26 +13,25 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.event.ITargets
 import de.sciss.lucre.expr.graph.{Act, It}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{Context, IAction, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.{Context, IAction}
+import de.sciss.lucre.{IExpr, ITargets, Txn}
 
-final class ExpandedMapOptionAct[S <: Sys[S], A](in: IExpr[S, Option[A]], it: It.Expanded[S, A], fun: Act, tx0: S#Tx)
-                                                (implicit protected val targets: ITargets[S], ctx: Context[S])
-  extends IAction.Option[S] with IActionImpl[S] {
+final class ExpandedMapOptionAct[T <: Txn[T], A](in: IExpr[T, Option[A]], it: It.Expanded[T, A], fun: Act, tx0: T)
+                                                (implicit protected val targets: ITargets[T], ctx: Context[T])
+  extends IAction.Option[T] with IActionImpl[T] {
 
-  def isDefined(implicit tx: S#Tx): Boolean = in.value.isDefined
+  def isDefined(implicit tx: T): Boolean = in.value.isDefined
 
-  def executeAction()(implicit tx: S#Tx): Unit = executeIfDefined()
+  def executeAction()(implicit tx: T): Unit = executeIfDefined()
 
-  def executeIfDefined()(implicit tx: S#Tx): Boolean = {
+  def executeIfDefined()(implicit tx: T): Boolean = {
     val inOption = in.value
     inOption.exists { v =>
       it.setValue(v)
       val (_, d) = ctx.nested(it) {
-        val actEx = fun.expand[S]
+        val actEx = fun.expand[T]
         actEx.executeAction()
       }
 

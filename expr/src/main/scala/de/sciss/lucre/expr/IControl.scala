@@ -1,6 +1,6 @@
 /*
  *  IControl.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,27 +11,26 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.expr
-
-import de.sciss.lucre.stm.{Base, Disposable, Form}
+package de.sciss.lucre
+package expr
 
 object IControl {
-  def wrap[S <: Base[S]](peer: Disposable[S#Tx]): IControl[S] = new Wrap(peer)
+  def wrap[T <: Exec[T]](peer: Disposable[T]): IControl[T] = new Wrap(peer)
 
-  def empty[S <: Base[S]]: IControl[S] = new Empty
+  def empty[T <: Exec[T]]: IControl[T] = new Empty
 
-  private final class Wrap[S <: Base[S]](peer: Disposable[S#Tx]) extends IControl[S] {
-    def initControl()(implicit tx: S#Tx): Unit = ()
+  private final class Wrap[T <: Exec[T]](peer: Disposable[T]) extends IControl[T] {
+    def initControl()(implicit tx: T): Unit = ()
 
-    def dispose()(implicit tx: S#Tx): Unit = peer.dispose()
+    def dispose()(implicit tx: T): Unit = peer.dispose()
   }
 
-  private final class Empty[S <: Base[S]] extends IControl[S] {
-    def initControl()(implicit tx: S#Tx): Unit = ()
+  private final class Empty[T <: Exec[T]] extends IControl[T] {
+    def initControl()(implicit tx: T): Unit = ()
 
-    def dispose()(implicit tx: S#Tx): Unit = ()
+    def dispose()(implicit tx: T): Unit = ()
   }
 }
-trait IControl[S <: Base[S]] extends Form[S] with Disposable[S#Tx] {
-  def initControl()(implicit tx: S#Tx): Unit
+trait IControl[T <: Exec[T]] extends Form[T] with Disposable[T] {
+  def initControl()(implicit tx: T): Unit
 }

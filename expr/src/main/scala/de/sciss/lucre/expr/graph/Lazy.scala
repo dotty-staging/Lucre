@@ -1,6 +1,6 @@
 /*
  *  Lazy.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -10,19 +10,18 @@
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
  */
-package de.sciss.lucre.expr.graph
-
-import de.sciss.lucre.expr.Context
-import de.sciss.lucre.stm.{Disposable, Sys}
+package de.sciss.lucre
+package expr
+package graph
 
 trait Lazy extends Product {
-  type Repr[S <: Sys[S]] <: Disposable[S#Tx]
+  type Repr[T <: Txn[T]] <: Disposable[T]
 
   // this acts as a fast unique reference
   @transient final protected val ref = new AnyRef
 
-  final def expand[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
+  final def expand[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
     ctx.visit(ref, mkRepr)
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S]
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T]
 }

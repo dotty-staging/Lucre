@@ -1,6 +1,6 @@
 /*
  *  ToTrig.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,39 +13,38 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.{IEvent, IPull, ITargets}
-import de.sciss.lucre.event.impl.IEventImpl
-import de.sciss.lucre.expr.{Context, IExpr, ITrigger}
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.expr.{Context, ITrigger}
+import de.sciss.lucre.impl.IEventImpl
+import de.sciss.lucre.{Exec, IEvent, IExpr, IPull, ITargets, Txn}
 import de.sciss.model.Change
 
 object ToTrig {
-  private final class Expanded[S <: Base[S]](in: IExpr[S, Boolean], tx0: S#Tx)
-                                            (implicit protected val targets: ITargets[S])
-    extends ITrigger[S] with IEventImpl[S, Unit] {
+  private final class Expanded[T <: Exec[T]](in: IExpr[T, Boolean], tx0: T)
+                                            (implicit protected val targets: ITargets[T])
+    extends ITrigger[T] with IEventImpl[T, Unit] {
 
     in.changed.--->(this)(tx0)
 
     override def toString: String = s"ToTrig($in)"
 
-    def changed: IEvent[S, Unit] = this
+    def changed: IEvent[T, Unit] = this
 
-    private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Unit] = {
+    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Unit] = {
       val res: Option[Change[Boolean]] = pull(in.changed)
       val t = res.exists(ch => ch.isSignificant && ch.now)
       if (t) Trig.Some else None
     }
 
-    def dispose()(implicit tx: S#Tx): Unit =
+    def dispose()(implicit tx: T): Unit =
       in.changed -/-> changed
   }
 }
 final case class ToTrig(in: Ex[Boolean]) extends Trig {
-  type Repr[S <: Sys[S]] = ITrigger[S]
+  type Repr[T <: Txn[T]] = ITrigger[T]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    val inExp = in.expand[S]
-    new ToTrig.Expanded[S](inExp, tx)
+    val inExp = in.expand[T]
+    new ToTrig.Expanded[T](inExp, tx)
   }
 }

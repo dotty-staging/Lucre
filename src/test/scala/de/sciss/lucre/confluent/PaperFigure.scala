@@ -1,34 +1,46 @@
+/*
+ *  PaperFigure.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
 import java.io.File
 
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.Mutable
-import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.impl.MutableImpl
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, Mutable, Txn => LTxn, Var => LVar}
+import de.sciss.serial.{DataInput, DataOutput, WritableFormat}
 
-class Nodes[S <: stm.Sys[S]] {
+class Nodes[T <: LTxn[T]] {
   object Node {
-    implicit object ser extends MutableSerializer[S, Node] {
-      def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx) = new Node with MutableImpl[ S ] {
-        val id    = _id
-        val value = tx.readVar[Int](id, in)
-        val next  = tx.readVar[Option[Node]](id, in)
+    implicit object ser extends WritableFormat[T, Node] {
+      def readT(in: DataInput)(implicit tx: T): Node = new Node with MutableImpl[T] {
+        val id    = tx.readId(in)
+        val value = id.readVar[Int](in)
+        val next  = id.readVar[Option[Node]](in)
       }
     }
 
-    def apply(init: Int)(implicit tx: S#Tx): Node = new Node with MutableImpl[ S ] {
+    def apply(init: Int)(implicit tx: T): Node = new Node with MutableImpl[T] {
       val id    = tx.newId()
-      val value = tx.newVar(id, init)
-      val next  = tx.newVar(id, Option.empty[Node])
+      val value = id.newVar(init)
+      val next  = id.newVar(Option.empty[Node])
     }
   }
-  trait Node extends Mutable[S#Id, S#Tx] {
-    def value: S#Var[Int]
-    def next: S#Var[Option[Node]]
+  trait Node extends Mutable[T] {
+    def value : LVar[T, Int]
+    def next  : LVar[T, Option[Node]]
 
-    def disposeData()(implicit tx: S#Tx): Unit = {
+    def disposeData()(implicit tx: T): Unit = {
       value.dispose()
       next .dispose()
     }
@@ -41,16 +53,17 @@ class Nodes[S <: stm.Sys[S]] {
 }
 
 object PaperFigure extends App {
-   val dir     = File.createTempFile( "database", "db" )
-   dir.delete()
-   val store   = BerkeleyDB.factory( dir )
-   val s       = Confluent( store )
+  val dir     = File.createTempFile("database", "db")
+  dir.delete()
+  val store   = BerkeleyDB.factory(dir)
+  val s       = Confluent(store)
 
-   new Example( s )
+  new Example(s)
 }
 
-class Example[S <: Sys[S]](val s: S) {
-  val nodes = new Nodes[S]
+class Example(val s: Confluent) {
+  type T = Confluent.Txn
+  val nodes = new Nodes[T]
   import nodes._
 
   val (access, cursor) = s.cursorRoot(_ => Option.empty[Node])(implicit tx => _ => s.newCursor())

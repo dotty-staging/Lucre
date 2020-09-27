@@ -1,6 +1,6 @@
 /*
  *  UnaryOp.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,13 +15,11 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.adjunct.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
-import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.ITargets
-import de.sciss.lucre.event.impl.IEventImpl
+import de.sciss.lucre.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.impl.IEventImpl
+import de.sciss.lucre.{Adjunct, Exec, IExpr, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.model.Change
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -51,7 +49,7 @@ object UnaryOp {
   }
 
   final case class Not[A]()(implicit num: NumBool[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
-    def apply(a: A): A = num.unary_!(a)
+    def apply(a: A): A = num.negate(a)
 
     override def name = "Not"
 
@@ -59,7 +57,7 @@ object UnaryOp {
   }
 
   final case class BitNot[A]()(implicit num: NumInt[A]) extends NamedOp[A, A] with ProductWithAdjuncts {
-    def apply(a: A): A = num.unary_~(a)
+    def apply(a: A): A = num.not(a)
 
     override def name = "BitNot"
 
@@ -483,7 +481,7 @@ object UnaryOp {
   }
 
   final case class SeqProduct[A]()(implicit num: Num[A]) extends NamedOp[Seq[A], A] with ProductWithAdjuncts {
-    def apply(a: Seq[A]): A = a.foldLeft(num.one)(num.*)
+    def apply(a: Seq[A]): A = a.foldLeft(num.one)(num.times)
 
     override def name = "SeqProduct"
 
@@ -536,7 +534,7 @@ object UnaryOp {
   }
 
   final case class SeqSum[A]()(implicit num: Num[A]) extends NamedOp[Seq[A], A] with ProductWithAdjuncts {
-    def apply(a: Seq[A]): A = a.foldLeft(num.zero)(num.+)
+    def apply(a: Seq[A]): A = a.foldLeft(num.zero)(num.plus)
 
     override def name = "SeqSum"
 
@@ -705,13 +703,13 @@ object UnaryOp {
 
   // ---- Impl ----
 
-  private[lucre] final class Expanded[S <: Base[S], A1, A](op: Op[A1, A], a: IExpr[S, A1], tx0: S#Tx)
-                                                          (implicit targets: ITargets[S])
-    extends MappedIExpr[S, A1, A](a, tx0) with IEventImpl[S, Change[A]] {
+  private[lucre] final class Expanded[T <: Exec[T], A1, A](op: Op[A1, A], a: IExpr[T, A1], tx0: T)
+                                                          (implicit targets: ITargets[T])
+    extends MappedIExpr[T, A1, A](a, tx0) with IEventImpl[T, Change[A]] {
 
     override def toString: String = s"UnaryOp($op, $a)"
 
-    protected def mapValue(av: A1)(implicit tx: S#Tx): A = op(av)
+    protected def mapValue(av: A1)(implicit tx: T): A = op(av)
   }
 
   // XXX TODO: let's do this at another point when `Const` is no longer `Lazy`
@@ -724,11 +722,11 @@ object UnaryOp {
 final case class UnaryOp[A1, A](op: Op[A1, A], a: Ex[A1])
   extends Ex[A] {
 
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    val ax = a.expand[S]
-    new UnaryOp.Expanded[S, A1, A](op, ax, tx)
+    val ax = a.expand[T]
+    new UnaryOp.Expanded[T, A1, A](op, ax, tx)
   }
 }

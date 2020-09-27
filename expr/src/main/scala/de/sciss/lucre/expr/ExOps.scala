@@ -1,6 +1,6 @@
 /*
  *  ExOps.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 
 import java.io.{File => _File}
 
-import de.sciss.lucre.adjunct.Adjunct.{Eq, HasDefault, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
+import de.sciss.lucre.Adjunct.{Eq, HasDefault, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
 import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuinaryOp => QuinOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp, QuaternaryOp => QuadOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -66,9 +66,9 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def cosh     [B](implicit wd: WidenToDouble[A, B]): Ex[B] = UnOp(UnOp.Cosh      [A, B](), x)
   def tanh     [B](implicit wd: WidenToDouble[A, B]): Ex[B] = UnOp(UnOp.Tanh      [A, B](), x)
 
-//  def rand      (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand  [A](), x)
-//  def rand2     (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand2 [A](), x)
-//  def coin      (implicit num: NumDouble[A] ): Ex[num.Boolean] = UnOp(UnOp.Coin  [A, num.Boolean]()(num), x)
+  //  def rand      (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand  [A](), x)
+  //  def rand2     (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand2 [A](), x)
+  //  def coin      (implicit num: NumDouble[A] ): Ex[num.Boolean] = UnOp(UnOp.Coin  [A, num.Boolean]()(num), x)
 
   def toStr: Ex[String] = UnOp(UnOp.ToStr[A](), x)
 
@@ -167,25 +167,25 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   }
 
   //  def poll(label: Ex[String] = "poll", gate: Ex[Boolean] = true): Ex[A] =
-//    Poll(x, gate = gate, label = label)
+  //    Poll(x, gate = gate, label = label)
 
   // ---- bridge to trigger ----
 
   def changed: Trig = Changed(x)
 
   /** Latches the expression based on the trigger argument.
-    * The initial state of the returned expression corresponds to the
-    * initial state of the input expression. Subsequent values are
-    * updated and cached only when a trigger occurs.
-    */
+   * The initial state of the returned expression corresponds to the
+   * initial state of the input expression. Subsequent values are
+   * updated and cached only when a trigger occurs.
+   */
   def latch(tr: Trig): Ex[A] = Latch(x, tr)
 
   /** Alias for `latch` */
   def <| (tr: Trig): Ex[A] = Latch(x, tr)
 
   /** Views this expression as a (yet to make) `Obj`.
-    * In order to actually create the object, `.make` has to be called on it.
-    */
+   * In order to actually create the object, `.make` has to be called on it.
+   */
   def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
 }
 
@@ -213,11 +213,11 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
 
   def take(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringTake(), x, n)
   def drop(n: Ex[Int]): Ex[String] = BinOp(BinOp.StringDrop(), x, n)
-  
+
   def slice(from: Ex[Int], until: Ex[Int]): Ex[String] = TernOp(TernOp.StringSlice(), x, from, until)
 
   /** Applies 'printf' style formatting. See `StringFormat` for details.
-    */
+   */
   def format(args: Ex[Any]*): Ex[String] = graph.StringFormat(x, args)
 }
 
@@ -254,11 +254,11 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   /** Whether this collection contains an element or not */
   def contains(elem: Ex[A]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, A](), x, elem)
-//  def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, B](), x, elem)
+  //  def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.SeqContains[A, B](), x, elem)
 
   /** The multiset difference between this sequence and `that` sequence */
   def diff(that: Ex[Seq[A]]): Ex[Seq[A]] = BinOp(BinOp.SeqDiff[A, A](), x, that)
-//  def diff[B >: A](that: Ex[Seq[B]]): Ex[Seq[A]] = BinOp(BinOp.SeqDiff[A, B](), x, that)
+  //  def diff[B >: A](that: Ex[Seq[B]]): Ex[Seq[A]] = BinOp(BinOp.SeqDiff[A, B](), x, that)
 
   /** All the elements of this sequence ignoring the duplicates */
   def distinct: Ex[Seq[A]] = UnOp(UnOp.SeqDistinct[A](), x)
@@ -276,7 +276,7 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   /** Tests whether this sequence ends with `that` sequence */
   def endsWith(that: Ex[Seq[A]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, A](), x, that)
-//  def endsWith[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, B](), x, that)
+  //  def endsWith[B >: A](that: Ex[Seq[B]]): Ex[Boolean] = BinOp(BinOp.SeqEndsWith[A, B](), x, that)
 
   def exists(p: Ex[A] => Ex[Boolean]): Ex[Boolean] = {
     val (it, res) = Ex.mkClosure(p)
@@ -322,19 +322,19 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   /** The index of the first occurrence of `elem` in this sequence, or `-1` if not found */
   def indexOf(elem: Ex[A]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, A](), x, elem)
-//  def indexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, B](), x, elem)
+  //  def indexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqIndexOf[A, B](), x, elem)
 
   /** The index of the first occurrence of `elem` at or after `from` in this sequence, or `-1` if not found */
   def indexOf(elem: Ex[A], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOf[A, A](), x, elem, from)
-//  def indexOf[B >: A](elem: Ex[B], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOf[A, B](), x, elem, from)
+  //  def indexOf[B >: A](elem: Ex[B], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOf[A, B](), x, elem, from)
 
   /** First index where this sequence contains `that` sequence as a slice, or `-1` if not found */
   def indexOfSlice(that: Ex[Seq[A]]): Ex[Int] = BinOp(BinOp.SeqIndexOfSlice[A, A](), x, that)
-//  def indexOfSlice[B >: A](that: Ex[Seq[B]]): Ex[Int] = BinOp(BinOp.SeqIndexOfSlice[A, B](), x, that)
+  //  def indexOfSlice[B >: A](that: Ex[Seq[B]]): Ex[Int] = BinOp(BinOp.SeqIndexOfSlice[A, B](), x, that)
 
   /** First index at or after `from` where this sequence contains `that` sequence as a slice, or `-1` if not found */
   def indexOfSlice(that: Ex[Seq[A]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, A](), x, that, from)
-//  def indexOfSlice[B >: A](that: Ex[Seq[B]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, B](), x, that, from)
+  //  def indexOfSlice[B >: A](that: Ex[Seq[B]], from: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqIndexOfSlice[A, B](), x, that, from)
 
   def indexWhere(p: Ex[A] => Ex[Boolean]): Ex[Int] = {
     val (it, res) = Ex.mkClosure(p)
@@ -355,19 +355,19 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
 
   /** The index of the last occurrence of `elem` in this sequence, or `-1` if not found */
   def lastIndexOf(elem: Ex[A]): Ex[Int] = BinOp(BinOp.SeqLastIndexOf[A, A](), x, elem)
-//  def lastIndexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqLastIndexOf[A, B](), x, elem)
+  //  def lastIndexOf[B >: A](elem: Ex[B]): Ex[Int] = BinOp(BinOp.SeqLastIndexOf[A, B](), x, elem)
 
   /** The index of the last occurrence of `elem` at or before `end` in this sequence, or `-1` if not found */
   def lastIndexOf(elem: Ex[A], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOf[A, A](), x, elem, end)
-//  def lastIndexOf[B >: A](elem: Ex[B], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOf[A, B](), x, elem, end)
+  //  def lastIndexOf[B >: A](elem: Ex[B], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOf[A, B](), x, elem, end)
 
   /** Last index where this sequence contains `that` sequence as a slice, or `-1` if not found */
   def lastIndexOfSlice(that: Ex[Seq[A]]): Ex[Int] = BinOp(BinOp.SeqLastIndexOfSlice[A, A](), x, that)
-//  def lastIndexOfSlice[B >: A](that: Ex[Seq[B]]): Ex[Int] = BinOp(BinOp.SeqLastIndexOfSlice[A, B](), x, that)
+  //  def lastIndexOfSlice[B >: A](that: Ex[Seq[B]]): Ex[Int] = BinOp(BinOp.SeqLastIndexOfSlice[A, B](), x, that)
 
   /** Last index at or before `end` where this sequence contains `that` sequence as a slice, or `-1` if not found */
   def lastIndexOfSlice(that: Ex[Seq[A]], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOfSlice[A, A](), x, that, end)
-//  def lastIndexOfSlice[B >: A](that: Ex[Seq[B]], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOfSlice[A, B](), x, that, end)
+  //  def lastIndexOfSlice[B >: A](that: Ex[Seq[B]], end: Ex[Int]): Ex[Int] = TernOp(TernOp.SeqLastIndexOfSlice[A, B](), x, that, end)
 
   /** The last element if the sequence is non-empty */
   def lastOption: Ex[Option[A]] = UnOp(UnOp.SeqLastOption[A](), x)
@@ -418,8 +418,8 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   def slice(from: Ex[Int], until: Ex[Int]): Ex[Seq[A]] = TernOp(TernOp.SeqSlice[A](), x, from, until)
 
   /** Groups elements in fixed size blocks by passing a "sliding window" over them.
-    * Note that both `size` and `step` are automatically constraint to values of one and greater.
-    */
+   * Note that both `size` and `step` are automatically constraint to values of one and greater.
+   */
   def sliding(size: Ex[Int], step: Ex[Int] = 1): Ex[Seq[Seq[A]]] = TernOp(TernOp.SeqSliding[A](), x, size, step)
 
   def sorted(implicit ord: ScalarOrd[A]): Ex[Seq[A]] = UnOp(UnOp.SeqSorted[A](), x)
@@ -430,7 +430,7 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   def startsWith(that: Ex[Seq[A]], offset: Ex[Int] = 0): Ex[Boolean] =
     TernOp(TernOp.SeqStartsWith[A, A](), x, that, offset)
 
-//  def startsWith[B >: A](that: Ex[Seq[B]], offset: Ex[Int] = 0): Ex[Boolean] = TernOp(TernOp.SeqStartsWith[A, B](), x, that, offset)
+  //  def startsWith[B >: A](that: Ex[Seq[B]], offset: Ex[Int] = 0): Ex[Boolean] = TernOp(TernOp.SeqStartsWith[A, B](), x, that, offset)
 
   def sum(implicit num: Num[A]): Ex[A] = UnOp(UnOp.SeqSum[A](), x)
 
@@ -444,8 +444,8 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   }
 
   /** A new sequence equal to this sequence with one single replaced `elem` at `index`.
-    * If the index lies outside the sequence, the original sequence is returned.
-    */
+   * If the index lies outside the sequence, the original sequence is returned.
+   */
   def updated[B >: A](index: Ex[Int], elem: Ex[B]): Ex[Seq[B]] = TernOp(TernOp.SeqUpdated[A, B](), x, index, elem)
 
   // used in for-comprehensions
@@ -466,8 +466,8 @@ final class ExSpanOps[A <: _SpanLike](private val x: Ex[A]) extends AnyVal {
 
   def contains(pos: Ex[Long]): Ex[Boolean] = BinOp(BinOp.SpanLikeContains(), x, pos)
 
-// cannot overload due to erasure
-//  def contains(that: Ex[SpanLike]): Ex[Boolean]
+  // cannot overload due to erasure
+  //  def contains(that: Ex[SpanLike]): Ex[Boolean]
 
   def overlaps  (that: Ex[_SpanLike]): Ex[Boolean]    = BinOp(BinOp.SpanLikeOverlaps  (), x, that)
   def touches   (that: Ex[_SpanLike]): Ex[Boolean]    = BinOp(BinOp.SpanLikeTouches   (), x, that)
@@ -581,7 +581,7 @@ final class LongLiteralExOps(private val x: Long) extends AnyVal {
   def +  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Plus [A, A1, A2](), x, that)
   def -  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Minus[A, A1, A2](), x, that)
   def *  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Times[A, A1, A2](), x, that)
-//  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
+  //  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
   def %  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.ModJ [A, A1, A2](), x, that)
   def mod[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Mod  [A, A1, A2](), x, that)
 
@@ -607,10 +607,10 @@ final class LongLiteralExOps(private val x: Long) extends AnyVal {
   def roundUpTo [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundUpTo[A, A1, A2](), x, that)
   def trunc     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.Trunc    [A, A1, A2](), x, that)
 
-//  def atan2     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Atan2    [A, A1, A2](), x, that)
-//  def hypot     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypot    [A, A1, A2](), x, that)
-//  def hypotApx  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypotx   [A, A1, A2](), x, that)
-//  def pow       [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Pow      [A, A1, A2](), x, that)
+  //  def atan2     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Atan2    [A, A1, A2](), x, that)
+  //  def hypot     [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypot    [A, A1, A2](), x, that)
+  //  def hypotApx  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypotx   [A, A1, A2](), x, that)
+  //  def pow       [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Pow      [A, A1, A2](), x, that)
 
   def <<  (that: Ex[A]): Ex[A] = BinOp(BinOp.LeftShift         [A](), x, that)
   def >>  (that: Ex[A]): Ex[A] = BinOp(BinOp.RightShift        [A](), x, that)
@@ -633,9 +633,9 @@ final class LongLiteralExOps(private val x: Long) extends AnyVal {
   def fold[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Fold[A, A1, A2](), x, lo, hi)
   def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
 
-//  def ---> (attr: Attr.Like[A]): Unit = attr.update(x)
+  //  def ---> (attr: Attr.Like[A]): Unit = attr.update(x)
 
-//  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
+  //  def asObj(implicit cm: Obj.CanMake[A]): Obj.Make = Obj.Make(x)
 }
 
 final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
@@ -661,12 +661,12 @@ final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
   def min[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Min[A, A1, A2](), x, that)
   def max[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Max[A, A1, A2](), x, that)
 
-//  def &   (that: Ex[A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
-//  def |   (that: Ex[A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
-//  def ^   (that: Ex[A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
+  //  def &   (that: Ex[A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
+  //  def |   (that: Ex[A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
+  //  def ^   (that: Ex[A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
 
-//  def lcm (that: Ex[A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
-//  def gcd (that: Ex[A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
+  //  def lcm (that: Ex[A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
+  //  def gcd (that: Ex[A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
 
   def roundTo   [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundTo  [A, A1, A2](), x, that)
   def roundUpTo [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num       [A2]): Ex[A2] = BinOp(BinOp.RoundUpTo[A, A1, A2](), x, that)
@@ -677,9 +677,9 @@ final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
   def hypotApx  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Hypotx   [A, A1, A2](), x, that)
   def pow       [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDouble [A2]): Ex[A2] = BinOp(BinOp.Pow      [A, A1, A2](), x, that)
 
-//  def <<  (that: Ex[A]): Ex[A] = BinOp(BinOp.LeftShift         [A](), x, that)
-//  def >>  (that: Ex[A]): Ex[A] = BinOp(BinOp.RightShift        [A](), x, that)
-//  def >>> (that: Ex[A]): Ex[A] = BinOp(BinOp.UnsignedRightShift[A](), x, that)
+  //  def <<  (that: Ex[A]): Ex[A] = BinOp(BinOp.LeftShift         [A](), x, that)
+  //  def >>  (that: Ex[A]): Ex[A] = BinOp(BinOp.RightShift        [A](), x, that)
+  //  def >>> (that: Ex[A]): Ex[A] = BinOp(BinOp.UnsignedRightShift[A](), x, that)
 
   def difSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Difsqr[A, A1, A2](), x, that)
   def sumSqr[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Sumsqr[A, A1, A2](), x, that)
@@ -706,13 +706,13 @@ final class DoubleLiteralExOps(private val x: Double) extends AnyVal {
 // XXX TODO --- we could check here if arguments are constants,
 // and in that case fall back to constant behaviour like `scala.StringOps`.
 /** Some methods are here form `ExStringOps` again, so that we can
-  * use them on plain string literals, without requiring an
-  * explicit wrap such as `Const("x")` first.
-  */
+ * use them on plain string literals, without requiring an
+ * explicit wrap such as `Const("x")` first.
+ */
 final class StringLiteralExOps(private val x: String) extends AnyVal {
   def attr[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr(x)
 
-//  def attr[A]()(implicit bridge: Obj.Bridge[A], d: HasDefault[A]): Attr[A] = Attr(x)
+  //  def attr[A]()(implicit bridge: Obj.Bridge[A], d: HasDefault[A]): Attr[A] = Attr(x)
 
   def attr[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
     Attr.WithDefault(x, default)
@@ -764,8 +764,8 @@ final class ExFileOps(private val x: Ex[_File]) extends AnyVal {
     UnOp(UnOp.FileBase(), x)
 
   /** Returns the extension of the file (lower-cased, period dropped). Returns and empty string
-    * if no extension is given.
-    */
+   * if no extension is given.
+   */
   def ext: Ex[String] =
     UnOp(UnOp.FileExtL(), x)  // ! simplify and use lower case here
 

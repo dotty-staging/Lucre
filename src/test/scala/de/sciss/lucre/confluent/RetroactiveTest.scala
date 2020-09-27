@@ -1,40 +1,87 @@
+/*
+ *  RetroactiveTest.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.Confluent
+import de.sciss.lucre.impl.MutableImpl
+import de.sciss.lucre.{Var => LVar}
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.serial.{DataInput, DataOutput, WritableFormat}
 
+/*
+  -- output --
+
+INIT
+
+
+MK CURSOR 2
+
+
+In 1 update(1)
+
+
+In 2 update(1)
+
+(A) In cursor 1: (Path(0, 1),Foo(a = 0, b = bar))
+(A) In cursor 2: (Path(0, 2),Foo(a = 0, b = baz))
+
+RETRO
+
+Retro input access was Path(0, 0)
+(B) In cursor 1: (Path(0, 1),Foo(a = 0, b = bar))
+(B) In cursor 2: (Path(0, 2),Foo(a = 0, b = baz))
+(C) In cursor 1: (Path(0, 1),Foo(a = 0, b = bar))
+(C) In cursor 2: (Path(0, 4),Foo(a = 666, b = baz))
+
+
+ */
+
+// XXX TODO make this a ScalaTest spec
 object RetroactiveTest extends App {
   val system    = Confluent(BerkeleyDB.tmp())
   type S        = Confluent
+  type T        = Confluent.Txn
 
   //  showLog       = true
   //  showCursorLog = true
 
-  implicit object Ser extends MutableSerializer[S, Foo] {
-    def readData(in: DataInput, id: S#Id)(implicit tx: S#Tx) =
-      new Foo(id, tx.readIntVar(id, in), tx.readVar[String](id, in))
+  implicit object Fmt extends WritableFormat[T, Foo] {
+    def readT(in: DataInput)(implicit tx: T): Foo = {
+      val id = tx.readId(in)
+      new Foo(id, id.readIntVar(in), id.readVar[String](in))
+    }
   }
 
-  final class Foo(val id: S#Id, val a: S#Var[Int], val b: S#Var[String]) extends MutableImpl[S] {
+  final class Foo(val id: Ident[T], val a: LVar[T, Int], val b: LVar[T, String]) extends MutableImpl[T] {
     def writeData(out: DataOutput): Unit = {
       a.write(out)
       b.write(out)
     }
 
-    def disposeData()(implicit tx: S#Tx): Unit = {
+    def disposeData()(implicit tx: T): Unit = {
       a.dispose()
       b.dispose()
     }
 
-    def print(implicit tx: S#Tx): String = s"Foo(a = ${a()}, b = ${b()})"
+    def print(implicit tx: T): String = s"Foo(a = ${a()}, b = ${b()})"
   }
 
   println("\nINIT\n")
 
   val (access, (cursor0, cursor1)) = system.cursorRoot { implicit tx =>
     val id = tx.newId()
-    new Foo(id, tx.newIntVar(id, 0), tx.newVar(id, "foo"))
+    new Foo(id, id.newIntVar(0), id.newVar("foo"))
   } { implicit tx => _ =>
     system.newCursor() -> system.newCursor()
   }
@@ -71,7 +118,7 @@ object RetroactiveTest extends App {
 
   cursor2.step { implicit tx =>
     val id = tx.newId()
-    tx.newIntVar(id, 666)   // enforce write version
+    id.newIntVar(666)   // enforce write version
   }
 
   println(s"(C) In cursor 1: ${cursor1.step { implicit tx => tx.inputAccess -> access().print }}")

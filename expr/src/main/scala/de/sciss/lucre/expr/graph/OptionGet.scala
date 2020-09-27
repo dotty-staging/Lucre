@@ -1,6 +1,6 @@
 /*
  *  OptionGet.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,21 +13,20 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.event.{IPull, ITargets}
+import de.sciss.lucre.expr.Context
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
-import de.sciss.lucre.expr.{Context, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.{IExpr, IPull, ITargets, Txn}
 import de.sciss.model.Change
 
 object OptionGet {
-  private final class Expanded[S <: Sys[S], A](in: IExpr[S, Option[A]], tx0: S#Tx)(implicit targets: ITargets[S])
-    extends MappedIExpr[S, Option[A], A](in, tx0) {
+  private final class Expanded[T <: Txn[T], A](in: IExpr[T, Option[A]], tx0: T)(implicit targets: ITargets[T])
+    extends MappedIExpr[T, Option[A], A](in, tx0) {
 
     override def toString: String = s"OptionGet($in)"
 
-    protected def mapValue(inValue: Option[A])(implicit tx: S#Tx): A = inValue.get
+    protected def mapValue(inValue: Option[A])(implicit tx: T): A = inValue.get
 
-    override private[lucre] def pullUpdate(pull: IPull[S])(implicit tx: S#Tx): Option[Change[A]] =
+    override private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[A]] =
       pull(in.changed).flatMap { ch =>
         // simply don't fire if the option was not or is not defined
         if (ch.before.isEmpty || ch.now.isEmpty) None else {
@@ -39,10 +38,10 @@ object OptionGet {
   }
 }
 case class OptionGet[A](in: Ex[Option[A]]) extends Ex[A] {
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    new OptionGet.Expanded(in.expand[S], tx)
+    new OptionGet.Expanded(in.expand[T], tx)
   }
 }

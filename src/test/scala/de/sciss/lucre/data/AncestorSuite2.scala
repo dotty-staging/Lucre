@@ -1,7 +1,20 @@
+/*
+ *  AncestorSuite2.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.data
 
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.lucre.stm.{Cursor, Durable, InMemory, Sys}
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Cursor, Durable, InMemory, Sys, TestUtil, Txn}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 
@@ -9,9 +22,10 @@ import scala.annotation.tailrec
 import scala.collection.immutable.IntMap
 
 /*
- To run this test copy + paste the following into sbt:
 
-test-only de.sciss.lucre.data.AncestorSuite2
+  To run this test copy + paste the following into sbt:
+
+  testOnly de.sciss.lucre.data.AncestorSuite2
 
  */
 object AncestorSuite2 {
@@ -37,12 +51,16 @@ class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
   var verbose = false
 
   if (INMEMORY) {
-    withSys[InMemory]("Mem", () => InMemory(): InMemory /* please IDEA */ , (_, _) => ())
+    withSys[InMemory, InMemory.Txn]("Mem", { () =>
+      val s = InMemory()
+      (s, s)
+    }, (_, _) => ())
   }
   if (DATABASE) {
-    withSys[Durable]("BDB", () => {
+    withSys[Durable, Durable.Txn]("BDB", () => {
       val bdb = BerkeleyDB.tmp()
-      Durable(bdb)
+      val s = Durable(bdb)
+      (s, s)
     }, {
       case (bdb, _ /* success */) =>
         //         if( success ) {
@@ -54,7 +72,7 @@ class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
     })
   }
 
-  def withSys[S <: Sys[S] with Cursor[S]](sysName: String, sysCreator: () => S,
+  def withSys[S <: Sys, T <: Txn[T]](sysName: String, sysCreator: () => (S, Cursor[T]),
                                           sysCleanUp: (S, Boolean) => Unit): Unit = {
     def scenarioWithTime(name: String, descr: String)(body: => Unit): Unit = {
       Scenario(descr) {
@@ -67,22 +85,22 @@ class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
 
     Feature(s"Marked ancestor lookup is verified on a dedicated structure in $sysName") {
       scenarioWithTime("Marked-Ancestors", "Verifying marked ancestor lookup") {
-        implicit val system: S = sysCreator()
+        val (system, cursor) = sysCreator()
         var success = false
         try {
           Given("a randomly filled and marked tree, and a manually maintained duplicate")
 
-          val full = system.step { implicit tx =>
-            Ancestor.newTree[S, Int](0)
+          val full = cursor.step { implicit tx =>
+            Ancestor.newTree[T, Int](0)
           }
-          val map = system.step { implicit tx =>
-            Ancestor.newMap[S, Int, Int](full, full.root, 0)
+          val map = cursor.step { implicit tx =>
+            Ancestor.newMap[T, Int, Int](full, full.root, 0)
           }
           val rnd = new util.Random(seed)
           // val empty   = IndexedSeq.empty[ Int ]
 
           var mapRepr = IntMap[Vertex](0 -> Vertex(-1, Set.empty, Some(0)))
-          var mapFV   = IntMap[Ancestor.Vertex[S, Int]](0 -> full.root)
+          var mapFV   = IntMap[Ancestor.Vertex[T, Int]](0 -> full.root)
           //  var values  = IndexedSeq.tabulate[ Int ]( NUM1 )( identity )
 
           When("during insertion for all existing vertices their marked ancestor is queried")
@@ -92,7 +110,7 @@ class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
 
           for (version <- 1 to NUM1) {
             //println( version )
-            val update = system.step { implicit tx =>
+            val update = cursor.step { implicit tx =>
               val ref       = rnd.nextInt(version)
               val draw      = rnd.nextDouble()
               var _mapFV    = mapFV
@@ -143,10 +161,10 @@ class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
               }
 
               mark.foreach { value =>
-//                println(s"VALUE $value")
-//                if (value == -368914398) {
-//                  println("AQUI")
-//                }
+                //                println(s"VALUE $value")
+                //                if (value == -368914398) {
+                //                  println("AQUI")
+                //                }
                 val res = map.add(fullVertex -> value)
                 assert(res, s"Mark.add says mark existed for $version")
               }
@@ -162,7 +180,7 @@ class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
               // println( version )
               // now verify all marked ancestors
               for (query <- 1 to version) {
-                val (fullVertex, ancValue) = system.step { implicit tx =>
+                val (fullVertex, ancValue) = cursor.step { implicit tx =>
                   map.nearest(mapFV(query))
                 }
                 val ancVersion = fullVertex.versionInt

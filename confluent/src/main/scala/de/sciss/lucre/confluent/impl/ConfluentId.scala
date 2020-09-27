@@ -1,6 +1,6 @@
 /*
  *  ConfluentId.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,11 +14,105 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.serial.DataOutput
+import de.sciss.lucre.confluent.Log.log
+import de.sciss.lucre.Var
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 
 import scala.util.hashing.MurmurHash3
 
-private final class ConfluentId[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
+private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
+  type Id = Ident[T]
+
+  final def !(implicit tx: T): Ident[T] = this
+
+  final def dispose()(implicit tx: T): Unit = ()
+
+  final def write(out: DataOutput): Unit = {
+    out./* PACKED */ writeInt(base)
+    path.write(out)
+  }
+
+  @inline final protected def alloc()(implicit tx: T): Id = new ConfluentId(tx.system.newIdValue(), path)
+
+  final def newVar[A](init: A)(implicit tx: T, format: TFormat[T, A]): Var[T, A] = {
+    val res = makeVar[A](alloc())
+    log(s"txn newVar $res")
+    res.setInit(init)
+    res
+  }
+
+  final def newBooleanVar(init: Boolean)(implicit tx: T): Var[T, Boolean] = {
+    val id  = alloc()
+    val res = new BooleanVar(id)
+    log(s"txn newVar $res")
+    res.setInit(init)
+    res
+  }
+
+  final def newIntVar(init: Int)(implicit tx: T): Var[T, Int] = {
+    val id  = alloc()
+    val res = new IntVar(id)
+    log(s"txn newVar $res")
+    res.setInit(init)
+    res
+  }
+
+  final def newLongVar(init: Long)(implicit tx: T): Var[T, Long] = {
+    val id  = alloc()
+    val res = new LongVar(id)
+    log(s"txn newVar $res")
+    res.setInit(init)
+    res
+  }
+
+  private def makeVar[A](id: Id)(implicit format: TFormat[T, A]): BasicVar[T, A ] = {
+    format match {
+      case plain: ConstFormat[A] =>
+        new VarImpl  [T, A](id, plain)
+      case _ =>
+        new VarTxImpl[T, A](id)
+    }
+  }
+
+  final def readVar[A](in: DataInput)(implicit format: TFormat[T, A]): Var[T, A] = {
+    val res = makeVar[A](readSource(in))
+    log(s"txn read $res")
+    res
+  }
+
+
+  final private def readSource(in: DataInput): Id = {
+    val base = in./* PACKED */ readInt()
+    new ConfluentId(base, path)
+  }
+
+//  final protected def readPartialSource(in: DataInput): Id = {
+//    val base = in./* PACKED */ readInt()
+//    new PartialId(base, path)
+//  }
+
+  final def readBooleanVar(in: DataInput): Var[T, Boolean] = {
+    val res = new BooleanVar(readSource(in))
+    log(s"txn read $res")
+    res
+  }
+
+  final def readIntVar(in: DataInput): Var[T, Int] = {
+    val res = new IntVar(readSource(in))
+    log(s"txn read $res")
+    res
+  }
+
+  final def readLongVar(in: DataInput): Var[T, Long] = {
+    val res = new LongVar(readSource(in))
+    log(s"txn read $res")
+    res
+  }
+}
+
+private final class ConfluentId[T <: Txn[T]](val base: Int, val path: Access[T])
+  extends IdImpl[T] {
+
   override def hashCode: Int = {
     import MurmurHash3._
     val h0  = productSeed
@@ -27,24 +121,19 @@ private final class ConfluentId[S <: Sys[S]](val base: Int, val path: S#Acc) ext
     finalizeHash(h2, 2)
   }
 
-  def copy(newPath: S#Acc): Identifier[S] = new ConfluentId(base = base, path = newPath)
+  def copy(newPath: Access[T]): Ident[T] = new ConfluentId(base = base, path = newPath)
 
   override def equals(that: Any): Boolean = that match {
-    case b: Identifier[_] => base == b.base && path == b.path
+    case b: Ident[_] => base == b.base && path == b.path
     case _ => false
   }
 
-  def write(out: DataOutput): Unit = {
-    out./* PACKED */ writeInt(base)
-    path.write(out)
-  }
-
   override def toString: String = path.mkString(s"<$base @ ", ",", ">")
-
-  def dispose()(implicit tx: S#Tx): Unit = ()
 }
 
-private final class PartialId[S <: Sys[S]](val base: Int, val path: S#Acc) extends Identifier[S] {
+private final class PartialId[T <: Txn[T]](val base: Int, val path: Access[T])
+  extends IdImpl[T] {
+
   override def hashCode: Int = {
     import MurmurHash3._
     val h0  = productSeed
@@ -59,24 +148,20 @@ private final class PartialId[S <: Sys[S]](val base: Int, val path: S#Acc) exten
     }
   }
 
-  def copy(newPath: S#Acc): Identifier[S] = new PartialId(base = base, path = newPath)
+  def copy(newPath: Access[T]): Ident[T] = new PartialId(base = base, path = newPath)
 
-  override def equals(that: Any): Boolean = that match {
-    case b: PartialId[_] =>
-      val bp = b.path
-      if (path.isEmpty) {
-        base == b.base && bp.isEmpty
-      } else {
-        base == b.base && bp.nonEmpty && path.head == bp.head && path.last == bp.last
+    override def equals(that: Any): Boolean =
+      that match {
+        case b: PartialId[_] =>
+          val bp: PathLike = b.path
+          if (path.isEmpty) {
+            base == b.base && bp.isEmpty
+          } else {
+            base == b.base && bp.nonEmpty && path.head == bp.head && path.last == bp.last
+          }
+
+        case _ => false
       }
-
-    case _ => false
-  }
-
-  def write(out: DataOutput): Unit = {
-    out./* PACKED */ writeInt(base)
-    path.write(out)
-  }
 
   override def toString: String = {
     val tail = if (path.isEmpty) ""
@@ -88,6 +173,4 @@ private final class PartialId[S <: Sys[S]](val base: Int, val path: S#Acc) exten
     }
     s"<$base @ $tail>"
   }
-
-  def dispose()(implicit tx: S#Tx): Unit = ()
 }

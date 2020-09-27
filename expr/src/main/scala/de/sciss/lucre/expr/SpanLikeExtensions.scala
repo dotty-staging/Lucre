@@ -1,6 +1,6 @@
 /*
  *  SpanLikeExtensions.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,10 +13,9 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.{Tuple2Op, Tuple1Op}
-import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
-import de.sciss.lucre.{event => evt}
+import de.sciss.lucre.Event.Targets
+import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.{Copy, Elem, Expr, LongObj, Obj, SpanLikeObj, Txn}
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span, SpanLike}
 
@@ -30,90 +29,90 @@ object SpanLikeExtensions {
 
   def init(): Unit = _init
 
-  type _Ex[S <: Sys[S]] = SpanLikeObj[S]
+  type _Ex[T <: Txn[T]] = SpanLikeObj[T]
 
-  def newExpr[S <: Sys[S]](start: LongObj[S], stop: LongObj[S])(implicit tx: S#Tx): _Ex[S] =
+  def newExpr[T <: Txn[T]](start: LongObj[T], stop: LongObj[T])(implicit tx: T): _Ex[T] =
     BinaryOp.Apply(start, stop)
 
-  def from[S <: Sys[S]](start: LongObj[S])(implicit tx: S#Tx): _Ex[S] =
+  def from[T <: Txn[T]](start: LongObj[T])(implicit tx: T): _Ex[T] =
     UnaryOp.From(start)
 
-  def until[S <: Sys[S]](stop: LongObj[S])(implicit tx: S#Tx): _Ex[S] =
+  def until[T <: Txn[T]](stop: LongObj[T])(implicit tx: T): _Ex[T] =
     UnaryOp.Until(stop)
 
-  private[this] object SpanLikeTuple1s extends Type.Extension1[SpanLikeObj] {
+  private[this] object SpanLikeTuple1s extends Expr.Type.Extension1[SpanLikeObj] {
     // final val arity = 1
     final val opLo: Int = UnaryOp.From .id
     final val opHi: Int = UnaryOp.Until.id
 
     val name = "Long-SpanLike Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       import UnaryOp._
       val op /* : Op[_, _] */ = (opId: @switch) match {
         case From .id => From
         case Until.id => Until
         case _ => sys.error(s"Invalid operation id $opId")
       }
-      op.read(in, access, targets)
+      op.read(in, targets)
     }
   }
 
-  private[this] object SpanLikeTuple2s extends Type.Extension1[SpanLikeObj] {
+  private[this] object SpanLikeTuple2s extends Expr.Type.Extension1[SpanLikeObj] {
     // final val arity = 2
     final val opLo: Int = BinaryOp.Apply.id
     final val opHi: Int = BinaryOp.Shift.id
 
     val name = "Long-SpanLike Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       import BinaryOp._
       val op /* : Op[_, _, _, _] */ = opId /* : @switch */ match {
         case Apply.id => Apply
         case Shift.id => Shift
       }
-      op.read(in, access, targets)
+      op.read(in, targets)
     }
   }
 
-  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
-      protected val targets: Targets[S], val op: Tuple1Op[SpanLike, T1, SpanLikeObj, ReprT1], val _1: ReprT1[S])
-    extends impl.Tuple1[S, SpanLike, T1, SpanLikeObj, ReprT1] with SpanLikeObj[S] {
+  final class Tuple1[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]](
+                                                                           protected val targets: Targets[T], val op: ExprTuple1Op[SpanLike, T1, SpanLikeObj, ReprT1], val _1: ReprT1[T])
+    extends ExprTuple1[T, SpanLike, T1, SpanLikeObj, ReprT1] with SpanLikeObj[T] {
 
     def tpe: Obj.Type = SpanLikeObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1(Targets[Out], op, context(_1)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple1(Targets[Out](), op, context(_1)).connect()
   }
 
-  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
-                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
-      protected val targets: Targets[S], val op: Tuple2Op[SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2],
-      val _1: ReprT1[S], val _2: ReprT2[S])
-    extends impl.Tuple2[S, SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2] with SpanLikeObj[S] {
+  final class Tuple2[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1],
+    T2, ReprT2[~ <: Txn[~]] <: Expr[~, T2]](
+                                             protected val targets: Targets[T], val op: ExprTuple2Op[SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2],
+                                             val _1: ReprT1[T], val _2: ReprT2[T])
+    extends ExprTuple2[T, SpanLike, T1, T2, SpanLikeObj, ReprT1, ReprT2] with SpanLikeObj[T] {
 
     def tpe: Obj.Type = SpanLikeObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out](), op, context(_1), context(_2)).connect()
   }
 
   // ---- operators ----
 
-  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
+  final class Ops[T <: Txn[T]](val `this`: _Ex[T]) extends AnyVal { me =>
     import me.{`this` => ex}
     // ---- binary ----
-    def shift(delta: LongObj[S])(implicit tx: S#Tx): _Ex[S] = BinaryOp.Shift(ex, delta)
+    def shift(delta: LongObj[T])(implicit tx: T): _Ex[T] = BinaryOp.Shift(ex, delta)
   }
 
   private object UnaryOp {
-    sealed trait Op[T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]] {
-      def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                           (implicit tx: S#Tx): _Ex[S]
+    sealed trait Op[T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]] {
+      def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                           (implicit tx: T): _Ex[T]
 
-      def toString[S <: Sys[S]](_1: ReprT1[S]): String = s"$name(${_1})"
+      def toString[T <: Txn[T]](_1: ReprT1[T]): String = s"$name(${_1})"
 
       def name: String = {
         val cn  = getClass.getName
@@ -123,40 +122,40 @@ object SpanLikeExtensions {
       }
     }
 
-    sealed abstract class LongOp extends impl.Tuple1Op[SpanLike, Long, SpanLikeObj, LongObj]
+    sealed abstract class LongOp extends ExprTuple1Op[SpanLike, Long, SpanLikeObj, LongObj]
       with Op[Long, LongObj] {
 
-      final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                 (implicit tx: S#Tx): _Ex[S] = {
-        val _1 = LongObj.read(in, access)
-        new Tuple1[S, Long, LongObj](targets, this, _1)
+      final def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                                 (implicit tx: T): _Ex[T] = {
+        val _1 = LongObj.read(in)
+        new Tuple1[T, Long, LongObj](targets, this, _1)
       }
 
-      final def apply[S <: Sys[S]](a: LongObj[S])(implicit tx: S#Tx): _Ex[S] =
-        new Tuple1[S, Long, LongObj](Targets[S], this, a).connect()
+      final def apply[T <: Txn[T]](a: LongObj[T])(implicit tx: T): _Ex[T] =
+        new Tuple1[T, Long, LongObj](Targets[T](), this, a).connect()
     }
 
     case object From extends LongOp {
       final val id = 0
       def value(a: Long): SpanLike = Span.from(a)
 
-      override def toString[S <: Sys[S]](_1: LongObj[S]): String = s"Span.from(${_1 })"
+      override def toString[T <: Txn[T]](_1: LongObj[T]): String = s"Span.from(${_1 })"
     }
 
     case object Until extends LongOp {
       final val id = 1
       def value(a: Long): SpanLike = Span.until(a)
 
-      override def toString[S <: Sys[S]](_1: LongObj[S]): String = s"Span.until(${_1})"
+      override def toString[T <: Txn[T]](_1: LongObj[T]): String = s"Span.until(${_1})"
     }
   }
 
   private object BinaryOp {
-    sealed trait Op[T1, T2, ReprT1[~ <: Sys[~]] <: Expr[~, T1], ReprT2[~ <: Sys[~]] <: Expr[~, T2]] {
-      def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                           (implicit tx: S#Tx): _Ex[S]
+    sealed trait Op[T1, T2, ReprT1[~ <: Txn[~]] <: Expr[~, T1], ReprT2[~ <: Txn[~]] <: Expr[~, T2]] {
+      def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                           (implicit tx: T): _Ex[T]
 
-      def toString[S <: Sys[S]](_1: ReprT1[S], _2: ReprT2[S]): String =
+      def toString[T <: Txn[T]](_1: ReprT1[T], _2: ReprT2[T]): String =
         s"${_1}.$name(${_2})"
 
       def value(a: T1, b: T2): SpanLike
@@ -170,41 +169,41 @@ object SpanLikeExtensions {
     }
 
     sealed abstract class LongSpanOp
-      extends impl.Tuple2Op[SpanLike, SpanLike, Long, SpanLikeObj, SpanLikeObj, LongObj]
-      with Op[SpanLike, Long, SpanLikeObj, LongObj] {
+      extends ExprTuple2Op[SpanLike, SpanLike, Long, SpanLikeObj, SpanLikeObj, LongObj]
+        with Op[SpanLike, Long, SpanLikeObj, LongObj] {
 
-      final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                 (implicit tx: S#Tx): _Ex[S] = {
-        val _1 = SpanLikeObj.read(in, access)
-        val _2 = LongObj    .read(in, access)
-        new Tuple2[S, SpanLike, SpanLikeObj, Long, LongObj](targets, this, _1, _2)
+      final def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                                 (implicit tx: T): _Ex[T] = {
+        val _1 = SpanLikeObj.read(in)
+        val _2 = LongObj    .read(in)
+        new Tuple2[T, SpanLike, SpanLikeObj, Long, LongObj](targets, this, _1, _2)
       }
 
-      final def apply[S <: Sys[S]](a: _Ex[S], b: LongObj[S])(implicit tx: S#Tx): _Ex[S] = (a, b) match {
+      final def apply[T <: Txn[T]](a: _Ex[T], b: LongObj[T])(implicit tx: T): _Ex[T] = (a, b) match {
         case (Expr.Const(ca), Expr.Const(cb)) => SpanLikeObj.newConst(value(ca, cb))
         case _  =>
-          new Tuple2[S, SpanLike, SpanLikeObj, Long, LongObj](Targets[S], this, a, b).connect()
+          new Tuple2[T, SpanLike, SpanLikeObj, Long, LongObj](Targets[T](), this, a, b).connect()
       }
     }
 
     sealed abstract class LongLongOp
-      extends impl.Tuple2Op[SpanLike, Long, Long, SpanLikeObj, LongObj, LongObj]
-      with Op[Long, Long, LongObj, LongObj] {
+      extends ExprTuple2Op[SpanLike, Long, Long, SpanLikeObj, LongObj, LongObj]
+        with Op[Long, Long, LongObj, LongObj] {
 
-      final def read[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                 (implicit tx: S#Tx): _Ex[S] = {
-        val _1 = LongObj.read(in, access)
-        val _2 = LongObj.read(in, access)
-        new Tuple2[S, Long, LongObj, Long, LongObj](targets, this, _1, _2)
+      final def read[T <: Txn[T]](in: DataInput, targets: Targets[T])
+                                 (implicit tx: T): _Ex[T] = {
+        val _1 = LongObj.read(in)
+        val _2 = LongObj.read(in)
+        new Tuple2[T, Long, LongObj, Long, LongObj](targets, this, _1, _2)
       }
 
-      final def apply[S <: Sys[S]](a: LongObj[S], b: LongObj[S])(implicit tx: S#Tx): _Ex[S] =
-        new Tuple2[S, Long, LongObj, Long, LongObj](Targets[S], this, a, b).connect()
+      final def apply[T <: Txn[T]](a: LongObj[T], b: LongObj[T])(implicit tx: T): _Ex[T] =
+        new Tuple2[T, Long, LongObj, Long, LongObj](Targets[T](), this, a, b).connect()
     }
 
     case object Apply extends LongLongOp {
       final val id = 2
-      override def toString[S <: Sys[S]](_1: LongObj[S], _2: LongObj[S]): String =
+      override def toString[T <: Txn[T]](_1: LongObj[T], _2: LongObj[T]): String =
         s"Span(${_1}, ${_2})"
 
       def value(a: Long, b: Long): SpanLike = Span(a, b)

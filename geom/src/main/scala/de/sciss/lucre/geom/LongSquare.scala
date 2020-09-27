@@ -1,6 +1,6 @@
 /*
  *  LongSquare.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,9 +14,11 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.ConstFormat
 
-trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt, LongSpace.TwoDim] {
+trait LongSquareLike 
+  extends HyperCube[LongPoint2DLike, LongSquare] with QueryShape[BigInt, LongPoint2DLike, LongSquare] {
+  
   import LongSpace.TwoDim.{HyperCube => Square, _}
   import Space.bigZero
 
@@ -66,7 +68,7 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
     */
   final def side: Long = extent << 1
 
-  final def contains(point: PointLike): Boolean = {
+  final def containsP(point: PointLike): Boolean = {
     val px = point.x
     val py = point.y
     left <= px && right >= px && top <= py && bottom >= py
@@ -75,7 +77,7 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
   /** Checks whether a given square is fully contained in this square.
     * This is also the case if their bounds full match.
     */
-  final def contains(quad: Square): Boolean =
+  final def containsH(quad: Square): Boolean =
     quad.left >= left && quad.top >= top && quad.right <= right && quad.bottom <= bottom
 
   final def area: BigInt = {
@@ -173,7 +175,7 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
     * @return  the index of the quadrant (beginning at 0), or -1 if `a` lies
     *          outside of this square.
     */
-  final def indexOf(a: PointLike): Int = {
+  final def indexOfP(a: PointLike): Int = {
     val ax = a.x
     val ay = a.y
     if (ay < cy) {
@@ -202,7 +204,7 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
     * @return  the index of the quadrant (beginning at 0), or -1 if `aq` lies
     *          outside of this square.
     */
-  final def indexOf(aq: Square): Int = {
+  final def indexOfH(aq: Square): Int = {
     val aTop = aq.top
     if (aTop < cy) {
       // north
@@ -231,9 +233,9 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
     }
   }
 
-  final def greatestInteresting(a: PointLike, b: PointLike): Square = gi(a.x, a.y, 1, b)
+  final def greatestInterestingP(a: PointLike, b: PointLike): Square = gi(a.x, a.y, 1, b)
 
-  final def greatestInteresting(a: Square, b: PointLike): Square =
+  final def greatestInterestingH(a: Square, b: PointLike): Square =
     gi(a.left, a.top, a.extent << 1, b) // a.extent << 1 can exceed 63 bit -- but it seems to work :-/
 
   private[this] def gi(aLeft: Long, aTop: Long, aSize: Long, b: PointLike): Square = {
@@ -286,6 +288,6 @@ trait LongSquareLike extends HyperCube[LongSpace.TwoDim] with QueryShape[BigInt,
 }
 
 object LongSquare {
-  implicit def serializer: ImmutableSerializer[LongSquare] = LongSpace.TwoDim.hyperCubeSerializer
+  implicit def format: ConstFormat[LongSquare] = LongSpace.TwoDim.hyperCubeFormat
 }
 final case class LongSquare(cx: Long, cy: Long, extent: Long) extends LongSquareLike

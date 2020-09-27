@@ -1,6 +1,6 @@
 /*
  *  DurablePersistentMap.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,34 +13,31 @@
 
 package de.sciss.lucre.confluent
 
-import impl.{ConfluentIntMapImpl, ConfluentLongMapImpl, PartialIntMapImpl}
-import de.sciss.lucre.stm.DataStore
-import de.sciss.serial.{Serializer, ImmutableSerializer}
+import de.sciss.lucre.confluent.impl.{ConfluentIntMapImpl, ConfluentLongMapImpl}
+import de.sciss.lucre.DataStore
+import de.sciss.serial.{ConstFormat, TFormat}
 
 object DurablePersistentMap {
-  def newConfluentIntMap[S <: Sys[S]](store: DataStore, handler: IndexMapHandler[S],
-                                      isOblivious: Boolean): DurablePersistentMap[S, Int] =
-    new ConfluentIntMapImpl[S](store, handler, isOblivious)
+  def newConfluentIntMap[T <: Txn[T]](store: DataStore, handler: IndexMapHandler[T],
+                                      isOblivious: Boolean): DurablePersistentMap[T, Int] =
+    new ConfluentIntMapImpl[T](store, handler, isOblivious)
 
-  def newConfluentLongMap[S <: Sys[S]](store: DataStore, handler: IndexMapHandler[S],
-                                       isOblivious: Boolean): DurablePersistentMap[S, Long] =
-    new ConfluentLongMapImpl[S](store, handler, isOblivious)
-
-  def newPartialMap[S <: Sys[S]](store: DataStore, handler: PartialMapHandler[S]): DurablePersistentMap[S, Int] =
-    new PartialIntMapImpl[S](store, handler)
+  def newConfluentLongMap[T <: Txn[T]](store: DataStore, handler: IndexMapHandler[T],
+                                       isOblivious: Boolean): DurablePersistentMap[T, Long] =
+    new ConfluentLongMapImpl[T](store, handler, isOblivious)
 }
 
 /** Interface for a confluently or partially persistent storing key value map. Keys (type `K`) might
   * be single object identifiers (as the variable storage case), or combined keys
   * (as in the live map case).
   *
-  * @tparam S   the underlying system
+  * @tparam T   the underlying system's transaction type
   * @tparam K   the key type
   */
-trait DurablePersistentMap[S <: Sys[S], /* @spec(KeySpec) */ K] {
+trait DurablePersistentMap[T <: Txn[T], /* @spec(KeySpec) */ K] {
   /** Stores a new value for a given write path.
     *
-    * The serializer given is _non_transactional. This is because this trait bridges confluent
+    * The format given is _non_transactional. This is because this trait bridges confluent
     * and ephemeral world (it may use a durable backend, but the data structures used for
     * storing the confluent graph are themselves ephemeral). If the value `A` requires a
     * transactional serialization, the current approach is to pre-serialize the value into
@@ -51,16 +48,16 @@ trait DurablePersistentMap[S <: Sys[S], /* @spec(KeySpec) */ K] {
     * @param path       the path through which the object has been accessed (the version at which it is read)
     * @param value      the value to store
     * @param tx         the transaction within which the access is performed
-    * @param serializer the serializer used to store the entity's values
+    * @param format the format used to store the entity's values
     * @tparam A         the type of values stored with the entity
     */
-  def putImmutable[A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx, serializer: ImmutableSerializer[A]): Unit
+  def putImmutable[A](key: K, value: A, tx: T)(implicit path: tx.Acc, format: ConstFormat[A]): Unit
 
-  def put[A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx, serializer: Serializer[S#Tx, S#Acc, A]): Unit
+  def put[A](key: K, value: A, tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Unit
 
   /** Finds the most recent value for an entity `id` with respect to version `path`.
     *
-    * The serializer given is _non_transactional. This is because this trait bridges confluent
+    * The format given is _non_transactional. This is because this trait bridges confluent
     * and ephemeral world (it may use a durable backend, but the data structures used for
     * storing the confluent graph are themselves ephemeral). If the value `A` requires a
     * transactional serialization, the current approach is to pre-serialize the value into
@@ -70,11 +67,11 @@ trait DurablePersistentMap[S <: Sys[S], /* @spec(KeySpec) */ K] {
     * @param key        the identifier for the object
     * @param path       the path through which the object has been accessed (the version at which it is read)
     * @param tx         the transaction within which the access is performed
-    * @param serializer the serializer used to store the entity's values
+    * @param format the format used to store the entity's values
     * @tparam A         the type of values stored with the entity
     * @return           `None` if no value was found, otherwise a `Some` of that value.
     */
-  def getImmutable[A](key: K, path: S#Acc)(implicit tx: S#Tx, serializer: ImmutableSerializer[A]): Option[A]
+  def getImmutable[A](key: K, tx: T)(implicit path: tx.Acc, format: ConstFormat[A]): Option[A]
 
   /** Finds the most recent value for an entity `id` with respect to version `path`. If a value is found,
     * it is return along with a suffix suitable for identifier path actualisation.
@@ -82,17 +79,17 @@ trait DurablePersistentMap[S <: Sys[S], /* @spec(KeySpec) */ K] {
     * @param key        the identifier for the object
     * @param path       the path through which the object has been accessed (the version at which it is read)
     * @param tx         the transaction within which the access is performed
-    * @param serializer the serializer used to store the entity's values
+    * @param format the format used to store the entity's values
     * @tparam A         the type of values stored with the entity
     * @return           `None` if no value was found, otherwise a `Some` of the tuple consisting of the
     *                   suffix and the value. The suffix is the access path minus the prefix at which the
     *                   value was found. However, the suffix overlaps the prefix in that it begins with the
     *                   tree entering/exiting tuple at which the value was found.
     */
-  def get[A](key: K, path: S#Acc)(implicit tx: S#Tx, serializer: Serializer[S#Tx, S#Acc, A]): Option[A]
+  def get[A](key: K, tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Option[A]
 
   /** '''Note:''' requires that `path` is non-empty. */
-  def isFresh(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean
+  def isFresh(key: K, tx: T)(implicit path: tx.Acc): Boolean
 
-  def remove(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean
+  def remove(key: K, tx: T)(implicit path: tx.Acc): Boolean
 }

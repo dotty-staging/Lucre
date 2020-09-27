@@ -1,77 +1,106 @@
+/*
+ *  ThesisFiatKaplanExample.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.impl.MutableImpl
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, Mutable, Var => LVar}
+import de.sciss.serial.{DataInput, DataOutput, TFormat, WritableFormat}
+
+import scala.annotation.tailrec
 
 // \ref{lst:lucre_durable_linkedlist}, \ref{lst:lucre_durable_traverse}, \ref{lst:linkedlist_init}
+
+/*
+    OUTPUT
+
+    1
+    2
+
+
+ */
 object ThesisFiatKaplanExample extends App {
   object LinkedList {
-    implicit def listSer[S <: Sys[S], A](implicit peerSer: serial.Serializer[S#Tx, S#Acc, A]): serial.Serializer[S#Tx, S#Acc, LinkedList[S, A]] = new ListSer[S, A]
+    implicit def listFmt[T <: Txn[T], A](implicit peerFmt: TFormat[T, A]): TFormat[T, LinkedList[T, A]] =
+      new ListFmt[T, A]
 
-    private class ListSer[S <: Sys[S], A](implicit _peerSer: serial.Serializer[S#Tx, S#Acc, A])
-      extends MutableSerializer[S, LinkedList[S, A]] {
+    private class ListFmt[T <: Txn[T], A](implicit peer: TFormat[T, A])
+      extends WritableFormat[T, LinkedList[T, A]] {
 
-      protected def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx): LinkedList[S, A] =
-        new Impl[S, A] {
-          val peerSer = _peerSer
-          val id = _id
-          val head = tx.readVar[Option[Cell]](id, in)(serial.Serializer.option(CellSer))
+      def readT(in: DataInput)(implicit tx: T): LinkedList[T, A] = {
+        new Impl[T, A] {
+          val peerFmt = peer
+          val id      = tx.readId(in)
+          val head    = id.readVar[Option[Cell]](in)(TFormat.option(CellFmt))
         }
+      }
     }
 
-    def apply[S <: Sys[S], A]()(implicit tx: S#Tx, _peerSer: serial.Serializer[S#Tx, S#Acc, A]): LinkedList[S, A] =
-      new Impl[S, A] {
-        val peerSer = _peerSer
-        val id = tx.newId()
-        val head = tx.newVar(id, Option.empty[Cell])(serial.Serializer.option(CellSer))
-    }
+    def apply[T <: Txn[T], A]()(implicit tx: T, peer: TFormat[T, A]): LinkedList[T, A] =
+      new Impl[T, A] {
+        val peerFmt = peer
+        val id      = tx.newId()
+        val head    = id.newVar(Option.empty[Cell])
+      }
 
-    private abstract class Impl[S <: Sys[S], A] extends LinkedList[S, A] with MutableImpl[S] {
-      implicit def peerSer: serial.Serializer[S#Tx, S#Acc, A]
+    private abstract class Impl[T <: Txn[T], A] extends LinkedList[T, A] with MutableImpl[T] {
+      implicit def peerFmt: TFormat[T, A]
 
-      def cell(init: A)(implicit tx: S#Tx): Cell = new Cell {
-        val next  = tx.newVar(id, Option.empty[Cell])
+      def cell(init: A)(implicit tx: T): Cell = new Cell {
+        val next  = id.newVar(Option.empty[Cell])
         val value = init
       }
 
-      implicit object CellSer extends serial.Serializer[S#Tx, S#Acc, Cell] {
+      implicit object CellFmt extends TFormat[T, Cell] {
         def write(cell: Cell, out: DataOutput): Unit = {
           cell.next.write(out)
-          peerSer.write(cell.value, out)
+          peerFmt.write(cell.value, out)
         }
 
-        def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Cell = new Cell {
-          val next  = tx.readVar[Option[Cell]](id, in)
-          val value = peerSer.read(in, access)
+        def readT(in: DataInput)(implicit tx: T): Cell = new Cell {
+          val next  = id.readVar[Option[Cell]](in)
+          val value = peerFmt.readT(in)
         }
       }
 
-      def disposeData()(implicit tx: S#Tx): Unit = head.dispose()
+      def disposeData()(implicit tx: T): Unit = head.dispose()
 
       def writeData(out: DataOutput): Unit = head.write(out)
     }
   }
-  trait LinkedList[S <: Sys[S], A] extends stm.Mutable[S#Id, S#Tx] {
-    list =>
+  trait LinkedList[T <: Txn[T], A] extends Mutable[T] { list =>
+
     override def toString = "LinkedList"
-    def head: S#Var[Option[Cell]]
+
+    def head: LVar[T, Option[Cell]]
+
     trait Cell {
       override def toString = s"$list.cell<$next, $value>"
-      def next: S#Var[Option[Cell]]
+
+      def next: LVar[T, Option[Cell]]
+
       def value: A
     }
 
-    def cell(init: A)(implicit tx: S#Tx): Cell
+    def cell(init: A)(implicit tx: T): Cell
   }
 
   val store = BerkeleyDB.tmp()
   val s     = Confluent(store)
 
   val (access, cursor) = s.cursorRoot { implicit tx =>
-    val list    = LinkedList[Confluent, Int]()
+    val list    = LinkedList[Confluent.Txn, Int]()
     val w0      = list.cell(init = 2)
     val w1      = list.cell(init = 1)
     list.head() = Some(w0)
@@ -88,7 +117,8 @@ object ThesisFiatKaplanExample extends App {
     w1.next()     = Some(w0)
   }
 
-  def traverse[S <: Sys[S], A](l: LinkedList[S, A])(implicit tx: S#Tx): Unit = {
+  def traverse[T <: Txn[T], A](l: LinkedList[T, A])(implicit tx: T): Unit = {
+    @tailrec
     def loop(opt: Option[l.Cell]): Unit =
       opt match {
         case Some(cell) =>

@@ -1,6 +1,6 @@
 /*
  *  QuinaryOp.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,11 +14,9 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.adjunct.Adjunct.{NumDouble, NumFrac, Widen2}
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.Adjunct.{NumDouble, NumFrac, Widen2}
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 
 object QuinaryOp {
   abstract class Op[A, B, C, D, E, F] extends Product {
@@ -46,8 +44,8 @@ object QuinaryOp {
       val inHiVal   = w.widen1(inHi)
       val outLoVal  = w.widen2(outLo)
       val outHiVal  = w.widen2(outHi)
-      num.+(num.*(num./(num.-(inVal, inLoVal), num.-(inHiVal, inLoVal)),
-        num.-(outHiVal, outLoVal)), outLoVal)
+      num.plus(num.times(num.div(num.minus(inVal, inLoVal), num.minus(inHiVal, inLoVal)),
+        num.minus(outHiVal, outLoVal)), outLoVal)
     }
 
     def name = "LinLin"
@@ -64,10 +62,10 @@ object QuinaryOp {
       val inHiVal   = w.widen1(inHi)
       val outLoVal  = w.widen2(outLo)
       val outHiVal  = w.widen2(outHi)
-      num.*(
+      num.times(
         num.pow(
-          num./(outHiVal, outLoVal),
-          num./(num.-(inVal, inLoVal), num.-(inHiVal, inLoVal))),
+          num.div(outHiVal, outLoVal),
+          num.div(num.minus(inVal, inLoVal), num.minus(inHiVal, inLoVal))),
         outLoVal)
     }
 
@@ -85,12 +83,12 @@ object QuinaryOp {
       val inHiVal   = w.widen1(inHi)
       val outLoVal  = w.widen2(outLo)
       val outHiVal  = w.widen2(outHi)
-      num.+(
-        num.*(
-          num./(
-            num.log(num./(inVal  , inLoVal)),
-            num.log(num./(inHiVal, inLoVal))),
-          num.-(outHiVal, outLoVal)
+      num.plus(
+        num.times(
+          num.div(
+            num.log(num.div(inVal  , inLoVal)),
+            num.log(num.div(inHiVal, inLoVal))),
+          num.minus(outHiVal, outLoVal)
         ),
         outLoVal
       )
@@ -110,12 +108,12 @@ object QuinaryOp {
       val inHiVal   = w.widen1(inHi)
       val outLoVal  = w.widen2(outLo)
       val outHiVal  = w.widen2(outHi)
-      num.*(
+      num.times(
         num.pow(
-          num./(outHiVal, outLoVal),
-          num./(
-            num.log(num./(inVal  , inLoVal)),
-            num.log(num./(inHiVal, inLoVal))
+          num.div(outHiVal, outLoVal),
+          num.div(
+            num.log(num.div(inVal  , inLoVal)),
+            num.log(num.div(inHiVal, inLoVal))
           )
         ),
         outLoVal
@@ -127,13 +125,13 @@ object QuinaryOp {
     def adjuncts: List[Adjunct] = w :: num :: Nil
   }
 
-  private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A4, A5, A](op: QuinaryOp.Op[A1, A2, A3, A4, A5, A],
-                                                                       a: IExpr[S, A1], b: IExpr[S, A2],
-                                                                       c: IExpr[S, A3], d: IExpr[S, A4],
-                                                                       e: IExpr[S, A5],
-                                                                       tx0: S#Tx)
-                                                                      (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IChangeEventImpl[S, A] {
+  private[lucre] final class Expanded[T <: Exec[T], A1, A2, A3, A4, A5, A](op: QuinaryOp.Op[A1, A2, A3, A4, A5, A],
+                                                                       a: IExpr[T, A1], b: IExpr[T, A2],
+                                                                       c: IExpr[T, A3], d: IExpr[T, A4],
+                                                                       e: IExpr[T, A5],
+                                                                       tx0: T)
+                                                                      (implicit protected val targets: ITargets[T])
+    extends IExpr[T, A] with IChangeEventImpl[T, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
@@ -143,9 +141,9 @@ object QuinaryOp {
 
     override def toString: String = s"QuinaryOp($op, $a, $b, $c, $d, $e)"
 
-    def changed: IChangeEvent[S, A] = this
+    def changed: IChangeEvent[T, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
       val _1v = pull.expr(a)
       val _2v = pull.expr(b)
       val _3v = pull.expr(c)
@@ -160,7 +158,7 @@ object QuinaryOp {
       op.apply(av, bv, cv, dv, ev)
     }
 
-    def value(implicit tx: S#Tx): A = {
+    def value(implicit tx: T): A = {
       val av = a.value
       val bv = b.value
       val cv = c.value
@@ -169,7 +167,7 @@ object QuinaryOp {
       value1(av, bv, cv, dv, ev)
     }
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    def dispose()(implicit tx: T): Unit = {
       a.changed -/-> changed
       b.changed -/-> changed
       c.changed -/-> changed
@@ -182,15 +180,15 @@ final case class QuinaryOp[A1, A2, A3, A4, A5, A](op: QuinaryOp.Op[A1, A2, A3, A
                                                  a: Ex[A1], b: Ex[A2], c: Ex[A3], d: Ex[A4], e: Ex[A5])
   extends Ex[A] {
 
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    val ax = a.expand[S]
-    val bx = b.expand[S]
-    val cx = c.expand[S]
-    val dx = d.expand[S]
-    val ex = e.expand[S]
-    new QuinaryOp.Expanded[S, A1, A2, A3, A4, A5, A](op, ax, bx, cx, dx, ex, tx)
+    val ax = a.expand[T]
+    val bx = b.expand[T]
+    val cx = c.expand[T]
+    val dx = d.expand[T]
+    val ex = e.expand[T]
+    new QuinaryOp.Expanded[T, A1, A2, A3, A4, A5, A](op, ax, bx, cx, dx, ex, tx)
   }
 }

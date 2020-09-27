@@ -1,6 +1,6 @@
 /*
  *  IntPointN.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,9 +13,10 @@
 
 package de.sciss.lucre.geom
 
-import collection.immutable.{IndexedSeq => Vec}
-import IntSpace.NDim
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.lucre.geom.IntSpace.NDim
+import de.sciss.serial.ConstFormat
+
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 trait IntPointNLike {
   def components: Vec[Int]
@@ -36,7 +37,7 @@ trait IntPointNLike {
 }
 
 object IntPointN {
-  implicit def serializer: ImmutableSerializer[IntPointN] = IntSpace.NDim.pointSerializer
+  implicit def format: ConstFormat[IntPointN] = IntSpace.NDim.pointFormat
 }
 final case class IntPointN(components: Vec[Int]) extends IntPointNLike {
   // if( components.size != dim ) throw new IllegalArgumentException( "Expected " + dim + " components: " + components )

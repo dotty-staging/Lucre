@@ -1,6 +1,6 @@
 /*
  *  IntPoint3D.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.ConstFormat
 
 trait IntPoint3DLike {
   import IntSpace.ThreeDim._
@@ -32,7 +32,7 @@ trait IntPoint3DLike {
 }
 
 object IntPoint3D {
-  implicit def serializer: ImmutableSerializer[IntPoint3D] = IntSpace.ThreeDim.pointSerializer
+  implicit def format: ConstFormat[IntPoint3D] = IntSpace.ThreeDim.pointFormat
 }
 final case class IntPoint3D(x: Int, y: Int, z: Int) extends IntPoint3DLike {
   def +(p: IntPoint3D) = IntPoint3D(x + p.x, y + p.y, z + p.z)

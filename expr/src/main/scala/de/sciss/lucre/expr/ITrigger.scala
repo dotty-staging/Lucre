@@ -1,6 +1,6 @@
 /*
  *  ITrigger.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,7 +13,6 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.IPublisher
-import de.sciss.lucre.stm.{Base, Disposable}
+import de.sciss.lucre.{Disposable, Exec, IPublisher}
 
-trait ITrigger[S <: Base[S]] extends IPublisher[S, Unit] with Disposable[S#Tx]
+trait ITrigger[T <: Exec[T]] extends IPublisher[T, Unit] with Disposable[T]

@@ -1,9 +1,10 @@
 package de.sciss.lucre.expr.examples
 
+import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.ExImport._
 import de.sciss.lucre.expr.graph._
-import de.sciss.lucre.expr.{Context, Graph, IntObj}
-import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
+import de.sciss.lucre.expr.{Context, Graph}
+import de.sciss.lucre.{InMemory, IntObj, Workspace}
 
 /*
   expected output:
@@ -13,6 +14,7 @@ import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
  */
 object ExMapTest2 extends App {
   type S = InMemory
+  type T = InMemory.Txn
 
 //  de.sciss.lucre.event.showLog = true
 
@@ -23,14 +25,14 @@ object ExMapTest2 extends App {
   }
 
   implicit val system: S = InMemory()
-  implicit val undo: UndoManager[S] = UndoManager()
+  implicit val undo: UndoManager[T] = UndoManager()
 
   import Workspace.Implicits._
 
   system.step { implicit tx =>
-    val self  = IntObj.newConst(0): IntObj[S]
+    val self  = IntObj.newConst(0): IntObj[T]
     val selfH = tx.newHandle(self)
-    implicit val ctx: Context[S] = Context(Some(selfH))
+    implicit val ctx: Context[T] = Context(Some(selfH))
     g.expand.initControl()
     self.attr.put("foo", IntObj.newConst(33))
   }

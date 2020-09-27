@@ -1,6 +1,6 @@
 /*
  *  PathImpl.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,14 +11,13 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.confluent
+package de.sciss.lucre
+package confluent
 package impl
 
+import de.sciss.fingertree
 import de.sciss.fingertree.{FingerTree, FingerTreeLike}
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.Durable
-import de.sciss.serial.{DataInput, DataOutput}
-import de.sciss.{fingertree, serial}
+import de.sciss.serial.{DataInput, DataOutput, TFormat, WritableFormat}
 
 import scala.util.hashing.MurmurHash3
 
@@ -37,23 +36,21 @@ private[confluent] object PathImpl {
       (a._1 + b._1 + c._1, a._2 + b._2 + c._2)
   }
 
-  implicit def serializer[S <: Sys[S], D <: stm.DurableLike[D]]: serial.Serializer[D#Tx, D#Acc, S#Acc] =
-    anySer.asInstanceOf[Ser[S, D]]
+  implicit def format[T <: Txn[T], D <: DurableLike.Txn[D]]: TFormat[D, Access[T]] =
+    anyFmt.asInstanceOf[Fmt[T, D]]
 
-  private val anySer = new Ser[Confluent, Durable]
+  private val anyFmt = new Fmt[Confluent.Txn, Durable.Txn]
 
-  private final class Ser[S <: Sys[S], D <: stm.DurableLike[D]] extends serial.Serializer[D#Tx, D#Acc, S#Acc] {
-    def write(v: S#Acc, out: DataOutput): Unit = v.write(out)
-
-    def read(in: DataInput, acc: D#Acc)(implicit tx: D#Tx): S#Acc = {
-      val sz          = in./* PACKED */ readInt()
-      var tree        = FingerTree.empty(PathMeasure)
+  private final class Fmt[T <: Txn[T], D <: DurableLike.Txn[D]] extends WritableFormat[D, Access[T]] {
+    override def readT(in: DataInput)(implicit tx: D): Access[T] = {
+      val sz    = in./* PACKED */ readInt()
+      var tree  = FingerTree.empty[(Int, Long), Long](PathMeasure)
       var i = 0
       while (i < sz) {
         tree :+= readPathComponent(in)
         i += 1
       }
-      new Path[S](tree)
+      new Path[T](tree)
     }
   }
 
@@ -64,32 +61,32 @@ private[confluent] object PathImpl {
     in.readLong()
   }
 
-  //    def test_empty[S <: Sys[S]]: S#Acc = empty
+  //    def test_empty[T <: Txn[T]]: S#Acc = empty
 
-  private val anyEmpty = new Path[Confluent](FingerTree.empty(PathMeasure))
+  private val anyEmpty = new Path[Confluent.Txn](FingerTree.empty(PathMeasure))
 
-  def empty[S <: Sys[S]]: S#Acc = anyEmpty.asInstanceOf[Path[S]]
+  def empty[T <: Txn[T]]: Access[T] = anyEmpty.asInstanceOf[Path[T]]
 
-  def root[S <: Sys[S]]: S#Acc = new Path[S](FingerTree(1L << 32, 1L << 32)(PathMeasure))
+  def root[T <: Txn[T]]: Access[T] = new Path[T](FingerTree(1L << 32, 1L << 32)(PathMeasure))
 
-  def read[S <: Sys[S]](in: DataInput): S#Acc = {
-    val sz          = in./* PACKED */ readInt()
-    var tree        = FingerTree.empty(PathMeasure)
+  def read[T <: Txn[T]](in: DataInput): Access[T] = {
+    val sz    = in./* PACKED */ readInt()
+    var tree  = FingerTree.empty[(Int, Long), Long](PathMeasure)
     var i = 0
     while (i < sz) {
       tree :+= readPathComponent(in)
       i += 1
     }
-    new Path[S](tree)
+    new Path[T](tree)
   }
 
-  def readAndAppend[S <: Sys[S]](in: DataInput, acc: S#Acc)(implicit tx: S#Tx): S#Acc = {
+  def readAndAppend[T <: Txn[T]](in: DataInput, acc: Access[T])(implicit tx: T): Access[T] = {
     val sz      = in./* PACKED */ readInt()
     val accTree = acc.tree
 
     val res     = if (accTree.isEmpty) {
       var i = 0
-      var tree = FingerTree.empty(PathMeasure)
+      var tree = FingerTree.empty[(Int, Long), Long](PathMeasure)
       while (i < sz) {
         tree :+= readPathComponent(in)
         i += 1
@@ -100,7 +97,7 @@ private[confluent] object PathImpl {
       accTree
 
     } else {
-      var tree    = FingerTree.empty(PathMeasure)
+      var tree    = FingerTree.empty[(Int, Long), Long](PathMeasure)
       val szm = sz - 1
       var i = 0
       while (i < szm) {
@@ -119,7 +116,7 @@ private[confluent] object PathImpl {
         tree ++ accTree.tail      // replace terminal version
       }
     }
-    new Path[S](res)
+    new Path[T](res)
   }
 
   /**
@@ -127,9 +124,12 @@ private[confluent] object PathImpl {
    * and the lower 32 bits are the incremental version. The measure is taking the index and running sum
    * of the tree.
    */
-  private final class Path[S <: Sys[S]](val tree: FingerTree[(Int, Long), Long])
-    extends Access[S] with FingerTreeLike[(Int, Long), Long, Path[S]] {
+  private final class Path[T <: Txn[T]](val tree: FingerTree[(Int, Long), Long])
+    extends Access[T] with FingerTreeLike[(Int, Long), Long, Path[T]] {
+
     implicit protected def m: fingertree.Measure[Long, (Int, Long)] = PathMeasure
+
+    def !(implicit tx: T): tx.Acc = this
 
     override def toString: String = mkString("Path(", ", ", ")")
 
@@ -147,24 +147,23 @@ private[confluent] object PathImpl {
       case _ => false
     }
 
-    def :+(last: Long): S#Acc = wrap(tree :+ last)
-    def +:(head: Long): S#Acc = wrap(head +: tree)
+    def :+(last: Long): Access[T] = wrap(tree :+ last)
+    def +:(head: Long): Access[T] = wrap(head +: tree)
 
     def apply(idx: Int): Long = tree.find1(_._1 > idx)._2
 
-    // XXX TODO testing one two
-    def partial: S#Acc = {
-      val sz = size
-      if (sz == 0) return this
-
-      var res = FingerTree.empty(PathMeasure)
-      if (sz % 2 != 0) {
-        println(s"?? partial from index $this")
-      }
-      res :+= head
-      res :+= last
-      wrap(res)
-    }
+//    def partial: Access[T] = {
+//      val sz = size
+//      if (sz == 0) return this
+//
+//      var res = FingerTree.empty[(Int, Long), Long](PathMeasure)
+//      if (sz % 2 != 0) {
+//        println(s"?? partial from index $this")
+//      }
+//      res :+= head
+//      res :+= last
+//      wrap(res)
+//    }
 
     def maxPrefixLength(term: Long): Int = {
       val pre = tree.takeWhile(_._2 < term)
@@ -184,7 +183,7 @@ private[confluent] object PathImpl {
 //      j
 //    }
 
-    def addTerm(term: Long)(implicit tx: S#Tx): S#Acc = {
+    def addTerm(term: Long)(implicit tx: T): Access[T] = {
       val t = if (tree.isEmpty) {
         FingerTree.two[(Int, Long), Long](term, term)
       } else {
@@ -199,7 +198,7 @@ private[confluent] object PathImpl {
       wrap(t)
     }
 
-    def seminal: S#Acc = {
+    def seminal: Access[T] = {
       val e = indexTerm
       val t = term
       wrap(FingerTree.two[(Int, Long), Long](e, t))
@@ -208,21 +207,21 @@ private[confluent] object PathImpl {
     def indexTerm: Long = apply(size - 2)
     def indexSum : Long = sum - (last >>> 32)
 
-    def :-|(suffix: Long): S#Acc = wrap(tree.init :+ suffix)
+    def :-|(suffix: Long): Access[T] = wrap(tree.init :+ suffix)
 
-    def drop(n: Int): S#Acc = {
+    def drop(n: Int): Access[T] = {
       val right = tree.dropWhile(_._1 <= n)
       wrap(right)
     }
 
-    def splitIndex: (S#Acc, Long) = (init, last)
+    def splitIndex: (Access[T], Long) = (init, last)
 
-    def splitAtIndex(idx: Int): (S#Acc, Long) = {
+    def splitAtIndex(idx: Int): (Access[T], Long) = {
       val (pre, t, _) = tree.span1(_._1 <= idx)
       (wrap(pre), t)
     }
 
-    def splitAtSum(hash: Long): (S#Acc, Long) = {
+    def splitAtSum(hash: Long): (Access[T], Long) = {
       val (pre, t, _) = tree.span1(_._2 <= hash)
       (wrap(pre), t)
     }
@@ -236,10 +235,10 @@ private[confluent] object PathImpl {
       }
     }
 
-    def index: S#Acc  = wrap(tree.init)
-    def term: Long    = tree.last
-    def size: Int     = tree.measure._1
-    def sum: Long     = tree.measure._2
+    def index: Access[T]  = wrap(tree.init)
+    def term: Long        = tree.last
+    def size: Int         = tree.measure._1
+    def sum: Long         = tree.measure._2
 
     def sumUntil_OLD(n: Int): Long = {
       val res = tree.takeWhile(_._1 <= n).measure._2
@@ -253,12 +252,12 @@ private[confluent] object PathImpl {
 
     def sumUntil(n: Int): Long = if (tree.isEmpty) 0L else tree.find1(_._1 > n)._1._2
 
-    def take(n: Int): S#Acc = {
+    def take(n: Int): Access[T] = {
       val left = tree.takeWhile(_._1 <= n)
       wrap(left)
     }
 
-    def wrap(_tree: FingerTree[(Int, Long), Long]): Path[S] = new Path(_tree)
+    def wrap(_tree: FingerTree[(Int, Long), Long]): Path[T] = new Path(_tree)
 
     def mkString(prefix: String, sep: String, suffix: String): String =
       tree.iterator.map(_.toInt).mkString(prefix, sep, suffix)
@@ -266,8 +265,8 @@ private[confluent] object PathImpl {
 //    def mkString(prefix: String, sep: String, suffix: String): String =
 //      tree.iterator.map(i => (i >> 32).toInt).mkString(prefix, sep, suffix)
 
-    def info(implicit tx: S#Tx): VersionInfo = tx.system.versionInfo(term)
+    def info(implicit tx: T): VersionInfo = tx.system.versionInfo(term)
 
-    def takeUntil(timeStamp: Long)(implicit tx: S#Tx): S#Acc = tx.system.versionUntil(this, timeStamp)
+    def takeUntil(timeStamp: Long)(implicit tx: T): Access[T] = tx.system.versionUntil(this, timeStamp)
   }
 }

@@ -1,42 +1,57 @@
+/*
+ *  DoubleRootTest.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
 import java.io.File
 
-import de.sciss.lucre.stm.store.BerkeleyDB
-import de.sciss.serial
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.{Confluent, Durable, Var => LVar}
+import de.sciss.serial.{DataInput, DataOutput, TFormat}
 
+// XXX TODO should be a ScalaTest spec
 object DoubleRootTest extends App {
   type S  = Confluent
-  type D  = S#D
+  type T  = Confluent.Txn
+  type D  = Durable  .Txn
 
   val dir       = File.createTempFile("double", "trouble")
   require(dir.delete())
   println(s"Directory: $dir")
 
   println("First iteration")
-  iter()
+  iterate()
   println("Second iteration")
-  iter()
+  iterate()
 
-  class Data(val id: S#Id, val vr: S#Var[Int])
+  class Data(val id: Ident[T], val vr: LVar[T, Int])
 
-  implicit object DataSer extends serial.Serializer[S#Tx, S#Acc, Data] {
-    def write(v: Data, out: DataOutput): Unit = {
+  implicit object DataFmt extends TFormat[T, Data] {
+    override def write(v: Data, out: DataOutput): Unit = {
       v.id.write(out)
       v.vr.write(out)
     }
 
-    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Data = {
-      val id = tx.readId(in, access)
-      val vr = tx.readIntVar(id, in)
+    override def readT(in: DataInput)(implicit tx: T): Data = {
+      val id = tx.readId(in)
+      val vr = id.readIntVar(in)
       new Data(id, vr)
     }
   }
 
-  def iter(): Unit = {
-    val database            = BerkeleyDB.factory(dir, createIfNecessary = true)
-    implicit val confluent  = Confluent(database)
+  def iterate(): Unit = {
+    val database              = BerkeleyDB.factory(dir, createIfNecessary = true)
+    implicit val confluent: S = Confluent(database)
     // val durable             = confluent.durable
 
     //    val cursorAcc = durable.root { implicit tx =>
@@ -46,15 +61,15 @@ object DoubleRootTest extends App {
     //
     //    val cursor = durable.step { implicit tx => cursorAcc() }
 
-    implicit val screwYou = Cursor.Data.serializer[S, D] // "lovely" Scala type inference at its best
+    implicit val screwYou: TFormat[D, Cursor.Data[T, D]] = Cursor.Data.format[T, D] // "lovely" Scala type inference at its best
     val (varAcc, csrData) = confluent.rootWithDurable { implicit tx =>
       println("Init confluent")
       val id = tx.newId()
-      val vr = tx.newIntVar(id, 33)
+      val vr = id.newIntVar(33)
       new Data(id, vr)
     } { implicit tx =>
       println("Init durable")
-      Cursor.Data[S, D]()
+      Cursor.Data[T, D]()
     }
 
     val cursor = Cursor.wrap(csrData)

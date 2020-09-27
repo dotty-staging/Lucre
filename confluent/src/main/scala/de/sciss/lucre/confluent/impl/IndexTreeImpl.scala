@@ -1,6 +1,6 @@
 /*
  *  IndexTreeImpl.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,18 +14,17 @@
 package de.sciss.lucre.confluent.impl
 
 import de.sciss.lucre.data.Ancestor
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.Disposable
+import de.sciss.lucre.{DurableLike, Disposable}
 import de.sciss.serial.{DataOutput, Writable}
 
-private[impl] trait IndexTree[D <: stm.DurableLike[D]] extends Writable with Disposable[D#Tx] {
+private[impl] trait IndexTree[D <: DurableLike.Txn[D]] extends Writable with Disposable[D] {
   def tree : Ancestor.Tree[D, Long]
   def level: Int
   def term : Long
 }
 
 // an index tree holds the pre- and post-lists for each version (full) tree
-private[impl] final class IndexTreeImpl[D <: stm.DurableLike[D]](val tree: Ancestor.Tree[D, Long], val level: Int)
+private[impl] final class IndexTreeImpl[D <: DurableLike.Txn[D]](val tree: Ancestor.Tree[D, Long], val level: Int)
   extends IndexTree[D] {
 
   override def hashCode: Int = term.toInt
@@ -42,7 +41,7 @@ private[impl] final class IndexTreeImpl[D <: stm.DurableLike[D]](val tree: Ances
     out./* PACKED */ writeInt(level)
   }
 
-  def dispose()(implicit tx: D#Tx): Unit = tree.dispose()
+  def dispose()(implicit tx: D): Unit = tree.dispose()
 
   override def toString = s"IndexTree<v=${term.toInt}, l=$level>"
 }

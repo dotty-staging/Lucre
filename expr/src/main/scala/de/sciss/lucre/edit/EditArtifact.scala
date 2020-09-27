@@ -1,6 +1,6 @@
 /*
  *  EditArtifact.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -11,34 +11,33 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre.edit
+package de.sciss.lucre
+package edit
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.artifact.Artifact
-import de.sciss.lucre.artifact.Artifact.Child
-import de.sciss.lucre.stm.UndoManager.{CannotRedoException, CannotUndoException}
-import de.sciss.lucre.stm.impl.BasicUndoableEdit
-import de.sciss.lucre.stm.{Sys, UndoManager}
+import de.sciss.lucre.Artifact.Child
+import de.sciss.lucre.edit.UndoManager.{CannotRedoException, CannotUndoException}
+import de.sciss.lucre.edit.impl.BasicUndoableEdit
 
 object EditArtifact {
-  def updateChild[S <: Sys[S]](a: Artifact.Modifiable[S], child: Child)(implicit tx: S#Tx): Unit =
-    UndoManager.find[S].fold(
+  def updateChild[T <: Txn[T]](a: Artifact.Modifiable[T], child: Child)(implicit tx: T): Unit =
+    UndoManager.find[T].fold(
       updateChildDo   (a, child)
     ) { implicit undo =>
       updateChildUndo (a, child)
     }
 
-  private def updateChildDo[S <: Sys[S]](a: Artifact.Modifiable[S], child: Child)(implicit tx: S#Tx): Unit =
+  private def updateChildDo[T <: Txn[T]](a: Artifact.Modifiable[T], child: Child)(implicit tx: T): Unit =
     a.child = child
 
-  def updateChildUndo[S <: Sys[S]](a: Artifact.Modifiable[S], child: Child)
-                                  (implicit tx: S#Tx, undo: UndoManager[S]): Unit = {
-    val edit = new UpdateChild[S](a, child, tx)
+  def updateChildUndo[T <: Txn[T]](a: Artifact.Modifiable[T], child: Child)
+                                  (implicit tx: T, undo: UndoManager[T]): Unit = {
+    val edit = new UpdateChild[T](a, child, tx)
     undo.addEdit(edit)
   }
 
-  private final class UpdateChild[S <: Sys[S]](a0: Artifact.Modifiable[S], child: Child, tx0: S#Tx)
-    extends BasicUndoableEdit[S] {
+  private final class UpdateChild[T <: Txn[T]](a0: Artifact.Modifiable[T], child: Child, tx0: T)
+    extends BasicUndoableEdit[T] {
 
     private[this] val aH    = tx0.newHandle(a0)
     private[this] val prev  = a0.child(tx0)
@@ -51,7 +50,7 @@ object EditArtifact {
     private def cannotRedo(): Nothing =
       throw new CannotRedoException(invalidMessage)
 
-    protected def undoImpl()(implicit tx: S#Tx): Unit = {
+    protected def undoImpl()(implicit tx: T): Unit = {
       val a     = aH()
       // we are quite conservative: if conditions changes such that value
       // was no longer as expected, we refuse the operation
@@ -59,7 +58,7 @@ object EditArtifact {
       a.child   = prev
     }
 
-    protected def redoImpl()(implicit tx: S#Tx): Unit = {
+    protected def redoImpl()(implicit tx: T): Unit = {
       val a     = aH()
       // we are quite conservative: if conditions changes such that value
       // was no longer as expected, we refuse the operation

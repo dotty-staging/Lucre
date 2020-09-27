@@ -1,6 +1,6 @@
 /*
  *  DoubleExtensions.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,9 +13,9 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.Targets
-import de.sciss.lucre.expr.impl.{Tuple1Op, Tuple2Op}
-import de.sciss.lucre.stm.{Copy, Elem, Obj, Sys}
+import de.sciss.lucre.Event.Targets
+import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.{Copy, DoubleObj, Elem, Expr, Obj, Txn}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
@@ -28,17 +28,17 @@ object DoubleExtensions {
 
   def init(): Unit = _init
 
-  type _Ex[S <: Sys[S]] = DoubleObj[S]
+  type _Ex[T <: Txn[T]] = DoubleObj[T]
 
-  private[this] object DoubleTuple1s extends Type.Extension1[DoubleObj] {
+  private[this] object DoubleTuple1s extends Expr.Type.Extension1[DoubleObj] {
     // final val arity = 1
     final val opLo: Int = UnaryOp.Neg .id
     final val opHi: Int = UnaryOp.Tanh.id
 
     val name = "Double-Double Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       import UnaryOp._
       val op: Op = (opId: @switch) match {
         case Neg        .id => Neg
@@ -52,14 +52,14 @@ object DoubleExtensions {
         case Sqrt       .id => Sqrt
         case Exp        .id => Exp
         case Reciprocal .id => Reciprocal
-        case Midicps    .id => Midicps
-        case Cpsmidi    .id => Cpsmidi
-        case Midiratio  .id => Midiratio
-        case Ratiomidi  .id => Ratiomidi
-        case Dbamp      .id => Dbamp
-        case Ampdb      .id => Ampdb
-        case Octcps     .id => Octcps
-        case Cpsoct     .id => Cpsoct
+        case MidiCps    .id => MidiCps
+        case CpsMidi    .id => CpsMidi
+        case MidiRatio  .id => MidiRatio
+        case RatioMidi  .id => RatioMidi
+        case DbAmp      .id => DbAmp
+        case AmpDb      .id => AmpDb
+        case OctCps     .id => OctCps
+        case CpsOct     .id => CpsOct
         case Log        .id => Log
         case Log2       .id => Log2
         case Log10      .id => Log10
@@ -73,30 +73,30 @@ object DoubleExtensions {
         case Cosh       .id => Cosh
         case Tanh       .id => Tanh
       }
-      val _1 = DoubleObj.read(in, access)
-      new Tuple1[S, Double, DoubleObj](targets, op, _1)
+      val _1 = DoubleObj.read(in)
+      new Tuple1[T, Double, DoubleObj](targets, op, _1)
     }
   }
 
-  final class Tuple1[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1]](
-      protected val targets: Targets[S], val op: Tuple1Op[Double, T1, DoubleObj, ReprT1], val _1: ReprT1[S])
-    extends impl.Tuple1[S, Double, T1, DoubleObj, ReprT1] with DoubleObj[S] {
+  final class Tuple1[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1]](
+                                                                           protected val targets: Targets[T], val op: ExprTuple1Op[Double, T1, DoubleObj, ReprT1], val _1: ReprT1[T])
+    extends ExprTuple1[T, Double, T1, DoubleObj, ReprT1] with DoubleObj[T] {
 
     def tpe: Obj.Type = DoubleObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple1[Out, T1, ReprT1](Targets[Out], op, context(_1)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple1[Out, T1, ReprT1](Targets[Out](), op, context(_1)).connect()
   }
 
-  private[this] object DoubleTuple2s extends Type.Extension1[DoubleObj] {
+  private[this] object DoubleTuple2s extends Expr.Type.Extension1[DoubleObj] {
     // final val arity = 2
     final val opLo: Int = BinaryOp.Plus .id
     final val opHi: Int = BinaryOp.Wrap2.id
 
     val name = "Double-Double Ops"
 
-    def readExtension[S <: Sys[S]](opId: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                  (implicit tx: S#Tx): _Ex[S] = {
+    def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                  (implicit tx: T): _Ex[T] = {
       import BinaryOp._
       val op: Op = (opId: @switch) match {
         case Plus   .id => Plus
@@ -123,7 +123,7 @@ object DoubleExtensions {
         case Trunc  .id => Trunc
         case Atan2  .id => Atan2
         case Hypot  .id => Hypot
-        case Hypotx .id => Hypotx
+        case HypotApx .id => HypotApx
         case Pow    .id => Pow
         // case 26 => <<
         // case 27 => >>
@@ -133,11 +133,11 @@ object DoubleExtensions {
         //      case 31 => Ring2
         //      case 32 => Ring3
         //      case 33 => Ring4
-        case Difsqr .id => Difsqr
-        case Sumsqr .id => Sumsqr
-        case Sqrsum .id => Sqrsum
-        case Sqrdif .id => Sqrdif
-        case Absdif .id => Absdif
+        case DifSqr .id => DifSqr
+        case SumSqr .id => SumSqr
+        case SqrSum .id => SqrSum
+        case SqrDif .id => SqrDif
+        case AbsDif .id => AbsDif
         // case Thresh .id => Thresh
         //      case 40 => Amclip
         //      case 41 => Scaleneg
@@ -146,22 +146,22 @@ object DoubleExtensions {
         case Fold2.id => Fold2
         case Wrap2.id => Wrap2
       }
-      val _1 = DoubleObj.read(in, access)
-      val _2 = DoubleObj.read(in, access)
-      new Tuple2[S, Double, DoubleObj, Double, DoubleObj](targets, op, _1, _2)
+      val _1 = DoubleObj.read(in)
+      val _2 = DoubleObj.read(in)
+      new Tuple2[T, Double, DoubleObj, Double, DoubleObj](targets, op, _1, _2)
     }
   }
 
-  final class Tuple2[S <: Sys[S], T1, ReprT1[~ <: Sys[~]] <: Expr[~, T1],
-                                  T2, ReprT2[~ <: Sys[~]] <: Expr[~, T2]](
-      protected val targets: Targets[S], val op: Tuple2Op[Double, T1, T2, DoubleObj, ReprT1, ReprT2],
-      val _1: ReprT1[S], val _2: ReprT2[S])
-    extends impl.Tuple2[S, Double, T1, T2, DoubleObj, ReprT1, ReprT2] with DoubleObj[S] {
+  final class Tuple2[T <: Txn[T], T1, ReprT1[~ <: Txn[~]] <: Expr[~, T1],
+    T2, ReprT2[~ <: Txn[~]] <: Expr[~, T2]](
+                                             protected val targets: Targets[T], val op: ExprTuple2Op[Double, T1, T2, DoubleObj, ReprT1, ReprT2],
+                                             val _1: ReprT1[T], val _2: ReprT2[T])
+    extends ExprTuple2[T, Double, T1, T2, DoubleObj, ReprT1, ReprT2] with DoubleObj[T] {
 
     def tpe: Obj.Type = DoubleObj
 
-    private[lucre] def copy[Out <: Sys[Out]]()(implicit tx: S#Tx, txOut: Out#Tx, context: Copy[S, Out]): Elem[Out] =
-      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out], op, context(_1), context(_2)).connect()
+    private[lucre] def copy[Out <: Txn[Out]]()(implicit tx: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
+      new Tuple2[Out, T1, ReprT1, T2, ReprT2](Targets[Out](), op, context(_1), context(_2)).connect()
   }
 
   // ----- operators -----
@@ -169,14 +169,14 @@ object DoubleExtensions {
   private object UnaryOp {
     import de.sciss.numbers.{DoubleFunctions => rd}
 
-    sealed abstract class Op extends impl.Tuple1Op[Double, Double, DoubleObj, DoubleObj] {
+    sealed abstract class Op extends ExprTuple1Op[Double, Double, DoubleObj, DoubleObj] {
       def id: Int
-      final def apply[S <: Sys[S]](_1: _Ex[S])(implicit tx: S#Tx): _Ex[S] = _1 match {
+      final def apply[T <: Txn[T]](_1: _Ex[T])(implicit tx: T): _Ex[T] = _1 match {
         case Expr.Const(c)  => DoubleObj.newConst(value(c))
-        case _              => new Tuple1[S, Double, DoubleObj](Targets[S], this, _1).connect()
+        case _              => new Tuple1[T, Double, DoubleObj](Targets[T](), this, _1).connect()
       }
 
-      def toString[S <: Sys[S]](_1: _Ex[S]): String = s"${_1}.$name"
+      def toString[T <: Txn[T]](_1: _Ex[T]): String = s"${_1}.$name"
 
       def name: String = {
         val cn = getClass.getName
@@ -190,7 +190,7 @@ object DoubleExtensions {
       final val id = 0
       def value(a: Double): Double = -a // rd.neg(a)
 
-      override def toString[S <: Sys[S]](_1: _Ex[S]): String = s"-${_1}"
+      override def toString[T <: Txn[T]](_1: _Ex[T]): String = s"-${_1}"
     }
 
     case object Abs extends Op {
@@ -245,42 +245,42 @@ object DoubleExtensions {
       def value(a: Double): Double = 1.0 / a // rd.reciprocal(a)
     }
 
-    case object Midicps extends Op {
+    case object MidiCps extends Op {
       final val id = 10
       def value(a: Double): Double = rd.midiCps(a)
     }
 
-    case object Cpsmidi extends Op {
+    case object CpsMidi extends Op {
       final val id = 11
       def value(a: Double): Double = rd.cpsMidi(a)
     }
 
-    case object Midiratio extends Op {
+    case object MidiRatio extends Op {
       final val id = 12
       def value(a: Double): Double = rd.midiRatio(a)
     }
 
-    case object Ratiomidi extends Op {
+    case object RatioMidi extends Op {
       final val id = 13
       def value(a: Double): Double = rd.ratioMidi(a)
     }
 
-    case object Dbamp extends Op {
+    case object DbAmp extends Op {
       final val id = 14
       def value(a: Double): Double = rd.dbAmp(a)
     }
 
-    case object Ampdb extends Op {
+    case object AmpDb extends Op {
       final val id = 15
       def value(a: Double): Double = rd.ampDb(a)
     }
 
-    case object Octcps extends Op {
+    case object OctCps extends Op {
       final val id = 16
       def value(a: Double): Double = rd.octCps(a)
     }
 
-    case object Cpsoct extends Op {
+    case object CpsOct extends Op {
       final val id = 17
       def value(a: Double): Double = rd.cpsOct(a)
     }
@@ -367,17 +367,17 @@ object DoubleExtensions {
   private object BinaryOp {
     import de.sciss.numbers.{DoubleFunctions => rd}
 
-    sealed abstract class Op extends impl.Tuple2Op[Double, Double, Double, DoubleObj, DoubleObj, DoubleObj] {
+    sealed abstract class Op extends ExprTuple2Op[Double, Double, Double, DoubleObj, DoubleObj, DoubleObj] {
 
-      final def apply[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S])(implicit tx: S#Tx): _Ex[S] = (_1, _2) match {
+      final def apply[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T])(implicit tx: T): _Ex[T] = (_1, _2) match {
         case (Expr.Const(ca), Expr.Const(cb)) => DoubleObj.newConst(value(ca, cb))
         case _ =>
-          new Tuple2[S, Double, DoubleObj, Double, DoubleObj](Targets[S], this, _1, _2).connect()
+          new Tuple2[T, Double, DoubleObj, Double, DoubleObj](Targets[T](), this, _1, _2).connect()
       }
 
       def value(a: Double, b: Double): Double
 
-      def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String = s"${_1}.$name(${_2})"
+      def toString[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T]): String = s"${_1}.$name(${_2})"
 
       def name: String = {
         val cn = getClass.getName
@@ -390,7 +390,7 @@ object DoubleExtensions {
     trait Infix {
       _: Op =>
 
-      override def toString[S <: Sys[S]](_1: _Ex[S], _2: _Ex[S]): String =
+      override def toString[T <: Txn[T]](_1: _Ex[T], _2: _Ex[T]): String =
         s"(${_1} $name ${_2})"
     }
 
@@ -479,7 +479,7 @@ object DoubleExtensions {
       def value(a: Double, b: Double): Double = rd.hypot(a, b)
     }
 
-    case object Hypotx extends Op {
+    case object HypotApx extends Op {
       final val id = 42
       def value(a: Double, b: Double): Double = rd.hypotApx(a, b)
     }
@@ -497,27 +497,27 @@ object DoubleExtensions {
     //      case object Ring2          extends Op( 31 )
     //      case object Ring3          extends Op( 32 )
     //      case object Ring4          extends Op( 33 )
-    case object Difsqr extends Op {
+    case object DifSqr extends Op {
       final val id = 44
       def value(a: Double, b: Double): Double = rd.difSqr(a, b)
     }
 
-    case object Sumsqr extends Op {
+    case object SumSqr extends Op {
       final val id = 45
       def value(a: Double, b: Double): Double = rd.sumSqr(a, b)
     }
 
-    case object Sqrsum extends Op {
+    case object SqrSum extends Op {
       final val id = 46
       def value(a: Double, b: Double): Double = rd.sqrSum(a, b)
     }
 
-    case object Sqrdif extends Op {
+    case object SqrDif extends Op {
       final val id = 47
       def value(a: Double, b: Double): Double = rd.sqrDif(a, b)
     }
 
-    case object Absdif extends Op {
+    case object AbsDif extends Op {
       final val id = 48
       def value(a: Double, b: Double): Double = rd.absDif(a, b)
     }
@@ -548,13 +548,13 @@ object DoubleExtensions {
     //      case object Firstarg       extends Op( 46 )
   }
 
-  final class Ops[S <: Sys[S]](val `this`: _Ex[S]) extends AnyVal { me =>
+  final class Ops[T <: Txn[T]](val `this`: _Ex[T]) extends AnyVal { me =>
     import me.{`this` => a}
-    private type E = _Ex[S]
+    private type E = _Ex[T]
 
     import UnaryOp._
 
-    def unary_- (implicit tx: S#Tx): E = Neg(a)
+    def unary_- (implicit tx: T): E = Neg(a)
 
     // def bitNot : E	         = BitNot.make( ex )
     // def toDouble : E	         = UnOp.make( 'asDouble, ex )
@@ -562,43 +562,43 @@ object DoubleExtensions {
 
     import BinaryOp._
 
-    def + (b: E)(implicit tx: S#Tx): E = Plus (a, b)
-    def - (b: E)(implicit tx: S#Tx): E = Minus(a, b)
-    def * (b: E)(implicit tx: S#Tx): E = Times(a, b)
-    def / (b: E)(implicit tx: S#Tx): E = Div  (a, b)
+    def + (b: E)(implicit tx: T): E = Plus (a, b)
+    def - (b: E)(implicit tx: T): E = Minus(a, b)
+    def * (b: E)(implicit tx: T): E = Times(a, b)
+    def / (b: E)(implicit tx: T): E = Div  (a, b)
 
     import UnaryOp._
 
-    def abs       (implicit tx: S#Tx): E = Abs       (a)
-    def ceil      (implicit tx: S#Tx): E = Ceil      (a)
-    def floor     (implicit tx: S#Tx): E = Floor     (a)
-    def frac      (implicit tx: S#Tx): E = Frac      (a)
-    def signum    (implicit tx: S#Tx): E = Signum    (a)
-    def squared   (implicit tx: S#Tx): E = Squared   (a)
+    def abs       (implicit tx: T): E = Abs       (a)
+    def ceil      (implicit tx: T): E = Ceil      (a)
+    def floor     (implicit tx: T): E = Floor     (a)
+    def frac      (implicit tx: T): E = Frac      (a)
+    def signum    (implicit tx: T): E = Signum    (a)
+    def squared   (implicit tx: T): E = Squared   (a)
     // def cubed     : E = Cubed     (ex)
-    def sqrt      (implicit tx: S#Tx): E = Sqrt      (a)
-    def exp       (implicit tx: S#Tx): E = Exp       (a)
-    def reciprocal(implicit tx: S#Tx): E = Reciprocal(a)
-    def midiCps   (implicit tx: S#Tx): E = Midicps   (a)
-    def cpsMidi   (implicit tx: S#Tx): E = Cpsmidi   (a)
-    def midiRatio (implicit tx: S#Tx): E = Midiratio (a)
-    def ratioMidi (implicit tx: S#Tx): E = Ratiomidi (a)
-    def dbAmp     (implicit tx: S#Tx): E = Dbamp     (a)
-    def ampDb     (implicit tx: S#Tx): E = Ampdb     (a)
-    def octCps    (implicit tx: S#Tx): E = Octcps    (a)
-    def cpsOct    (implicit tx: S#Tx): E = Cpsoct    (a)
-    def log       (implicit tx: S#Tx): E = Log       (a)
-    def log2      (implicit tx: S#Tx): E = Log2      (a)
-    def log10     (implicit tx: S#Tx): E = Log10     (a)
-    def sin       (implicit tx: S#Tx): E = Sin       (a)
-    def cos       (implicit tx: S#Tx): E = Cos       (a)
-    def tan       (implicit tx: S#Tx): E = Tan       (a)
-    def asin      (implicit tx: S#Tx): E = Asin      (a)
-    def acos      (implicit tx: S#Tx): E = Acos      (a)
-    def atan      (implicit tx: S#Tx): E = Atan      (a)
-    def sinh      (implicit tx: S#Tx): E = Sinh      (a)
-    def cosh      (implicit tx: S#Tx): E = Cosh      (a)
-    def tanh      (implicit tx: S#Tx): E = Tanh      (a)
+    def sqrt      (implicit tx: T): E = Sqrt      (a)
+    def exp       (implicit tx: T): E = Exp       (a)
+    def reciprocal(implicit tx: T): E = Reciprocal(a)
+    def midiCps   (implicit tx: T): E = MidiCps   (a)
+    def cpsMidi   (implicit tx: T): E = CpsMidi   (a)
+    def midiRatio (implicit tx: T): E = MidiRatio (a)
+    def ratioMidi (implicit tx: T): E = RatioMidi (a)
+    def dbAmp     (implicit tx: T): E = DbAmp     (a)
+    def ampDb     (implicit tx: T): E = AmpDb     (a)
+    def octCps    (implicit tx: T): E = OctCps    (a)
+    def cpsOct    (implicit tx: T): E = CpsOct    (a)
+    def log       (implicit tx: T): E = Log       (a)
+    def log2      (implicit tx: T): E = Log2      (a)
+    def log10     (implicit tx: T): E = Log10     (a)
+    def sin       (implicit tx: T): E = Sin       (a)
+    def cos       (implicit tx: T): E = Cos       (a)
+    def tan       (implicit tx: T): E = Tan       (a)
+    def asin      (implicit tx: T): E = Asin      (a)
+    def acos      (implicit tx: T): E = Acos      (a)
+    def atan      (implicit tx: T): E = Atan      (a)
+    def sinh      (implicit tx: T): E = Sinh      (a)
+    def cosh      (implicit tx: T): E = Cosh      (a)
+    def tanh      (implicit tx: T): E = Tanh      (a)
 
     // def rand : E              = UnOp.make( 'rand, ex )
     // def rand2 : E             = UnOp.make( 'rand2, ex )
@@ -624,34 +624,34 @@ object DoubleExtensions {
 
     import BinaryOp._
 
-    def min     (b: E)(implicit tx: S#Tx): E = Min     (a, b)
-    def max     (b: E)(implicit tx: S#Tx): E = Max     (a, b)
-    def round   (b: E)(implicit tx: S#Tx): E = RoundTo (a, b)
-    def roundup (b: E)(implicit tx: S#Tx): E = RoundUpTo(a,b)
-    def trunc   (b: E)(implicit tx: S#Tx): E = Trunc   (a, b)
-    def atan2   (b: E)(implicit tx: S#Tx): E = Atan2   (a, b)
-    def hypot   (b: E)(implicit tx: S#Tx): E = Hypot   (a, b)
-    def hypotApx(b: E)(implicit tx: S#Tx): E = Hypotx  (a, b)
-    def pow     (b: E)(implicit tx: S#Tx): E = Pow     (a, b)
+    def min     (b: E)(implicit tx: T): E = Min     (a, b)
+    def max     (b: E)(implicit tx: T): E = Max     (a, b)
+    def roundTo (b: E)(implicit tx: T): E = RoundTo (a, b)
+    def roundUpTo(b: E)(implicit tx: T): E = RoundUpTo(a,b)
+    def trunc   (b: E)(implicit tx: T): E = Trunc   (a, b)
+    def atan2   (b: E)(implicit tx: T): E = Atan2   (a, b)
+    def hypot   (b: E)(implicit tx: T): E = Hypot   (a, b)
+    def hypotApx(b: E)(implicit tx: T): E = HypotApx  (a, b)
+    def pow     (b: E)(implicit tx: T): E = Pow     (a, b)
 
     //      def ring1( b: E ) : E     = Ring1.make( ex, b )
     //      def ring2( b: E ) : E     = Ring2.make( ex, b )
     //      def ring3( b: E ) : E     = Ring3.make( ex, b )
     //      def ring4( b: E ) : E     = Ring4.make( ex, b )
-    def difSqr  (b: E)(implicit tx: S#Tx): E = Difsqr  (a, b)
-    def sumSqr  (b: E)(implicit tx: S#Tx): E = Sumsqr  (a, b)
-    def sqrSum  (b: E)(implicit tx: S#Tx): E = Sqrsum  (a, b)
-    def sqrDif  (b: E)(implicit tx: S#Tx): E = Sqrdif  (a, b)
-    def absDif  (b: E)(implicit tx: S#Tx): E = Absdif  (a, b)
+    def difSqr  (b: E)(implicit tx: T): E = DifSqr  (a, b)
+    def sumSqr  (b: E)(implicit tx: T): E = SumSqr  (a, b)
+    def sqrSum  (b: E)(implicit tx: T): E = SqrSum  (a, b)
+    def sqrDif  (b: E)(implicit tx: T): E = SqrDif  (a, b)
+    def absDif  (b: E)(implicit tx: T): E = AbsDif  (a, b)
     // def thresh  (b: E): E = Thresh  (ex, b)
 
     //      def amClip( b: E ) : E    = Amclip.make( ex, b )
     //      def scaleNeg( b: E ) : E  = Scaleneg.make( ex, b )
-    def clip2   (b: E)(implicit tx: S#Tx): E = Clip2   (a, b)
+    def clip2   (b: E)(implicit tx: T): E = Clip2   (a, b)
 
     //      def excess( b: E ) : E    = Excess.make( ex, b )
-    def fold2   (b: E)(implicit tx: S#Tx): E = Fold2   (a, b)
-    def wrap2   (b: E)(implicit tx: S#Tx): E = Wrap2   (a, b)
+    def fold2   (b: E)(implicit tx: T): E = Fold2   (a, b)
+    def wrap2   (b: E)(implicit tx: T): E = Wrap2   (a, b)
 
     // def firstArg( b: Double ) : Double  = d
 

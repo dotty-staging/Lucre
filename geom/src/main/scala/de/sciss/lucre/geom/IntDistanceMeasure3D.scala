@@ -1,6 +1,6 @@
 /*
  *  DistanceMeasure3D.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -21,8 +21,8 @@ object IntDistanceMeasure3D {
   import DistanceMeasure.Ops
 
   type Sqr  = BigInt
-  type ML   = DistanceMeasure[Long, ThreeDim] with Ops[Long, ThreeDim]
-  type MS   = DistanceMeasure[Sqr, ThreeDim] with Ops[Sqr, ThreeDim]
+  type ML   = DistanceMeasure[Long, IntPoint3DLike, IntCube] with Ops[Long, IntPoint3DLike, IntCube]
+  type MS   = DistanceMeasure[Sqr , IntPoint3DLike, IntCube] with Ops[Sqr , IntPoint3DLike, IntCube]
 
   private val MaxDistance: Sqr = {
     val n = BigInt(Long.MaxValue)
@@ -57,14 +57,14 @@ object IntDistanceMeasure3D {
     def maxDistance(a: PointLike, b: Cube3D   ): Sqr = b.maxDistanceSq(a)
   }
 
-  private sealed trait ClipLike[M] extends DistanceMeasure[M, ThreeDim] {
-    protected def underlying: DistanceMeasure[M, ThreeDim]
+  private sealed trait ClipLike[M] extends DistanceMeasure[M, IntPoint3DLike, IntCube] {
+    protected def underlying: DistanceMeasure[M, IntPoint3DLike, IntCube]
 
     protected def clipping: Cube3D
 
-    def distance   (a: PointLike, b: PointLike): M = if (clipping.contains(b)) underlying.distance   (a, b) else maxValue
-    def minDistance(a: PointLike, b: Cube3D   ): M = if (clipping.contains(b)) underlying.minDistance(a, b) else maxValue
-    def maxDistance(a: PointLike, b: Cube3D   ): M = if (clipping.contains(b)) underlying.maxDistance(a, b) else maxValue
+    def distance   (a: PointLike, b: PointLike): M = if (clipping.containsP(b)) underlying.distance   (a, b) else maxValue
+    def minDistance(a: PointLike, b: Cube3D   ): M = if (clipping.containsH(b)) underlying.minDistance(a, b) else maxValue
+    def maxDistance(a: PointLike, b: Cube3D   ): M = if (clipping.containsH(b)) underlying.maxDistance(a, b) else maxValue
   }
 
   private final class SqrClip(protected val underlying: SqrImpl, protected val clipping: Cube3D)
@@ -74,7 +74,7 @@ object IntDistanceMeasure3D {
     extends ClipLike[Long] with LongImpl
 
   private sealed trait ApproximateLike[M] extends Impl[M] {
-    protected def underlying: DistanceMeasure[M, ThreeDim]
+    protected def underlying: DistanceMeasure[M, IntPoint3DLike, IntCube]
     protected def thresh: M
 
     def minDistance(a: PointLike, b: Cube3D): M = underlying.minDistance(a, b)
@@ -93,9 +93,9 @@ object IntDistanceMeasure3D {
     extends ApproximateLike[Long] with LongImpl
 
   private sealed trait OrthantLike[M]
-    extends DistanceMeasure[M, ThreeDim] {
+    extends DistanceMeasure[M, IntPoint3DLike, IntCube] {
 
-    protected def underlying: DistanceMeasure[M, ThreeDim]
+    protected def underlying: DistanceMeasure[M, IntPoint3DLike, IntCube]
 
     protected def idx: Int
 
@@ -139,16 +139,20 @@ object IntDistanceMeasure3D {
     }
   }
 
-  private final class SqrOrthant(protected val underlying: DistanceMeasure[BigInt, ThreeDim], protected val idx: Int)
+  private final class SqrOrthant(protected val underlying: DistanceMeasure[BigInt, IntPoint3DLike, IntCube],
+                                 protected val idx: Int)
     extends OrthantLike[BigInt] with SqrImpl
 
-  private final class LongOrthant(protected val underlying: DistanceMeasure[Long, ThreeDim], protected val idx: Int)
+  private final class LongOrthant(protected val underlying: DistanceMeasure[Long, IntPoint3DLike, IntCube], 
+                                  protected val idx: Int)
     extends OrthantLike[Long] with LongImpl
 
-  private final class SqrExceptOrthant(protected val underlying: DistanceMeasure[BigInt, ThreeDim], protected val idx: Int)
+  private final class SqrExceptOrthant(protected val underlying: DistanceMeasure[BigInt, IntPoint3DLike, IntCube],
+                                       protected val idx: Int)
     extends OrthantLike[BigInt] with SqrImpl
 
-  private final class LongExceptOrthant(protected val underlying: DistanceMeasure[Long, ThreeDim], protected val idx: Int)
+  private final class LongExceptOrthant(protected val underlying: DistanceMeasure[Long, IntPoint3DLike, IntCube],
+                                        protected val idx: Int)
     extends OrthantLike[Long] with LongImpl
 
   private object ChebyshevXY extends ChebyshevXYLike {
@@ -268,7 +272,7 @@ object IntDistanceMeasure3D {
     }
   }
 
-  sealed trait Impl[M] extends Ops[M, ThreeDim] {
+  sealed trait Impl[M] extends Ops[M, IntPoint3DLike, IntCube] {
     protected def zeroValue: M
   }
 

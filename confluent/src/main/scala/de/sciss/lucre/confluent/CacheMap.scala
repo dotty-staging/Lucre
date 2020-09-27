@@ -1,6 +1,6 @@
 /*
  *  CacheMap.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,41 +13,29 @@
 
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm
-import de.sciss.serial
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.{ConstFormat, TFormat}
 
 object CacheMap {
-  trait InMemory[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends CacheMap[S, K, Store] {
-    def putCache[A](key: K, path: S#Acc, value: A)(implicit tx: S#Tx): Unit
-    def getCache[A](key: K, path: S#Acc)(implicit tx: S#Tx): Option[A]
+  trait InMemory[T <: Txn[T], K, +Store] extends CacheMap[T, K, Store] {
+    def putCache[A](key: K, value: A, tx: T)(implicit path: tx.Acc): Unit
+    def getCache[A](key: K          , tx: T)(implicit path: tx.Acc): Option[A]
   }
 
-  trait Durable[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends CacheMap[S, K, Store] {
-    def putCacheTxn[A](key: K, path: S#Acc, value: A)
-                      (implicit tx: S#Tx, serializer: serial.Serializer[S#Tx, S#Acc, A]): Unit
+  trait Durable[T <: Txn[T], K, +Store] extends CacheMap[T, K, Store] {
+    def putCacheTxn   [A](key: K, value: A, tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Unit
+    def putCacheNonTxn[A](key: K, value: A, tx: T)(implicit path: tx.Acc, format: ConstFormat[A]): Unit
 
-    def putCacheNonTxn[A](key: K, path: S#Acc, value: A)
-                         (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): Unit
-
-    def getCacheTxn[A](key: K, path: S#Acc)
-                      (implicit tx: S#Tx, serializer: serial.Serializer[S#Tx, S#Acc, A]): Option[A]
-
-    def getCacheNonTxn[A](key: K, path: S#Acc)
-                         (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): Option[A]
+    def getCacheTxn   [A](key: K, tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Option[A]
+    def getCacheNonTxn[A](key: K, tx: T)(implicit path: tx.Acc, format: ConstFormat[A]): Option[A]
   }
 
-  trait Partial[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends CacheMap[S, K, Store] {
-    def putPartial[A](key: K, path: S#Acc, value: A)
-                     (implicit tx: S#Tx, serializer: serial.Serializer[S#Tx, S#Acc, A]): Unit
-
-    def getPartial[A](key: K, path: S#Acc)
-                     (implicit tx: S#Tx, serializer: serial.Serializer[S#Tx, S#Acc, A]): Option[A]
+  trait Partial[T <: Txn[T], K, +Store] extends CacheMap[T, K, Store] {
+    def putPartial[A](key: K, value: A, tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Unit
+    def getPartial[A](key: K          , tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Option[A]
   }
-
 }
 
-trait CacheMap[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends Cache[S#Tx] {
+trait CacheMap[T <: Txn[T], K, +Store] extends Cache[T] {
   // ---- abstract ----
 
   /**
@@ -57,9 +45,9 @@ trait CacheMap[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends Cache[S#
 
   // ---- implementation ----
 
-  def getCacheOnly[A](key: K, path: S#Acc)(implicit tx: S#Tx): Option[A]
+  def getCacheOnly[A] (key: K, tx: T)(implicit path: tx.Acc): Option[A]
 
-  def cacheContains(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean
+  def cacheContains   (key: K, tx: T)(implicit path: tx.Acc): Boolean
 
   /**
    * Removes an entry from the cache, and only the cache. This will not affect any
@@ -69,7 +57,7 @@ trait CacheMap[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends Cache[S#
    * @param key        key at which the entry is stored
    * @param tx         the current transaction
    */
-  def removeCacheOnly(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean
+  def removeCacheOnly(key: K, tx: T)(implicit path: tx.Acc): Boolean
 
   /**
    * This method should be invoked from the implementations flush hook after it has
@@ -80,7 +68,7 @@ trait CacheMap[S <: stm.Sys[S], /* @spec(KeySpec) */ K, +Store] extends Cache[S#
    * @param term    the new version to append to the paths in the cache (using the `PathLike`'s `addTerm` method)
    * @param tx      the current transaction (should be in commit or right-before commit phase)
    */
-  def flushCache(term: Long)(implicit tx: S#Tx): Unit
+  def flushCache(term: Long)(implicit tx: T): Unit
 
-  def removeCache(key: K, path: S#Acc)(implicit tx: S#Tx): Boolean
+  def removeCache(key: K, tx: T)(implicit path: tx.Acc): Boolean
 }

@@ -1,6 +1,6 @@
 /*
  *  StmObjAttrMapCellView.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,33 +14,32 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.expr.CellView
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{Disposable, Sys}
+import de.sciss.lucre.{Disposable, Txn, Obj => LObj}
 
-// XXX TODO --- unfortunate that despite MapLike we have to distinguish
-// because stm.Obj.AttrMap must be put into a handle...
+// XXX TODO --- unfortunate that despite MapObjLike we have to distinguish
+// because LObj.AttrMap must be put into a handle...
 
-/** A `CellView[S#Tx, Option[stm.Obj[S]]` built from an `stm.Obj.attr` */
-final class StmObjAttrMapCellView[S <: Sys[S]](attr0: stm.Obj.AttrMap[S], key: String, tx0: S#Tx)
-  extends CellView[S#Tx, Option[stm.Obj[S]]] {
+/** A `CellView[T, Option[LObj[T]]` built from an `LObj.attr` */
+final class StmObjAttrMapCellView[T <: Txn[T]](attr0: LObj.AttrMap[T], key: String, tx0: T)
+  extends CellView[T, Option[LObj[T]]] {
 
   private[this] val attrH = tx0.newHandle(attr0)
 
-  private def attr(implicit tx: S#Tx) = attrH()
+  private def attr(implicit tx: T) = attrH()
 
-  def apply()(implicit tx: S#Tx): Option[stm.Obj[S]] =
+  def apply()(implicit tx: T): Option[LObj[T]] =
     attr.get(key)
 
-  def react(fun: S#Tx => Option[stm.Obj[S]] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
+  def react(fun: T => Option[LObj[T]] => Unit)(implicit tx: T): Disposable[T] = {
     attr.changed.react { implicit tx => upd =>
       upd.changes.foreach {
-        case stm.Obj.AttrAdded(`key`, obj) =>
+        case LObj.AttrAdded(`key`, obj) =>
           fun(tx)(Some(obj))
 
-        case stm.Obj.AttrRemoved(`key`, _) =>
+        case LObj.AttrRemoved(`key`, _) =>
           fun(tx)(None)
 
-        case stm.Obj.AttrReplaced(`key`, _, now) =>
+        case LObj.AttrReplaced(`key`, _, now) =>
           fun(tx)(Some(now))
 
         case _ => // ignore

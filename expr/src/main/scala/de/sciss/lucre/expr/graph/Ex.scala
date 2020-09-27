@@ -1,6 +1,6 @@
 /*
  *  Ex.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,11 +15,10 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.equal.Implicits._
 import de.sciss.file.{File => _File}
-import de.sciss.lucre.adjunct.Adjunct
-import de.sciss.lucre.adjunct.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
+import de.sciss.lucre.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
+import de.sciss.lucre.{Adjunct, IExpr, Txn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, IExpr}
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -105,103 +104,103 @@ object Ex {
   final case class MapExOption[A, B] private (in: Ex[Option[A]], it: It[A], fun: Ex[B])
     extends Ex[Option[B]] {
 
-    type Repr[S <: Sys[S]] = IExpr[S, Option[B]]
+    type Repr[T <: Txn[T]] = IExpr[T, Option[B]]
 
     override def productPrefix: String = s"Ex$$MapExOption" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx  = in.expand[S]
-      val itEx  = it.expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx  = in.expand[T]
+      val itEx  = it.expand[T]
       import ctx.targets
-      new ExpandedMapOption[S, A, B](inEx, itEx, fun, tx)
+      new ExpandedMapOption[T, A, B](inEx, itEx, fun, tx)
     }
   }
 
   final case class MapExSeq[A, B] private (in: Ex[Seq[A]], it: It[A], fun: Ex[B])
     extends Ex[Seq[B]] {
 
-    type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
+    type Repr[T <: Txn[T]] = IExpr[T, Seq[B]]
 
     override def productPrefix: String = s"Ex$$MapExSeq" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx  = in.expand[S]
-      val itEx  = it.expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx  = in.expand[T]
+      val itEx  = it.expand[T]
       import ctx.targets
-      new ExpandedMapSeq[S, A, B](inEx, itEx, fun, tx)
+      new ExpandedMapSeq[T, A, B](inEx, itEx, fun, tx)
     }
   }
 
   final case class MapActOption[A] private (in: Ex[Option[A]], it: It[A], fun: Act)
     extends Act.Option {
 
-    type Repr[S <: Sys[S]] = IAction.Option[S]
+    type Repr[T <: Txn[T]] = IAction.Option[T]
 
     override def productPrefix: String = s"Ex$$MapActOption" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx = in.expand[S]
-      val itEx = it.expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx = in.expand[T]
+      val itEx = it.expand[T]
       import ctx.targets
-      new ExpandedMapOptionAct[S, A](inEx, itEx, fun, tx)
+      new ExpandedMapOptionAct[T, A](inEx, itEx, fun, tx)
     }
   }
 
   final case class MapSeqAct[A] private (in: Ex[Seq[A]], it: It[A], fun: Act) extends Act {
-    type Repr[S <: Sys[S]] = IAction[S]
+    type Repr[T <: Txn[T]] = IAction[T]
 
     override def productPrefix: String = s"Ex$$MapSeqAct" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx = in.expand[S]
-      val itEx = it.expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx = in.expand[T]
+      val itEx = it.expand[T]
       import ctx.targets
-      new ExpandedMapSeqAct[S, A](inEx, itEx, fun, tx)
+      new ExpandedMapSeqAct[T, A](inEx, itEx, fun, tx)
     }
   }
 
   final case class FlatMapExOption[A, B] private(in: Ex[Option[A]], it: It[A], fun: Ex[Option[B]])
     extends Ex[Option[B]] {
 
-    type Repr[S <: Sys[S]] = IExpr[S, Option[B]]
+    type Repr[T <: Txn[T]] = IExpr[T, Option[B]]
 
     override def productPrefix: String = s"Ex$$FlatMapExOption" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx = in.expand[S]
-      val itEx = it.expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx = in.expand[T]
+      val itEx = it.expand[T]
       import ctx.targets
-      new ExpandedFlatMapOption[S, A, B](inEx, itEx, fun, tx)
+      new ExpandedFlatMapOption[T, A, B](inEx, itEx, fun, tx)
     }
   }
 
   final case class FlatMapExSeq[A, B] private (in: Ex[Seq[A]], it: It[A], fun: Ex[Seq[B]])
     extends Ex[Seq[B]] {
 
-    type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
+    type Repr[T <: Txn[T]] = IExpr[T, Seq[B]]
 
     override def productPrefix: String = s"Ex$$FlatMapExSeq" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx  = in  .expand[S]
-      val itEx  = it  .expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx  = in  .expand[T]
+      val itEx  = it  .expand[T]
       import ctx.targets
-      new ExpandedFlatMapSeq[S, A, B](inEx, itEx, fun, tx)
+      new ExpandedFlatMapSeq[T, A, B](inEx, itEx, fun, tx)
     }
   }
 
   final case class FlatMapExSeqOption[A, B] private (in: Ex[Seq[A]], it: It[A], fun: Ex[Option[B]])
     extends Ex[Seq[B]] {
 
-    type Repr[S <: Sys[S]] = IExpr[S, Seq[B]]
+    type Repr[T <: Txn[T]] = IExpr[T, Seq[B]]
 
     override def productPrefix: String = s"Ex$$FlatMapExSeqOption" // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
-      val inEx  = in.expand[S]
-      val itEx  = it.expand[S]
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx  = in.expand[T]
+      val itEx  = it.expand[T]
       import ctx.targets
-      new ExpandedFlatMapSeqOption[S, A, B](inEx, itEx, fun, tx)
+      new ExpandedFlatMapSeqOption[T, A, B](inEx, itEx, fun, tx)
     }
   }
 
@@ -412,13 +411,13 @@ object Ex {
     }
 
     def lt  (a: _File, b: _File): Boolean = _File.NameOrdering.lt(a, b)
-    def leq (a: _File, b: _File): Boolean = _File.NameOrdering.lteq(a, b)
+    def lteq(a: _File, b: _File): Boolean = _File.NameOrdering.lteq(a, b)
     def gt  (a: _File, b: _File): Boolean = _File.NameOrdering.gt(a, b)
-    def geq (a: _File, b: _File): Boolean = _File.NameOrdering.gteq(a, b)
+    def gteq(a: _File, b: _File): Boolean = _File.NameOrdering.gteq(a, b)
     def eq  (a: _File, b: _File): Boolean = _File.NameOrdering.compare(a, b) === 0
     def neq (a: _File, b: _File): Boolean = _File.NameOrdering.compare(a, b) !== 0
   }
 }
 trait Ex[+A] extends Lazy {
-  type Repr[S <: Sys[S]] <: IExpr[S, A]
+  type Repr[T <: Txn[T]] <: IExpr[T, A]
 }

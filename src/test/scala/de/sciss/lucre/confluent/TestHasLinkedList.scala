@@ -1,37 +1,55 @@
+/*
+ *  TestHasLinkedList.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre.stm.Mutable
-import de.sciss.lucre.stm.impl.{MutableImpl, MutableSerializer}
-import de.sciss.serial.{DataInput, DataOutput}
+import de.sciss.lucre.impl.MutableImpl
+import de.sciss.lucre.{ConfluentLike, Mutable, Var => LVar}
+import de.sciss.serial.{DataInput, DataOutput, WritableFormat}
 
 trait TestHasLinkedList {
-  class Types[S <: Sys[S]](val s: S) {
-    type Sys = S
+  class Types[T <: Txn[T]](val s: ConfluentLike[T]) {
+    type Sys = T
 
     object Node {
-      implicit object ser extends MutableSerializer[S, Node] {
-        def readData(in: DataInput, _id: S#Id)(implicit tx: S#Tx): Node = new Node with MutableImpl[S] {
-          val id    = _id
-          val name  = in.readUTF()
-          val value = tx.readIntVar(id, in)
-          val next  = tx.readVar[Option[Node]](id, in)
+      implicit object ser extends WritableFormat[T, Node] {
+        override def readT(in: DataInput)(implicit tx: T): Node = {
+          val id = tx.readId(in)
+          readData(in, id)
+        }
+
+        private def readData(in: DataInput, _id: Ident[T]): Node = new Node with MutableImpl[T] {
+          val id    : Ident[T]              = _id
+          val name  : String                = in.readUTF()
+          val value : LVar[T, Int]          = id.readIntVar(in)
+          val next  : LVar[T, Option[Node]] = id.readVar[Option[Node]](in)
         }
       }
 
-      def apply(_name: String, init: Int)(implicit tx: S#Tx): Node = new Node with MutableImpl[S] {
-        val id    = tx.newId()
-        val name  = _name
-        val value = tx.newIntVar(id, init)
-        val next  = tx.newVar[Option[Node]](id, None)
+      def apply(_name: String, init: Int)(implicit tx: T): Node = new Node with MutableImpl[T] {
+        val id    : Ident[T]              = tx.newId()
+        val name  : String                = _name
+        val value : LVar[T, Int]          = id.newIntVar(init)
+        val next  : LVar[T, Option[Node]] = id.newVar[Option[Node]](None)
       }
     }
 
-    trait Node extends Mutable[S#Id, S#Tx] {
-      def name: String
-      def value: S#Var[Int]
-      def next: S#Var[Option[Node]]
+    trait Node extends Mutable[T] {
+      def name  : String
+      def value : LVar[T, Int]
+      def next  : LVar[T, Option[Node]]
 
-      protected def disposeData()(implicit tx: S#Tx): Unit = {
+      protected def disposeData()(implicit tx: T): Unit = {
         value.dispose()
         next .dispose()
       }
@@ -45,14 +63,14 @@ trait TestHasLinkedList {
       override def toString = s"Node($name, $id)"
     }
 
-    def toList(next: Option[Node])(implicit tx: S#Tx): List[(String, Int)] = next match {
+    def toList(next: Option[Node])(implicit tx: T): List[(String, Int)] = next match {
       case Some(n)  => (n.name, n.value()) :: toList(n.next())
       case _        => Nil
     }
 
     // tuples of (name, value, id.path)
-    def toListId(next: Option[Node])(implicit tx: S#Tx): List[(String, Int, String)] = next match {
-      case Some(n)  => (n.name, n.value(), n.id.path.toString) :: toListId(n.next())
+    def toListId(next: Option[Node])(implicit tx: T): List[(String, Int, String)] = next match {
+      case Some(n)  => (n.name, n.value(), n.id.!.path.toString) :: toListId(n.next())
       case _        => Nil
     }
   }

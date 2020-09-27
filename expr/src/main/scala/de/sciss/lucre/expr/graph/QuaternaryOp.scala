@@ -1,6 +1,6 @@
 /*
  *  QuaternaryOp.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,10 +14,8 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.lucre.adjunct.Adjunct
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, Txn}
 
 object QuaternaryOp {
   abstract class Op[A, B, C, D, E] extends Product {
@@ -50,12 +48,12 @@ object QuaternaryOp {
     def name = "SeqPatch"
   }
 
-  private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3, A4, A],
-                                                                       a: IExpr[S, A1], b: IExpr[S, A2],
-                                                                       c: IExpr[S, A3], d: IExpr[S, A4],
-                                                                       tx0: S#Tx)
-                                                                  (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IChangeEventImpl[S, A] {
+  private[lucre] final class Expanded[T <: Exec[T], A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3, A4, A],
+                                                                       a: IExpr[T, A1], b: IExpr[T, A2],
+                                                                       c: IExpr[T, A3], d: IExpr[T, A4],
+                                                                       tx0: T)
+                                                                  (implicit protected val targets: ITargets[T])
+    extends IExpr[T, A] with IChangeEventImpl[T, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
@@ -64,9 +62,9 @@ object QuaternaryOp {
 
     override def toString: String = s"QuaternaryOp($op, $a, $b, $c, $d)"
 
-    def changed: IChangeEvent[S, A] = this
+    def changed: IChangeEvent[T, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
       val _1v = pull.expr(a)
       val _2v = pull.expr(b)
       val _3v = pull.expr(c)
@@ -80,7 +78,7 @@ object QuaternaryOp {
       op.apply(av, bv, cv, dv)
     }
 
-    def value(implicit tx: S#Tx): A = {
+    def value(implicit tx: T): A = {
       val av = a.value
       val bv = b.value
       val cv = c.value
@@ -88,7 +86,7 @@ object QuaternaryOp {
       value1(av, bv, cv, dv)
     }
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    def dispose()(implicit tx: T): Unit = {
       a.changed -/-> changed
       b.changed -/-> changed
       c.changed -/-> changed
@@ -100,14 +98,14 @@ final case class QuaternaryOp[A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3,
                                                  a: Ex[A1], b: Ex[A2], c: Ex[A3], d: Ex[A4])
   extends Ex[A] {
 
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    val ax = a.expand[S]
-    val bx = b.expand[S]
-    val cx = c.expand[S]
-    val dx = d.expand[S]
-    new QuaternaryOp.Expanded[S, A1, A2, A3, A4, A](op, ax, bx, cx, dx, tx)
+    val ax = a.expand[T]
+    val bx = b.expand[T]
+    val cx = c.expand[T]
+    val dx = d.expand[T]
+    new QuaternaryOp.Expanded[T, A1, A2, A3, A4, A](op, ax, bx, cx, dx, tx)
   }
 }

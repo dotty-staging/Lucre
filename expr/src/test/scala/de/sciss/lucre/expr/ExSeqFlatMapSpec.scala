@@ -1,12 +1,13 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
+import de.sciss.lucre.edit.UndoManager
+import de.sciss.lucre.{InMemory, IntObj, StringObj, Workspace, Folder => LFolder}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class ExSeqFlatMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
+  type T = InMemory.Txn
 
   "Ex[Seq[A]].flatMap" should "work as expected" in {
     val g = Graph {
@@ -21,18 +22,18 @@ class ExSeqFlatMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutp
     }
 
     implicit val system: S = InMemory()
-    implicit val undo: UndoManager[S] = UndoManager()
+    implicit val undo: UndoManager[T] = UndoManager()
 
     import Workspace.Implicits._
 
     val res = captureConsole {
       system.step { implicit tx =>
-        val self = IntObj.newConst(0): IntObj[S]
+        val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
-        implicit val ctx: Context[S] = Context(Some(selfH))
-        val f   = stm.Folder[S]()
+        implicit val ctx: Context[T] = Context(Some(selfH))
+        val f   = LFolder[T]()
         def add(name: String): Unit = {
-          val c = IntObj.newConst[S](0)
+          val c = IntObj.newConst[T](0)
           c.attr.put("name", StringObj.newConst(name))
           f.addLast(c)
         }

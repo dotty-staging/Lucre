@@ -1,6 +1,6 @@
 /*
  *  Debug.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,12 +15,12 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.{IExpr, Txn}
 
 object Debug {
   object PrintNow {
-    private final class Expanded[S <: Sys[S]](text: IExpr[S, String]) extends IActionImpl[S] {
-      def executeAction()(implicit tx: S#Tx): Unit = {
+    private final class Expanded[T <: Txn[T]](text: IExpr[T, String]) extends IActionImpl[T] {
+      def executeAction()(implicit tx: T): Unit = {
         val s = text.value
         print(s)
       }
@@ -33,11 +33,11 @@ object Debug {
     * the string if needed.
     */
   final case class PrintNow(text: Ex[String]) extends Act {
-    type Repr[S <: Sys[S]] = IAction[S]
+    type Repr[T <: Txn[T]] = IAction[T]
 
     override def productPrefix: String = s"Debug$$PrintNow"  // serialization
 
-    protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] =
-      new PrintNow.Expanded(text.expand[S])
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new PrintNow.Expanded(text.expand[T])
   }
 }

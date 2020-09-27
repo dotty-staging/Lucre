@@ -1,6 +1,6 @@
 /*
  *  PartialMapHandler.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,14 +13,14 @@
 
 package de.sciss.lucre.confluent
 
-import de.sciss.serial.{ImmutableSerializer, DataInput}
+import de.sciss.serial.{ConstFormat, DataInput}
 
-trait PartialMapHandler[S <: Sys[S]] {
-  def getIndexTreeTerm(term: Long)(implicit tx: S#Tx): Long
+trait PartialMapHandler[-T] {
+  def getIndexTreeTerm(term: Long)(implicit tx: T): Long
 
   def readPartialMap[A](in: DataInput)
-                       (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A]
+                       (implicit tx: T, format: ConstFormat[A]): IndexMap[T, A]
 
   def newPartialMap[A](rootValue: A)
-                      (implicit tx: S#Tx, serializer: ImmutableSerializer[A]): IndexMap[S, A]
+                      (implicit tx: T, format: ConstFormat[A]): IndexMap[T, A]
 }

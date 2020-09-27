@@ -1,17 +1,15 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.bitemp.BiPin
-import de.sciss.lucre.stm
-import de.sciss.lucre.stm.Sys
+import de.sciss.lucre.{BiPin, IntObj, LongObj, Source, Txn}
 import de.sciss.model.Change
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 object BiPinSpec {
-  implicit class BiPinOps[S <: Sys[S], A](val `this`: BiPin.Entry[S, A]) extends AnyVal { me =>
+  implicit class BiPinOps[T <: Txn[T], A](val `this`: BiPin.Entry[T, A]) extends AnyVal { me =>
     import me.{`this` => entry}
 
-    def get: (LongObj[S], A) = (entry.key, entry.value)
+    def get: (LongObj[T], A) = (entry.key, entry.value)
   }
 }
 /*
@@ -23,25 +21,25 @@ object BiPinSpec {
 class BiPinSpec extends ConfluentEventSpec {
   import BiPinSpec.BiPinOps
 
-  type LE = LongObj[S]
-  type IE = IntObj [S]
-  type E  = BiPin.Entry[S, IE]
+  type LE = LongObj[T]
+  type IE = IntObj [T]
+  type E  = BiPin.Entry[T, IE]
 
   sealed trait Change1
   object Added {
-    def apply(tup: (LE, IE))(implicit tx: S#Tx): Added = new Added(tup._1.value, tup)
+    def apply(tup: (LE, IE))(implicit tx: T): Added = new Added(tup._1.value, tup)
   }
   case class Added  (time: Long, tup: (LE, IE)) extends Change1
   object Removed {
-    def apply(tup: (LE, IE))(implicit tx: S#Tx): Removed = new Removed(tup._1.value, tup)
+    def apply(tup: (LE, IE))(implicit tx: T): Removed = new Removed(tup._1.value, tup)
   }
   case class Removed(time: Long, tup: (LE, IE)) extends Change1
   case class Moved  (span: Change[Long], tup: (LE, IE)) extends Change1
-  case class Update1(bip: BiPin[S, IE], changes: scala.List[Change1])
+  case class Update1(bip: BiPin[T, IE], changes: scala.List[Change1])
 
-  def mapUpdate(in: Any /* BiPin.Update[S, IE] */): Update1 = in match {
+  def mapUpdate(in: Any /* BiPin.Update[T, IE] */): Update1 = in match {
     case u0: BiPin.Update[_, _, _] =>
-      val u = u0.asInstanceOf[BiPin.Update[S, IE, BiPin[S, IE]]]
+      val u = u0.asInstanceOf[BiPin.Update[T, IE, BiPin[T, IE]]]
       Update1(u.pin, u.changes.map {
         case BiPin.Added  (time, BiPin.Entry(k, v)) => Added  (time, (k, v))
         case BiPin.Removed(time, BiPin.Entry(k, v)) => Removed(time, (k, v))
@@ -49,21 +47,21 @@ class BiPinSpec extends ConfluentEventSpec {
       })
   }
 
-  // type Entry[S <: Sys[S], A] = (LongObj[S], A)
+  // type Entry[T <: Txn[T], A] = (LongObj[T], A)
 
   "BiPin" should "notify observers about all relevant collection events" in { system =>
     val obs = new Observation
     val bipH = system.step { implicit tx =>
-      val bip = BiPin.Modifiable[S, IntObj]
+      val bip = BiPin.Modifiable[T, IntObj]
       bip.changed.react(obs.register)
-      val res = tx.newHandle(bip)(BiPin.Modifiable.serializer[S, IE])
+      val res = tx.newHandle(bip)(BiPin.Modifiable.format[T, IE])
       obs.assertEmpty()
       res
     }
 
-    val tuples: Seq[stm.Source[S#Tx, (LE, IE)]] = system.step { implicit tx =>
-      // implicitly[Serializer[S#Tx, S#Acc, BiPin.Entry[S, Expr[S, Int]]]]
-//      implicit val entrySer = BiPin.Entry.serializer[S, IE]
+    val tuples: Seq[Source[T, (LE, IE)]] = system.step { implicit tx =>
+      // implicitly[Serializer[T, S#Acc, BiPin.Entry[T, Expr[T, Int]]]]
+//      implicit val entrySer = BiPin.Entry.serializer[T, IE]
 
       val tup1 = (10000L: LE) -> (1: IE) // : E
       val tup2 = ( 5000L: LE) -> (2: IE) // : E
@@ -195,9 +193,9 @@ class BiPinSpec extends ConfluentEventSpec {
   "BiPin" should "notify observers about all relevant element events" in { system =>
     val obs = new Observation
     val bipH = system.step { implicit tx =>
-      val bip = BiPin.Modifiable[S, IntObj]
+      val bip = BiPin.Modifiable[T, IntObj]
       bip.changed.react(obs.register)
-      val res = tx.newHandle(bip)(BiPin.Modifiable.serializer[S, IE])
+      val res = tx.newHandle(bip)(BiPin.Modifiable.format[T, IE])
       obs.assertEmpty()
       res
     }
@@ -206,8 +204,8 @@ class BiPinSpec extends ConfluentEventSpec {
       // partial currently broken
       //         val time = Longs.newVar[ S ]( 10000L )
       //         val expr = Ints.newVar[ S ]( 4 )
-      val time  = LongObj.newVar /* newConfluentVar */ [S](10000L)
-      val expr  = IntObj .newVar /* newConfluentVar */ [S](4)
+      val time  = LongObj.newVar /* newConfluentVar */ [T](10000L)
+      val expr  = IntObj .newVar /* newConfluentVar */ [T](4)
       val th    = tx.newHandle(time -> (3: IE)) //  : E)
       val eh    = tx.newHandle((30000L: LE) -> expr) //  : E)
       (th, eh)
@@ -302,7 +300,7 @@ class BiPinSpec extends ConfluentEventSpec {
       exprVar() = 6
       obs.map(mapUpdate)
       obs.assertEquals(
-        // BiPin.Update[S, IE](bip, BiPin.Moved(Change(30000L, 30000L), expr) :: Nil)
+        // BiPin.Update[T, IE](bip, BiPin.Moved(Change(30000L, 30000L), expr) :: Nil)
       )
       obs.clear()
 
@@ -313,9 +311,9 @@ class BiPinSpec extends ConfluentEventSpec {
 
   "BiPin" should "update cache correctly" in { system =>
     val (bipH, nH) = system.step { implicit tx =>
-      val bip = BiPin.Modifiable[S, IntObj]
+      val bip = BiPin.Modifiable[T, IntObj]
       bip.add(10L, 1)
-      val n   = LongObj.newVar[S](20L)
+      val n   = LongObj.newVar[T](20L)
       bip.add(n, 2)
       bip.add(30L, 3)
       (tx.newHandle(bip), tx.newHandle(n))

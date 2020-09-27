@@ -1,6 +1,20 @@
+/*
+ *  HashingSpec.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.confluent
 
 import de.sciss.lucre.confluent.impl.PathImpl
+import de.sciss.lucre.Confluent
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -15,9 +29,10 @@ test-only de.sciss.lucre.confluent.HashingSpec
  */
 class HashingSpec extends AnyFlatSpec with Matchers {
   type S = Confluent
+  type T = Confluent.Txn
 
   "The hashing mechanism" should "find correct prefix lengths" in {
-    val p0 = PathImpl.empty[S] :+ 0x100000000L
+    val p0 = PathImpl.empty[T] :+ 0x100000000L
     val p1 = p0 :+ 0x1234567800000001L
     val p2 = p1 :+ 0x2345678900000002L
     val p3 = p2 :+ 0x3456789000000003L

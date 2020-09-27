@@ -1,6 +1,6 @@
 /*
  *  DistanceMeasure.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,7 +15,7 @@ package de.sciss.lucre
 package geom
 
 object DistanceMeasure {
-  trait Ops[M, D <: Space[D]] extends DistanceMeasure[M, D] {
+  trait Ops[M, P, H] extends DistanceMeasure[M, P, H] {
     /** Applies a filter to this measure by constraining distances
       * to objects `b` which lie within the given `IntSquare`. That
       * is, if for example `distance( a, b )` is called, first it
@@ -24,7 +24,7 @@ object DistanceMeasure {
       * This behaviour extends to the `minDistance` and `maxDistance`
       * methods.
       */
-    def clip(hyperCube: D#HyperCube): Ops[M, D]
+    def clip(hyperCube: H): Ops[M, P, H]
 
     /** Composes this distance so that a threshold is applied to
       * point-point distances. If the point-point distance of the
@@ -41,11 +41,11 @@ object DistanceMeasure {
       * `euclideanSq` is used, and points within a radius of 4 should
       * be approximated, a threshold of `4 * 4 = 16` must be chosen!
       */
-    def approximate(thresh: M): Ops[M, D]
+    def approximate(thresh: M): Ops[M, P, H]
 
-    def orthant(idx: Int): Ops[M, D]
+    def orthant(idx: Int): Ops[M, P, H]
 
-    def exceptOrthant(idx: Int): Ops[M, D]
+    def exceptOrthant(idx: Int): Ops[M, P, H]
   }
 }
 
@@ -61,7 +61,7 @@ object DistanceMeasure {
   * the square root of the distances, while still preserving
   * the ordering between the possible results.
   */
-trait DistanceMeasure[M, D <: Space[D]] {
+trait DistanceMeasure[M, P, H] {
 
   def newArray(size: Int): Array[M]
 
@@ -79,7 +79,7 @@ trait DistanceMeasure[M, D <: Space[D]] {
     * @param   a  the input query point
     * @param   b  a point in the octree
     */
-  def distance(a: D#PointLike, b: D#PointLike): M
+  def distance(a: P, b: P): M
 
   /** Calculates the minimum distance between a point and
     * any possible point of a given hyper-cube. In the euclidean
@@ -87,7 +87,7 @@ trait DistanceMeasure[M, D <: Space[D]] {
     * is closest to the point `a`, if `a` lies outside of `b`,
     * or zero, if `a` lies within `b`.
     */
-  def minDistance(a: D#PointLike, b: D#HyperCube): M
+  def minDistance(a: P, b: H): M
 
   /** Calculates the maximum distance between a point and
     * any possible point of a given hyper-cube. In the euclidean
@@ -95,7 +95,7 @@ trait DistanceMeasure[M, D <: Space[D]] {
     * is furthest to the point `a`, no matter whether `a`
     * is contained in `b` or not.
     */
-  def maxDistance(a: D#PointLike, b: D#HyperCube): M
+  def maxDistance(a: P, b: H): M
 
   // def stabbingDirections(v: D#PointLike, parent: D#HyperCube, child: D#HyperCube): List[Int] = ...
 }

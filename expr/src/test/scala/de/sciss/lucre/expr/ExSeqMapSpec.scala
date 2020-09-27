@@ -1,11 +1,13 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.stm.{InMemory, UndoManager, Workspace}
+import de.sciss.lucre.edit.UndoManager
+import de.sciss.lucre.{DoubleObj, DoubleVector, InMemory, IntObj, IntVector, Workspace}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
+  type T = InMemory.Txn
 
   "Ex[Seq[A]].map" should "work as expected" in {
     val g = Graph {
@@ -24,15 +26,15 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
     }
 
     implicit val system: S = InMemory()
-    implicit val undo: UndoManager[S] = UndoManager()
+    implicit val undo: UndoManager[T] = UndoManager()
 
     import Workspace.Implicits._
 
     val res = captureConsole {
       system.step { implicit tx =>
-        val self = IntObj.newConst(0): IntObj[S]
+        val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
-        implicit val ctx: Context[S] = Context(Some(selfH))
+        implicit val ctx: Context[T] = Context(Some(selfH))
         self.attr.put("in", DoubleVector.newConst(Vector(0.0, 3.0, 6.0)))
         g.expand.initControl()
         self.attr.put("in", DoubleVector.newConst(Vector(-3.0, 0.0)))
@@ -64,17 +66,17 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
     }
 
     implicit val system: S = InMemory()
-    implicit val undo: UndoManager[S] = UndoManager()
+    implicit val undo: UndoManager[T] = UndoManager()
 
     import Workspace.Implicits._
 
     val res = captureConsole {
       system.step { implicit tx =>
-        val self = IntObj.newConst(0): IntObj[S]
+        val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
-        implicit val ctx: Context[S] = Context(Some(selfH))
-        val vr1 = DoubleVector.newVar[S](Vector(0.0, 3.0, 6.0))
-        val vr2 = DoubleObj   .newVar[S](0.0)
+        implicit val ctx: Context[T] = Context(Some(selfH))
+        val vr1 = DoubleVector.newVar[T](Vector(0.0, 3.0, 6.0))
+        val vr2 = DoubleObj   .newVar[T](0.0)
         self.attr.put("in1", vr1)
         self.attr.put("in2", vr2)
         g.expand.initControl()
@@ -113,16 +115,16 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
     }
 
     implicit val system: S = InMemory()
-    implicit val undo: UndoManager[S] = UndoManager()
+    implicit val undo: UndoManager[T] = UndoManager()
 
     import Workspace.Implicits._
 
     val res = captureConsole {
       system.step { implicit tx =>
-        val self = IntObj.newConst(0): IntObj[S]
+        val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
-        implicit val ctx: Context[S] = Context(Some(selfH))
-        val vr = IntVector.newVar[S](Vector(3, 5, 8))
+        implicit val ctx: Context[T] = Context(Some(selfH))
+        val vr = IntVector.newVar[T](Vector(3, 5, 8))
         self.attr.put("in", vr)
         g.expand.initControl()
         vr() = Vector(13, 21)

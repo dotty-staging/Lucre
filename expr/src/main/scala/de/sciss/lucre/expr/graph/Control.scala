@@ -1,6 +1,6 @@
 /*
  *  Control.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -13,8 +13,8 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.Txn
 import de.sciss.lucre.expr.{Graph, IControl}
-import de.sciss.lucre.stm.Sys
 
 object Control {
   final case class Configured(control: Control, properties: Map[String, Any]) {
@@ -22,7 +22,7 @@ object Control {
   }
 }
 trait Control extends Lazy {
-  type Repr[S <: Sys[S]] <: IControl[S]
+  type Repr[T <: Txn[T]] <: IControl[T]
 
   final def token: AnyRef = ref
 

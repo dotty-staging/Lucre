@@ -1,6 +1,6 @@
 /*
  *  BinaryOp.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -15,11 +15,9 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.adjunct.Adjunct.{HasDefault, Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
-import de.sciss.lucre.adjunct.{Adjunct, ProductWithAdjuncts}
-import de.sciss.lucre.event.impl.IChangeEventImpl
-import de.sciss.lucre.event.{IChangeEvent, IPull, ITargets}
-import de.sciss.lucre.stm.{Base, Sys}
+import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
+import de.sciss.lucre.impl.IChangeEventImpl
+import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.span.SpanLike
 
 object BinaryOp {
@@ -42,7 +40,7 @@ object BinaryOp {
   final case class Plus[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
     extends NamedOp[A, B, C] with ProductWithAdjuncts {
 
-    def apply(a: A, b: B): C = num.+(widen.widen1(a), widen.widen2(b))
+    def apply(a: A, b: B): C = num.plus(widen.widen1(a), widen.widen2(b))
 
     def name = "Plus"
 
@@ -52,7 +50,7 @@ object BinaryOp {
   final case class Minus[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
     extends NamedOp[A, B, C] with ProductWithAdjuncts {
 
-    def apply(a: A, b: B): C = num.-(widen.widen1(a), widen.widen2(b))
+    def apply(a: A, b: B): C = num.minus(widen.widen1(a), widen.widen2(b))
 
     def name = "Minus"
 
@@ -62,7 +60,7 @@ object BinaryOp {
   final case class Times[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
     extends NamedOp[A, B, C] with ProductWithAdjuncts {
 
-    def apply(a: A, b: B): C = num.*(widen.widen1(a), widen.widen2(b))
+    def apply(a: A, b: B): C = num.times(widen.widen1(a), widen.widen2(b))
 
     def name = "Times"
 
@@ -73,7 +71,7 @@ object BinaryOp {
   final case class Div[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumFrac[C])
     extends NamedOp[A, B, C] with ProductWithAdjuncts {
 
-    def apply(a: A, b: B): C = num./(widen.widen1(a), widen.widen2(b))
+    def apply(a: A, b: B): C = num.div(widen.widen1(a), widen.widen2(b))
 
     def name = "Div"
 
@@ -83,7 +81,7 @@ object BinaryOp {
   final case class ModJ[A, B, C]()(implicit widen: Widen2[A, B, C], num: Num[C])
     extends NamedOp[A, B, C] with ProductWithAdjuncts {
 
-    def apply(a: A, b: B): C = num.%(widen.widen1(a), widen.widen2(b))
+    def apply(a: A, b: B): C = num.rem(widen.widen1(a), widen.widen2(b))
 
     def name = "ModJ"
 
@@ -150,7 +148,7 @@ object BinaryOp {
   final case class Leq[A, B]()(implicit ord: Ord[A] { type Boolean = B })
     extends NamedOp[A, A, B] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): B = ord.leq(a, b)
+    def apply(a: A, b: A): B = ord.lteq(a, b)
 
     def name = "Leq"
 
@@ -161,7 +159,7 @@ object BinaryOp {
   final case class Geq[A, B]()(implicit ord: Ord[A] { type Boolean = B })
     extends NamedOp[A, A, B] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): B = ord.geq(a, b)
+    def apply(a: A, b: A): B = ord.gteq(a, b)
 
     def name = "Geq"
 
@@ -193,7 +191,7 @@ object BinaryOp {
   final case class And[A]()(implicit num: NumLogic[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): A = num.&(a, b)
+    def apply(a: A, b: A): A = num.and(a, b)
 
     def name = "And"
 
@@ -203,7 +201,7 @@ object BinaryOp {
   final case class Or[A]()(implicit num: NumLogic[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): A = num.|(a, b)
+    def apply(a: A, b: A): A = num.or(a, b)
 
     def name = "Or"
 
@@ -213,7 +211,7 @@ object BinaryOp {
   final case class Xor[A]()(implicit num: NumLogic[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): A = num.^(a, b)
+    def apply(a: A, b: A): A = num.xor(a, b)
 
     def name = "Xor"
 
@@ -323,7 +321,7 @@ object BinaryOp {
   final case class LeftShift[A]()(implicit num: NumInt[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): A = num.<<(a, b)
+    def apply(a: A, b: A): A = num.shiftLeft(a, b)
 
     def name = "LeftShift"
 
@@ -333,7 +331,7 @@ object BinaryOp {
   final case class RightShift[A]()(implicit num: NumInt[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): A = num.>>(a, b)
+    def apply(a: A, b: A): A = num.shiftRight(a, b)
 
     def name = "RightShift"
 
@@ -343,7 +341,7 @@ object BinaryOp {
   final case class UnsignedRightShift[A]()(implicit num: NumInt[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
-    def apply(a: A, b: A): A = num.>>>(a, b)
+    def apply(a: A, b: A): A = num.unsignedShiftRight(a, b)
 
     def name = "UnsignedRightShift"
 
@@ -729,19 +727,19 @@ object BinaryOp {
 
   // ---- Impl ----
 
-  private[lucre] final class Expanded[S <: Base[S], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],
-                                                                   a: IExpr[S, A1], b: IExpr[S, A2], tx0: S#Tx)
-                                                                  (implicit protected val targets: ITargets[S])
-    extends IExpr[S, A] with IChangeEventImpl[S, A] {
+  private[lucre] final class Expanded[T <: Exec[T], A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A],
+                                                                   a: IExpr[T, A1], b: IExpr[T, A2], tx0: T)
+                                                                  (implicit protected val targets: ITargets[T])
+    extends IExpr[T, A] with IChangeEventImpl[T, A] {
 
     a.changed.--->(this)(tx0)
     b.changed.--->(this)(tx0)
 
     override def toString: String = s"BinaryOp($op, $a, $b)"
 
-    def changed: IChangeEvent[S, A] = this
+    def changed: IChangeEvent[T, A] = this
 
-    private[lucre] def pullChange(pull: IPull[S])(implicit tx: S#Tx, phase: IPull.Phase): A = {
+    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
       val aV  = pull.expr(a)
       val bV  = pull.expr(b)
       value1(aV, bV)
@@ -752,13 +750,13 @@ object BinaryOp {
       op.apply(av, bv)
     }
 
-    def value(implicit tx: S#Tx): A = {
+    def value(implicit tx: T): A = {
       val av = a.value
       val bv = b.value
       value1(av, bv)
     }
 
-    def dispose()(implicit tx: S#Tx): Unit = {
+    def dispose()(implicit tx: T): Unit = {
       a.changed -/-> changed
       b.changed -/-> changed
     }
@@ -767,12 +765,12 @@ object BinaryOp {
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A], a: Ex[A1], b: Ex[A2])
   extends Ex[A] {
 
-  type Repr[S <: Sys[S]] = IExpr[S, A]
+  type Repr[T <: Txn[T]] = IExpr[T, A]
 
-  protected def mkRepr[S <: Sys[S]](implicit ctx: Context[S], tx: S#Tx): Repr[S] = {
+  protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets
-    val ax = a.expand[S]
-    val bx = b.expand[S]
-    new BinaryOp.Expanded[S, A1, A2, A3, A](op, ax, bx, tx)
+    val ax = a.expand[T]
+    val bx = b.expand[T]
+    new BinaryOp.Expanded[T, A1, A2, A3, A](op, ax, bx, tx)
   }
 }

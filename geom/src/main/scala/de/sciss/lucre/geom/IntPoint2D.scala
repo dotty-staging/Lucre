@@ -1,6 +1,6 @@
 /*
  *  IntPoint2D.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.ConstFormat
 
 trait IntPoint2DLike /* extends PointLike[ Space.IntTwoDim ] */ {
   def x: Int
@@ -81,7 +81,7 @@ trait IntPoint2DLike /* extends PointLike[ Space.IntTwoDim ] */ {
 }
 
 object IntPoint2D {
-  implicit def serializer: ImmutableSerializer[IntPoint2D] = IntSpace.TwoDim.pointSerializer
+  implicit def format: ConstFormat[IntPoint2D] = IntSpace.TwoDim.pointFormat
 }
 final case class IntPoint2D(x: Int, y: Int) extends IntPoint2DLike {
   def +(p: IntPoint2D) = IntPoint2D(x + p.x, y + p.y)

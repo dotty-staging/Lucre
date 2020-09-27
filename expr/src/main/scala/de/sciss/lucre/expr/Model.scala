@@ -1,6 +1,6 @@
 /*
  *  Model.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -35,14 +35,6 @@ object Model {
     def <--- (that: Model[A]): Unit =
       m.update(that())
   }
-
-  // XXX TODO: Lucre issue 17
-//  implicit final class OptionOps[A](private val m: Model[Option[A]]) extends AnyVal {
-//    def <--> (attr: Attr[A]): Unit = {
-//      m.update(attr)
-//      m.apply() ---> attr
-//    }
-//  }
 }
 trait Model[A] {
   def apply(): Ex[A]

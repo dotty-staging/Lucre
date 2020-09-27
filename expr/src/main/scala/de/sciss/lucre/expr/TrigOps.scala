@@ -1,6 +1,6 @@
 /*
  *  TrigOps.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -22,10 +22,10 @@ final class TrigOps(private val t: Trig) extends AnyVal {
 
   def filter(that: Ex[Boolean]): Trig = TBinaryOp(TBinaryOp.And(), t, that)
 
-//  def filterNot (ex: Ex[Boolean]): Trig = {
-//    import ExOps._
-//    filter(!ex)
-//  }
+  //  def filterNot (ex: Ex[Boolean]): Trig = {
+  //    import ExOps._
+  //    filter(!ex)
+  //  }
 
   def ---> (act: Act): act.type = {
     Act.Link(t, act)

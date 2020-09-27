@@ -1,6 +1,6 @@
 /*
  *  Space.scala
- *  (Lucre)
+ *  (Lucre 4)
  *
  *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
  *
@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package geom
 
-import de.sciss.serial.ImmutableSerializer
+import de.sciss.serial.ConstFormat
 
 object Space {
   final val bigZero = BigInt(0)
@@ -23,30 +23,21 @@ object Space {
 
 /** A `Space` abstracts over the number of dimensions
   * that are used for point and hypercube operations.
-  *
-  * Big thanks to Aleksey Nikiforov for figuring out
-  * how to plug the types together...
   */
-trait Space[D <: Space[D]] {
-  /** The point in the space */
-  type PointLike
-  type Point <: D#PointLike
-
-  /** The square or hypercube in the space. */
-  type HyperCubeLike <: geom.HyperCube[D]
-  type HyperCube     <: D#HyperCubeLike
+trait Space[P, H] {
+  type Point <: P
 
   /** Given that the space is limited, this represents the farthest
     * point in the space, typically which each coordinate component
     * equal to `Int.MaxValue`.
     */
-  def maxPoint: D#Point
+  def maxPoint: Point
 
   /** The number of dimensions in the space. */
   def dim: Int
 
-  implicit def lexicalOrder: Ordering[D#PointLike]
+  implicit def lexicalOrder: Ordering[P]
 
-  implicit def pointSerializer    : ImmutableSerializer[D#Point    ]
-  implicit def hyperCubeSerializer: ImmutableSerializer[D#HyperCube]
+  implicit def pointFormat    : ConstFormat[Point]
+  implicit def hyperCubeFormat: ConstFormat[H]
 }

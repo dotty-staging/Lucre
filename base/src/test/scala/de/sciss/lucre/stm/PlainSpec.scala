@@ -1,4 +1,17 @@
-package de.sciss.lucre.stm
+/*
+ *  PlainSpec.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
+package de.sciss.lucre
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -9,12 +22,12 @@ class PlainSpec extends AnyFlatSpec with Matchers {
     val tx = Plain.instance
 
     val id = tx.newId()
-    val vrS = tx.newVar(id, "Hello")
+    val vrS = id.newVar("Hello")
     assert(vrS() === "Hello")
     vrS() = "World"
     assert(vrS() === "World")
 
-    val vrI = tx.newIntVar(id, 1)
+    val vrI = id.newIntVar(1)
     assert(vrI() === 1)
     vrI() = vrI() + 2
     assert(vrI() === 3)
@@ -22,7 +35,7 @@ class PlainSpec extends AnyFlatSpec with Matchers {
     val id2 = tx.newId()
     assert(id !== id2)
 
-    def alwaysFindsTx()(implicit tx: S#Tx): Unit = implicitly[S#Tx]
+    def alwaysFindsTx()(implicit tx: S): Unit = implicitly[S]
 
     alwaysFindsTx()
   }

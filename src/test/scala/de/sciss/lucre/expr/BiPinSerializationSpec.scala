@@ -1,11 +1,11 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.bitemp.BiPin
+import de.sciss.lucre.{BiPin, IntObj, LongObj}
 
 /*
   To test only this suite:
 
-  test-only de.sciss.lucre.expr.BiPinSerializationSpec
+  testOnly de.sciss.lucre.expr.BiPinSerializationSpec
 
   */
 class BiPinSerializationSpec extends ConfluentEventSpec {
@@ -13,14 +13,14 @@ class BiPinSerializationSpec extends ConfluentEventSpec {
 
   "BiPin" should "serialize and deserialize" in { system =>
     val bipH = system.step { implicit tx =>
-      val bip = BiPin.Modifiable[S, IntObj]
-      tx.newHandle(bip)(BiPin.Modifiable.serializer[S, IntObj[S]])
+      val bip = BiPin.Modifiable[T, IntObj]
+      tx.newHandle(bip)(BiPin.Modifiable.format[T, IntObj[T]])
     }
 
     val (keyH, valueH) = system.step { implicit tx =>
       val bip = bipH() // tx.refresh( acc, bip0 )
-      val key   : LongObj[S] = 1234L
-      val value : IntObj [S] = 5678
+      val key   : LongObj[T] = 1234L
+      val value : IntObj [T] = 5678
       bip.add(key, value)
       (tx.newHandle(key), tx.newHandle(value))
     }
