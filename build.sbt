@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.0.0-SNAPSHOT"
+lazy val projectVersion   = "4.0.0"
 lazy val mimaVersion      = "4.0.0"
 
 lazy val deps = new {
@@ -56,7 +56,8 @@ lazy val commonSettings = Seq(
   parallelExecution in Test := false,
   libraryDependencies += {
     "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
-  }
+  },
+  licenses := Seq(agpl),
 ) ++ publishSettings
 
 lazy val agpl = "AGPL v3+" -> url("http://www.gnu.org/licenses/agpl-3.0.txt")
@@ -67,7 +68,6 @@ lazy val root = project.withId(baseNameL).in(file("."))
   .dependsOn(base, adjunct, geom, data, core, expr, confluent, bdb)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
     publishArtifact in (Compile, packageSrc) := false, // there are no sources
@@ -88,7 +88,6 @@ lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
   .dependsOn(base)    // XXX TODO --- this is just because of new serializers
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "serial" % deps.base.serial
     ),
@@ -99,7 +98,6 @@ lazy val adjunct = project.withId(s"$baseNameL-adjunct").in(file("adjunct"))
   .dependsOn(base)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "numbers" % deps.adjunct.numbers
     ),
@@ -111,8 +109,7 @@ lazy val data = project.in(file("data"))
   .settings(commonSettings)
   .settings(
     name := s"$baseName-data",
-    libraryDependencies ++= Seq(
-    )
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-data" % mimaVersion)
   )
 
 lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
@@ -120,7 +117,6 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss"      %% "equal"     % deps.core.equal % Provided,
       "de.sciss"      %% "model"     % deps.core.model,
@@ -142,7 +138,6 @@ lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
   .dependsOn(core, adjunct)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "equal"     % deps.expr.equal % Provided,
       "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
@@ -155,7 +150,6 @@ lazy val confluent = project.withId(s"$baseNameL-confluent").in(file("confluent"
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     libraryDependencies ++= Seq(
       "de.sciss" %% "fingertree" % deps.confluent.finger
     ),
@@ -166,7 +160,6 @@ lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
-    licenses := Seq(agpl),
     libraryDependencies += "de.sciss" % "bdb-je" % deps.bdb.sleepy7,
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
   )
