@@ -547,6 +547,24 @@ object UnaryOp {
     override def name = "SeqZipWithIndex"
   }
 
+  final case class SeqIntegrate[A]()(implicit num: Num[A]) extends NamedOp[Seq[A], Seq[A]] with ProductWithAdjuncts {
+    def apply(a: Seq[A]): Seq[A] =
+      a.iterator.scanLeft(num.zero)(num.plus).drop(1).toSeq
+
+    override def name = "SeqIntegrate"
+
+    def adjuncts: List[Adjunct] = num :: Nil
+  }
+
+  final case class SeqDifferentiate[A]()(implicit num: Num[A]) extends NamedOp[Seq[A], Seq[A]] with ProductWithAdjuncts {
+    def apply(a: Seq[A]): Seq[A] =
+      a.sliding(2, 1).collect { case Seq(a, b) => num.minus(b, a) } .toSeq
+
+    override def name = "SeqDifferentiate"
+
+    def adjuncts: List[Adjunct] = num :: Nil
+  }
+
   // ---- String ----
 
   final case class StringIsEmpty() extends NamedOp[String, Boolean] {

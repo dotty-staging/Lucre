@@ -239,12 +239,10 @@ object Adjunct {
 
   type ScalarNum[A] = Num[A] with Scalar[A]
 
-  trait NumFrac[A] extends Num[A] {
+  trait NumFrac[A] extends NumDiv[A] {
     def floor (a: A): A
     def ceil  (a: A): A
     def frac  (a: A): A
-
-    def div   (a: A, b: A): A
 
     def reciprocal(a: A): A
   }
@@ -263,7 +261,12 @@ object Adjunct {
 
   type ScalarNumBool[A] = NumBool[A] with Scalar[A]
 
-  trait NumInt[A] extends Num[A] with NumLogic[A] {
+  // abstracts integer and decimal division
+  trait NumDiv[A] extends Num[A] {
+    def div(a: A, b: A): A
+  }
+
+  trait NumInt[A] extends NumDiv[A] with NumLogic[A] {
     def not   (a: A): A
 
     def and   (a: A, b: A): A
@@ -276,8 +279,6 @@ object Adjunct {
     def shiftLeft         (a: A, b: A): A
     def shiftRight        (a: A, b: A): A
     def unsignedShiftRight(a: A, b: A): A
-
-    def div     (a: A, b: A): A
   }
 
   type ScalarNumInt[A] = NumInt[A] with Scalar[A]
@@ -302,6 +303,8 @@ object Adjunct {
   }
   trait WidenToDouble[A1, A] extends Widen[A1, A] with NumDouble[A]
 
+  // NOTE: for backwards serialization compatibility (`BinaryOp.Div`), it is important
+  // that `NumDouble` extends `NumFrac`
   trait NumDouble[A] extends NumFrac[A] {
     def sqrt      (a: A): A
     def exp       (a: A): A

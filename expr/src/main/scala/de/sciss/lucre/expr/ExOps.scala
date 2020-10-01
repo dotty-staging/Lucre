@@ -15,8 +15,8 @@ package de.sciss.lucre.expr
 
 import java.io.{File => _File}
 
-import de.sciss.lucre.Adjunct.{Eq, HasDefault, Num, NumBool, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, QuinaryOp => QuinOp, ToTrig, Trig, BinaryOp => BinOp, TernaryOp => TernOp, UnaryOp => UnOp, QuaternaryOp => QuadOp}
+import de.sciss.lucre.Adjunct.{Eq, HasDefault, Num, NumBool, NumDiv, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
+import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, File, Latch, Obj, ToTrig, Trig, BinaryOp => BinOp, QuaternaryOp => QuadOp, QuinaryOp => QuinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 // XXX TODO --- use constant optimizations
@@ -77,7 +77,8 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def +  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Plus [A, A1, A2](), x, that)
   def -  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Minus[A, A1, A2](), x, that)
   def *  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Times[A, A1, A2](), x, that)
-  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
+//  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
+  def /  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: NumDiv [A2]): Ex[A2] = BinOp(BinOp.Div  [A, A1, A2](), x, that)
   def %  [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.ModJ [A, A1, A2](), x, that)
   def mod[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num    [A2]): Ex[A2] = BinOp(BinOp.Mod  [A, A1, A2](), x, that)
 
@@ -96,8 +97,8 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def |   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
   def ^   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
 
-  /** Integer division */
-  def /   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.IDiv[A](), x, that)
+//  /** Integer division */
+//  def /   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.IDiv[A](), x, that)
 
   /** Currently a shortcut for `&`. */
   def &&  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.And   [A](), x, that)
@@ -219,6 +220,8 @@ final class ExStringOps(private val x: Ex[String]) extends AnyVal {
   /** Applies 'printf' style formatting. See `StringFormat` for details.
    */
   def format(args: Ex[Any]*): Ex[String] = graph.StringFormat(x, args)
+
+  def split(regex: Ex[String], limit: Ex[Int] = 0): Ex[Seq[String]] = TernOp(TernOp.StringSplit(), x, regex, limit)
 }
 
 // TODO:
@@ -454,6 +457,10 @@ final class ExSeqOps[A](private val x: Ex[Seq[A]]) extends AnyVal {
   def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]] = BinOp(BinOp.SeqZip[A, B](), x, that)
 
   def zipWithIndex: Ex[Seq[(A, Int)]] = UnOp(UnOp.SeqZipWithIndex[A](), x)
+
+  def integrate(implicit num: Num[A]): Ex[Seq[A]] = UnOp(UnOp.SeqIntegrate[A](), x)
+
+  def differentiate(implicit num: Num[A]): Ex[Seq[A]] = UnOp(UnOp.SeqDifferentiate[A](), x)
 }
 
 final class ExSpanOps[A <: _SpanLike](private val x: Ex[A]) extends AnyVal {

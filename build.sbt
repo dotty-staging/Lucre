@@ -13,7 +13,7 @@ lazy val deps = new {
   val core = new {
     val equal         = "0.1.5"
     val model         = "0.3.5"
-    val scalaSTM      = "0.10.0-SNAPSHOT"
+    val scalaSTM      = "0.10.0"
   }
   val expr = new {
     def equal: String = core.equal
@@ -36,8 +36,8 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.13.3",  // "0.27.0-RC1",
-  crossScalaVersions  := Seq("0.27.0-RC1", "2.13.3", "2.12.12"),
+  scalaVersion        := "2.13.3",
+  crossScalaVersions  := Seq(/* "0.27.0-RC1", */ "2.13.3", "2.12.12"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),

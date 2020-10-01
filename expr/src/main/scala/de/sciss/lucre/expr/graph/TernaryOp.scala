@@ -14,6 +14,8 @@
 package de.sciss.lucre.expr
 package graph
 
+import java.util.regex.PatternSyntaxException
+
 import de.sciss.lucre.Adjunct.{Num, Widen2}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
@@ -71,6 +73,17 @@ object TernaryOp {
     def apply(a: String, b: Int, c: Int): String = a.slice(b, c)
 
     def name = "StringSlice"
+  }
+
+  final case class StringSplit() extends NamedOp[String, String, Int, Seq[String]] {
+    def apply(s: String, regex: String, limit: Int): Seq[String] =
+      try {
+        s.split(regex, limit)
+      } catch {
+        case _: PatternSyntaxException => Nil
+      }
+
+    def name = "StringSplit"
   }
 
   // ---- Seq ----

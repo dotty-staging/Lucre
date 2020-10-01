@@ -15,7 +15,7 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.file._
-import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDouble, NumFrac, NumInt, NumLogic, Ord, Widen2}
+import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDiv, NumDouble, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.span.SpanLike
@@ -67,8 +67,8 @@ object BinaryOp {
     override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
-  /** Division, _not_ integer division */
-  final case class Div[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumFrac[C])
+  /** Division */
+  final case class Div[A, B, C]()(implicit widen: Widen2[A, B, C], num: NumDiv[C])
     extends NamedOp[A, B, C] with ProductWithAdjuncts {
 
     def apply(a: A, b: B): C = num.div(widen.widen1(a), widen.widen2(b))
@@ -218,6 +218,8 @@ object BinaryOp {
     override def adjuncts: Adjuncts = num :: Nil
   }
 
+  // NOTE: keep this class for backward serialization compatibility!
+  // But in general `Div` kicks in now.
   final case class IDiv[A]()(implicit num: NumInt[A])
     extends NamedOp[A, A, A] with ProductWithAdjuncts {
 
