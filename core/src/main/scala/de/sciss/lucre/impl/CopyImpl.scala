@@ -72,8 +72,8 @@ final class CopyImpl[In <: Txn[In], Out <: Txn[Out]](implicit txIn: In, txOut: O
 //        }
 
         if (in.isInstanceOf[Obj[_]] && out.isInstanceOf[Obj[_]]) {
-          val inObj   = in.asInstanceOf[Obj[In  ]]
-          val outObj  = in.asInstanceOf[Obj[Out ]]
+          val inObj   = in .asInstanceOf[Obj[In ]]
+          val outObj  = out.asInstanceOf[Obj[Out]]
           deferred += (() => copyAttr(inObj, outObj))
         }
 
