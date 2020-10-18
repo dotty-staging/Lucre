@@ -75,7 +75,9 @@ lazy val root = project.withId(baseNameL).in(file("."))
     core      .jvm, core      .js,
     expr      .jvm, expr      .js,
     confluent .jvm, confluent .js,
-    bdb
+    bdb,
+    tests     .jvm, tests     .js,
+    testsJVM,
   )
 //  .dependsOn(base, adjunct, geom, data, core, expr, confluent, bdb)
   .settings(commonSettings)
@@ -137,7 +139,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
   .settings(
     name := s"$baseName-core",
     libraryDependencies ++= Seq(
-      "de.sciss"      %%% "equal"     % deps.core.equal % Provided,
+      "de.sciss"      %%% "equal"     % deps.core.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
       "de.sciss"      %%% "model"     % deps.core.model,
       "org.scala-stm" %%% "scala-stm" % deps.core.scalaSTM
     ),
@@ -163,7 +165,7 @@ lazy val expr = crossProject(JSPlatform, JVMPlatform).in(file("expr"))
   .settings(
     name := s"$baseName-expr",
     libraryDependencies ++= Seq(
-      "de.sciss" %%% "equal"     % deps.expr.equal % Provided,
+      "de.sciss" %%% "equal"     % deps.expr.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
       "de.sciss" %%% "span"      % deps.expr.span,
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
@@ -194,6 +196,28 @@ lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
   .settings(
     libraryDependencies += "de.sciss" % "bdb-je" % deps.bdb.sleepy7,
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
+  )
+
+lazy val tests = crossProject(JSPlatform, JVMPlatform).in(file("tests"))
+  .dependsOn(core, expr, confluent)
+  .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
+  .settings(
+    name := s"$baseName-tests",
+    publishArtifact in (Compile, packageBin) := false, // there are no binaries
+    publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
+    publishArtifact in (Compile, packageSrc) := false, // there are no sources
+  )
+
+lazy val testsJVM = project.in(file("testsJVM"))
+  .dependsOn(core.jvm, expr.jvm, confluent.jvm, bdb)
+  .settings(commonSettings)
+  .settings(commonJvmSettings)
+  .settings(
+    name := s"$baseName-testsJVM",
+    publishArtifact in (Compile, packageBin) := false, // there are no binaries
+    publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
+    publishArtifact in (Compile, packageSrc) := false, // there are no sources
   )
 
 lazy val loggingEnabled = true  // only effective for snapshot versions

@@ -1,5 +1,6 @@
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.expr.BiPinSpec.BiPinOps
 import de.sciss.lucre.{BiPin, IntObj, LongObj, Source, Txn}
 import de.sciss.model.Change
 
@@ -19,7 +20,6 @@ object BiPinSpec {
 
   */
 class BiPinSpec extends ConfluentEventSpec {
-  import BiPinSpec.BiPinOps
 
   type LE = LongObj[T]
   type IE = IntObj [T]

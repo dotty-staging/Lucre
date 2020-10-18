@@ -1,7 +1,8 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.{Confluent, Durable, confluent}
+import de.sciss.lucre.{Confluent, Durable}
 import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.lucre.confluent
 import org.scalatest.Outcome
 import org.scalatest.flatspec.FixtureAnyFlatSpec
 import org.scalatest.matchers.should.Matchers

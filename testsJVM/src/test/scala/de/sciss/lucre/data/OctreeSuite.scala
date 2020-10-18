@@ -14,10 +14,11 @@
 package de.sciss.lucre.data
 
 import de.sciss.lucre.geom.IntDistanceMeasure3D.MS
+import de.sciss.lucre.TestUtil
 import de.sciss.lucre.geom.IntSpace.ThreeDim
 import de.sciss.lucre.geom.{DistanceMeasure, IntCube, IntDistanceMeasure3D, IntPoint3D, IntPoint3DLike, QueryShape}
 import de.sciss.lucre.store.BerkeleyDB
-import de.sciss.lucre.{Cursor, Durable, InMemory, Sys, TestUtil, Txn}
+import de.sciss.lucre.{Cursor, Durable, InMemory, Sys, Txn}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 

@@ -155,7 +155,7 @@ class BiGroupSpec extends ConfluentEventSpec {
       (Span(-10000,  8000), "span1" ),
       (Span( 10000, 20000), "span2" ),
       (Span( 30000, 40000), "span3" ),
-      (Span( 50000, 60000), "span4" )
+      (Span( 50000, 60000), "span4" ),
     )
 
     implicit val ser = BiGroup.Modifiable.format[T, StringObj[T]] // WTF -- why is this not inferred?
