@@ -21,6 +21,7 @@ import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.{Adjunct, Disposable, IExpr, ProductWithAdjuncts, Source, Txn, Artifact => _Artifact, ArtifactLocation => _ArtifactLocation, Obj => LObj}
 import de.sciss.serial.DataInput
+import de.sciss.lucre.expr.ExImport.fileIsValue
 
 import scala.util.{Failure, Success, Try}
 

@@ -14,7 +14,6 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.file._
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
@@ -23,7 +22,7 @@ import de.sciss.lucre.{Adjunct, Exec, IExpr, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.model.Change
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
-object UnaryOp {
+object UnaryOp extends UnaryOpPlatform {
   abstract class Op[A1, A2] extends Product {
     def apply(a: A1): A2
   }
@@ -685,38 +684,6 @@ object UnaryOp {
     def apply(a: _Span): Long = a.length
 
     override def name = "SpanLength"
-  }
-
-  // ---- File ----
-
-  final case class FileParentOption() extends NamedOp[File, Option[File]] {
-    def apply(a: File): Option[File] = a.parentOption
-
-    def name = "FileParentOption"
-  }
-
-  final case class FilePath() extends NamedOp[File, String] {
-    def apply(a: File): String = a.path
-
-    def name = "FilePath"
-  }
-
-  final case class FileName() extends NamedOp[File, String] {
-    def apply(a: File): String = a.name
-
-    def name = "FileName"
-  }
-
-  final case class FileBase() extends NamedOp[File, String] {
-    def apply(a: File): String = a.base
-
-    def name = "FileBase"
-  }
-
-  final case class FileExtL() extends NamedOp[File, String] {
-    def apply(a: File): String = a.extL
-
-    def name = "FileExtL"
   }
 
   // ---- Impl ----

@@ -14,13 +14,12 @@
 package de.sciss.lucre.expr
 package graph
 
-import de.sciss.file._
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDiv, NumDouble, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.span.SpanLike
 
-object BinaryOp {
+object BinaryOp extends BinaryOpPlatform {
   abstract class Op[A, B, C] extends Product {
     def apply(a: A, b: B): C
   }
@@ -705,26 +704,6 @@ object BinaryOp {
     def apply(a: SpanLike, b: SpanLike): SpanLike = a.intersect(b)
 
     def name = "SpanLikeIntersect"
-  }
-
-  // ---- File ----
-
-  final case class FileReplaceExt() extends NamedOp[File, String, File] {
-    def apply(a: File, s: String): File = a.replaceExt(s)
-
-    def name = "FileReplaceExt"
-  }
-
-  final case class FileReplaceName() extends NamedOp[File, String, File] {
-    def apply(a: File, s: String): File = a.replaceName(s)
-
-    def name: String = "FileReplaceName"
-  }
-
-  final case class FileChild() extends NamedOp[File, String, File] {
-    def apply(a: File, s: String): File = a./(s)
-
-    def name: String = "FileChild"
   }
 
   // ---- Impl ----

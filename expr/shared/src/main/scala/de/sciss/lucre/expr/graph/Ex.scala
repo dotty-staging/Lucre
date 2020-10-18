@@ -13,18 +13,16 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.equal.Implicits._
-import de.sciss.file.{File => _File}
-import de.sciss.lucre.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
+import de.sciss.lucre.Adjunct.{FromAny, HasDefault}
 import de.sciss.lucre.{Adjunct, IExpr, Txn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, ExPlatform}
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
 
-object Ex {
+object Ex extends ExPlatform {
   // ---- implicits ----
 
   implicit def const[A: Value](x: A): Ex[A] = Const(x)
@@ -43,7 +41,6 @@ object Ex {
   object Value {
     implicit object anyVal    extends Value[AnyVal    ]
     implicit object string    extends Value[String    ]
-    implicit object file      extends Value[_File]
     implicit object spanLike  extends Value[_SpanLike ]
 //    implicit object act       extends Value[Act       ]
 
@@ -74,7 +71,6 @@ object Ex {
   implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
   implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
   implicit def spanOps[A <: _SpanLike](x: Ex[A]): ExSpanOps   [A]     = new ExSpanOps   (x)
-  implicit def fileOps        (x: Ex[_File])    : ExFileOps           = new ExFileOps   (x)
 
   //////////////////////////////
 
@@ -96,10 +92,12 @@ object Ex {
     Adjunct.addFactory(CanFlatMapSeqToAct     )
     Adjunct.addFactory(SpanLikeTop            )
     Adjunct.addFactory(SpanTop                )
-    Adjunct.addFactory(FileTop                )
   }
 
-  def init(): Unit = _init
+  def init(): Unit = {
+    _init
+    _initPlatform
+  }
 
   final case class MapExOption[A, B] private (in: Ex[Option[A]], it: It[A], fun: Ex[B])
     extends Ex[Option[B]] {
@@ -366,9 +364,8 @@ object Ex {
 
   // ---- further adjuncts ----
 
-  def spanLikeTop : FromAny[_SpanLike ] with HasDefault[_SpanLike]                        = SpanLikeTop
-  def spanTop     : FromAny[_Span     ] with HasDefault[_Span    ]                        = SpanTop
-  def fileTop     : FromAny[_File     ] with HasDefault[_File    ] with ScalarOrd[_File]  = FileTop
+  def spanLikeTop : FromAny[_SpanLike ] with HasDefault[_SpanLike] = SpanLikeTop
+  def spanTop     : FromAny[_Span     ] with HasDefault[_Span    ] = SpanTop
 
   private object SpanLikeTop extends FromAny[_SpanLike] with HasDefault[_SpanLike] with Adjunct.Factory {
     final val id = 1007
@@ -394,28 +391,6 @@ object Ex {
       case s: _Span     => Some(s)
       case _            => None
     }
-  }
-
-  private object FileTop extends FromAny[_File] with HasDefault[_File] with Ord[_File] with Scalar[_File]
-    with Adjunct.Factory {
-
-    final val id = 1015
-
-    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
-
-    def defaultValue: _File = new _File("") // by convention
-
-    def fromAny(in: Any): Option[_File] = in match {
-      case v: _File     => Some(v)
-      case _            => None
-    }
-
-    def lt  (a: _File, b: _File): Boolean = _File.NameOrdering.lt(a, b)
-    def lteq(a: _File, b: _File): Boolean = _File.NameOrdering.lteq(a, b)
-    def gt  (a: _File, b: _File): Boolean = _File.NameOrdering.gt(a, b)
-    def gteq(a: _File, b: _File): Boolean = _File.NameOrdering.gteq(a, b)
-    def eq  (a: _File, b: _File): Boolean = _File.NameOrdering.compare(a, b) === 0
-    def neq (a: _File, b: _File): Boolean = _File.NameOrdering.compare(a, b) !== 0
   }
 }
 trait Ex[+A] extends Lazy {
