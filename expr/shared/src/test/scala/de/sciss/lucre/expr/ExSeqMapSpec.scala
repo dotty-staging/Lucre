@@ -5,6 +5,11 @@ import de.sciss.lucre.{DoubleObj, DoubleVector, InMemory, IntObj, IntVector, Wor
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+/*
+
+    testOnly de.sciss.lucre.expr.ExSeqMapSpec
+
+ */
 class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   type S = InMemory
   type T = InMemory.Txn
@@ -44,9 +49,15 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
       """out = 1.0, 1.41, 2.0
         |out = 0.71, 1.0
         |""".stripMargin
+        
+    // gosh this sucks. "we want to be special, we give a toss about cross-platform compatibility"
+    val expJS: String =
+      """out = 1, 1.41, 2
+        |out = 0.71, 1
+        |""".stripMargin
 
 //    assert (res === exp)
-    assert (res == exp)     // triple-equals problem with sjs
+    assert (res == exp || res == expJS)     // triple-equals problem with sjs
   }
 
   it should "correctly observe expressions from the closure" in {
@@ -97,10 +108,19 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         |out = 8.0, 7.0
         |""".stripMargin
 
+    // gosh this sucks. "we want to be special, we give a toss about cross-platform compatibility"
+    val expJS: String =
+      """out = 0, 3, 6
+        |out = 1, 2, 3
+        |out = 11, 12, 13
+        |out = 6, 5
+        |out = 8, 7
+        |""".stripMargin
+
 //    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
 //    assert (res === exp)
-    assert (res == exp)     // triple-equals problem with sjs
+    assert (res == exp || res == expJS)     // triple-equals problem with sjs
   }
 
   it should "correctly observe more expressions from the closure" in {
