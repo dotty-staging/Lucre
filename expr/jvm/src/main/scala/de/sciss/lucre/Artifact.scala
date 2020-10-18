@@ -13,8 +13,7 @@
 
 package de.sciss.lucre
 
-import java.io.File
-
+import de.sciss.file.File
 import de.sciss.lucre.impl.{ArtifactImpl => Impl}
 import de.sciss.serial.{DataInput, TFormat}
 

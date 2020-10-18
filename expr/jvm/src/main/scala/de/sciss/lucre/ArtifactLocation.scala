@@ -13,7 +13,7 @@
 
 package de.sciss.lucre
 
-import java.io.File
+import de.sciss.file.File
 
 import de.sciss.lucre
 import de.sciss.lucre.Event.Targets
@@ -26,10 +26,7 @@ object ArtifactLocation extends ExprTypeImpl[File, ArtifactLocation] {
   final val typeId = 0x10003
 
   def tmp[T <: Txn[T]]()(implicit tx: T): Const[T] = {
-    val dir   = File.createTempFile("artifacts", "tmp")
-    dir.delete()
-    dir.mkdir()
-    dir.deleteOnExit()
+    val dir   = File.createTemp("artifacts", "tmp", directory = true)
     newConst(dir)
   }
 

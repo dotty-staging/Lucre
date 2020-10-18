@@ -44,8 +44,9 @@ object LucreExpr {
     ListObj           .init()
     Folder            .init()
     MapObj            .init()
-    Artifact          .init()
-    ArtifactLocation  .init()
+    // SJSXXX
+//    Artifact          .init()
+//    ArtifactLocation  .init()
 
     BiPin             .init()
     BiGroup           .init()

@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.0.1"
-lazy val mimaVersion      = "4.0.1"
+lazy val projectVersion   = "4.1.0-SNAPSHOT"
+lazy val mimaVersion      = "4.1.0"
 
 lazy val deps = new {
   val base = new {
@@ -11,9 +11,9 @@ lazy val deps = new {
     val numbers       = "0.2.1"
   }
   val core = new {
-    val equal         = "0.1.5"
+    val equal         = "0.1.6-SNAPSHOT"
     val model         = "0.3.5"
-    val scalaSTM      = "0.10.0"
+    val scalaSTM      = "0.11.0-SNAPSHOT"
   }
   val expr = new {
     def equal: String = core.equal
@@ -31,13 +31,16 @@ lazy val deps = new {
   }
 }
 
+lazy val commonJvmSettings = Seq(
+  crossScalaVersions  := Seq(/* "0.27.0-RC1", */ "2.13.3", "2.12.12"),
+)
+
 lazy val commonSettings = Seq(
   version             := projectVersion,
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.13.3",
-  crossScalaVersions  := Seq(/* "0.27.0-RC1", */ "2.13.3", "2.12.12"),
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
@@ -55,7 +58,7 @@ lazy val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
   libraryDependencies += {
-    "org.scalatest" %% "scalatest" % deps.test.scalaTest % Test
+    "org.scalatest" %%% "scalatest" % deps.test.scalaTest % Test
   },
   licenses := Seq(agpl),
 ) ++ publishSettings
@@ -64,8 +67,17 @@ lazy val agpl = "AGPL v3+" -> url("http://www.gnu.org/licenses/agpl-3.0.txt")
 
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
-  .aggregate(base, adjunct, geom, data, core, expr, confluent, bdb)
-  .dependsOn(base, adjunct, geom, data, core, expr, confluent, bdb)
+  .aggregate(
+    base      .jvm, base      .js,
+    adjunct   .jvm, adjunct   .js,
+    geom      .jvm, geom      .js,
+    data      .jvm, data      .js,
+    core      .jvm, core      .js,
+    expr      .jvm, expr      .js,
+    confluent .jvm, confluent .js,
+    bdb
+  )
+//  .dependsOn(base, adjunct, geom, data, core, expr, confluent, bdb)
   .settings(commonSettings)
   .settings(
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
@@ -74,53 +86,60 @@ lazy val root = project.withId(baseNameL).in(file("."))
     mimaFailOnNoPrevious := false
   )
 
-lazy val base = project.in(file("base"))
+lazy val base = crossProject(JSPlatform, JVMPlatform).in(file("base"))
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(
     name := s"$baseName-base",
     libraryDependencies ++= Seq(
-      "de.sciss"      %% "serial"     % deps.base.serial,
-      "org.scalatest" %% "scalatest"  % deps.test.scalaTest % Test
+      "de.sciss" %%% "serial" % deps.base.serial,
     ),
   )
 
-lazy val geom = project.withId(s"$baseNameL-geom").in(file("geom"))
+lazy val geom = crossProject(JSPlatform, JVMPlatform).in(file("geom"))
   .dependsOn(base)    // XXX TODO --- this is just because of new serializers
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(
+    name := s"$baseName-geom",
     libraryDependencies ++= Seq(
-      "de.sciss" %% "serial" % deps.base.serial
+      "de.sciss" %%% "serial" % deps.base.serial
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-geom" % mimaVersion)
   )
 
-lazy val adjunct = project.withId(s"$baseNameL-adjunct").in(file("adjunct"))
+lazy val adjunct = crossProject(JSPlatform, JVMPlatform).in(file("adjunct"))
   .dependsOn(base)
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(
+    name := s"$baseName-adjunct",
     libraryDependencies ++= Seq(
-      "de.sciss" %% "numbers" % deps.adjunct.numbers
+      "de.sciss" %%% "numbers" % deps.adjunct.numbers
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-adjunct" % mimaVersion)
   )
 
-lazy val data = project.in(file("data"))
+lazy val data = crossProject(JSPlatform, JVMPlatform).in(file("data"))
   .dependsOn(base, geom)
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(
     name := s"$baseName-data",
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-data" % mimaVersion)
   )
 
-lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
+lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
   .dependsOn(data)
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(
+    name := s"$baseName-core",
     libraryDependencies ++= Seq(
-      "de.sciss"      %% "equal"     % deps.core.equal % Provided,
-      "de.sciss"      %% "model"     % deps.core.model,
-      "org.scala-stm" %% "scala-stm" % deps.core.scalaSTM
+      "de.sciss"      %%% "equal"     % deps.core.equal % Provided,
+      "de.sciss"      %%% "model"     % deps.core.model,
+      "org.scala-stm" %%% "scala-stm" % deps.core.scalaSTM
     ),
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
       BuildInfoKey.map(homepage) {
@@ -134,31 +153,44 @@ lazy val core = project.withId(s"$baseNameL-core").in(file("core"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
-lazy val expr = project.withId(s"$baseNameL-expr").in(file("expr"))
+lazy val expr = crossProject(JSPlatform, JVMPlatform).in(file("expr"))
   .dependsOn(core, adjunct)
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
+  .jsSettings(
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % "1.0.0",  // SimpleDateFormat
+  )
   .settings(
+    name := s"$baseName-expr",
     libraryDependencies ++= Seq(
-      "de.sciss" %% "equal"     % deps.expr.equal % Provided,
-      "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
-      "de.sciss" %% "span"      % deps.expr.span,
+      "de.sciss" %%% "equal"     % deps.expr.equal % Provided,
+      "de.sciss" %%% "span"      % deps.expr.span,
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
+  .jvmSettings(
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
+    ),
+  )
 
-lazy val confluent = project.withId(s"$baseNameL-confluent").in(file("confluent"))
+lazy val confluent = crossProject(JSPlatform, JVMPlatform).in(file("confluent"))
   .dependsOn(core)
   .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
   .settings(
+    name := s"$baseName-confluent",
     libraryDependencies ++= Seq(
-      "de.sciss" %% "fingertree" % deps.confluent.finger
+      "de.sciss" %%% "fingertree" % deps.confluent.finger
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-confluent" % mimaVersion)
   )
 
+// JVM only
 lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
-  .dependsOn(core)
+  .dependsOn(core.jvm)
   .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies += "de.sciss" % "bdb-je" % deps.bdb.sleepy7,
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)

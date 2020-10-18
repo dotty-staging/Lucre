@@ -30,7 +30,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
 
     import Workspace.Implicits._
 
-    val res = captureConsole {
+    val res: String = captureConsole {
       system.step { implicit tx =>
         val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
@@ -40,12 +40,13 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         self.attr.put("in", DoubleVector.newConst(Vector(-3.0, 0.0)))
       }
     }
-    val exp =
+    val exp: String =
       """out = 1.0, 1.41, 2.0
         |out = 0.71, 1.0
         |""".stripMargin
 
-    assert (res === exp)
+//    assert (res === exp)
+    assert (res == exp)     // triple-equals problem with sjs
   }
 
   it should "correctly observe expressions from the closure" in {
@@ -70,7 +71,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
 
     import Workspace.Implicits._
 
-    val res = captureConsole {
+    val res: String = captureConsole {
       system.step { implicit tx =>
         val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
@@ -88,7 +89,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         vr2() = 12.0
       }
     }
-    val exp =
+    val exp: String =
       """out = 0.0, 3.0, 6.0
         |out = 1.0, 2.0, 3.0
         |out = 11.0, 12.0, 13.0
@@ -98,7 +99,8 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
 
 //    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
-    assert (res === exp)
+//    assert (res === exp)
+    assert (res == exp)     // triple-equals problem with sjs
   }
 
   it should "correctly observe more expressions from the closure" in {
@@ -119,7 +121,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
 
     import Workspace.Implicits._
 
-    val res = captureConsole {
+    val res: String = captureConsole {
       system.step { implicit tx =>
         val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
@@ -132,7 +134,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         vr() = Vector()
       }
     }
-    val exp =
+    val exp: String =
       """out = [6, 8, 11]
         |out = [15, 23]
         |out = [15, 22]
@@ -141,6 +143,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
 
 //    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
-    assert (res === exp)
+//    assert (res === exp)
+    assert (res == exp)     // triple-equals problem with sjs
   }
 }

@@ -26,7 +26,7 @@ class ExSeqFlatMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutp
 
     import Workspace.Implicits._
 
-    val res = captureConsole {
+    val res: String = captureConsole {
       system.step { implicit tx =>
         val self = IntObj.newConst(0): IntObj[T]
         val selfH = tx.newHandle(self)
@@ -45,12 +45,13 @@ class ExSeqFlatMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutp
         g.expand.initControl()
       }
     }
-    val exp =
+    val exp: String =
       """foo bar quux
         |""".stripMargin
 
 //    Console.err.println(s"---- EXP ----\n\n$exp\n\n---- RES ----\n\n$res\n")
 
-    assert (res === exp)
+//    assert (res === exp)
+    assert (res == exp)     // triple-equals problem with sjs
   }
 }

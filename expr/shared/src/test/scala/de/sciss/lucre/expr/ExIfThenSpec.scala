@@ -40,9 +40,9 @@ class ExIfThenSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
   }
 
   "If-Then-Else" should "work as expected" in {
-    val tTrue   = run(condV = true  )
-    val tFalse  = run(condV = false )
-    val eTrue   =
+    val tTrue : String  = run(condV = true  )
+    val tFalse: String  = run(condV = false )
+    val eTrue : String  =
       """cond: true
         |hello-S
         |hello-A
@@ -53,7 +53,10 @@ class ExIfThenSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         |world-A
         |""".stripMargin
 
-    assert (tTrue   === eTrue)
-    assert (tFalse  === eFalse)
+//    assert (tTrue   === eTrue)
+//    assert (tFalse  === eFalse)
+
+    assert (tTrue  == eTrue )   // triple-equals problem with sjs
+    assert (tFalse == eFalse)   // triple-equals problem with sjs
   }
 }

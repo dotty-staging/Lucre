@@ -14,16 +14,14 @@
 package de.sciss.lucre
 package impl
 
-import java.io.File
-
-import de.sciss.lucre.Artifact.{Modifiable, Value}
+import de.sciss.file.File
+import de.sciss.lucre.Artifact.{Child, Modifiable, Value}
+import de.sciss.lucre.{ArtifactLocation => Location}
 import de.sciss.lucre.Event.Targets
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, TFormat}
 
 object ArtifactImpl {
-  import Artifact.Child
-  import de.sciss.lucre.{ArtifactLocation => Location}
 
   private final val SER_VERSION = 0x4172
 
