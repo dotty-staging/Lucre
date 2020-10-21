@@ -12,7 +12,7 @@ interface front-end [Mellite](https://git.iem.at/sciss/Mellite).
 Lucre is (C)opyright 2009&ndash;2020 by Hanns Holger Rutz. All rights reserved. 
 All modules are released under 
 the [GNU Affero General Public License](https://git.iem.at/sciss/Lucre/raw/main/LICENSE).
-The software comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+The software comes with absolutely no warranties. To contact the author, send an e-mail to `contact at sciss.de`.
 
 Further reading:
 
@@ -21,7 +21,16 @@ Further reading:
 
 ## requirements / installation
 
-Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12 (last version to support Scala 2.11 is 3.13.1).
+Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12 (JVM) and Scala 2.13 (JS).
+The last version to support Scala 2.11 was v3.13.1.
+
+__N.B.__: On Scala.js, currently the types `Artifact` and `ArtifactLocation` are missing, as there is no notion of
+the underlying `java.io.File`. In the future, we might change the API to support more generic paths or URIs instead
+of plain files. Furthermore, the package `bdb` is not available on Scala.js, meaning there is currently no
+persistent database back-end available, and you will have to stick to `InMemory` systems. `Ex`
+serialization will currently fail at link time due to the dependency on reflection which is not supported under
+Scala.js. The currently published version for Scala.js should thus be regarded as aiding experiments with Scala.js
+only.
 
 ## linking to Lucre
 
@@ -48,7 +57,7 @@ Or just for a selected module:
 
 Where `{module}` is any of the above names.
 
-The current version `v` is `"4.0.1"`.
+The current version `v` is `"4.1.0"`.
 
 ## contributing
 

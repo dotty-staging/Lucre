@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.1.0-SNAPSHOT"
+lazy val projectVersion   = "4.1.0"
 lazy val mimaVersion      = "4.1.0"
 
 lazy val deps = new {
@@ -81,6 +81,7 @@ lazy val root = project.withId(baseNameL).in(file("."))
   )
 //  .dependsOn(base, adjunct, geom, data, core, expr, confluent, bdb)
   .settings(commonSettings)
+  .settings(noPublishSettings)
   .settings(
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
@@ -201,6 +202,7 @@ lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
 lazy val tests = crossProject(JSPlatform, JVMPlatform).in(file("tests"))
   .dependsOn(core, expr, confluent)
   .settings(commonSettings)
+  .settings(noPublishSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
     name := s"$baseName-tests",
@@ -213,6 +215,7 @@ lazy val tests = crossProject(JSPlatform, JVMPlatform).in(file("tests"))
 lazy val testsJVM = project.in(file("testsJVM"))
   .dependsOn(core.jvm, expr.jvm, confluent.jvm, bdb)
   .settings(commonSettings)
+  .settings(noPublishSettings)
   .settings(commonJvmSettings)
   .settings(
     name := s"$baseName-testsJVM",
@@ -249,4 +252,9 @@ lazy val publishSettings = Seq(
         </developer>
       </developers>
   }
+)
+
+lazy val noPublishSettings = Seq(
+  publish := {},
+  publishArtifact := false,
 )
