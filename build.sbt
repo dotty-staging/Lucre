@@ -11,9 +11,9 @@ lazy val deps = new {
     val numbers       = "0.2.1"
   }
   val core = new {
-    val equal         = "0.1.6-SNAPSHOT"
+    val equal         = "0.1.6"
     val model         = "0.3.5"
-    val scalaSTM      = "0.11.0-SNAPSHOT"
+    val scalaSTM      = "0.11.0"
   }
   val expr = new {
     def equal: String = core.equal
@@ -209,6 +209,7 @@ lazy val tests = crossProject(JSPlatform, JVMPlatform).in(file("tests"))
     publishArtifact in (Compile, packageSrc) := false, // there are no sources
   )
 
+// XXX TODO. we could use `.jvmConfigure(_.dependsOn(bdb))` for `tests` instead
 lazy val testsJVM = project.in(file("testsJVM"))
   .dependsOn(core.jvm, expr.jvm, confluent.jvm, bdb)
   .settings(commonSettings)
