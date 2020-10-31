@@ -161,6 +161,7 @@ lazy val expr = crossProject(JSPlatform, JVMPlatform).in(file("expr"))
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .jsSettings(
+    // XXX TODO: this library is not meant for production; remove and change logging
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % "1.0.0",  // SimpleDateFormat
   )
   .settings(
