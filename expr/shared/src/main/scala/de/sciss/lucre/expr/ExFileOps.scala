@@ -1,13 +1,26 @@
+/*
+ *  ExURIOps.scala
+ *  (Lucre 4)
+ *
+ *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is published under the GNU Affero General Public License v3+
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{Act, Ex, File, UnaryOp => UnOp, BinaryOp => BinOp}
-import de.sciss.file.{File => _File}
+import java.net.{URI => _URI}
+import de.sciss.lucre.expr.graph.{Act, Ex, File, BinaryOp => BinOp, UnaryOp => UnOp}
 
-final class ExFileOps(private val x: Ex[_File]) extends AnyVal {
+final class ExFileOps(private val x: Ex[_URI]) extends AnyVal {
   // ---- expressions ----
 
   /** Returns the parent directory if it exists. */
-  def parentOption: Ex[Option[_File]] =
+  def parentOption: Ex[Option[_URI]] =
     UnOp(UnOp.FileParentOption(), x)
 
   /** Returns the string representation of the file's path. */
@@ -29,14 +42,14 @@ final class ExFileOps(private val x: Ex[_File]) extends AnyVal {
     UnOp(UnOp.FileExtL(), x)  // ! simplify and use lower case here
 
   /** Replaces the extension part of this file. Parameter `s` may or may not contain a leading period. */
-  def replaceExt(s: Ex[String]): Ex[_File] =
+  def replaceExt(s: Ex[String]): Ex[_URI] =
     BinOp(BinOp.FileReplaceExt(), x, s)
 
   /** Replaces the name part of this file, keeping the parent directory. */
-  def replaceName(s: Ex[String]): Ex[_File] =
+  def replaceName(s: Ex[String]): Ex[_URI] =
     BinOp(BinOp.FileReplaceName(), x, s)
 
-  def / (child: Ex[String]): Ex[_File] =
+  def / (child: Ex[String]): Ex[_URI] =
     BinOp(BinOp.FileChild(), x, child)
 
   // ---- actions ----
@@ -50,5 +63,5 @@ final class ExFileOps(private val x: Ex[_File]) extends AnyVal {
   // ---- hybrid ----
 
   /** Lists the contains of a directory */
-  def list: Ex[Seq[_File]] with Act = File.List(x)
+  def list: Ex[Seq[_URI]] with Act = File.List(x)
 }

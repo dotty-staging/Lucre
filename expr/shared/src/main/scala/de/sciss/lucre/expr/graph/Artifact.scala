@@ -13,15 +13,17 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.file._
+import java.io.IOException
+import java.net.URI
+
 import de.sciss.lucre.Obj.AttrMap
 import de.sciss.lucre.edit.{EditArtifact, EditAttrMap}
-import de.sciss.lucre.expr.{CellView, Context}
+import de.sciss.lucre.expr.graph.UnaryOp.FileParentOption
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
+import de.sciss.lucre.expr.{CellView, Context}
 import de.sciss.lucre.{Adjunct, Disposable, IExpr, ProductWithAdjuncts, Source, Txn, Artifact => _Artifact, ArtifactLocation => _ArtifactLocation, Obj => LObj}
 import de.sciss.serial.DataInput
-import de.sciss.lucre.expr.ExImport.fileIsValue
 
 import scala.util.{Failure, Success, Try}
 
@@ -30,43 +32,47 @@ object Artifact {
 
   def init(): Unit = _init
 
-  private final object Bridge extends Obj.Bridge[File] with Adjunct.Factory {
+  private final object Bridge extends Obj.Bridge[URI] with Adjunct.Factory {
     final val id = 2000
 
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
-    def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[File]] =
+    def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[URI]] =
       new ObjCellViewImpl(tx.newHandle(obj.attr), key = key)
 
-    def contextCellView[T <: Txn[T]](key: String)(implicit tx: T, context: Context[T]): CellView[T, Option[File]] =
-      new AbstractCtxCellView[T, File](context.attr, key) {
-        protected def tryParseValue(value: Any)(implicit tx: T): Option[File] = value match {
-          case f: File  => Some(f)
-          case _        => None
+    def contextCellView[T <: Txn[T]](key: String)(implicit tx: T, context: Context[T]): CellView[T, Option[URI]] =
+      new AbstractCtxCellView[T, URI](context.attr, key) {
+        protected def tryParseValue(value: Any)(implicit tx: T): Option[URI] = value match {
+          case f: URI  => Some(f)
+          case _       => None
         }
 
-        protected def tryParseObj(obj: LObj[T])(implicit tx: T): Option[File] = obj match {
+        protected def tryParseObj(obj: LObj[T])(implicit tx: T): Option[URI] = obj match {
           case a: _Artifact[T] => Some(a .value)
           case _               => None
         }
       }
 
-    def cellValue[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): Option[File] =
+    def cellValue[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): Option[URI] =
       obj.attr.$[_Artifact](key).map(_.value)
 
-    def tryParseObj[T <: Txn[T]](obj: LObj[T])(implicit tx: T): Option[File] = obj match {
+    def tryParseObj[T <: Txn[T]](obj: LObj[T])(implicit tx: T): Option[URI] = obj match {
       case a: _Artifact[T]  => Some(a.value)
       case _                => None
     }
   }
 
-  private def tryRelativize[T <: Txn[T]](loc: _ArtifactLocation[T], f: File)(implicit tx: T): Try[_Artifact.Child] =
+  private def tryRelativize[T <: Txn[T]](loc: _ArtifactLocation[T], f: URI)(implicit tx: T): Try[_Artifact.Child] =
     Try(_Artifact.relativize(loc.directory, f))
 
-  private def defaultLocation[T <: Txn[T]](f: File)(implicit tx: T): _ArtifactLocation[T] =
-    _ArtifactLocation.newVar(f.absolute.parent)
+  private def defaultLocation[T <: Txn[T]](f: URI)(implicit tx: T): _ArtifactLocation[T] = {
+    val p = FileParentOption()(f).getOrElse(
+      throw new IOException(s"No parent for $f")
+    )
+    _ArtifactLocation.newVar(p) // f.absolute.parent)
+  }
 
-  private def makeArtifact[T <: Txn[T]](loc: _ArtifactLocation[T], f: File)(implicit tx: T): _Artifact[T] = {
+  private def makeArtifact[T <: Txn[T]](loc: _ArtifactLocation[T], f: URI)(implicit tx: T): _Artifact[T] = {
     val art = tryRelativize(loc, f).toOption.fold[_Artifact[T]]({ // Try#fold not available in Scala 2.11
       _Artifact(defaultLocation(f), f)
     }) { child =>
@@ -76,7 +82,7 @@ object Artifact {
   }
 
   private final class ObjCellViewImpl[T <: Txn[T]](attrH: Source[T, AttrMap[T]], key: String)
-    extends CellView.Var[T, Option[File]] {
+    extends CellView.Var[T, Option[URI]] {
 
     private def attr(implicit tx: T): AttrMap[T] = attrH()
 
@@ -97,9 +103,9 @@ object Artifact {
         case None     => removeImpl(attr)
       }
 
-    private def lift(v: Option[File])(implicit tx: T): Repr =
+    private def lift(v: Option[URI])(implicit tx: T): Repr =
       v match {
-        case Some(f) if f.path.nonEmpty =>
+        case Some(f) if f.getPath.nonEmpty =>
           val loc = repr.fold[_ArtifactLocation[T]](defaultLocation(f))(_.location)
           val art = makeArtifact(loc, f)
           Some(art)
@@ -107,13 +113,13 @@ object Artifact {
         case _ => None
       }
 
-    def apply()(implicit tx: T): Option[File] = repr.map(_.value)
+    def apply()(implicit tx: T): Option[URI] = repr.map(_.value)
 
-    def update(v: Option[File])(implicit tx: T): Unit = {
+    def update(v: Option[URI])(implicit tx: T): Unit = {
       def fallback(): Unit = repr_=(lift(v))
 
       v match {
-        case Some(f) if f.path.nonEmpty =>
+        case Some(f) if f.getHost.nonEmpty =>
           repr match {
             case Some(am: _Artifact.Modifiable[T]) =>
               tryRelativize(am.location, f) match {
@@ -126,26 +132,26 @@ object Artifact {
       }
     }
 
-    def react(fun: T => Option[File] => Unit)(implicit tx: T): Disposable[T] =
-      new AttrMapExprObs[T, File](map = attr, key = key, fun = fun, tx0 = tx)(_Artifact)
+    def react(fun: T => Option[URI] => Unit)(implicit tx: T): Disposable[T] =
+      new AttrMapExprObs[T, URI](map = attr, key = key, fun = fun, tx0 = tx)(_Artifact)
   }
 }
-final case class Artifact(key: String, default: Ex[File] = file(""))
-  extends Attr.WithDefault[File] with ProductWithAdjuncts {
+final case class Artifact(key: String, default: Ex[URI] = new URI(null, null, null))
+  extends Attr.WithDefault[URI] with ProductWithAdjuncts {
 
-  type Repr[T <: Txn[T]] = IExpr[T, File]
+  type Repr[T <: Txn[T]] = IExpr[T, URI]
 
   protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     val defaultEx: Repr[T] = default.expand[T]
     val attrView = Attr.resolveNested(key)
     import ctx.targets
-    new Attr.WithDefault.Expanded[T, File](key, attrView, defaultEx, tx)
+    new Attr.WithDefault.Expanded[T, URI](key, attrView, defaultEx, tx)
   }
 
-  def update(in: Ex[File]): Control = Attr.Update (in, key)
-  def set   (in: Ex[File]): Act     = Attr.Set    (in, key)
+  def update(in: Ex[URI]): Control = Attr.Update (in, key)
+  def set   (in: Ex[URI]): Act     = Attr.Set    (in, key)
 
-  implicit private def bridge: Obj.Bridge[File] = Artifact.Bridge
+  implicit private def bridge: Obj.Bridge[URI] = Artifact.Bridge
 
   def adjuncts: List[Adjunct] = Nil
 }

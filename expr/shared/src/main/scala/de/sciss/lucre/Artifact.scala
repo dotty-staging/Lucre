@@ -13,13 +13,12 @@
 
 package de.sciss.lucre
 
-import de.sciss.file.File
+import java.net.URI
+
 import de.sciss.lucre.impl.{ArtifactImpl => Impl}
 import de.sciss.serial.{DataInput, TFormat}
 
-import scala.annotation.tailrec
-
-object Artifact extends Obj.Type {
+object Artifact extends Obj.Type with ArtifactPlatform {
   final val typeId = 0x10008
 
   def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Artifact[T] =
@@ -30,34 +29,10 @@ object Artifact extends Obj.Type {
   def apply[T <: Txn[T]](location: ArtifactLocation[T], child: Child)(implicit tx: T): Artifact.Modifiable[T] =
     Impl(location, child)
 
-  def apply[T <: Txn[T]](location: ArtifactLocation[T], file: File)(implicit tx: T): Artifact.Modifiable[T] =
+  def apply[T <: Txn[T]](location: ArtifactLocation[T], file: Value)(implicit tx: T): Artifact.Modifiable[T] =
     apply(location, relativize(location.directory, file))
 
-  def relativize(parent: File, sub: File): Child = {
-    // Note: .getCanonicalFile will resolve symbolic links.
-    // In order to support artifacts being symbolic links
-    // inside a parent folder, we must not resolve them!
-
-    val can     = sub   .getAbsoluteFile // .getCanonicalFile
-    val base    = parent.getAbsoluteFile // .getCanonicalFile
-
-    @tailrec def loop(res: File, left: File): File = {
-      if (left == null)
-        throw new IllegalArgumentException(s"File $sub is not in a subdirectory of $parent")
-
-      if (left == base) res
-      else {
-        val last  = left.getName
-        val init  = left.getParentFile
-        loop(new File(last, res.getPath), init)
-      }
-    }
-
-    val cf = loop(new File(can.getName), can.getParentFile)
-    Child(cf.getPath)
-  }
-
-  type Value = File
+  type Value = URI
 
   object Modifiable {
     def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Modifiable[T] =

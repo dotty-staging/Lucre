@@ -14,14 +14,13 @@
 package de.sciss.lucre
 package impl
 
-import de.sciss.file.File
 import de.sciss.lucre.Artifact.{Child, Modifiable, Value}
-import de.sciss.lucre.{ArtifactLocation => Location}
 import de.sciss.lucre.Event.Targets
+import de.sciss.lucre.{ArtifactLocation => Location}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, TFormat}
 
-object ArtifactImpl {
+object ArtifactImpl extends ArtifactImplPlatform {
 
   private final val SER_VERSION = 0x4172
 
@@ -69,8 +68,8 @@ object ArtifactImpl {
   private final class Impl[T <: Txn[T]](protected val targets: Targets[T],
                                         val location: Location[T], _child: Var[T, String])
     extends Artifact.Modifiable[T]
-      with MappingEventNode[T, Change[File], Change[File]]
-      with SingleEventNode[T, Change[File]] {
+      with MappingEventNode[T, Change[Value], Change[Value]]
+      with SingleEventNode[T, Change[Value]] {
 
     def tpe: Obj.Type = Artifact
 
@@ -89,23 +88,23 @@ object ArtifactImpl {
       if (oldP != newP) {
         val base    = location.value // directory
         _child()    = newP
-        val change  = Change(new File(base, oldP), new File(base, newP))
+        val change  = Change(concat(base, oldP), concat(base, newP))
         changed.fire(change)(tx)
       }
     }
 
     object changed extends Changed with Mapped
 
-    protected def inputEvent: EventLike[T, Change[File]] = location.changed
+    protected def inputEvent: EventLike[T, Change[Value]] = location.changed
 
-    protected def foldUpdate(generated: Option[Change[File]], input: Change[File])
-                            (implicit tx: T): Option[Change[File]] =
+    protected def foldUpdate(generated: Option[Change[Value]], input: Change[Value])
+                            (implicit tx: T): Option[Change[Value]] =
       generated.orElse {
         input match {
           case Change(oldBase, newBase) =>
             // case Location.Moved(_, Change(oldBase, newBase)) =>
             val path    = _child()
-            val change  = Change(new File(oldBase, path), new File(newBase, path))
+            val change  = Change(concat(oldBase, path), concat(newBase, path))
             Some(change)
           case _ => None
         }
@@ -114,7 +113,7 @@ object ArtifactImpl {
     def value(implicit tx: T): Value = {
       val base   = location.value // directory
       val child  = _child()
-      new File(base, child)
+      concat(base, child)
     }
 
     protected def disposeData()(implicit tx: T): Unit =

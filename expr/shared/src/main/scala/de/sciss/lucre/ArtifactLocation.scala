@@ -13,27 +13,40 @@
 
 package de.sciss.lucre
 
-import de.sciss.file.File
+import java.net.URI
 
 import de.sciss.lucre
+import de.sciss.lucre.Artifact.Value
 import de.sciss.lucre.Event.Targets
 import de.sciss.lucre.impl.ExprTypeImpl
-import de.sciss.serial.{ConstFormat, TFormat}
+import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
-object ArtifactLocation extends ExprTypeImpl[File, ArtifactLocation] {
+object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
   import lucre.{ArtifactLocation => Repr}
 
   final val typeId = 0x10003
 
-  def tmp[T <: Txn[T]]()(implicit tx: T): Const[T] = {
-    val dir   = File.createTemp("artifacts", "tmp", directory = true)
-    newConst(dir)
+//  def tmp[T <: Txn[T]]()(implicit tx: T): Const[T] = {
+//    val dir   = File.createTemp("artifacts", "tmp", directory = true)
+//    newConst(dir)
+//  }
+
+//  implicit def valueFormat: ConstFormat[Value] = TFormat.File
+
+  implicit final object valueFormat extends ConstFormat[Value] {
+    def write(v: Value, out: DataOutput): Unit = {
+      val str = v.toString
+      out.writeUTF(str)
+    }
+
+    def read(in: DataInput): Value = {
+      val str = in.readUTF()
+      new URI(str)
+    }
   }
 
-  implicit def valueFormat: ConstFormat[File] = TFormat.File
-
-  def tryParse(value: Any): Option[File] = value match {
-    case loc: File  => Some(loc)
+  def tryParse(value: Any): Option[Value] = value match {
+    case loc: Value => Some(loc)
     case _          => None
   }
 
@@ -54,7 +67,7 @@ object ArtifactLocation extends ExprTypeImpl[File, ArtifactLocation] {
     extends VarImpl[T] with Repr[T]
 }
 /** An artifact location is a directory on an external storage. */
-trait ArtifactLocation[T <: Txn[T]] extends Expr[T, File] {
+trait ArtifactLocation[T <: Txn[T]] extends Expr[T, Value] {
   /** Alias for `value` */
-  def directory(implicit tx: T): File = value
+  def directory(implicit tx: T): Value = value
 }

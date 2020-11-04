@@ -1,7 +1,7 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.1.0"
-lazy val mimaVersion      = "4.1.0"
+lazy val projectVersion   = "4.2.0-SNAPSHOT"
+lazy val mimaVersion      = "4.2.0"
 
 lazy val deps = new {
   val base = new {
@@ -17,7 +17,8 @@ lazy val deps = new {
   }
   val expr = new {
     def equal: String = core.equal
-    val fileUtil      = "1.1.5"
+//    val fileUtil      = "1.1.5"
+    val asyncFile     = "0.1.0-SNAPSHOT"
     val span          = "2.0.0"
   }
   val confluent = new {
@@ -160,23 +161,23 @@ lazy val expr = crossProject(JSPlatform, JVMPlatform).in(file("expr"))
   .dependsOn(core, adjunct)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
-  .jsSettings(
-    // XXX TODO: this library is not meant for production; remove and change logging
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % "1.0.0",  // SimpleDateFormat
-  )
+//  .jsSettings(
+//    libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % "1.0.0",  // SimpleDateFormat
+//  )
   .settings(
     name := s"$baseName-expr",
     libraryDependencies ++= Seq(
+      "de.sciss" %%% "asyncfile" % deps.expr.asyncFile,
       "de.sciss" %%% "equal"     % deps.expr.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
       "de.sciss" %%% "span"      % deps.expr.span,
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
-  .jvmSettings(
-    libraryDependencies ++= Seq(
-      "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
-    ),
-  )
+//  .jvmSettings(
+//    libraryDependencies ++= Seq(
+////      "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
+//    ),
+//  )
 
 lazy val confluent = crossProject(JSPlatform, JVMPlatform).in(file("confluent"))
   .dependsOn(core)

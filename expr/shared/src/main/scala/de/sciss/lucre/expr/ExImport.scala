@@ -13,13 +13,15 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.Adjunct.{FromAny, HasDefault}
+import java.net.{URI => _URI}
+
+import de.sciss.lucre.Adjunct.{FromAny, HasDefault, ScalarOrd}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
 
-object ExImport extends ExImportPlatform {
+object ExImport /*extends ExImportPlatform*/ {
   implicit def stringLiteralExOps (x: String): StringLiteralExOps = new StringLiteralExOps(x)
   implicit def intLiteralExOps    (x: Int   ): IntLiteralExOps    = new IntLiteralExOps   (x)
   implicit def longLiteralExOps   (x: Long  ): LongLiteralExOps   = new LongLiteralExOps  (x)
@@ -34,4 +36,5 @@ object ExImport extends ExImportPlatform {
 
   implicit def spanLikeTop: FromAny[SpanLike] with HasDefault[SpanLike]                       = Ex.spanLikeTop
   implicit def spanTop    : FromAny[Span    ] with HasDefault[Span    ]                       = Ex.spanTop
+  implicit def fileTop    : FromAny[_URI    ] with HasDefault[_URI] with ScalarOrd[_URI]      = Ex.fileTop
 }

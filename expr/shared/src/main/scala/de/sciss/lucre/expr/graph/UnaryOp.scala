@@ -14,6 +14,9 @@
 package de.sciss.lucre.expr
 package graph
 
+import java.net.{URI => _URI}
+import java.util.Locale
+
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
@@ -22,7 +25,7 @@ import de.sciss.lucre.{Adjunct, Exec, IExpr, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.model.Change
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
-object UnaryOp extends UnaryOpPlatform {
+object UnaryOp /*extends UnaryOpPlatform*/ {
   abstract class Op[A1, A2] extends Product {
     def apply(a: A1): A2
   }
@@ -684,6 +687,64 @@ object UnaryOp extends UnaryOpPlatform {
     def apply(a: _Span): Long = a.length
 
     override def name = "SpanLength"
+  }
+
+  // ---- URI (File) ----
+
+  final case class FileParentOption() extends NamedOp[_URI, Option[_URI]] {
+    def apply(a: _URI): Option[_URI] = {
+      val p = a.getPath
+      val j = if (p.endsWith("/")) p.length - 2 else p.length - 1
+      val i = p.lastIndexOf('/', j)
+      if (i < 0) None else {
+        val pp      = if (i == 0) "/" else p.substring(0, i)
+        val scheme  = a.getScheme
+        Some(new _URI(scheme, pp, null))
+      }
+    }
+
+    def name = "FileParentOption"
+  }
+
+  final case class FilePath() extends NamedOp[_URI, String] {
+    def apply(a: _URI): String = a.getPath
+
+    def name = "FilePath"
+  }
+
+  final case class FileName() extends NamedOp[_URI, String] {
+    def apply(a: _URI): String = {
+      val p = a.getPath
+      val i = p.lastIndexOf('/') + 1
+      p.substring(i)
+    }
+
+    def name = "FileName"
+  }
+
+  final case class FileBase() extends NamedOp[_URI, String] {
+    def apply(a: _URI): String = {
+      val p = a.getPath
+      val i = p.lastIndexOf('/') + 1
+      val n = p.substring(i)
+      val j = n.lastIndexOf('.')
+      if (j < 0) n else n.substring(0, j)
+    }
+
+    def name = "FileBase"
+  }
+
+  final case class FileExtL() extends NamedOp[_URI, String] {
+    def apply(a: _URI): String = {
+      val p   = a.getPath
+      val i   = p.lastIndexOf('/') + 1
+      val n   = p.substring(i)
+      val j   = n.lastIndexOf('.')
+      val ext = if (j < 0) "" else n.substring(j + 1)
+      ext.toLowerCase() // Locale.US -- not available on Scala.js ; rely on user setting JVM's locale appropriately...
+    }
+
+    def name = "FileExtL"
   }
 
   // ---- Impl ----

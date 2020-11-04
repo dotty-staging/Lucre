@@ -14,12 +14,13 @@
 package de.sciss.lucre.expr
 package graph
 
+import java.net.{URI => _URI}
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDiv, NumDouble, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.span.SpanLike
 
-object BinaryOp extends BinaryOpPlatform {
+object BinaryOp /*extends BinaryOpPlatform*/ {
   abstract class Op[A, B, C] extends Product {
     def apply(a: A, b: B): C
   }
@@ -704,6 +705,48 @@ object BinaryOp extends BinaryOpPlatform {
     def apply(a: SpanLike, b: SpanLike): SpanLike = a.intersect(b)
 
     def name = "SpanLikeIntersect"
+  }
+
+  // ---- URI (File) ----
+
+  final case class FileReplaceExt() extends NamedOp[_URI, String, _URI] {
+    def apply(a: _URI, s: String): _URI = {
+      val p     = a.getPath
+      val i     = p.lastIndexOf('/') + 1
+      val n     = p.substring(i)
+      val j     = n.lastIndexOf('.')
+      val base  = if (j < 0) n else n.substring(0, j)
+      val ext   = if (s.startsWith(".")) s else "." + s
+      val pNew  = base + ext
+      val scheme  = a.getScheme
+      new _URI(scheme, pNew, null)
+    }
+
+    def name = "FileReplaceExt"
+  }
+
+  final case class FileReplaceName() extends NamedOp[_URI, String, _URI] {
+    def apply(a: _URI, s: String): _URI = {
+      val p       = a.getPath
+      val i       = p.lastIndexOf('/') + 1
+      val pNew    = p.substring(0, i) + s
+      val scheme  = a.getScheme
+      new _URI(scheme, pNew, null)
+    }
+
+    def name: String = "FileReplaceName"
+  }
+
+  final case class FileChild() extends NamedOp[_URI, String, _URI] {
+    def apply(a: _URI, s: String): _URI = {
+      val p0      = a.getPath
+      val p       = if (p0.endsWith("/") && p0.length > 1) p0.substring(0, p0.length - 1) else p0
+      val pNew    = p + "/" + s
+      val scheme  = a.getScheme
+      new _URI(scheme, pNew, null)
+    }
+
+    def name: String = "FileChild"
   }
 
   // ---- Impl ----

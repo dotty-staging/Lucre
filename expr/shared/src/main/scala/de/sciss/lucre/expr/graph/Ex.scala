@@ -13,16 +13,18 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.Adjunct.{FromAny, HasDefault}
+import de.sciss.lucre.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
 import de.sciss.lucre.{Adjunct, IExpr, Txn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction, ExPlatform}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
 import de.sciss.serial.DataInput
+import de.sciss.equal.Implicits._
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
+import java.net.{URI => _URI}
 
 import scala.language.implicitConversions
 
-object Ex extends ExPlatform {
+object Ex /*extends ExPlatform*/ {
   // ---- implicits ----
 
   implicit def const[A: Value](x: A): Ex[A] = Const(x)
@@ -39,10 +41,11 @@ object Ex extends ExPlatform {
   // ----
 
   object Value {
-    implicit object anyVal    extends Value[AnyVal    ]
-    implicit object string    extends Value[String    ]
-    implicit object spanLike  extends Value[_SpanLike ]
+    implicit object anyVal      extends Value[AnyVal    ]
+    implicit object string      extends Value[String    ]
+    implicit object spanLike    extends Value[_SpanLike ]
 //    implicit object act       extends Value[Act       ]
+    implicit object fileIsValue extends Value[_URI      ]
 
     implicit def tuple2 [A: Value, B: Value]: Value[(A, B)] = null
 
@@ -71,6 +74,7 @@ object Ex extends ExPlatform {
   implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
   implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
   implicit def spanOps[A <: _SpanLike](x: Ex[A]): ExSpanOps   [A]     = new ExSpanOps   (x)
+  implicit def fileOps(x: Ex[_URI]): ExFileOps = new ExFileOps(x)
 
   //////////////////////////////
 
@@ -92,11 +96,12 @@ object Ex extends ExPlatform {
     Adjunct.addFactory(CanFlatMapSeqToAct     )
     Adjunct.addFactory(SpanLikeTop            )
     Adjunct.addFactory(SpanTop                )
+    Adjunct.addFactory(FileTop                )
   }
 
   def init(): Unit = {
     _init
-    _initPlatform
+//    _initPlatform
   }
 
   final case class MapExOption[A, B] private (in: Ex[Option[A]], it: It[A], fun: Ex[B])
@@ -366,6 +371,7 @@ object Ex extends ExPlatform {
 
   def spanLikeTop : FromAny[_SpanLike ] with HasDefault[_SpanLike] = SpanLikeTop
   def spanTop     : FromAny[_Span     ] with HasDefault[_Span    ] = SpanTop
+  def fileTop     : FromAny[_URI] with HasDefault[_URI] with ScalarOrd[_URI] = FileTop
 
   private object SpanLikeTop extends FromAny[_SpanLike] with HasDefault[_SpanLike] with Adjunct.Factory {
     final val id = 1007
@@ -391,6 +397,105 @@ object Ex extends ExPlatform {
       case s: _Span     => Some(s)
       case _            => None
     }
+  }
+
+  private object URINameOrdering extends Ordering[_URI] {
+    def compare(f1: _URI, f2: _URI): Int = {
+      val s1 = {
+        val s = f1.getScheme
+        if (s == null) "null" else s
+      }
+      val s2 = {
+        val s = f2.getScheme
+        if (s == null) "null" else s
+      }
+      val c = s1 compareTo s2
+      if (c != 0) return c
+
+      val p1 = f1.getPath
+      val p2 = f2.getPath
+      compareName(p1, p2)
+    }
+
+    /* Compares strings insensitive to case but sensitive to integer numbers. */
+    private def compareName(s1: String, s2: String): Int = {
+      // this is a quite ugly direct translation from a Java snippet I wrote,
+      // could use some scala'fication
+
+      val n1  = s1.length
+      val n2  = s2.length
+      val min = math.min(n1, n2)
+
+      var i = 0
+      while (i < min) {
+        var c1 = s1.charAt(i)
+        var c2 = s2.charAt(i)
+        var d1 = Character.isDigit(c1)
+        var d2 = Character.isDigit(c2)
+
+        if (d1 && d2) {
+          // Enter numerical comparison
+          var c3, c4 = ' '
+          while ({
+            i += 1
+            c3 = if (i < n1) s1.charAt(i) else 'x'
+            c4 = if (i < n2) s2.charAt(i) else 'x'
+            if (c1 == c2 && c3 != c4) {
+              c1 = c3
+              c2 = c4
+            }
+            d1 = Character.isDigit(c3)
+            d2 = Character.isDigit(c4)
+
+            d1 && d2
+          }) ()
+
+          if (d1 != d2) return if (d1) 1 else -1
+          if (c1 != c2) return c1 - c2
+          i -= 1
+
+        }
+        else if (c1 != c2) {
+          c1 = Character.toUpperCase(c1)
+          c2 = Character.toUpperCase(c2)
+
+          if (c1 != c2) {
+            c1 = Character.toLowerCase(c1)
+            c2 = Character.toLowerCase(c2)
+
+            if (c1 != c2) {
+              // No overflow because of numeric promotion
+              return c1 - c2
+            }
+          }
+        }
+
+        i += 1
+      }
+      n1 - n2
+    }
+  }
+
+  private object FileTop extends FromAny[_URI] with HasDefault[_URI] with Ord[_URI] with Scalar[_URI]
+    with Adjunct.Factory {
+
+    final val id = 1015
+
+    def readIdentifiedAdjunct(in: DataInput): Adjunct = this
+
+    def defaultValue: _URI = new _URI("") // by convention
+
+    def fromAny(in: Any): Option[_URI] = in match {
+      case v: _URI     => Some(v)
+      case _            => None
+    }
+
+    def lt  (a: _URI, b: _URI): Boolean = URINameOrdering.lt(a, b)
+    def lteq(a: _URI, b: _URI): Boolean = URINameOrdering.lteq(a, b)
+    def gt  (a: _URI, b: _URI): Boolean = URINameOrdering.gt(a, b)
+    def gteq(a: _URI, b: _URI): Boolean = URINameOrdering.gteq(a, b)
+    def eq  (a: _URI, b: _URI): Boolean = URINameOrdering.compare(a, b) === 0
+    def neq (a: _URI, b: _URI): Boolean = URINameOrdering.compare(a, b) !== 0
   }
 }
 trait Ex[+A] extends Lazy {
