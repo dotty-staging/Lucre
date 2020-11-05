@@ -15,7 +15,6 @@ package de.sciss.lucre.expr
 package graph
 
 import java.net.{URI => _URI}
-import java.util.Locale
 
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
