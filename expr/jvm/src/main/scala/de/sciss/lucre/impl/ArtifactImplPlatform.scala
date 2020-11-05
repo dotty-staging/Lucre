@@ -15,18 +15,11 @@ package de.sciss.lucre
 package impl
 
 import java.io.File
-import java.net.URI
 
 import de.sciss.lucre.Artifact.Value
 
 trait ArtifactImplPlatform {
-  protected final def concat(parent: URI, child: String): Value = {
-    val parentF = new File(parent)
-    val f       = new File(parentF, child)
-    f.toURI
-  }
-
-  private[lucre] def listFiles[T <: Txn[T]](dv: URI)(implicit tx: T): Seq[URI] = {
+  private[lucre] def listFiles[T <: Txn[T]](dv: Value)(implicit tx: T): Seq[Value] = {
     val dvf     = new File(dv)
     val arr     = dvf.listFiles()
     val now     = if (arr == null) Nil else arr.toSeq

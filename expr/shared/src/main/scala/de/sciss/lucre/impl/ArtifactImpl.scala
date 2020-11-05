@@ -88,7 +88,7 @@ object ArtifactImpl extends ArtifactImplPlatform {
       if (oldP != newP) {
         val base    = location.value // directory
         _child()    = newP
-        val change  = Change(concat(base, oldP), concat(base, newP))
+        val change  = Change(Value.append(base, oldP), Value.append(base, newP))
         changed.fire(change)(tx)
       }
     }
@@ -104,7 +104,7 @@ object ArtifactImpl extends ArtifactImplPlatform {
           case Change(oldBase, newBase) =>
             // case Location.Moved(_, Change(oldBase, newBase)) =>
             val path    = _child()
-            val change  = Change(concat(oldBase, path), concat(newBase, path))
+            val change  = Change(Value.append(oldBase, path), Value.append(newBase, path))
             Some(change)
           case _ => None
         }
@@ -113,7 +113,7 @@ object ArtifactImpl extends ArtifactImplPlatform {
     def value(implicit tx: T): Value = {
       val base   = location.value // directory
       val child  = _child()
-      concat(base, child)
+      Value.append(base, child)
     }
 
     protected def disposeData()(implicit tx: T): Unit =

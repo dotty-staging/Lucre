@@ -63,7 +63,7 @@ object Artifact {
   }
 
   private def tryRelativize[T <: Txn[T]](loc: _ArtifactLocation[T], f: URI)(implicit tx: T): Try[_Artifact.Child] =
-    Try(_Artifact.relativize(loc.directory, f))
+    Try(_Artifact.Value.relativize(loc.directory, f))
 
   private def defaultLocation[T <: Txn[T]](f: URI)(implicit tx: T): _ArtifactLocation[T] = {
     val p = FileParentOption()(f).getOrElse(
