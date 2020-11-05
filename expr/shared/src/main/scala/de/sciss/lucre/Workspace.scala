@@ -13,7 +13,7 @@
 
 package de.sciss.lucre
 
-import java.io.File
+import java.net.URI
 
 object Workspace {
   object Implicits {
@@ -33,7 +33,7 @@ object Workspace {
 
       def dependents(implicit tx: TxnLike): Iterable[Disposable[T]] = Nil
 
-      def folder: Option[File] = None
+      def folder: Option[URI] = None
 
       def name: String = "dummy"
 
@@ -58,7 +58,7 @@ trait Workspace[T <: Txn[T]] extends Disposable[T] {
 
   def cursor: Cursor[T]
 
-  def folder: Option[File]
+  def folder: Option[URI]
 
   def name: String
 
