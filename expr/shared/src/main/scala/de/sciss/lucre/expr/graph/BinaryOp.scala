@@ -15,9 +15,11 @@ package de.sciss.lucre.expr
 package graph
 
 import java.net.{URI => _URI}
+
+import de.sciss.asyncfile.Ops.URIOps
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDiv, NumDouble, NumInt, NumLogic, Ord, Widen2}
 import de.sciss.lucre.impl.IChangeEventImpl
-import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn, Artifact => _Artifact}
+import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.span.SpanLike
 
 object BinaryOp /*extends BinaryOpPlatform*/ {
@@ -710,19 +712,19 @@ object BinaryOp /*extends BinaryOpPlatform*/ {
   // ---- URI (File) ----
 
   final case class FileReplaceExt() extends NamedOp[_URI, String, _URI] {
-    def apply(a: _URI, s: String): _URI = _Artifact.Value.replaceExt(a, s)
+    def apply(a: _URI, s: String): _URI = new URIOps(a).replaceExt(s)
 
     def name = "FileReplaceExt"
   }
 
   final case class FileReplaceName() extends NamedOp[_URI, String, _URI] {
-    def apply(a: _URI, s: String): _URI = _Artifact.Value.replaceName(a, s)
+    def apply(a: _URI, s: String): _URI = new URIOps(a).replaceName(s)
 
     def name: String = "FileReplaceName"
   }
 
   final case class FileChild() extends NamedOp[_URI, String, _URI] {
-    def apply(a: _URI, s: String): _URI = _Artifact.Value.append(a, s)
+    def apply(a: _URI, s: String): _URI = new URIOps(a)./(s)
 
     def name: String = "FileChild"
   }

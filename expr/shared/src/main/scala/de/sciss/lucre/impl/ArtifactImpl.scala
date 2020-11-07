@@ -14,6 +14,7 @@
 package de.sciss.lucre
 package impl
 
+import de.sciss.asyncfile
 import de.sciss.lucre.Artifact.{Child, Modifiable, Value}
 import de.sciss.lucre.Event.Targets
 import de.sciss.lucre.{ArtifactLocation => Location}
@@ -88,7 +89,8 @@ object ArtifactImpl extends ArtifactImplPlatform {
       if (oldP != newP) {
         val base    = location.value // directory
         _child()    = newP
-        val change  = Change(Value.append(base, oldP), Value.append(base, newP))
+        import asyncfile.Ops._
+        val change  = Change(base / oldP, base / newP)
         changed.fire(change)(tx)
       }
     }
@@ -104,7 +106,8 @@ object ArtifactImpl extends ArtifactImplPlatform {
           case Change(oldBase, newBase) =>
             // case Location.Moved(_, Change(oldBase, newBase)) =>
             val path    = _child()
-            val change  = Change(Value.append(oldBase, path), Value.append(newBase, path))
+            import asyncfile.Ops._
+            val change  = Change(oldBase / path, newBase / path)
             Some(change)
           case _ => None
         }
@@ -113,7 +116,8 @@ object ArtifactImpl extends ArtifactImplPlatform {
     def value(implicit tx: T): Value = {
       val base   = location.value // directory
       val child  = _child()
-      Value.append(base, child)
+      import asyncfile.Ops._
+      base / child
     }
 
     protected def disposeData()(implicit tx: T): Unit =

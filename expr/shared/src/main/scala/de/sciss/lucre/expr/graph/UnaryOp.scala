@@ -16,6 +16,7 @@ package graph
 
 import java.net.{URI => _URI}
 
+import de.sciss.asyncfile.Ops.URIOps
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
@@ -691,31 +692,31 @@ object UnaryOp /*extends UnaryOpPlatform*/ {
   // ---- URI (File) ----
 
   final case class FileParentOption() extends NamedOp[_URI, Option[_URI]] {
-    def apply(a: _URI): Option[_URI] = _Artifact.Value.parentOption(a)
+    def apply(a: _URI): Option[_URI] = new URIOps(a).parentOption
 
     def name = "FileParentOption"
   }
 
   final case class FilePath() extends NamedOp[_URI, String] {
-    def apply(a: _URI): String = _Artifact.Value.path(a)
+    def apply(a: _URI): String = new URIOps(a).path
 
     def name = "FilePath"
   }
 
   final case class FileName() extends NamedOp[_URI, String] {
-    def apply(a: _URI): String = _Artifact.Value.name(a)
+    def apply(a: _URI): String = new URIOps(a).name
 
     def name = "FileName"
   }
 
   final case class FileBase() extends NamedOp[_URI, String] {
-    def apply(a: _URI): String = _Artifact.Value.base(a)
+    def apply(a: _URI): String = new URIOps(a).base
 
     def name = "FileBase"
   }
 
   final case class FileExtL() extends NamedOp[_URI, String] {
-    def apply(a: _URI): String = _Artifact.Value.extL(a)
+    def apply(a: _URI): String = new URIOps(a).extL
 
     def name = "FileExtL"
   }
