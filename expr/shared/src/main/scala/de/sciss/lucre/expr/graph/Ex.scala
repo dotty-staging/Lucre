@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
 import de.sciss.lucre.{Adjunct, IExpr, Txn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
-import de.sciss.lucre.expr.{Context, ExBooleanOps, ExFileOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
+import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
 import de.sciss.serial.DataInput
 import de.sciss.equal.Implicits._
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
@@ -74,7 +74,8 @@ object Ex /*extends ExPlatform*/ {
   implicit def booleanOps     (x: Ex[Boolean])  : ExBooleanOps        = new ExBooleanOps(x)
   implicit def stringOps      (x: Ex[String])   : ExStringOps         = new ExStringOps (x)
   implicit def spanOps[A <: _SpanLike](x: Ex[A]): ExSpanOps   [A]     = new ExSpanOps   (x)
-  implicit def fileOps(x: Ex[_URI]): ExFileOps = new ExFileOps(x)
+
+//  implicit def fileOps(x: Ex[_URI]): ExFileOps = new ExFileOps(x)
 
   //////////////////////////////
 

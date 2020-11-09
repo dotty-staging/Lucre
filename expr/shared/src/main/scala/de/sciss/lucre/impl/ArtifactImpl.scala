@@ -21,7 +21,7 @@ import de.sciss.lucre.{ArtifactLocation => Location}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput, TFormat}
 
-object ArtifactImpl extends ArtifactImplPlatform {
+object ArtifactImpl /*extends ArtifactImplPlatform*/ {
 
   private final val SER_VERSION = 0x4172
 
