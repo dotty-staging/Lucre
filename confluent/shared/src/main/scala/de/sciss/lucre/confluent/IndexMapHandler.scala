@@ -15,7 +15,7 @@ package de.sciss.lucre.confluent
 
 import de.sciss.serial.{ConstFormat, DataInput}
 
-trait IndexMapHandler[T <: Txn[T]] {
+trait IndexMapHandler[T <: Txn/*[T]*/] {
   def readIndexMap[A](in: DataInput, tx: T)
                      (implicit index: tx.Acc, format: ConstFormat[A]): IndexMap[T, A]
 

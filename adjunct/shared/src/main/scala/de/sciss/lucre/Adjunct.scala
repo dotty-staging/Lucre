@@ -926,7 +926,7 @@ object Adjunct {
 
   sealed trait Primitive extends Adjunct
 
-  trait Context[T <: Exec[T]] {
+  trait Context[T <: Exec/*[T]*/] {
     //  /** Creates a new pseudo-random number generator. */
     //  def mkRandom(ref: AnyRef /* seed: Long = -1L */)(implicit tx: S#Tx): TxnRandom[S]
   }

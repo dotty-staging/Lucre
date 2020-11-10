@@ -20,10 +20,10 @@ import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 
 import scala.util.hashing.MurmurHash3
 
-private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
+private abstract class IdImpl[T <: Txn/*[T]*/] extends Ident[T] {
   type Id = Ident[T]
 
-  final def !(implicit tx: T): Ident[T] = this
+  final def !(implicit tx: T): tx.Id = ??? // Ident[T] = this
 
   final def dispose()(implicit tx: T): Unit = ()
 
@@ -32,7 +32,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
     path.write(out)
   }
 
-  @inline final protected def alloc()(implicit tx: T): Id = new ConfluentId(tx.system.newIdValue(), path)
+  @inline final protected def alloc()(implicit tx: T): Id = ??? // new ConfluentId(tx.system.newIdValue(), path)
 
   final def newVar[A](init: A)(implicit tx: T, format: TFormat[T, A]): Var[T, A] = {
     val res = makeVar[A](alloc())
@@ -110,7 +110,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
   }
 }
 
-private final class ConfluentId[T <: Txn[T]](val base: Int, val path: Access[T])
+private final class ConfluentId[T <: Txn/*[T]*/](val base: Int, val path: Access[T])
   extends IdImpl[T] {
 
   override def hashCode: Int = {
@@ -131,7 +131,7 @@ private final class ConfluentId[T <: Txn[T]](val base: Int, val path: Access[T])
   override def toString: String = path.mkString(s"<$base @ ", ",", ">")
 }
 
-private final class PartialId[T <: Txn[T]](val base: Int, val path: Access[T])
+private final class PartialId[T <: Txn/*[T]*/](val base: Int, val path: Access[T])
   extends IdImpl[T] {
 
   override def hashCode: Int = {

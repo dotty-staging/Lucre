@@ -18,11 +18,12 @@ import de.sciss.lucre
 import scala.concurrent.stm.{InTxn, Ref => STMRef}
 
 object InMemoryLike {
-  trait Id[T <: Txn[T]] extends Ident[T] {
+  trait Id[T <: Txn/*[T]*/] extends Ident[T] {
     private[lucre] def id: Int
   }
 
-  trait Txn[T <: Txn[T]] extends lucre.Txn[T] {
+  trait Txn/*[T <: Txn[T]]*/ extends lucre.Txn/*[T]*/ {
+    type T <: Txn
     type I = T
 
     override def system: InMemoryLike[T]
@@ -40,7 +41,7 @@ object InMemoryLike {
     private[lucre] def peer: STMRef[A]
   }
 }
-trait InMemoryLike[Tx <: InMemoryLike.Txn[Tx]] extends Sys with Cursor[Tx] {
+trait InMemoryLike[Tx <: InMemoryLike.Txn/*[Tx]*/] extends Sys with Cursor[Tx] {
   final type Id       = InMemoryLike.Id[T]
 
   type T = Tx // InMemoryLike.Txn[T]

@@ -15,6 +15,6 @@ package de.sciss.lucre
 
 import de.sciss.model.Change
 
-trait IChangePublisher[T <: Exec[T], +A] extends IPublisher[T, Change[A]] {
+trait IChangePublisher[T <: Exec/*[T]*/, +A] extends IPublisher[T, Change[A]] {
   override def changed: IChangeEvent[T, A]
 }

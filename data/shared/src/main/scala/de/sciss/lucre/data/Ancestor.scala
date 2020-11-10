@@ -22,14 +22,14 @@ object Ancestor {
 
   private[Ancestor] val cube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
 
-  private type TreeOrder[T <: Exec[T]] = TotalOrder.Set.Entry[T]
+  private type TreeOrder[T <: Exec/*[T]*/] = TotalOrder.Set.Entry[T]
 
   object Vertex {
-    private[Ancestor] def toPoint[T <: Exec[T], Version](v: Vertex[T, Version])(implicit tx: T): IntPoint3D =
+    private[Ancestor] def toPoint[T <: Exec/*[T]*/, Version](v: Vertex[T, Version])(implicit tx: T): IntPoint3D =
       IntPoint3D(v.pre.tag, v.post.tag, v.versionInt)
   }
 
-  sealed trait Vertex[T <: Exec[T], Version] extends Writable with Disposable[T] {
+  sealed trait Vertex[T <: Exec/*[T]*/, Version] extends Writable with Disposable[T] {
 
     // ---- abstract ----
 
@@ -62,24 +62,24 @@ object Ancestor {
     override def toString = s"Vertex($version)"
   }
 
-  implicit def treeFormat[T <: Exec[T], Version](
+  implicit def treeFormat[T <: Exec/*[T]*/, Version](
                                                       implicit versionFormat: TFormat[T, Version],
                                                       intView: Version => Int): TFormat[T, Tree[T, Version]] =
     new TreeFmt[T, Version]
 
-  def newTree[T <: Exec[T], Version](rootVersion: Version)(
+  def newTree[T <: Exec/*[T]*/, Version](rootVersion: Version)(
     implicit tx: T, versionFormat: TFormat[T, Version],
     intView: Version => Int): Tree[T, Version] = {
 
     new TreeNew[T, Version](rootVersion, tx)
   }
 
-  def readTree[T <: Exec[T], Version](in: DataInput)
+  def readTree[T <: Exec/*[T]*/, Version](in: DataInput)
                                      (implicit tx: T, versionFormat: TFormat[T, Version],
                                       intView: Version => Int): Tree[T, Version] =
     new TreeRead[T, Version](in, tx)
 
-  private final class TreeFmt[T <: Exec[T], Version](implicit versionFormat: TFormat[T, Version],
+  private final class TreeFmt[T <: Exec/*[T]*/, Version](implicit versionFormat: TFormat[T, Version],
                                                      versionView: Version => Int)
     extends WritableFormat[T, Tree[T, Version]] {
 
@@ -89,7 +89,7 @@ object Ancestor {
     override def toString = "Ancestor.treeFormat"
   }
 
-  private sealed trait TreeImpl[T <: Exec[T], Version] extends Tree[T, Version] {
+  private sealed trait TreeImpl[T <: Exec/*[T]*/, Version] extends Tree[T, Version] {
     me =>
 
     // ---- abstract ----
@@ -155,7 +155,7 @@ object Ancestor {
     }
   }
 
-  private final class TreeNew[T <: Exec[T], Version](rootVersion: Version, tx0: T)(
+  private final class TreeNew[T <: Exec/*[T]*/, Version](rootVersion: Version, tx0: T)(
     implicit val versionFormat: TFormat[T, Version], val intView: Version => Int)
     extends TreeImpl[T, Version] {
     me =>
@@ -171,7 +171,7 @@ object Ancestor {
     }
   }
 
-  private final class TreeRead[T <: Exec[T], Version](in: DataInput, tx0: T)(
+  private final class TreeRead[T <: Exec/*[T]*/, Version](in: DataInput, tx0: T)(
     implicit val versionFormat: TFormat[T, Version], val intView: Version => Int)
     extends TreeImpl[T, Version] {
 
@@ -185,7 +185,7 @@ object Ancestor {
     val root: K = VertexFormat.readT(in)(tx0)
   }
 
-  sealed trait Tree[T <: Exec[T], Version] extends Writable with Disposable[T] {
+  sealed trait Tree[T <: Exec/*[T]*/, Version] extends Writable with Disposable[T] {
     protected type K = Vertex[T, Version]
 
     private[Ancestor] def versionFormat: TFormat[T, Version]
@@ -200,7 +200,7 @@ object Ancestor {
     def insertRetroParent(child : K, newParent: Version)(implicit tx: T): K
   }
 
-  private type MarkOrder[T <: Exec[T], Version, A] = TotalOrder.Map.Entry[T, Mark[T, Version, A]]
+  private type MarkOrder[T <: Exec/*[T]*/, Version, A] = TotalOrder.Map.Entry[T, Mark[T, Version, A]]
 
   private final val chebyshevMetric = IntDistanceMeasure3D.chebyshevXY
   // left-bottom-front
@@ -238,7 +238,7 @@ object Ancestor {
     }
   }
 
-  private sealed trait Mark[T <: Exec[T], Version, /* @spec(ValueSpec) */ A] extends Writable {
+  private sealed trait Mark[T <: Exec/*[T]*/, Version, /* @spec(ValueSpec) */ A] extends Writable {
 
     // ---- abstract ----
 
@@ -271,11 +271,11 @@ object Ancestor {
     override def toString = s"Mark(${fullVertex.version} -> $value)"
   }
 
-  def newMap[T <: Exec[T], Version, A](full: Tree[T, Version], rootVertex: Vertex[T, Version], rootValue: A)
+  def newMap[T <: Exec/*[T]*/, Version, A](full: Tree[T, Version], rootVertex: Vertex[T, Version], rootValue: A)
                                       (implicit tx: T, valueFormat: TFormat[T, A]): Map[T, Version, A] =
     new MapNew[T, Version, A](full, rootVertex, rootValue, tx, valueFormat)
 
-  def readMap[T <: Exec[T], Version, A](in: DataInput, tx: T, full: Tree[T, Version])
+  def readMap[T <: Exec/*[T]*/, Version, A](in: DataInput, tx: T, full: Tree[T, Version])
                                        (implicit valueFormat: TFormat[T, A]): Map[T, Version, A] =
     new MapRead[T, Version, A](full, in, valueFormat, tx)
 
@@ -293,7 +293,7 @@ object Ancestor {
    *                `0` indicates that both refer to the same version, and `1` indicates that the full vertex lies
    *                right to the mark vertex in the post-order list
    */
-  private final class IsoResult[T <: Exec[T], Version, /* @spec(ValueSpec) */ A](val pre:  Mark[T, Version, A],
+  private final class IsoResult[T <: Exec/*[T]*/, Version, /* @spec(ValueSpec) */ A](val pre:  Mark[T, Version, A],
                                                                                  val preCmp: Int,
                                                                                  val post: Mark[T, Version, A],
                                                                                  val postCmp: Int) {
@@ -305,7 +305,7 @@ object Ancestor {
     }
   }
 
-  private sealed trait MapImpl[T <: Exec[T], Version, /* @spec(ValueSpec) */ A]
+  private sealed trait MapImpl[T <: Exec/*[T]*/, Version, /* @spec(ValueSpec) */ A]
     extends Map[T, Version, A] with TotalOrder.Map.RelabelObserver[T, Mark[T, Version, A]] {
     me =>
 
@@ -510,7 +510,7 @@ object Ancestor {
     }
   }
 
-  private final class MapNew[T <: Exec[T], Version, A](val full: Tree[T, Version],
+  private final class MapNew[T <: Exec/*[T]*/, Version, A](val full: Tree[T, Version],
                                                        rootVertex: Vertex[T, Version],
                                                        rootValue: A, tx0: T,
                                                        val valueFormat: TFormat[T, A])
@@ -560,7 +560,7 @@ object Ancestor {
     }
   }
 
-  private final class MapRead[T <: Exec[T], Version, A](val full: Tree[T, Version], in: DataInput,
+  private final class MapRead[T <: Exec/*[T]*/, Version, A](val full: Tree[T, Version], in: DataInput,
                                                         val valueFormat: TFormat[T, A], tx0: T)
     extends MapImpl[T, Version, A] {
     me =>
@@ -595,7 +595,7 @@ object Ancestor {
     }
   }
 
-  sealed trait Map[T <: Exec[T], Version, A] extends Writable with Disposable[T] {
+  sealed trait Map[T <: Exec/*[T]*/, Version, A] extends Writable with Disposable[T] {
     type K = Vertex[T, Version]
 
     def full: Tree[T, Version]

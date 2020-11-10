@@ -17,9 +17,9 @@ import scala.annotation.tailrec
 import scala.concurrent.stm.TMap
 
 object ITargets {
-  def apply[T <: Txn[T]]: ITargets[T] = new Impl[T]
+  def apply[T <: Txn/*[T]*/]: ITargets[T] = new Impl[T]
 
-  private final class Impl[T <: Txn[T]] extends ITargets[T] {
+  private final class Impl[T <: Txn/*[T]*/] extends ITargets[T] {
     import Txn.peer
 
     private[this] val connections = TMap.empty[IEvent[T, Any], List[IEvent[T, Any]]]
@@ -91,7 +91,7 @@ object ITargets {
 /** Interconnection management for in-memory events.
   * A centralized instance that combines the functionality of `Targets` with `ReactionMap`.
   */
-trait ITargets[T <: Exec[T]] {
+trait ITargets[T <: Exec/*[T]*/] {
   def children(parent: IEvent[T, Any])(implicit tx: T): List[IEvent[T, Any]]
 
   /** Adds a dependant to this node target.

@@ -16,12 +16,12 @@ package de.sciss.lucre.confluent
 import de.sciss.lucre.Confluent
 
 object MeldInfo {
-  def empty[T <: Txn[T]]: MeldInfo[T] = anyMeldInfo.asInstanceOf[MeldInfo[T]]
+  def empty[T <: Txn/*[T]*/]: MeldInfo[T] = anyMeldInfo.asInstanceOf[MeldInfo[T]]
 
   private val anyMeldInfo = MeldInfo[Confluent.Txn](-1, Set.empty)
 }
 
-final case class MeldInfo[T <: Txn[T]](highestLevel: Int, highestTrees: Set[Access[T]]) {
+final case class MeldInfo[T <: Txn/*[T]*/](highestLevel: Int, highestTrees: Set[Access[T]]) {
   def requiresNewTree: Boolean = highestTrees.size > 1
 
   def outputLevel: Int = if (requiresNewTree) highestLevel + 1 else highestLevel

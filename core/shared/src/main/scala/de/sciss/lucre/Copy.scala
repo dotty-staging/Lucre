@@ -18,14 +18,14 @@ import de.sciss.lucre.impl.CopyImpl
 import scala.reflect.ClassTag
 
 object Copy {
-  def apply[In <: Txn[In], Out <: Txn[Out]]()(implicit txIn: In, txOut: Out): Copy[In, Out] =
+  def apply[In <: Txn/*[In]*/, Out <: Txn/*[Out]*/]()(implicit txIn: In, txOut: Out): Copy[In, Out] =
     new CopyImpl[In, Out]
 }
-trait Copy[In <: Txn[In], Out <: Txn[Out]] {
+trait Copy[In <: Txn/*[In]*/, Out <: Txn/*[Out]*/] {
   /** Makes a deep copy of the input element. Passing in an `Obj`
    * will also copy the attributes.
    */
-  def apply[Repr[~ <: Txn[~]] <: Elem[~]](in: Repr[In]): Repr[Out]
+  def apply[Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: Repr[In]): Repr[Out]
 
   /** Provides a hint for the input element with key and value
    * by convention.
@@ -42,10 +42,10 @@ trait Copy[In <: Txn[In], Out <: Txn[Out]] {
    * the provided `code` thunk argument which will be executed in the
    * `finish()` stage.
    */
-  def defer[Repr[~ <: Txn[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit
+  def defer[Repr[~ <: Txn/*[~]*/] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit
 
   def finish(): Unit
 
   /** Copies the object but not its attributes. */
-  def copyPlain[Repr[~ <: Txn[~]] <: Elem[~]](in: Repr[In]): Repr[Out]
+  def copyPlain[Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: Repr[In]): Repr[Out]
 }

@@ -19,14 +19,16 @@ import de.sciss.serial.{DataInput, DataOutput, TFormat}
 import scala.concurrent.stm.InTxn
 
 object DurableLike {
-  trait Id[T <: DurableLike.Txn[T]] extends Ident[T] {
+  trait Id[T <: DurableLike.Txn/*[T]*/] extends Ident[T] {
     private[lucre] def id: Int
   }
 
-  trait Txn[T <: Txn[T]] extends lucre.Txn[T] { self =>
+  trait Txn/*[T <: Txn[T]]*/ extends lucre.Txn/*[T]*/ { self =>
+    type T <: Txn
+
     def system: DurableLike[T] { type I = self.I }
 
-    type I <: InMemoryLike.Txn[I]
+    type I <: InMemoryLike.Txn/*[I]*/
 
     final type Id     = DurableLike.Id[T]
 
@@ -38,13 +40,13 @@ object DurableLike {
     def readCachedLongVar(in: DataInput): Var[T, Long]
   }
 }
-trait DurableLike[Tx <: DurableLike.Txn[Tx]] extends Sys /*[S]*/ with Cursor[Tx] {
+trait DurableLike[Tx <: DurableLike.Txn/*[Tx]*/] extends Sys /*[S]*/ with Cursor[Tx] {
 
   final type Id          = DurableLike.Id[T]
 
   type T = Tx
 
-  type I <: InMemoryLike.Txn[I]
+  type I <: InMemoryLike.Txn/*[I]*/
 
   /** Reports the current number of records stored in the database. */
   def numRecords(implicit tx: T): Int

@@ -22,7 +22,7 @@ import scala.annotation.elidable
 import scala.concurrent.stm.{InTxn, Ref}
 
 object DurableImpl {
-  private type D[T <: DurableLike.Txn[T]] = DurableLike.Txn[T]
+  private type D/*[T <: DurableLike.Txn/*[T]*/]*/ = DurableLike.Txn/*[T]*/
 
   def apply(factory: DataStore.Factory, mainName: String): Durable = {
     val mainStore   = factory.open(mainName)
@@ -31,7 +31,7 @@ object DurableImpl {
 
   def apply(mainStore: DataStore): Durable = new System(store = mainStore)
 
-  trait Mixin[T <: D[T], I <: Txn[I]] extends DurableLike[T] with ReactionMapImpl.Mixin[T] {
+  trait Mixin[T <: D/*[T]*/, I <: Txn/*[I]*/] extends DurableLike[T] with ReactionMapImpl.Mixin[T] {
 //    self =>
 
     def store: DataStore
@@ -139,7 +139,7 @@ object DurableImpl {
     def exists(id: Long)(implicit tx: T): Boolean = store.contains(_.writeLong(id))
   }
 
-  trait TxnMixin[T <: D[T]] extends DurableLike.Txn[T] with BasicTxnImpl[T] {
+  trait TxnMixin[T <: D/*[T]*/] extends DurableLike.Txn/*[T]*/ with BasicTxnImpl[T] {
     self: T =>
 
     implicit def inMemoryCursor: Cursor[I] = system.inMemory
@@ -219,10 +219,10 @@ object DurableImpl {
   }
 
   // XXX DRY with InMemoryImpl.IdImpl
-  private final class IdImpl[T <: D[T]](val id: Int) extends DurableLike.Id[T] {
-    def !(implicit tx: T): DurableLike.Id[T] = {
+  private final class IdImpl[T <: D/*[T]*/](val id: Int) extends DurableLike.Id[T] {
+    def !(implicit tx: T): tx.Id /* DurableLike.Id[T]*/ = {
       // require (tx eq this.tx)
-      this
+      ??? // this
     }
 
     def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id)
@@ -234,28 +234,28 @@ object DurableImpl {
       case _ => false
     }
 
-    def dispose()(implicit tx: T): Unit = tx.system.remove(id)(tx)
+    def dispose()(implicit tx: T): Unit = ??? // tx.system.remove(id)(tx)
 
     def newVar[A](init: A)(implicit tx: T, format: TFormat[T, A]): Var[T, A] = {
-      val res = new VarImpl[T, A](tx.system.newIdValue(), format)
+      val res = new VarImpl[T, A](??? : Int /*tx.system.newIdValue()*/, format)
       res.setInit(init)
       res
     }
 
     def newBooleanVar(init: Boolean)(implicit tx: T): Var[T, Boolean] = {
-      val res = new BooleanVar[T](tx.system.newIdValue())
+      val res = new BooleanVar[T](??? : Int /*tx.system.newIdValue()*/)
       res.setInit(init)
       res
     }
 
     def newIntVar(init: Int)(implicit tx: T): Var[T, Int] = {
-      val res = new IntVar[T](tx.system.newIdValue())
+      val res = new IntVar[T](??? : Int /*tx.system.newIdValue()*/)
       res.setInit(init)
       res
     }
 
     def newLongVar(init: Long)(implicit tx: T): Var[T, Long] = {
-      val res = new LongVar[T](tx.system.newIdValue())
+      val res = new LongVar[T](??? : Int /* tx.system.newIdValue()*/)
       res.setInit(init)
       res
     }
@@ -283,30 +283,30 @@ object DurableImpl {
     override def toString = s"<$id>"
   }
 
-  private abstract class BasicVar[T <: D[T], A] extends Var[T, A] {
+  private abstract class BasicVar[T <: D/*[T]*/, A] extends Var[T, A] {
     protected def id: Int
 
     final def write(out: DataOutput): Unit = out./* PACKED */ writeInt(id)
 
-    final def dispose()(implicit tx: T): Unit = tx.system.remove(id)(tx)
+    final def dispose()(implicit tx: T): Unit = ??? // tx.system.remove(id)(tx)
 
     @elidable(elidable.CONFIG) protected final def assertExists()(implicit tx: T): Unit =
-      require(tx.system.exists(id)(tx), s"trying to write disposed ref $id")
+      ??? // require(tx.system.exists(id)(tx), s"trying to write disposed ref $id")
   }
 
-  private final class VarImpl[T <: D[T], A](protected val id: Int,
+  private final class VarImpl[T <: D/*[T]*/, A](protected val id: Int,
                                             protected val format: TFormat[T, A])
     extends BasicVar[T, A] {
 
     def apply()(implicit tx: T): A =
-      tx.system.read[A](id)(format.readT(_)(tx))(tx)
+      ??? // tx.system.read[A](id)(format.readT(_)(tx))(tx)
 
     def setInit(v: A)(implicit tx: T): Unit =
-      tx.system.write(id)(format.write(v, _))(tx)
+      ??? // tx.system.write(id)(format.write(v, _))(tx)
 
     def update(v: A)(implicit tx: T): Unit = {
       assertExists()
-      tx.system.write(id)(format.write(v, _))(tx)
+      ??? // tx.system.write(id)(format.write(v, _))(tx)
     }
 
     def swap(v: A)(implicit tx: T): A = {
@@ -318,7 +318,7 @@ object DurableImpl {
     override def toString = s"Var($id)"
   }
 
-  private final class CachedVarImpl[T <: D[T], A](protected val id: Int, peer: Ref[A],
+  private final class CachedVarImpl[T <: D/*[T]*/, A](protected val id: Int, peer: Ref[A],
                                                   format: TFormat[T, A])
     extends BasicVar[T, A] {
 
@@ -328,36 +328,36 @@ object DurableImpl {
 
     def update(v: A)(implicit tx: T): Unit = {
       peer.set(v)(tx.peer)
-      tx.system.write(id)(format.write(v, _))(tx)
+      ??? // tx.system.write(id)(format.write(v, _))(tx)
     }
 
     def writeInit()(implicit tx: T): Unit =
-      tx.system.write(id)(format.write(this(), _))(tx)
+      ??? // tx.system.write(id)(format.write(this(), _))(tx)
 
     def readInit()(implicit tx: T): Unit =
-      peer.set(tx.system.read(id)(format.readT(_)(tx))(tx))(tx.peer)
+      ??? /// peer.set(tx.system.read(id)(format.readT(_)(tx))(tx))(tx.peer)
 
     def swap(v: A)(implicit tx: T): A = {
       val res = peer.swap(v)(tx.peer)
-      tx.system.write(id)(format.write(v, _))(tx)
+      ??? // tx.system.write(id)(format.write(v, _))(tx)
       res
     }
 
     override def toString = s"Var($id)"
   }
 
-  private final class BooleanVar[T <: D[T]](protected val id: Int)
+  private final class BooleanVar[T <: D/*[T]*/](protected val id: Int)
     extends BasicVar[T, Boolean] {
 
     def apply()(implicit tx: T): Boolean =
-      tx.system.read[Boolean](id)(_.readBoolean())(tx)
+      ??? // tx.system.read[Boolean](id)(_.readBoolean())(tx)
 
     def setInit(v: Boolean)(implicit tx: T): Unit =
-      tx.system.write(id)(_.writeBoolean(v))(tx)
+      ??? // tx.system.write(id)(_.writeBoolean(v))(tx)
 
     def update(v: Boolean)(implicit tx: T): Unit = {
       assertExists()
-      tx.system.write(id)(_.writeBoolean(v))(tx)
+      ??? // tx.system.write(id)(_.writeBoolean(v))(tx)
     }
 
     def swap(v: Boolean)(implicit tx: T): Boolean = {
@@ -369,18 +369,18 @@ object DurableImpl {
     override def toString = s"Var[Boolean]($id)"
   }
 
-  private final class IntVar[T <: D[T]](protected val id: Int)
+  private final class IntVar[T <: D/*[T]*/](protected val id: Int)
     extends BasicVar[T, Int] {
 
     def apply()(implicit tx: T): Int =
-      tx.system.read[Int](id)(_.readInt())(tx)
+      ??? // tx.system.read[Int](id)(_.readInt())(tx)
 
     def setInit(v: Int)(implicit tx: T): Unit =
-      tx.system.write(id)(_.writeInt(v))(tx)
+      ??? // tx.system.write(id)(_.writeInt(v))(tx)
 
     def update(v: Int)(implicit tx: T): Unit = {
       assertExists()
-      tx.system.write(id)(_.writeInt(v))(tx)
+      ??? // tx.system.write(id)(_.writeInt(v))(tx)
     }
 
     def swap(v: Int)(implicit tx: T): Int = {
@@ -392,7 +392,7 @@ object DurableImpl {
     override def toString = s"Var[Int]($id)"
   }
 
-  private final class CachedIntVar[T <: D[T]](protected val id: Int, peer: Ref[Int])
+  private final class CachedIntVar[T <: D/*[T]*/](protected val id: Int, peer: Ref[Int])
     extends BasicVar[T, Int] {
 
     def apply()(implicit tx: T): Int = peer.get(tx.peer)
@@ -401,36 +401,36 @@ object DurableImpl {
 
     def update(v: Int)(implicit tx: T): Unit = {
       peer.set(v)(tx.peer)
-      tx.system.write(id)(_.writeInt(v))(tx)
+      ??? // tx.system.write(id)(_.writeInt(v))(tx)
     }
 
     def writeInit()(implicit tx: T): Unit =
-      tx.system.write(id)(_.writeInt(this()))(tx)
+      ??? // tx.system.write(id)(_.writeInt(this()))(tx)
 
     def readInit()(implicit tx: T): Unit =
-      peer.set(tx.system.read(id)(_.readInt())(tx))(tx.peer)
+      ??? // peer.set(tx.system.read(id)(_.readInt())(tx))(tx.peer)
 
     def swap(v: Int)(implicit tx: T): Int = {
       val res = peer.swap(v)(tx.peer)
-      tx.system.write(id)(_.writeInt(v))(tx)
+      ??? // tx.system.write(id)(_.writeInt(v))(tx)
       res
     }
 
     override def toString = s"Var[Int]($id)"
   }
 
-  private final class LongVar[T <: D[T]](protected val id: Int)
+  private final class LongVar[T <: D/*[T]*/](protected val id: Int)
     extends BasicVar[T, Long] {
 
     def apply()(implicit tx: T): Long =
-      tx.system.read[Long](id)(_.readLong())(tx)
+      ??? // tx.system.read[Long](id)(_.readLong())(tx)
 
     def setInit(v: Long)(implicit tx: T): Unit =
-      tx.system.write(id)(_.writeLong(v))(tx)
+      ??? // tx.system.write(id)(_.writeLong(v))(tx)
 
     def update(v: Long)(implicit tx: T): Unit = {
       assertExists()
-      tx.system.write(id)(_.writeLong(v))(tx)
+      ??? // tx.system.write(id)(_.writeLong(v))(tx)
     }
 
     def swap(v: Long)(implicit tx: T): Long = {
@@ -442,7 +442,7 @@ object DurableImpl {
     override def toString = s"Var[Long]($id)"
   }
 
-  private final class CachedLongVar[T <: D[T]](protected val id: Int, peer: Ref[Long])
+  private final class CachedLongVar[T <: D/*[T]*/](protected val id: Int, peer: Ref[Long])
     extends BasicVar[T, Long] {
 
     def apply()(implicit tx: T): Long = peer.get(tx.peer)
@@ -451,18 +451,18 @@ object DurableImpl {
 
     def update(v: Long)(implicit tx: T): Unit = {
       peer.set(v)(tx.peer)
-      tx.system.write(id)(_.writeLong(v))(tx)
+      ??? // tx.system.write(id)(_.writeLong(v))(tx)
     }
 
     def writeInit()(implicit tx: T): Unit =
-      tx.system.write(id)(_.writeLong(this()))(tx)
+      ??? // tx.system.write(id)(_.writeLong(this()))(tx)
 
     def readInit()(implicit tx: T): Unit =
-      peer.set(tx.system.read(id)(_.readLong())(tx))(tx.peer)
+      ??? // peer.set(tx.system.read(id)(_.readLong())(tx))(tx.peer)
 
     def swap(v: Long)(implicit tx: T): Long = {
       val res = peer.swap(v)(tx.peer)
-      tx.system.write(id)(_.writeLong(v))(tx)
+      ??? // tx.system.write(id)(_.writeLong(v))(tx)
       res
     }
 

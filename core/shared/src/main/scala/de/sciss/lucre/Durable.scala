@@ -22,7 +22,7 @@ object Durable {
   def apply(mainStore: DataStore): Durable = 
     DurableImpl(mainStore = mainStore)
 
-  trait Txn extends DurableLike.Txn[Txn] {
+  trait Txn extends DurableLike.Txn/*[Txn]*/ {
     final type I = InMemory.Txn
   }
 }

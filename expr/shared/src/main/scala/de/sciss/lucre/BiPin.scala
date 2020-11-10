@@ -27,52 +27,52 @@ object BiPin extends Obj.Type {
     Entry.init()
   }
 
-  final case class Update[T <: Txn[T], A, +Repr <: BiPin[T, A]](pin: Repr, changes: List[Change[T, A]])
+  final case class Update[T <: Txn/*[T]*/, A, +Repr <: BiPin[T, A]](pin: Repr, changes: List[Change[T, A]])
 
   object Entry extends Elem.Type {
     final val typeId = 26
 
-    def unapply[T <: Txn[T], A](entry: Entry[T, A]): Option[(LongObj[T], A)] =
+    def unapply[T <: Txn/*[T]*/, A](entry: Entry[T, A]): Option[(LongObj[T], A)] =
       Some((entry.key, entry.value))
 
-    def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Elem[T] =
+    def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Elem[T] =
       Impl.readIdentifiedEntry(in)
 
-    implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, Entry[T, A]] =
+    implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Entry[T, A]] =
       Impl.entryFormat[T, A]
   }
-  trait Entry[T <: Txn[T], +A] extends Elem[T] with Publisher[T, m.Change[Long]] {
+  trait Entry[T <: Txn/*[T]*/, +A] extends Elem[T] with Publisher[T, m.Change[Long]] {
     def key  : LongObj[T]
     def value: A
   }
 
-  type Leaf[T <: Txn[T], +A] = Vec[Entry[T, A]]
+  type Leaf[T <: Txn/*[T]*/, +A] = Vec[Entry[T, A]]
 
-  sealed trait Change[T <: Txn[T], A] {
+  sealed trait Change[T <: Txn/*[T]*/, A] {
     def entry: Entry[T, A]
   }
 
-  final case class Added  [T <: Txn[T], A](time: Long          , entry: Entry[T, A]) extends Change[T, A]
-  final case class Removed[T <: Txn[T], A](time: Long          , entry: Entry[T, A]) extends Change[T, A]
-  final case class Moved  [T <: Txn[T], A](time: m.Change[Long], entry: Entry[T, A]) extends Change[T, A]
+  final case class Added  [T <: Txn/*[T]*/, A](time: Long          , entry: Entry[T, A]) extends Change[T, A]
+  final case class Removed[T <: Txn/*[T]*/, A](time: Long          , entry: Entry[T, A]) extends Change[T, A]
+  final case class Moved  [T <: Txn/*[T]*/, A](time: m.Change[Long], entry: Entry[T, A]) extends Change[T, A]
 
   object Modifiable {
     /** Extractor to check if a `BiPin` is actually a `BiPin.Modifiable`. */
-    def unapply[T <: Txn[T], A](v: BiPin[T, A]): Option[Modifiable[T, A]] = {
+    def unapply[T <: Txn/*[T]*/, A](v: BiPin[T, A]): Option[Modifiable[T, A]] = {
       if (v.isInstanceOf[Modifiable[_, _]]) Some(v.asInstanceOf[Modifiable[T, A]]) else None
     }
 
-    def read[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
+    def read[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
       format[T, A].readT(in)
 
-    def apply[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
+    def apply[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
       Impl.newModifiable[T, E]
 
-    implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiPin.Modifiable[T, A]] =
+    implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiPin.Modifiable[T, A]] =
       Impl.modifiableFormat[T, A]
   }
 
-  trait Modifiable[T <: Txn[T], A] extends BiPin[T, A] {
+  trait Modifiable[T <: Txn/*[T]*/, A] extends BiPin[T, A] {
     def add   (key: LongObj[T], value: A)(implicit tx: T): Unit
     def remove(key: LongObj[T], value: A)(implicit tx: T): Boolean
     def clear()(implicit tx: T): Unit
@@ -80,17 +80,17 @@ object BiPin extends Obj.Type {
     override def changed: EventLike[T, Update[T, A, Modifiable[T, A]]]
   }
 
-  def read[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): BiPin[T, A] =
+  def read[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput)(implicit tx: T): BiPin[T, A] =
     format[T, A].readT(in)
 
-  implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiPin[T, A]] =
+  implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiPin[T, A]] =
     Impl.format[T, A]
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] =
     Impl.readIdentifiedObj(in)
 }
 
-trait BiPin[T <: Txn[T], A] extends Obj[T] with Publisher[T, BiPin.Update[T, A, BiPin[T, A]]] {
+trait BiPin[T <: Txn/*[T]*/, A] extends Obj[T] with Publisher[T, BiPin.Update[T, A, BiPin[T, A]]] {
   import BiPin.{Entry, Leaf}
 
   def modifiableOption: Option[BiPin.Modifiable[T, A]]

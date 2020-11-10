@@ -24,11 +24,11 @@ import de.sciss.serial.{ConstFormat, DataInput, TFormat}
 import scala.collection.immutable.{IndexedSeq => Vec, Queue => IQueue}
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
 
-trait TxnMixin[Tx <: Txn[Tx]]
-  extends Txn[Tx] with BasicTxnImpl[Tx] with VersionInfo.Modifiable {
+trait TxnMixin[Tx <: Txn/*[Tx]*/]
+  extends Txn/*[Tx]*/ with BasicTxnImpl[Tx] with VersionInfo.Modifiable {
   self: Tx =>
 
-  type T = Tx
+//  type T = Tx
 
   // ---- abstract ----
 
@@ -38,7 +38,7 @@ trait TxnMixin[Tx <: Txn[Tx]]
 
   // ---- info ----
 
-  final private[lucre] def reactionMap: ReactionMap[T] = system.reactionMap
+  final private[lucre] def reactionMap: ReactionMap[T] = ??? // system.reactionMap
 
   final def info: VersionInfo.Modifiable = this
 
@@ -117,11 +117,11 @@ trait TxnMixin[Tx <: Txn[Tx]]
     flushCaches(meld, markNewVersionFlag, dirtyMaps)
   }
 
-  final protected def fullCache: CacheMap.Durable[T, Int, DurablePersistentMap[T, Int]] = system.fullCache
+  final protected def fullCache: CacheMap.Durable[T, Int, DurablePersistentMap[T, Int]] = ??? // system.fullCache
   // final protected def partialCache  = system.partialCache
 
   final def newId(): Id = {
-    val res = new ConfluentId[T](system.newIdValue()(this), Path.empty[T])
+    val res = new ConfluentId[T](system.newIdValue()(??? /*this*/), Path.empty[T])
     log(s"txn newId $res")
     res
   }
@@ -283,18 +283,18 @@ trait TxnMixin[Tx <: Txn[Tx]]
   override def toString = s"confluent.Sys#Tx$inputAccess"
 }
 
-trait RegularTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D]] extends TxnMixin[Tx] {
+trait RegularTxnMixin[Tx <: Txn/*[Tx]*/, D <: DurableLike.Txn/*[D]*/] extends TxnMixin[Tx] {
   self: Tx =>
 
   protected def cursorCache: Cache[T]
 
   final protected def flushCaches(meldInfo: MeldInfo[T], newVersion: Boolean, caches: Vec[Cache[T]]): Unit =
-    system.flushRegular(meldInfo, newVersion, caches :+ cursorCache)(this)
+    ??? // system.flushRegular(meldInfo, newVersion, caches :+ cursorCache)(this)
 
   override def toString = s"Confluent#Tx$inputAccess"
 }
 
-trait RootTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D]]
+trait RootTxnMixin[Tx <: Txn/*[Tx]*/, D <: DurableLike.Txn/*[D]*/]
   extends TxnMixin[Tx] {
   self: Tx =>
 
@@ -303,7 +303,7 @@ trait RootTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D]]
   final def isRetroactive = false
 
   final protected def flushCaches(meldInfo: MeldInfo[T], newVersion: Boolean, caches: Vec[Cache[T]]): Unit =
-    system.flushRoot(meldInfo, newVersion, caches)(this)
+    ??? // system.flushRoot(meldInfo, newVersion, caches)(this)
 
   override def toString = "Confluent.RootTxn"
 }

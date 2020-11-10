@@ -28,7 +28,7 @@ object DurableConfluentMapImpl {
   private final class WithPrefix[A](val len: Int, val term: Long, val value: A)
 }
 
-sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMap[T, K] {
+sealed trait DurableConfluentMapImpl[T <: Txn/*[T]*/, K] extends DurablePersistentMap[T, K] {
   import DurableConfluentMapImpl._
 
   protected def store: DataStore
@@ -77,7 +77,7 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
       // if there is a single entry, construct a new ancestor.map with the
       // entry's value taken as root value
       case Some(EntrySingle(prevTerm, prevValue)) if term != prevTerm =>  // skip to overwrite existing entries
-        putFullMap[A](key, index, term, value, prevTerm, prevValue)(tx, format)
+        ??? // putFullMap[A](key, index, term, value, prevTerm, prevValue)(tx, format)
       // if there is an existing map, simply add the new value to it
       case Some(EntryMap(m)) =>
         m.add(term, value)(tx)
@@ -89,8 +89,8 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
         // re-written in the tree root, hence path.suffix == <term, term>)
         val indexTerm = index.term
         if (term == indexTerm) {
-          putPartials(key, index)(tx)
-          putFullSingle[A](key, index, term, value)(tx, format)
+          ??? // putPartials(key, index)(tx)
+          ??? // putFullSingle[A](key, index, term, value)(tx, format)
           // otherwise, we must read the root value for the entity, and then
           // construct a new map containing that root value along with the
           // new value
@@ -114,12 +114,12 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
           //                  putFullMap[ A ]( key, index, term, value, indexTerm, prevValue )
           getImmutable[A](key, tx) match {
             case Some(prevValue) =>
-              putPartials(key, index)(tx)
-              putFullMap   [A](key, index, term, value, indexTerm, prevValue)(tx, format)
+              ??? // putPartials(key, index)(tx)
+              ??? // putFullMap   [A](key, index, term, value, indexTerm, prevValue)(tx, format)
 
             case _ =>
-              putPartials(key, index)(tx)
-              putFullSingle[A](key, index, term, value)(tx, format)
+              ??? // putPartials(key, index)(tx)
+              ??? // putFullSingle[A](key, index, term, value)(tx, format)
           }
         }
     }
@@ -153,7 +153,7 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
       // if there is a single entry, construct a new ancestor.map with the
       // entry's value taken as root value
       case Some(EntrySingle(prevTerm, prevArr)) if term != prevTerm =>  // skip to overwrite existing entries
-        putFullMap[Array[Byte]](key, index, term, arr, prevTerm, prevArr)(tx, ByteArrayFormat)
+        ??? // putFullMap[Array[Byte]](key, index, term, arr, prevTerm, prevArr)(tx, ByteArrayFormat)
       // if there is an existing map, simply add the new value to it
       case Some(EntryMap(m)) =>
         m.add(term, arr)(tx)
@@ -165,8 +165,8 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
         // re-written in the tree root, hence path.suffix == <term, term>)
         val indexTerm = index.term
         if (term == indexTerm) {
-          putPartials(key, index)(tx)
-          putFullSingle[Array[Byte]](key, index, term, arr)(tx, ByteArrayFormat)
+          ??? // putPartials(key, index)(tx)
+          ??? // putFullSingle[Array[Byte]](key, index, term, arr)(tx, ByteArrayFormat)
           // otherwise, we must read the root value for the entity, and then
           // construct a new map containing that root value along with the
           // new value
@@ -181,12 +181,12 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
               arrOut.reset()
               format.write(prevValue, arrOut)
               val prevArr = arrOut.toByteArray
-              putPartials(key, index)(tx)
-              putFullMap   [Array[Byte]](key, index, term, arr, indexTerm, prevArr)(tx, ByteArrayFormat)
+              ??? // putPartials(key, index)(tx)
+              ??? // putFullMap   [Array[Byte]](key, index, term, arr, indexTerm, prevArr)(tx, ByteArrayFormat)
 
             case _ =>
-              putPartials(key, index)(tx)
-              putFullSingle[Array[Byte]](key, index, term, arr                    )(tx, ByteArrayFormat)
+              ??? // putPartials(key, index)(tx)
+              ??? // putFullSingle[Array[Byte]](key, index, term, arr                    )(tx, ByteArrayFormat)
           }
         }
     }
@@ -197,7 +197,7 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
     //         require( prevTerm != term, "Duplicate flush within same transaction? " + term.toInt )
     //         require( prevTerm == index.term, "Expected initial assignment term " + index.term.toInt + ", but found " + prevTerm.toInt )
     // create new map with previous value
-    val m = handler.newIndexMap[A](tx, prevTerm, prevValue)(index, format)
+    val m = handler.newIndexMap[A](tx, prevTerm, prevValue)(??? /*index*/, format)
     // store the full value at the full hash (path.sum)
     store.put { out =>
       writeKey(key, out) // out.writeInt( key )
@@ -263,13 +263,13 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
   final def getImmutable[A](key: K, tx: T)(implicit path: tx.Acc, format: ConstFormat[A]): Option[A] = {
     if (path.isEmpty) return None
     val (maxIndex, maxTerm) = path.splitIndex
-    getWithPrefixLen[A](key, maxIndex, maxTerm)(tx, format).map(_.value)
+    getWithPrefixLen[A](key, ??? /*maxIndex*/, maxTerm)(tx, format).map(_.value)
   }
 
   final def get[A](key: K, tx: T)(implicit path: tx.Acc, format: TFormat[T, A]): Option[A] = {
     if (path.isEmpty) return None
     val (maxIndex, maxTerm) = path.splitIndex
-    val opt = getWithPrefixLen[Array[Byte]](key, maxIndex, maxTerm)(tx, ByteArrayFormat)
+    val opt = getWithPrefixLen[Array[Byte]](key, ??? /*maxIndex*/, maxTerm)(tx, ByteArrayFormat)
     opt.map { wp =>
       //            (path.dropAndReplaceHead( preLen, writeTerm ), value)
       val access  = wp.term +: path.drop(wp.len)
@@ -335,7 +335,7 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
           }
 
         case 2 =>
-          val m = handler.readIndexMap[A](in, tx)(index, format)
+          val m = handler.readIndexMap[A](in, tx)(??? /*index*/, format)
           if (isOblivious) {
             m.nearestOption(term).map {
               case (term2, value) => new WithPrefix(preLen, term2, value)
@@ -350,14 +350,14 @@ sealed trait DurableConfluentMapImpl[T <: Txn[T], K] extends DurablePersistentMa
   }
 }
 
-final class ConfluentIntMapImpl[T <: Txn[T]](protected val store: DataStore, protected val handler: IndexMapHandler[T],
+final class ConfluentIntMapImpl[T <: Txn/*[T]*/](protected val store: DataStore, protected val handler: IndexMapHandler[T],
                                              protected val isOblivious: Boolean)
   extends DurableConfluentMapImpl[T, Int] {
 
   protected def writeKey(key: Int, out: DataOutput): Unit = out.writeInt(key)
 }
 
-final class ConfluentLongMapImpl[T <: Txn[T]](protected val store: DataStore, protected val handler: IndexMapHandler[T],
+final class ConfluentLongMapImpl[T <: Txn/*[T]*/](protected val store: DataStore, protected val handler: IndexMapHandler[T],
                                               protected val isOblivious: Boolean)
   extends DurableConfluentMapImpl[T, Long] {
 

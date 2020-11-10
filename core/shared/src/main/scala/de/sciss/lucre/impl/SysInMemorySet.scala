@@ -16,7 +16,7 @@ package impl
 
 import scala.concurrent.stm.TSet
 
-final class SysInMemorySet[T <: Txn[T], A] extends RefSet[T, A] {
+final class SysInMemorySet[T <: Txn/*[T]*/, A] extends RefSet[T, A] {
   private[this] val peer = TSet.empty[A]
 
   def add     (elem: A)(implicit tx: T): Boolean = peer.add     (elem)(tx.peer)

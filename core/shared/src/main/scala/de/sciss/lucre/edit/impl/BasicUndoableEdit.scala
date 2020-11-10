@@ -19,7 +19,7 @@ import de.sciss.lucre.Txn.peer
 
 import scala.concurrent.stm.Ref
 
-abstract class BasicUndoableEdit[T <: Txn[T]] extends UndoableEdit[T] {
+abstract class BasicUndoableEdit[T <: Txn/*[T]*/] extends UndoableEdit[T] {
 
   // ---- abstract ----
 

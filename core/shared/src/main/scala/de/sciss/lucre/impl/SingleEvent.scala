@@ -14,6 +14,6 @@
 package de.sciss.lucre
 package impl
 
-trait SingleEvent[T <: Txn[T], +A] extends Event[T, A] {
+trait SingleEvent[T <: Txn/*[T]*/, +A] extends Event[T, A] {
   private[lucre] final def slot = 0
 }

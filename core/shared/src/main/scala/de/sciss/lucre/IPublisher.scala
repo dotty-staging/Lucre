@@ -13,6 +13,6 @@
 
 package de.sciss.lucre
 
-trait IPublisher[T <: Exec[T], +A] {
+trait IPublisher[T <: Exec/*[T]*/, +A] {
   def changed: IEvent[T, A]
 }

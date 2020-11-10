@@ -28,7 +28,7 @@ object CacheMapImpl {
      * a sub system (`Durable`), serialization is a two-step process, using an intermediate
      * binary representation.
      */
-   sealed trait Entry[T <: Txn[T], -K, -Store] {
+   sealed trait Entry[T <: Txn/*[T]*/, -K, -Store] {
      def path: Access[T]
 
      def flush(key: K, outTerm: Long, store: Store)(implicit tx: T): Unit
@@ -47,7 +47,7 @@ object CacheMapImpl {
   * @tparam T   the underlying system's transaction type
   * @tparam K   the key type (typically `Int` for a variable map or `Long` for an identifier map)
   */
-sealed trait CacheMapImpl[T <: Txn[T], K, Store]
+sealed trait CacheMapImpl[T <: Txn/*[T]*/, K, Store]
   extends CacheMap[T, K, Store] {
 
   import CacheMapImpl._
@@ -125,16 +125,16 @@ sealed trait CacheMapImpl[T <: Txn[T], K, Store]
 object DurableCacheMapImpl {
   import CacheMapImpl.Entry
 
-  type Store[T <: Txn[T], K] = DurablePersistentMap[T, K]
+  type Store[T <: Txn/*[T]*/, K] = DurablePersistentMap[T, K]
 
-  def newIntCache[T <: Txn[T]](map: Store[T, Int]): CacheMap.Durable[T, Int, Store[T, Int]] =
+  def newIntCache[T <: Txn/*[T]*/](map: Store[T, Int]): CacheMap.Durable[T, Int, Store[T, Int]] =
     new DurableCacheMapImpl[T, Int] {
       // final protected def emptyCache: Map[Int, Any] = Map.empty
 
       final val store: Store[T, Int] = map
     }
 
-  private final class NonTxnEntry[T <: Txn[T], K, A](val path: Access[T], val value: A)
+  private final class NonTxnEntry[T <: Txn/*[T]*/, K, A](val path: Access[T], val value: A)
                                                     (implicit format: ConstFormat[A])
     extends Entry[T, K, Store[T, K]] {
     override def toString = s"NonTxnEntry($value)"
@@ -142,11 +142,11 @@ object DurableCacheMapImpl {
     def flush(key: K, outTerm: Long, store: Store[T, K])(implicit tx: T): Unit = {
       val pathOut = path.addTerm(outTerm)
       log(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
-      store.putImmutable(key, value, tx)(pathOut, format)
+      ??? // store.putImmutable(key, value, tx)(pathOut, format)
     }
   }
 
-  private final class TxnEntry[T <: Txn[T], K, A](val path: Access[T], val value: A)
+  private final class TxnEntry[T <: Txn/*[T]*/, K, A](val path: Access[T], val value: A)
                                                  (implicit format: TFormat[T, A])
     extends Entry[T, K, Store[T, K]] {
     
@@ -158,12 +158,12 @@ object DurableCacheMapImpl {
 //      val out = DataOutput()
 //      format.write(value, out)
 //      val arr = out.toByteArray
-      store.put(key, value, tx)(pathOut, format)
+      ??? // store.put(key, value, tx)(pathOut, format)
     }
   }
 }
 
-trait DurableCacheMapImpl[T <: Txn[T], K]
+trait DurableCacheMapImpl[T <: Txn/*[T]*/, K]
   extends CacheMap.Durable[T, K, DurablePersistentMap[T, K]]
   with CacheMapImpl[T, K, DurablePersistentMap[T, K]] {
 
@@ -185,7 +185,7 @@ trait DurableCacheMapImpl[T <: Txn[T], K]
     */
   override final def putCacheTxn[A](key: K, value: A, tx: T)
                           (implicit path: tx.Acc, format: TFormat[T, A]): Unit =
-    putCacheOnly(key, new TxnEntry[T, K, A](path, value))(tx)
+    ??? // putCacheOnly(key, new TxnEntry[T, K, A](path, value))(tx)
 
   /** Stores an entry in the cache for which a non-transactional format exists.
     *
@@ -201,7 +201,7 @@ trait DurableCacheMapImpl[T <: Txn[T], K]
     */
   override final def putCacheNonTxn[A](key: K, value: A, tx: T)
                              (implicit path: tx.Acc, format: ConstFormat[A]): Unit =
-    putCacheOnly(key, new NonTxnEntry[T, K, A](path, value))(tx)
+    ??? // putCacheOnly(key, new NonTxnEntry[T, K, A](path, value))(tx)
 
   /** Retrieves a value from the cache _or_ the underlying store (if not found in the cache), where 'only'
     * a transactional format exists.
@@ -274,9 +274,9 @@ trait DurableCacheMapImpl[T <: Txn[T], K]
 }
 
 object InMemoryCacheMapImpl {
-  private type Store[T <: Txn[T], K] = InMemoryConfluentMap[T, K]
+  private type Store[T <: Txn/*[T]*/, K] = InMemoryConfluentMap[T, K]
 
-  private final class Entry[T <: Txn[T], K, A]
+  private final class Entry[T <: Txn/*[T]*/, K, A]
   (val path: Access[T], val value: A)
     extends CacheMapImpl.Entry[T, K, Store[T, K]] {
     override def toString = s"Entry($value)"
@@ -284,19 +284,19 @@ object InMemoryCacheMapImpl {
     def flush(key: K, outTerm: Long, store: Store[T, K])(implicit tx: T): Unit = {
       val pathOut = path.addTerm(outTerm)
       log(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
-      store.put(key, value, tx)(pathOut)
+      ??? // store.put(key, value, tx)(pathOut)
     }
   }
 }
 
-trait InMemoryCacheMapImpl[T <: Txn[T], /* @spec(KeySpec) */ K]
+trait InMemoryCacheMapImpl[T <: Txn/*[T]*/, /* @spec(KeySpec) */ K]
   extends CacheMap.InMemory[T, K, InMemoryConfluentMap[T, K]]
   with CacheMapImpl[T, K, InMemoryConfluentMap[T, K]] {
 
   import InMemoryCacheMapImpl._
 
   final def putCache[/* @spec(ValueSpec) */ A](key: K, value: A, tx: T)(implicit path: tx.Acc): Unit =
-    putCacheOnly(key, new Entry(path, value))(tx)
+    ??? // putCacheOnly(key, new Entry(path, value))(tx)
 
   final def getCache[A](key: K, tx: T)(implicit path: tx.Acc): Option[A] =
     getCacheOnly(key, tx).orElse(store.get[A](key, tx))
@@ -311,16 +311,16 @@ trait InMemoryCacheMapImpl[T <: Txn[T], /* @spec(KeySpec) */ K]
 //object PartialCacheMapImpl {
 //  import CacheMapImpl.Entry
 //
-//  private type Store[T <: Txn[T], K] = DurablePersistentMap[T, K]
+//  private type Store[T <: Txn/*[T]*/, K] = DurablePersistentMap[T, K]
 //
-//  def newIntCache[T <: Txn[T]](map: Store[T, Int]): CacheMap.Partial[T, Int, Store[T, Int]] =
+//  def newIntCache[T <: Txn/*[T]*/](map: Store[T, Int]): CacheMap.Partial[T, Int, Store[T, Int]] =
 //    new PartialCacheMapImpl[T, Int] {
 //
 //      // final protected def emptyCache: Map[Int, Any] = Map.empty
 //      final val store: DurablePersistentMap[T, Int] = map
 //    }
 //
-//  private final class PartialEntry[T <: Txn[T], K, A](val fullPath: Access[T], val value: A)
+//  private final class PartialEntry[T <: Txn/*[T]*/, K, A](val fullPath: Access[T], val value: A)
 //                                                     (implicit format: TFormat[T, A])
 //    extends Entry[T, K, Store[T, K]] {
 //
@@ -339,7 +339,7 @@ trait InMemoryCacheMapImpl[T <: Txn[T], /* @spec(KeySpec) */ K]
 //  }
 //}
 //
-//trait PartialCacheMapImpl[T <: Txn[T], K]
+//trait PartialCacheMapImpl[T <: Txn/*[T]*/, K]
 //  extends CacheMap.Partial[T, K, DurablePersistentMap[T, K]]
 //  with CacheMapImpl       [T, K, DurablePersistentMap[T, K]] {
 //

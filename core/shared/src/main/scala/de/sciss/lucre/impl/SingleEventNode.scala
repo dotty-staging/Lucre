@@ -23,7 +23,7 @@ package impl
  *
  * I don't know if `Reactor` still needs the `equals` implementation?
  */
-trait SingleEventNode[T <: Txn[T], +A] extends Event.Node[T] { self =>
+trait SingleEventNode[T <: Txn/*[T]*/, +A] extends Event.Node[T] { self =>
 
   def changed: Event[T, A]
 

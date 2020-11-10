@@ -41,16 +41,16 @@ object TotalOrder {
   // ---- Set ----
 
   object Set {
-    def empty[T <: Exec[T]](rootTag: Int = 0)(implicit tx: T): Set[T] =
+    def empty[T <: Exec/*[T]*/](rootTag: Int = 0)(implicit tx: T): Set[T] =
       new SetNew[T](rootTag, tx)
 
-    def read[T <: Exec[T]](in: DataInput)(implicit tx: T): Set[T] =
+    def read[T <: Exec/*[T]*/](in: DataInput)(implicit tx: T): Set[T] =
       new SetRead(in, tx)
 
-    implicit def format[T <: Exec[T]]: TFormat[T, Set[T]] =
+    implicit def format[T <: Exec/*[T]*/]: TFormat[T, Set[T]] =
       new SetFormat[T]
 
-    sealed trait EntryOption[T <: Exec[T]] {
+    sealed trait EntryOption[T <: Exec/*[T]*/] {
       protected type E    = Entry[T]
       protected type EOpt = EntryOption[T]
 
@@ -64,7 +64,7 @@ object TotalOrder {
       def isEmpty: Boolean
     }
 
-    final class EmptyEntry[T <: Exec[T]] private[TotalOrder]() extends EntryOption[T] {
+    final class EmptyEntry[T <: Exec/*[T]*/] private[TotalOrder]() extends EntryOption[T] {
       private[Set] def updatePrev(e: EOpt)(implicit t: T): Unit = ()
       private[Set] def updateNext(e: EOpt)(implicit t: T): Unit = ()
 
@@ -81,7 +81,7 @@ object TotalOrder {
       override def toString = "<empty>"
     }
 
-    final class Entry[T <: Exec[T]] private[TotalOrder](val id: Ident[T],
+    final class Entry[T <: Exec/*[T]*/] private[TotalOrder](val id: Ident[T],
                                                         set     : Set[T],
                                                         tagVal  : Var[T, Int],
                                                         prevRef : Var[T, EntryOption[T]],
@@ -153,16 +153,16 @@ object TotalOrder {
     }
   }
 
-  private final class SetFormat[T <: Exec[T]] extends WritableFormat[T, Set[T]] {
+  private final class SetFormat[T <: Exec/*[T]*/] extends WritableFormat[T, Set[T]] {
     override def readT(in: DataInput)(implicit tx: T): Set[T] = new SetRead[T](in, tx)
 
     override def toString = "Set.format"
   }
 
-  private final class SetRead[T <: Exec[T]](in: DataInput, tx0: T)
+  private final class SetRead[T <: Exec/*[T]*/](in: DataInput, tx0: T)
     extends Set[T] with MutableImpl[T] {
 
-    val id: Ident[T] = tx0.readId(in)
+    val id: Ident[T] = ??? // tx0.readId(in)
 
     {
       val version = in.readByte()
@@ -175,16 +175,16 @@ object TotalOrder {
     val root: Set.Entry[T] = EntryFormat.readT(in)(tx0)
   }
 
-  private final class SetNew[T <: Exec[T]](rootTag: Int, tx0: T)
+  private final class SetNew[T <: Exec/*[T]*/](rootTag: Int, tx0: T)
     extends Set[T] with MutableImpl[T] {
     me =>
 
-    val id: Ident[T] = tx0.newId()
+    val id: Ident[T] = ??? // tx0.newId()
 
     protected val sizeVal: Var[T, Int] = id.newIntVar(1)(tx0)
 
     val root: E = {
-      val rootId  = tx0.newId()
+      val rootId: Ident[T] = ??? //   = tx0.newId()
       val tagVal  = rootId.newIntVar(rootTag)(tx0)
       val prevRef = id.newVar[EOpt](empty)(tx0, EntryOptionFormat)
       val nextRef = id.newVar[EOpt](empty)(tx0, EntryOptionFormat)
@@ -192,7 +192,7 @@ object TotalOrder {
     }
   }
 
-  sealed trait Set[T <: Exec[T]] extends TotalOrder[T] {
+  sealed trait Set[T <: Exec/*[T]*/] extends TotalOrder[T] {
     me =>
     
     final type           E    = Set.Entry[T]
@@ -211,7 +211,7 @@ object TotalOrder {
 
     protected implicit object EntryFormat extends WritableFormat[T, E] {
       override def readT(in: DataInput)(implicit tx: T): E = {
-        val id      = tx.readId(in)
+        val id: Ident[T] = ??? //       = tx.readId(in)
         val tagVal  = id.readIntVar(in)
         val prevRef = id.readVar[EOpt](in)(EntryOptionFormat)
         val nextRef = id.readVar[EOpt](in)(EntryOptionFormat)
@@ -276,7 +276,7 @@ object TotalOrder {
     }
 
     private def insert(prev: EOpt, next: EOpt, nextTag: Int, recTag: Int)(implicit tx: T): E = {
-      val idE         = tx.newId()
+      val idE: Ident[T] = ??? //          = tx.newId()
       val recPrevRef  = idE.newVar[EOpt](prev)
       val recNextRef  = idE.newVar[EOpt](next)
       val recTagVal   = idE.newIntVar(recTag)
@@ -404,19 +404,19 @@ object TotalOrder {
   // ---- Map ----
 
   object Map {
-    def empty[T <: Exec[T], A](observer: Map.RelabelObserver[T, A], entryView: A => Map.Entry[T, A],
+    def empty[T <: Exec/*[T]*/, A](observer: Map.RelabelObserver[T, A], entryView: A => Map.Entry[T, A],
                                rootTag: Int = 0)
                               (implicit tx: T, keyFormat: TFormat[T, A]): Map[T, A] = {
       new MapNew[T, A](observer, entryView, rootTag, tx)
     }
 
-    def read[T <: Exec[T], A](in: DataInput, observer: Map.RelabelObserver[T, A],
+    def read[T <: Exec/*[T]*/, A](in: DataInput, observer: Map.RelabelObserver[T, A],
                               entryView: A => Map.Entry[T, A])
                              (implicit tx: T, keyFormat: TFormat[T, A]): Map[T, A] = {
       new MapRead[T, A](observer, entryView, in, tx)
     }
 
-    implicit def format[T <: Exec[T], A](observer: Map.RelabelObserver[T, A],
+    implicit def format[T <: Exec/*[T]*/, A](observer: Map.RelabelObserver[T, A],
                                              entryView: A => Map.Entry[T, A])
                                             (implicit keyFormat: TFormat[T, A]): TFormat[T, Map[T, A]] =
       new MapFormat[T, A](observer, entryView)
@@ -467,7 +467,7 @@ object TotalOrder {
       override def toString = "NoRelabelObserver"
     }
 
-    final class Entry[T <: Exec[T], A] private[TotalOrder](map: Map[T, A], val id: Ident[T],
+    final class Entry[T <: Exec/*[T]*/, A] private[TotalOrder](map: Map[T, A], val id: Ident[T],
                                                            tagVal:  Var[T, Int],
                                                            prevRef: Var[T, KeyOption[T, A]],
                                                            nextRef: Var[T, KeyOption[T, A]])
@@ -533,7 +533,7 @@ object TotalOrder {
     }
   }
 
-  private[TotalOrder] sealed trait KeyOption[T <: Exec[T], A] extends Writable {
+  private[TotalOrder] sealed trait KeyOption[T <: Exec/*[T]*/, A] extends Writable {
     def orNull: Map.Entry[T, A]
 
     def isDefined: Boolean
@@ -542,7 +542,7 @@ object TotalOrder {
     def get: A
   }
 
-  private[TotalOrder] final class EmptyKey[T <: Exec[T], A]
+  private[TotalOrder] final class EmptyKey[T <: Exec/*[T]*/, A]
     extends KeyOption[T, A] /* with EmptyMutable */ {
 
     def isDefined: Boolean = false
@@ -557,7 +557,7 @@ object TotalOrder {
     override def toString = "<empty>"
   }
 
-  private[TotalOrder] final class DefinedKey[T <: Exec[T], A](map: Map[T, A], val get: A)
+  private[TotalOrder] final class DefinedKey[T <: Exec/*[T]*/, A](map: Map[T, A], val get: A)
     extends KeyOption[T, A] {
 
     def isDefined: Boolean = true
@@ -573,7 +573,7 @@ object TotalOrder {
     override def toString: String = get.toString
   }
 
-  private final class MapFormat[T <: Exec[T], A](observer: Map.RelabelObserver[T, A],
+  private final class MapFormat[T <: Exec/*[T]*/, A](observer: Map.RelabelObserver[T, A],
                                                      entryView: A => Map.Entry[T, A])
                                                     (implicit keyFormat: TFormat[T, A])
     extends WritableFormat[T, Map[T, A]] {
@@ -584,12 +584,12 @@ object TotalOrder {
     override def toString = "Map.format"
   }
 
-  private final class MapRead[T <: Exec[T], A](protected val observer: Map.RelabelObserver[T, A],
+  private final class MapRead[T <: Exec/*[T]*/, A](protected val observer: Map.RelabelObserver[T, A],
                                                val entryView: A => Map.Entry[T, A], in: DataInput, tx0: T)
                                               (implicit private[TotalOrder] val keyFormat: TFormat[T, A])
     extends Map[T, A] with MutableImpl[T] {
 
-    val id: Ident[T] = tx0.readId(in)
+    val id: Ident[T] = ??? // tx0.readId(in)
 
     {
       val version = in.readByte()
@@ -601,18 +601,18 @@ object TotalOrder {
     val root: Map.Entry[T, A] = EntryFormat.readT(in)(tx0)
   }
 
-  private final class MapNew[T <: Exec[T], A](protected val observer: Map.RelabelObserver[T, A],
+  private final class MapNew[T <: Exec/*[T]*/, A](protected val observer: Map.RelabelObserver[T, A],
                                               val entryView: A => Map.Entry[T, A], rootTag: Int, tx0: T)
                                              (implicit private[TotalOrder] val keyFormat: TFormat[T, A])
     extends Map[T, A] with MutableImpl[T] {
 
-    val id: Ident[T] = tx0.newId()
+    val id: Ident[T] = ??? // tx0.newId()
     
     protected val sizeVal: Var[T, Int] = id.newIntVar(1)(tx0)
 
     val root: E = {
       implicit val tx: T = tx0
-      val idE     = tx.newId()
+      val idE: Ident[T] = ??? //      = tx.newId()
       val tagVal  = idE.newIntVar(rootTag)
       val prevRef = idE.newVar[KOpt](emptyKey)
       val nextRef = idE.newVar[KOpt](emptyKey)
@@ -620,7 +620,7 @@ object TotalOrder {
     }
   }
 
-  private final class MapEntryFormat[T <: Exec[T], A](map: Map[T, A])
+  private final class MapEntryFormat[T <: Exec/*[T]*/, A](map: Map[T, A])
     extends WritableFormat[T, Map.Entry[T, A]] {
 
     type E    = Map.Entry[T, A]
@@ -628,7 +628,7 @@ object TotalOrder {
 
     override def readT(in: DataInput)(implicit tx: T): E = {
       import map.keyOptionFmt
-      val idE     = tx.readId(in)
+      val idE: Ident[T] = ??? //      = tx.readId(in)
       val tagVal  = idE.readIntVar(in)
       val prevRef = idE.readVar[KOpt](in)
       val nextRef = idE.readVar[KOpt](in)
@@ -636,7 +636,7 @@ object TotalOrder {
     }
   }
 
-  private final class KeyOptionFormat[T <: Exec[T], A](map: Map[T, A])
+  private final class KeyOptionFormat[T <: Exec/*[T]*/, A](map: Map[T, A])
     extends WritableFormat[T, KeyOption[T, A]] {
 
     type KOpt = KeyOption[T, A]
@@ -653,7 +653,7 @@ object TotalOrder {
   /*
     * A special iterator used for the relabel observer.
     */
-  private final class RelabelIterator[T <: Exec[T], A](recOff: Int, num: Int, recE: Map.Entry[T, A],
+  private final class RelabelIterator[T <: Exec/*[T]*/, A](recOff: Int, num: Int, recE: Map.Entry[T, A],
                                                        firstK: KeyOption[T, A],
                                                        entryView: A => Map.Entry[T, A])(implicit tx: T)
     extends Iterator[A] {
@@ -687,7 +687,7 @@ object TotalOrder {
     }
   }
 
-  sealed trait Map[T <: Exec[T], A] extends TotalOrder[T] {
+  sealed trait Map[T <: Exec/*[T]*/, A] extends TotalOrder[T] {
     map =>
 
     override def toString = s"Map$id"
@@ -727,7 +727,7 @@ object TotalOrder {
      * must be done with a successive call to either `placeAfter` or `placeBefore`!
      */
     def insert()(implicit tx: T): E = {
-      val idE         = tx.newId()
+      val idE: Ident[T] = ??? //          = tx.newId()
       val recTagVal   = idE.newIntVar(-1)
       val recPrevRef  = idE.newVar[KOpt](emptyKey)
       val recNextRef  = idE.newVar[KOpt](emptyKey)
@@ -921,7 +921,7 @@ object TotalOrder {
     }
   }
 }
-sealed trait TotalOrder[T <: Exec[T]] extends Mutable[T] {
+sealed trait TotalOrder[T <: Exec/*[T]*/] extends Mutable[T] {
   type E
 
   /**

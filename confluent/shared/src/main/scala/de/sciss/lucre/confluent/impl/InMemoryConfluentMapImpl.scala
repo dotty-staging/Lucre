@@ -22,7 +22,7 @@ object InMemoryConfluentMapImpl {
   private final case class EntryPre    (hash: Long)       extends Entry[Nothing]
   private final case class EntryFull[A](term: Long, v: A) extends Entry[A]
 }
-final class InMemoryConfluentMapImpl[T <: Txn[T], K] extends InMemoryConfluentMap[T, K] {
+final class InMemoryConfluentMapImpl[T <: Txn/*[T]*/, K] extends InMemoryConfluentMap[T, K] {
   import InMemoryConfluentMapImpl._
 
   private type Entries = Map[Long, Entry[Any]]
@@ -71,7 +71,7 @@ final class InMemoryConfluentMapImpl[T <: Txn[T], K] extends InMemoryConfluentMa
     if (path.isEmpty) return None
     store.get(key)(tx.peer).flatMap { entries =>
       val (maxIndex, maxTerm) = path.splitIndex
-      getWithPrefixLen[A, A](maxIndex, maxTerm, entries)((_, _, value) => value)
+      getWithPrefixLen[A, A](??? /*maxIndex*/, maxTerm, entries)((_, _, value) => value)
     }
   }
 
@@ -79,8 +79,8 @@ final class InMemoryConfluentMapImpl[T <: Txn[T], K] extends InMemoryConfluentMa
     if (path.isEmpty) return None
     store.get(key)(tx.peer).flatMap { entries =>
       val (maxIndex, maxTerm) = path.splitIndex
-      getWithPrefixLen[A, (Access[T], A)](maxIndex, maxTerm, entries)((preLen, writeTerm, value) =>
-        (writeTerm +: path.drop(preLen), value)
+      getWithPrefixLen[A, (Access[T], A)](??? /*maxIndex*/, maxTerm, entries)((preLen, writeTerm, value) =>
+        ??? /*(writeTerm +: path.drop(preLen), value)*/
       )
     }
   }

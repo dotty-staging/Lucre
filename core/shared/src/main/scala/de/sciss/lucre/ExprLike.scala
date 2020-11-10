@@ -18,7 +18,7 @@ import de.sciss.model.Change
 /** This is the current compromise for unifying `Ex`/`IExpr` and `Expr`
   * in terms of their usability through `runWith` vs. `obj.attr`.
   */
-trait ExprLike[T <: Exec[T], +A] extends Form[T] {
+trait ExprLike[T <: Exec/*[T]*/, +A] extends Form[T] {
   def changed: Observable[T, Change[A]]
 
   def value(implicit tx: T): A

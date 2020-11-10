@@ -14,6 +14,7 @@
 package de.sciss.lucre.confluent
 package impl
 
+import de.sciss.lucre
 import de.sciss.lucre.confluent.Log.log
 import de.sciss.lucre.confluent.impl.DurableCacheMapImpl.Store
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
@@ -26,10 +27,11 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.concurrent.stm.{InTxn, TxnExecutor}
 
-trait Mixin[Tx <: Txn[Tx]]
-  extends ConfluentLike[Tx] with IndexMapHandler[Tx] with PartialMapHandler[Tx] with ReactionMapImpl.Mixin[Tx] {
+trait Mixin[Tx <: Txn/*[Tx]*/]
+  extends ConfluentLike/*[Tx]*/ with IndexMapHandler[Tx] with PartialMapHandler[Tx] with ReactionMapImpl.Mixin[Tx] {
 
   self =>
+  type T = Tx
 
   // ---- abstract methods ----
 
@@ -59,9 +61,9 @@ trait Mixin[Tx <: Txn[Tx]]
     durable.step { implicit tx =>
       val root = durable.rootJoin { implicit tx =>
         val durRootId     = durable.newIdValue() // stm.DurableSurgery.newIdValue(durable)
-        val idCnt         = tx.newCachedIntVar(0)
-        val versionLinear = tx.newCachedIntVar(0)
-        val versionRandom = tx.newCachedLongVar(RandomImpl.initialScramble(0L)) // scramble !!!
+        val idCnt        : lucre.Var[D, Int] = ??? // = tx.newCachedIntVar(0)
+        val versionLinear: lucre.Var[D, Int] = ??? // = tx.newCachedIntVar(0)
+        val versionRandom: lucre.Var[D, Long] = ??? // = tx.newCachedLongVar(RandomImpl.initialScramble(0L)) // scramble !!!
         val partialTree   = Ancestor.newTree[D, Long](1L << 32)(tx, TFormat.Long, _.toInt)
         GlobalState[T, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
           versionRandom = versionRandom, partialTree = partialTree)
@@ -108,18 +110,18 @@ trait Mixin[Tx <: Txn[Tx]]
 
   final def readPath(in: DataInput): Access[T] = Path.read[T](in)
 
-  final def newCursor()(implicit tx: T): Cursor[T, D] = newCursor(tx.inputAccess)
+  final def newCursor()(implicit tx: T): Cursor[T, D] = ??? // newCursor(tx.inputAccess)
 
   final def newCursor(init: Access[T])(implicit tx: T): Cursor[T, D] = {
     implicit val dtx: D = durableTx(tx)
-    implicit val s: ConfluentLike[T] { type D = self.D } = this
+    implicit val s: ConfluentLike/*[T]*/ { type D = self.D } = this
     Cursor[T, D](init)
   }
 
   final def readCursor(in: DataInput)(implicit tx: T): Cursor[T, D] = {
     implicit val dtx: D = durableTx(tx)
 //    implicit val dAcc: Unit = ()
-    implicit val s: ConfluentLike[T] { type D = self.D } = this  // this is to please the IntelliJ IDEA presentation compiler
+    implicit val s: ConfluentLike/*[T]*/ { type D = self.D } = this  // this is to please the IntelliJ IDEA presentation compiler
     Cursor.read[T, D](in)
   }
 
@@ -167,7 +169,7 @@ trait Mixin[Tx <: Txn[Tx]]
         durable.write(did)(bFmt.write(_durV, _))
         _durV
       })
-      tx.newHandle(confV) -> durV
+      ??? // tx.newHandle(confV) -> durV
     }
 
   private def executeRoot[A](fun: T => A): A = LTxn.atomic { itx =>
@@ -191,7 +193,7 @@ trait Mixin[Tx <: Txn[Tx]]
 
       case _ =>
         // implicit val dtx = durableTx(tx) // created on demand (now)
-        writeNewTree(rootPath.index, 0)
+        writeNewTree(??? /*rootPath.index*/, 0)
         writePartialTreeVertex(partialTree.root)
         writeVersionInfo(rootPath.term)
 
@@ -321,7 +323,7 @@ trait Mixin[Tx <: Txn[Tx]]
     }
 
     writeTreeVertex(tree, child)
-    val tsMap               = readTimeStampMap(index)
+    val tsMap               = readTimeStampMap(??? /*index*/)
     tsMap.add(childTerm, ()) // XXX TODO: more efficient would be to pass in `child` directly
 
     // ---- partial ----
@@ -343,7 +345,7 @@ trait Mixin[Tx <: Txn[Tx]]
     val oldPath             = tx.inputAccess
 
     // ---- full ----
-    writeNewTree(oldPath :+ term, level)
+    writeNewTree(??? /*oldPath :+ term*/, level)
 
     // ---- partial ----
     val parentTerm = oldPath.term
@@ -459,7 +461,7 @@ trait Mixin[Tx <: Txn[Tx]]
     }
     writeTreeVertex(it, tree.root)(dtx)
 
-    val map = newIndexMap(tx, term, ())(index, TFormat.Unit)
+    val map = newIndexMap(tx, term, ())(??? /*index*/, TFormat.Unit)
     store.put { out =>
       out.writeByte(5)
       out.writeInt(vInt)
@@ -477,7 +479,7 @@ trait Mixin[Tx <: Txn[Tx]]
       out.writeByte(5)
       out.writeInt(index.term.toInt)
     } { in =>
-      readIndexMap[Unit](in, tx)(index, TFormat.Unit)
+      readIndexMap[Unit](in, tx)(??? /*index*/, TFormat.Unit)
     }
     opt.getOrElse(sys.error(s"No time stamp map found for $index"))
   }

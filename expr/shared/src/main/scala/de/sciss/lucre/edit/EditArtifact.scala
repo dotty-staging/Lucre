@@ -20,26 +20,26 @@ import de.sciss.lucre.edit.UndoManager.{CannotRedoException, CannotUndoException
 import de.sciss.lucre.edit.impl.BasicUndoableEdit
 
 object EditArtifact {
-  def updateChild[T <: Txn[T]](a: Artifact.Modifiable[T], child: Child)(implicit tx: T): Unit =
+  def updateChild[T <: Txn/*[T]*/](a: Artifact.Modifiable[T], child: Child)(implicit tx: T): Unit =
     UndoManager.find[T].fold(
       updateChildDo   (a, child)
     ) { implicit undo =>
       updateChildUndo (a, child)
     }
 
-  private def updateChildDo[T <: Txn[T]](a: Artifact.Modifiable[T], child: Child)(implicit tx: T): Unit =
+  private def updateChildDo[T <: Txn/*[T]*/](a: Artifact.Modifiable[T], child: Child)(implicit tx: T): Unit =
     a.child = child
 
-  def updateChildUndo[T <: Txn[T]](a: Artifact.Modifiable[T], child: Child)
+  def updateChildUndo[T <: Txn/*[T]*/](a: Artifact.Modifiable[T], child: Child)
                                   (implicit tx: T, undo: UndoManager[T]): Unit = {
     val edit = new UpdateChild[T](a, child, tx)
     undo.addEdit(edit)
   }
 
-  private final class UpdateChild[T <: Txn[T]](a0: Artifact.Modifiable[T], child: Child, tx0: T)
+  private final class UpdateChild[T <: Txn/*[T]*/](a0: Artifact.Modifiable[T], child: Child, tx0: T)
     extends BasicUndoableEdit[T] {
 
-    private[this] val aH    = tx0.newHandle(a0)
+    private[this] val aH    : Source[T, Artifact.Modifiable[T]] = ??? // tx0.newHandle(a0)
     private[this] val prev  = a0.child(tx0)
 
     private def invalidMessage = s"$name: value changed"

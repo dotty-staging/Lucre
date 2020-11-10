@@ -45,7 +45,7 @@ object BiGroupImpl {
     case Span.Void          => LongPoint2D(MaxCoordinate, MinCoordinate    ) // ?? what to do with this case ?? forbid?
   }
 
-  final def intersectTime[T <: Txn[T], A](tree: Tree[T, A])(time: Long)(implicit tx: T): Iterator[A] = {
+  final def intersectTime[T <: Txn/*[T]*/, A](tree: Tree[T, A])(time: Long)(implicit tx: T): Iterator[A] = {
     val start = time
     val stop = time + 1
     //         val shape = Rectangle( ti, MinCoordinate, MaxCoordinate - ti + 1, ti - MinCoordinate + 1 )
@@ -55,7 +55,7 @@ object BiGroupImpl {
     tree.rangeQuery(shape)
   }
 
-  final def intersectSpan[T <: Txn[T], A](tree: Tree[T, A])(span: SpanLike)(implicit tx: T): Iterator[A] = {
+  final def intersectSpan[T <: Txn/*[T]*/, A](tree: Tree[T, A])(span: SpanLike)(implicit tx: T): Iterator[A] = {
     // horizontally: until query_stop; vertically: from query_start
     span match {
       case Span(start, stop) =>
@@ -75,7 +75,7 @@ object BiGroupImpl {
     }
   }
 
-  final def rangeSearch[T <: Txn[T], A](tree: Tree[T, A])(start: SpanLike, stop: SpanLike)
+  final def rangeSearch[T <: Txn/*[T]*/, A](tree: Tree[T, A])(start: SpanLike, stop: SpanLike)
                                        (implicit tx: T): Iterator[A] = {
     if (start === Span.Void || stop === Span.Void) return Iterator.empty
 
@@ -87,13 +87,13 @@ object BiGroupImpl {
   }
 
   // this can be easily implemented with two rectangular range searches
-  final def eventsAt[T <: Txn[T], A](tree: Tree[T, A])(time: Long)(implicit tx: T): (Iterator[A], Iterator[A]) = {
+  final def eventsAt[T <: Txn/*[T]*/, A](tree: Tree[T, A])(time: Long)(implicit tx: T): (Iterator[A], Iterator[A]) = {
     val startShape = LongRectangle(time, MinCoordinate, 1, MaxSide)
     val stopShape  = LongRectangle(MinCoordinate, time, MaxSide, 1)
     (tree.rangeQuery(startShape), tree.rangeQuery(stopShape))
   }
 
-  final def eventAfter[T <: Txn[T], T2](tree: Tree[T, (SpanLike, T2)])(time: Long)(implicit tx: T): Option[Long] = {
+  final def eventAfter[T <: Txn/*[T]*/, T2](tree: Tree[T, (SpanLike, T2)])(time: Long)(implicit tx: T): Option[Long] = {
     val t1    = time + 1
     val point = LongPoint2D(t1, t1) // + 1
     val span  = tree.nearestNeighborOption(point, AdvanceNextNeighborMetric).map(_._1).getOrElse(Span.Void)
@@ -111,7 +111,7 @@ object BiGroupImpl {
     }
   }
 
-  final def eventBefore[T <: Txn[T], T2](tree: Tree[T, (SpanLike, T2)])(time: Long)(implicit tx: T): Option[Long] = {
+  final def eventBefore[T <: Txn/*[T]*/, T2](tree: Tree[T, (SpanLike, T2)])(time: Long)(implicit tx: T): Option[Long] = {
     val t1    = time - 1
     val point = LongPoint2D(t1, t1)
     val span  = tree.nearestNeighborOption(point, RegressNextNeighborMetric).map(_._1).getOrElse(Span.Void)
@@ -141,13 +141,13 @@ object BiGroupImpl {
   @elidable(elidable.CONFIG) private def log(what: => String): Unit =
     if (showLog) println(s"<bigroup> $what")
 
-  type Tree    [T <: Txn[T], A] = SkipOctree[T, LongPoint2DLike, LongSquare, A]
+  type Tree    [T <: Txn/*[T]*/, A] = SkipOctree[T, LongPoint2DLike, LongSquare, A]
 
-  type LeafImpl[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]] = (SpanLike, Vec[Entry[T, E[T]]])
+  type LeafImpl[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~]] = (SpanLike, Vec[Entry[T, E[T]]])
 
-  type TreeImpl[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]] = SkipOctree[T, LongPoint2DLike, LongSquare, LeafImpl[T, E]]
+  type TreeImpl[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~]] = SkipOctree[T, LongPoint2DLike, LongSquare, LeafImpl[T, E]]
 
-  def verifyConsistency[T <: Txn[T], A](group: BiGroup[T, A], reportOnly: Boolean)(implicit tx: T): Vec[String] =
+  def verifyConsistency[T <: Txn/*[T]*/, A](group: BiGroup[T, A], reportOnly: Boolean)(implicit tx: T): Vec[String] =
     group match {
       case impl: Impl[T, _, _] =>   // wrong warning
         impl.treeHandle match {
@@ -157,34 +157,34 @@ object BiGroupImpl {
         }
     }
 
-  def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup[T, A]] = anyFmt.asInstanceOf[Fmt[T, A]]
+  def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiGroup[T, A]] = anyFmt.asInstanceOf[Fmt[T, A]]
 
   private val anyFmt = new Fmt[AnyTxn, Obj[AnyTxn]]
 
-  def modifiableFormat[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup.Modifiable[T, A]] =
+  def modifiableFormat[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiGroup.Modifiable[T, A]] =
     anyModFmt.asInstanceOf[ModFmt[T, A]]
 
   private val anyModFmt = new ModFmt[AnyTxn, Obj[AnyTxn]]
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] = {
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] = {
     val targets = Targets.read(in)
     read(in, targets)
   }
 
-  def readIdentifiedEntry[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] = {
+  def readIdentifiedEntry[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] = {
     val targets = Targets.read(in)
     readEntry(in, targets)
   }
 
-  private class Fmt[T <: Txn[T], A <: Elem[T]] extends ObjFormat[T, BiGroup[T, A]] {
+  private class Fmt[T <: Txn/*[T]*/, A <: Elem[T]] extends ObjFormat[T, BiGroup[T, A]] {
     def tpe: Obj.Type = BiGroup
   }
 
-  private class ModFmt[T <: Txn[T], A <: Elem[T]] extends ObjFormat[T, BiGroup.Modifiable[T, A]] {
+  private class ModFmt[T <: Txn/*[T]*/, A <: Elem[T]] extends ObjFormat[T, BiGroup.Modifiable[T, A]] {
     def tpe: Obj.Type = BiGroup
   }
 
-  private[lucre] final class EntryImpl[T <: Txn[T], A <: Elem[T]](val targets : Targets[T],
+  private[lucre] final class EntryImpl[T <: Txn/*[T]*/, A <: Elem[T]](val targets : Targets[T],
                                                                   val span    : SpanLikeObj[T],
                                                                   val value   : A
                                                                  )
@@ -218,19 +218,19 @@ object BiGroupImpl {
     }
   }
 
-  implicit def entryFormat[T <: Txn[T], A <: Elem[T]]: TFormat[T, Entry[T, A]] =
+  implicit def entryFormat[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Entry[T, A]] =
     anyEntryFmt.asInstanceOf[EntryFmt[T, A]]
 
   private val anyEntryFmt = new EntryFmt[AnyTxn, Obj[AnyTxn]]
 
-  private def readEntry[T <: Txn[T], A <: Elem[T]](in: DataInput, targets: Targets[T])
+  private def readEntry[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput, targets: Targets[T])
                                                   (implicit tx: T): EntryImpl[T, A] = {
     val span  = SpanLikeObj.read(in)
     val value = Elem       .read(in).asInstanceOf[A]
     new EntryImpl(targets, span, value)
   }
 
-  private final class EntryFmt[T <: Txn[T], A <: Elem[T]] extends ObjFormat[T, Entry[T, A]] {
+  private final class EntryFmt[T <: Txn/*[T]*/, A <: Elem[T]] extends ObjFormat[T, Entry[T, A]] {
     def tpe: Obj.Type = Entry
   }
 
@@ -247,7 +247,7 @@ object BiGroupImpl {
     }
   }
 
-  abstract class Impl[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~], Repr <: BiGroup.Modifiable[T, E[T]]]
+  abstract class Impl[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~], Repr <: BiGroup.Modifiable[T, E[T]]]
     extends Modifiable[T, E[T]]
       with SingleEventNode[T, BiGroup.Update[T, E[T], Repr]] {
 
@@ -455,21 +455,21 @@ object BiGroupImpl {
     final def lastEvent(implicit tx: T): Option[Long] =
       BiGroupImpl.eventBefore(tree)(BiGroup.MaxCoordinate)
 
-    protected type GroupAux[~ <: Txn[~]] = BiGroup[~, E[~]]
+    protected type GroupAux[~ <: Txn/*[~]*/] = BiGroup[~, E[~]]
   }
 
-  def newModifiable[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
+  def newModifiable[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
     new Impl1[T, E](Targets[T]()) {
       val tree: TreeImpl[T, E] = newTree()(tx)
     }
 
-  private def read[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](in: DataInput, _targets: Targets[T])
+  private def read[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](in: DataInput, _targets: Targets[T])
                                                           (implicit tx: T): Impl[T, E, Impl1[T, E]] =
     new Impl1[T, E](_targets) {
       val tree: TreeImpl[T, E] = readTree(in)(tx)
     }
 
-  private abstract class Impl1[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](protected val targets: Targets[T])
+  private abstract class Impl1[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](protected val targets: Targets[T])
     extends Impl[T, E, Impl1[T, E]] { in =>
 
     final def tpe: Obj.Type = BiGroup

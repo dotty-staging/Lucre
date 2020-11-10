@@ -27,22 +27,22 @@ object ArtifactImpl /*extends ArtifactImplPlatform*/ {
 
   // ---- artifact ----
 
-  def apply[T <: Txn[T]](location: Location[T], child: Child)(implicit tx: T): Artifact.Modifiable[T] = {
+  def apply[T <: Txn/*[T]*/](location: Location[T], child: Child)(implicit tx: T): Artifact.Modifiable[T] = {
     val targets = Targets[T]()
     val id      = targets.id
     val _child  = id.newVar(child.path)
     new Impl[T](targets, location, _child) // .connect()
   }
 
-  def copy[T <: Txn[T]](from: Artifact[T])(implicit tx: T): Artifact.Modifiable[T] =
+  def copy[T <: Txn/*[T]*/](from: Artifact[T])(implicit tx: T): Artifact.Modifiable[T] =
     apply[T](from.location, from.child)
 
-  def readIdentifiedArtifact[T <: Txn[T]](in: DataInput)(implicit tx: T): Artifact[T] = {
+  def readIdentifiedArtifact[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Artifact[T] = {
     val targets = Targets.read[T](in)
     readArtifact(in, targets)
   }
 
-  private def readArtifact[T <: Txn[T]](in: DataInput, targets: Targets[T])
+  private def readArtifact[T <: Txn/*[T]*/](in: DataInput, targets: Targets[T])
                                        (implicit tx: T): Artifact.Modifiable[T] = {
     val cookie    = in.readShort()
     if (cookie != SER_VERSION) sys.error(s"Version mismatch. Expected $SER_VERSION but found $cookie")
@@ -52,21 +52,21 @@ object ArtifactImpl /*extends ArtifactImplPlatform*/ {
     new Impl[T](targets, location, _child)
   }
 
-  def format   [T <: Txn[T]]: TFormat[T, Artifact           [T]] = anyFmt   .cast
-  def modFormat[T <: Txn[T]]: TFormat[T, Artifact.Modifiable[T]] = anyModFmt.cast
+  def format   [T <: Txn/*[T]*/]: TFormat[T, Artifact           [T]] = anyFmt   .cast
+  def modFormat[T <: Txn/*[T]*/]: TFormat[T, Artifact.Modifiable[T]] = anyModFmt.cast
 
   private val anyFmt    = new Fmt   [AnyTxn]
   private val anyModFmt = new ModFmt[AnyTxn]
 
-  private final class Fmt[T <: Txn[T]] extends ObjCastFormat[T, Artifact] {
+  private final class Fmt[T <: Txn/*[T]*/] extends ObjCastFormat[T, Artifact] {
     def tpe: Obj.Type = Artifact
   }
 
-  private final class ModFmt[T <: Txn[T]] extends ObjCastFormat[T, Artifact.Modifiable] {
+  private final class ModFmt[T <: Txn/*[T]*/] extends ObjCastFormat[T, Artifact.Modifiable] {
     def tpe: Obj.Type = Artifact
   }
 
-  private final class Impl[T <: Txn[T]](protected val targets: Targets[T],
+  private final class Impl[T <: Txn/*[T]*/](protected val targets: Targets[T],
                                         val location: Location[T], _child: Var[T, String])
     extends Artifact.Modifiable[T]
       with MappingEventNode[T, Change[Value], Change[Value]]

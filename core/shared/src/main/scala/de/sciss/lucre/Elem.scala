@@ -18,9 +18,9 @@ import de.sciss.lucre.impl.ElemImpl
 import de.sciss.serial.{DataInput, TFormat, Writable}
 
 object Elem {
-  def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Elem[T] = ElemImpl.read(in)
+  def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Elem[T] = ElemImpl.read(in)
 
-  implicit def format[T <: Txn[T]]: TFormat[T, Elem[T]] = ElemImpl.format
+  implicit def format[T <: Txn/*[T]*/]: TFormat[T, Elem[T]] = ElemImpl.format
 
   trait Type {
     def typeId: Int
@@ -29,13 +29,13 @@ object Elem {
 
     def init(): Unit = _init
 
-    def readObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Elem[T] = {
+    def readObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Elem[T] = {
       val tpe = in.readInt()
       if (tpe !== typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
       readIdentifiedObj(in)
     }
 
-    def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Elem[T]
+    def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Elem[T]
   }
 
   def addType(tpe: Type): Unit      = ElemImpl.addType(tpe)
@@ -45,7 +45,7 @@ object Elem {
 /** An `Elem` is any type that is globally registered
  * via `Elem.addType` and can be de-serialized through `Elem.read`.
  */
-trait Elem[T <: Txn[T]] extends Form[T] with Writable with Disposable[T] with Publisher[T, Any] {
+trait Elem[T <: Txn/*[T]*/] extends Form[T] with Writable with Disposable[T] with Publisher[T, Any] {
   def tpe: Elem.Type
 
   /** Selects an event during dispatch. Elements that do not provide events
@@ -54,5 +54,5 @@ trait Elem[T <: Txn[T]] extends Form[T] with Writable with Disposable[T] with Pu
   private[lucre] def event(slot: Int): Event[T, Any]
 
   /** Makes a deep copy of an element, possibly translating it to a different system `Out`. */
-  private[lucre] def copy[Out <: Txn[Out]]()(implicit txIn: T, txOut: Out, context: Copy[T, Out]): Elem[Out]
+  private[lucre] def copy[Out <: Txn/*[Out]*/]()(implicit txIn: T, txOut: Out, context: Copy[T, Out]): Elem[Out]
 }

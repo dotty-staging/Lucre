@@ -16,8 +16,10 @@ package impl
 
 import scala.concurrent.stm.{Txn => ScalaTxn, Ref => ScalaRef}
 
-trait BasicTxnImpl[T <: Txn[T]] extends Txn[T] {
-  self: T =>
+trait BasicTxnImpl[T1 <: Txn/*[T]*/] extends Txn/*[T]*/ {
+  self: T1 =>
+
+  type T = T1
 
   def beforeCommit(fun: T => Unit): Unit =
     ScalaTxn.beforeCommit(_ => fun(this))(peer)

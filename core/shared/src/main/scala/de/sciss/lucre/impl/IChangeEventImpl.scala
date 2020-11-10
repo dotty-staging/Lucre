@@ -16,6 +16,6 @@ package impl
 
 import de.sciss.model.Change
 
-trait IChangeEventImpl[T <: Exec[T], +A] extends IEventImpl[T, Change[A]] with IChangeEvent[T, A] {
+trait IChangeEventImpl[T <: Exec/*[T]*/, +A] extends IEventImpl[T, Change[A]] with IChangeEvent[T, A] {
   protected def targets: ITargets[T]
 }

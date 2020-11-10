@@ -36,12 +36,12 @@ private[confluent] object PathImpl {
       (a._1 + b._1 + c._1, a._2 + b._2 + c._2)
   }
 
-  implicit def format[T <: Txn[T], D <: DurableLike.Txn[D]]: TFormat[D, Access[T]] =
+  implicit def format[T <: Txn/*[T]*/, D <: DurableLike.Txn/*[D]*/]: TFormat[D, Access[T]] =
     anyFmt.asInstanceOf[Fmt[T, D]]
 
   private val anyFmt = new Fmt[Confluent.Txn, Durable.Txn]
 
-  private final class Fmt[T <: Txn[T], D <: DurableLike.Txn[D]] extends WritableFormat[D, Access[T]] {
+  private final class Fmt[T <: Txn/*[T]*/, D <: DurableLike.Txn/*[D]*/] extends WritableFormat[D, Access[T]] {
     override def readT(in: DataInput)(implicit tx: D): Access[T] = {
       val sz    = in./* PACKED */ readInt()
       var tree  = FingerTree.empty[(Int, Long), Long](PathMeasure)
@@ -61,15 +61,15 @@ private[confluent] object PathImpl {
     in.readLong()
   }
 
-  //    def test_empty[T <: Txn[T]]: S#Acc = empty
+  //    def test_empty[T <: Txn/*[T]*/]: S#Acc = empty
 
   private val anyEmpty = new Path[Confluent.Txn](FingerTree.empty(PathMeasure))
 
-  def empty[T <: Txn[T]]: Access[T] = anyEmpty.asInstanceOf[Path[T]]
+  def empty[T <: Txn/*[T]*/]: Access[T] = anyEmpty.asInstanceOf[Path[T]]
 
-  def root[T <: Txn[T]]: Access[T] = new Path[T](FingerTree(1L << 32, 1L << 32)(PathMeasure))
+  def root[T <: Txn/*[T]*/]: Access[T] = new Path[T](FingerTree(1L << 32, 1L << 32)(PathMeasure))
 
-  def read[T <: Txn[T]](in: DataInput): Access[T] = {
+  def read[T <: Txn/*[T]*/](in: DataInput): Access[T] = {
     val sz    = in./* PACKED */ readInt()
     var tree  = FingerTree.empty[(Int, Long), Long](PathMeasure)
     var i = 0
@@ -80,7 +80,7 @@ private[confluent] object PathImpl {
     new Path[T](tree)
   }
 
-  def readAndAppend[T <: Txn[T]](in: DataInput, acc: Access[T])(implicit tx: T): Access[T] = {
+  def readAndAppend[T <: Txn/*[T]*/](in: DataInput, acc: Access[T])(implicit tx: T): Access[T] = {
     val sz      = in./* PACKED */ readInt()
     val accTree = acc.tree
 
@@ -124,12 +124,12 @@ private[confluent] object PathImpl {
    * and the lower 32 bits are the incremental version. The measure is taking the index and running sum
    * of the tree.
    */
-  private final class Path[T <: Txn[T]](val tree: FingerTree[(Int, Long), Long])
+  private final class Path[T <: Txn/*[T]*/](val tree: FingerTree[(Int, Long), Long])
     extends Access[T] with FingerTreeLike[(Int, Long), Long, Path[T]] {
 
     implicit protected def m: fingertree.Measure[Long, (Int, Long)] = PathMeasure
 
-    def !(implicit tx: T): tx.Acc = this
+    def !(implicit tx: T): tx.Acc = ??? // this
 
     override def toString: String = mkString("Path(", ", ", ")")
 
@@ -267,6 +267,6 @@ private[confluent] object PathImpl {
 
     def info(implicit tx: T): VersionInfo = tx.system.versionInfo(term)
 
-    def takeUntil(timeStamp: Long)(implicit tx: T): Access[T] = tx.system.versionUntil(this, timeStamp)
+    def takeUntil(timeStamp: Long)(implicit tx: T): Access[T] = ??? // tx.system.versionUntil(this, timeStamp)
   }
 }

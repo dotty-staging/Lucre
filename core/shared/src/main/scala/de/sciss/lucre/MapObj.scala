@@ -51,17 +51,17 @@ object MapObj extends Obj.Type {
   }
 
   object Modifiable {
-    def apply[T <: Txn[T], K: Key, Repr[~ <: Txn[~]] <: Elem[~]]()(implicit tx: T): Modifiable[T, K, Repr] =
+    def apply[T <: Txn/*[T]*/, K: Key, Repr[~ <: Txn/*[~]*/] <: Elem[~]]()(implicit tx: T): Modifiable[T, K, Repr] =
       TMapImpl[T, K, Repr]()
 
-    def read[T <: Txn[T], K: Key, Repr[~ <: Txn[~]] <: Elem[~]](in: DataInput)(implicit tx: T): Modifiable[T, K, Repr] =
+    def read[T <: Txn/*[T]*/, K: Key, Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: DataInput)(implicit tx: T): Modifiable[T, K, Repr] =
       format[T, K, Repr].readT(in)
 
-    implicit def format[T <: Txn[T], K: Key, Repr[~ <: Txn[~]] <: Elem[~]]: TFormat[T, Modifiable[T, K, Repr]] =
+    implicit def format[T <: Txn/*[T]*/, K: Key, Repr[~ <: Txn/*[~]*/] <: Elem[~]]: TFormat[T, Modifiable[T, K, Repr]] =
       TMapImpl.modFormat[T, K, Repr]
   }
 
-  trait Modifiable[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Form[~]] extends MapObj[T, K, Repr] {
+  trait Modifiable[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Form[~]] extends MapObj[T, K, Repr] {
     // override def copy()(implicit tx: T): Modifiable[T, K, Repr]
 
     /** Inserts a new entry into the map.
@@ -84,16 +84,16 @@ object MapObj extends Obj.Type {
     def -=(key: K)(implicit tx: T): this.type
   }
 
-  def read[T <: Txn[T], K: Key, Repr[~ <: Txn[~]] <: Elem[~]](in: DataInput)(implicit tx: T): MapObj[T, K, Repr] =
+  def read[T <: Txn/*[T]*/, K: Key, Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: DataInput)(implicit tx: T): MapObj[T, K, Repr] =
     format[T, K, Repr].readT(in)
 
-  override def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
+  override def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] =
     TMapImpl.readIdentifiedObj(in)
 
-  implicit def format[T <: Txn[T], K: Key, Repr[~ <: Txn[~]] <: Elem[~]]: TFormat[T, MapObj[T, K, Repr]] =
+  implicit def format[T <: Txn/*[T]*/, K: Key, Repr[~ <: Txn/*[~]*/] <: Elem[~]]: TFormat[T, MapObj[T, K, Repr]] =
     TMapImpl.format[T, K, Repr]
 
-  final case class Update[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Form[~]](map: MapObj[T, K, Repr],
+  final case class Update[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Form[~]](map: MapObj[T, K, Repr],
                                                                         changes: List[Change[/*T,*/ K, Repr[T]]])
     extends MapObjLike.Update[K, Repr[T]]
 
@@ -107,7 +107,7 @@ object MapObj extends Obj.Type {
   val  Removed  : MapObjLike.Removed .type = MapObjLike.Removed
   val  Replaced : MapObjLike.Replaced.type = MapObjLike.Replaced
 }
-trait MapObj[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Form[~]]
+trait MapObj[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Form[~]]
   extends MapObjLike[T, K, Repr[T]] with Obj[T] with Publisher[T, MapObj.Update[T, K, Repr]] {
 
   type V = Repr[T]
@@ -118,5 +118,5 @@ trait MapObj[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Form[~]]
   def keysIterator  (implicit tx: T): Iterator[K]
   def valuesIterator(implicit tx: T): Iterator[V]
 
-  def $[R[~ <: Txn[~]] <: Repr[~]](key: K)(implicit tx: T, ct: ClassTag[R[T]]): Option[R[T]]
+  def $[R[~ <: Txn/*[~]*/] <: Repr[~]](key: K)(implicit tx: T, ct: ClassTag[R[T]]): Option[R[T]]
 }

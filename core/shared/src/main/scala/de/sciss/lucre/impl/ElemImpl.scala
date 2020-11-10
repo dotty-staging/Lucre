@@ -19,13 +19,13 @@ import de.sciss.serial.{DataInput, TFormat}
 import scala.annotation.meta.field
 
 object ElemImpl {
-  def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Elem[T] = {
+  def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Elem[T] = {
     val typeId  = in.readInt()
     val tpe     = getType(typeId)
     tpe.readIdentifiedObj(in)
   }
 
-  implicit def format[T <: Txn[T]]: TFormat[T, Elem[T]] = anyFmt.cast
+  implicit def format[T <: Txn/*[T]*/]: TFormat[T, Elem[T]] = anyFmt.cast
 
   @field private[this] final val sync   = new AnyRef
   @field private[this] final val anyFmt = new Fmt[AnyTxn]
@@ -45,7 +45,7 @@ object ElemImpl {
   @inline
   def getType(id: Int): Elem.Type = map.getOrElse(id, sys.error(s"Unknown element type $id (0x${id.toHexString})"))
 
-  private final class Fmt[T <: Txn[T]] extends CastTxnFormat[T, Elem] {
+  private final class Fmt[T <: Txn/*[T]*/] extends CastTxnFormat[T, Elem] {
     override def readT(in: DataInput)(implicit tx: T): Elem[T] = ElemImpl.read(in)
   }
 }

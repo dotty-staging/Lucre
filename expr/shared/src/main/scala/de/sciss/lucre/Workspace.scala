@@ -17,13 +17,13 @@ import java.net.URI
 
 object Workspace {
   object Implicits {
-    implicit def dummy[T <: Txn[T]](implicit system: Sys, cursor: Cursor[T]): Workspace[T] =
+    implicit def dummy[T <: Txn/*[T]*/](implicit system: Sys, cursor: Cursor[T]): Workspace[T] =
       new DummyImpl[T](system, cursor)
     // dummyVal.asInstanceOf[DummyImpl[T]]
 
     //    private val dummyVal = new DummyImpl[NoSys]
 
-    private final case class DummyImpl[T <: Txn[T]](system: Sys, cursor: Cursor[T])
+    private final case class DummyImpl[T <: Txn/*[T]*/](system: Sys, cursor: Cursor[T])
       extends Workspace[T] {
 
       type S = Sys
@@ -46,7 +46,7 @@ object Workspace {
     }
   }
 }
-trait Workspace[T <: Txn[T]] extends Disposable[T] {
+trait Workspace[T <: Txn/*[T]*/] extends Disposable[T] {
   type S <: Sys
   type Tx = T
 
@@ -54,7 +54,7 @@ trait Workspace[T <: Txn[T]] extends Disposable[T] {
 
   /** Since we obtain `Workspace[_]` from read methods, this is lesser evil, since we
    * cannot make totally "wrong" casts here. */
-  def cast[T1 <: Txn[T1]]: Workspace[T1] = this.asInstanceOf[Workspace[T1]]
+  def cast[T1 <: Txn/*[T1]*/]: Workspace[T1] = this.asInstanceOf[Workspace[T1]]
 
   def cursor: Cursor[T]
 

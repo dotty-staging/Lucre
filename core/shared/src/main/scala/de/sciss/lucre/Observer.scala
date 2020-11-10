@@ -14,17 +14,17 @@
 package de.sciss.lucre
 
 object Observer {
-  def apply[T <: Txn[T], A](event: Event[T, A], fun: T => A => Unit)
+  def apply[T <: Txn/*[T]*/, A](event: Event[T, A], fun: T => A => Unit)
                            (implicit tx: T): Observer[T, A] = {
     new Impl(event, tx, fun)
   }
 
-  def apply[T <: Exec[T], A](event: IEvent[T, A], fun: T => A => Unit)
+  def apply[T <: Exec/*[T]*/, A](event: IEvent[T, A], fun: T => A => Unit)
                             (implicit tx: T, targets: ITargets[T]): Observer[T, A] = {
     new IImpl(event, tx, fun)
   }
 
-  private final class IImpl[T <: Exec[T], A](event: IEvent[T, A], tx0: T, fun: T => A => Unit)
+  private final class IImpl[T <: Exec/*[T]*/, A](event: IEvent[T, A], tx0: T, fun: T => A => Unit)
                                             (implicit targets: ITargets[T])
     extends Observer[T, A] {
 
@@ -39,14 +39,14 @@ object Observer {
     }
   }
   
-  private final class Impl[T <: Txn[T], A](event0: Event[T, A], tx0: T, fun: T => A => Unit)
+  private final class Impl[T <: Txn/*[T]*/, A](event0: Event[T, A], tx0: T, fun: T => A => Unit)
     extends Observer[T, A] {
 
     override def toString = s"Observer<${event0.node.id}, ${event0.slot}>"
 
-    private[this] val eventH = tx0.newHandle(event0: Event[T, Any])
+    private[this] val eventH: Source[T, Event[T, Any]] = ??? // tx0.newHandle(event0: Event[T, Any])
 
-    tx0.reactionMap.addEventReaction[A](event0, this)(tx0)
+    (??? : ReactionMap[T]) /*tx0.reactionMap*/.addEventReaction[A](event0, this)(tx0)
 
     def event(implicit tx: T): Event[T, Any] = eventH()
 
@@ -54,10 +54,10 @@ object Observer {
 
     def dispose()(implicit tx: T): Unit = {
       val event = this.event
-      tx.reactionMap.removeEventReaction(event, this)
+      (??? : ReactionMap[T]) /*tx.reactionMap*/.removeEventReaction(event, this)
     }
   }
 }
-trait Observer[T <: Exec[T], -A] extends Disposable[T] {
+trait Observer[T <: Exec/*[T]*/, -A] extends Disposable[T] {
   def apply(update: A)(implicit tx: T): Unit
 }

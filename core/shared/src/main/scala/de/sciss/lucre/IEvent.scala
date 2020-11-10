@@ -14,7 +14,7 @@
 package de.sciss.lucre
 
 /** In-memory (non-serializable) event. */
-trait IEvent[T <: Exec[T], +A] extends Observable[T, A] {
+trait IEvent[T <: Exec/*[T]*/, +A] extends Observable[T, A] {
 //  private[event] def slot: Int
 
   /** Connects the given selector to this event. That is, this event will

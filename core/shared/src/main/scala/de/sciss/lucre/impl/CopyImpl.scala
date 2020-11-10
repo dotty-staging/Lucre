@@ -14,10 +14,12 @@
 package de.sciss.lucre
 package impl
 
+import de.sciss.lucre.Obj.AttrMap
+
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-final class CopyImpl[In <: Txn[In], Out <: Txn[Out]](implicit txIn: In, txOut: Out)
+final class CopyImpl[In <: Txn/*[In]*/, Out <: Txn/*[Out]*/](implicit txIn: In, txOut: Out)
   extends Copy[In, Out] {
   
   import scala.{None => Busy, Option => State, Some => Done}
@@ -31,7 +33,7 @@ final class CopyImpl[In <: Txn[In], Out <: Txn[Out]](implicit txIn: In, txOut: O
 
   newPhase()
 
-  def defer[Repr[~ <: Txn[~]] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
+  def defer[Repr[~ <: Txn/*[~]*/] <: Obj[~]](in: Repr[In], out: Repr[Out])(code: => Unit): Unit = {
     if (!stateMap.get(in).contains(Busy))
       throw new IllegalStateException(s"Copy.defer must be called during copy process: $in")
     stateMap.put(in, Done[Elem[Out]](out))
@@ -45,14 +47,14 @@ final class CopyImpl[In <: Txn[In], Out <: Txn[Out]](implicit txIn: In, txOut: O
       d.foreach(_.apply())
     }
 
-  private def copyImpl[Repr[~ <: Txn[~]] <: Elem[~]](in: Repr[In]): Repr[Out] = {
+  private def copyImpl[Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: Repr[In]): Repr[Out] = {
     stateMap.put(in, Busy)
     val out = in.copy()(txIn, txOut, this)
     stateMap.put(in, Done(out))
     out.asInstanceOf[Repr[Out]]
   }
 
-  def apply[Repr[~ <: Txn[~]] <: Elem[~]](in: Repr[In]): Repr[Out] = {
+  def apply[Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: Repr[In]): Repr[Out] = {
     val opt: Option[State[Elem[Out]]] = stateMap.get(in)
     opt match {
       case Some(d: Done[Elem[Out]]) => d.value.asInstanceOf[Repr[Out]]
@@ -81,7 +83,7 @@ final class CopyImpl[In <: Txn[In], Out <: Txn[Out]](implicit txIn: In, txOut: O
     }
   }
 
-  def copyPlain[Repr[~ <: Txn[~]] <: Elem[~]](in: Repr[In]): Repr[Out] =
+  def copyPlain[Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: Repr[In]): Repr[Out] =
     stateMap.get(in) match {
       case Some(Done(out)) => out.asInstanceOf[Repr[Out]]
       case Some(Busy) => throw new IllegalStateException(s"Cyclic object graph involving $in")
@@ -104,7 +106,7 @@ final class CopyImpl[In <: Txn[In], Out <: Txn[Out]](implicit txIn: In, txOut: O
     })
 
   def copyAttr(in: Obj[In], out: Obj[Out]): Unit =
-    txIn.attrMapOption(in).foreach { inAttr =>
+    (??? : Option[AttrMap[In]]) /*txIn.attrMapOption(in)*/.foreach { inAttr =>
       val outAttr = out.attr
       inAttr.iterator.foreach { case (key, value) =>
         outAttr.put(key, apply(value))

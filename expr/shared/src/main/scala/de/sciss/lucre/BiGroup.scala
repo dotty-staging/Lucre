@@ -36,40 +36,40 @@ object BiGroup extends Obj.Type {
 
   // ---- updates ----
 
-  final case class Update[T <: Txn[T], A, +Repr <: BiGroup[T, A]](group: Repr, changes: List[Change[T, A]])
+  final case class Update[T <: Txn/*[T]*/, A, +Repr <: BiGroup[T, A]](group: Repr, changes: List[Change[T, A]])
 
-  sealed trait Change[T <: Txn[T], +A] {
+  sealed trait Change[T <: Txn/*[T]*/, +A] {
     def elem: Entry[T, A]
   }
 
-  final case class Added[T <: Txn[T], A](span: SpanLike /* Span.HasStart */ , elem: Entry[T, A])
+  final case class Added[T <: Txn/*[T]*/, A](span: SpanLike /* Span.HasStart */ , elem: Entry[T, A])
     extends Change[T, A]
 
-  final case class Removed[T <: Txn[T], A](span: SpanLike /* Span.HasStart */ , elem: Entry[T, A])
+  final case class Removed[T <: Txn/*[T]*/, A](span: SpanLike /* Span.HasStart */ , elem: Entry[T, A])
     extends Change[T, A]
 
-  final case class Moved[T <: Txn[T], A](change: m.Change[SpanLike], elem: Entry[T, A])
+  final case class Moved[T <: Txn/*[T]*/, A](change: m.Change[SpanLike], elem: Entry[T, A])
     extends Change[T, A]
 
   // ---- structural data ----
 
-  type Leaf[T <: Txn[T], +A] = (SpanLike /* Span.HasStart */ , Vec[Entry[T, A]])
+  type Leaf[T <: Txn/*[T]*/, +A] = (SpanLike /* Span.HasStart */ , Vec[Entry[T, A]])
 
   // Note: we use `Obj` instead of `Elem` because views may need to
   // store an `.id`!
   object Entry extends Obj.Type {
     final val typeId = 28
 
-    def unapply[T <: Txn[T], A](entry: Entry[T, A]): Entry[T, A] = entry
+    def unapply[T <: Txn/*[T]*/, A](entry: Entry[T, A]): Entry[T, A] = entry
 
-    implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, Entry[T, A]] =
+    implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Entry[T, A]] =
       Impl.entryFormat[T, A]
 
-    def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
+    def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] =
       Impl.readIdentifiedEntry(in)
   }
 
-  trait Entry[T <: Txn[T], +A] extends Obj[T] with Publisher[T, m.Change[SpanLike]] {
+  trait Entry[T <: Txn/*[T]*/, +A] extends Obj[T] with Publisher[T, m.Change[SpanLike]] {
     def span : SpanLikeObj[T]
     def value: A
 
@@ -79,17 +79,17 @@ object BiGroup extends Obj.Type {
   }
 
   object Modifiable {
-    implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup.Modifiable[T, A]] =
+    implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiGroup.Modifiable[T, A]] =
       Impl.modifiableFormat[T, A]
 
-    def apply[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
+    def apply[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
       Impl.newModifiable[T, E]
 
-    def read[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
+    def read[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
       format[T, A].readT(in)
   }
 
-  trait Modifiable[T <: Txn[T], A] extends BiGroup[T, A] {
+  trait Modifiable[T <: Txn/*[T]*/, A] extends BiGroup[T, A] {
     def add(span: SpanLikeObj[T], elem: A)(implicit tx: T): Entry[T, A]
 
     def remove(span: SpanLikeObj[T], elem: A)(implicit tx: T): Boolean
@@ -99,14 +99,14 @@ object BiGroup extends Obj.Type {
     override def changed: EventLike[T, BiGroup.Update[T, A, Modifiable[T, A]]]
   }
 
-  implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup[T, A]] =
+  implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiGroup[T, A]] =
     Impl.format[T, A]
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] =
     Impl.readIdentifiedObj(in)
 }
 
-trait BiGroup[T <: Txn[T], A] extends Obj[T] with Publisher[T, BiGroup.Update[T, A, BiGroup[T, A]]] {
+trait BiGroup[T <: Txn/*[T]*/, A] extends Obj[T] with Publisher[T, BiGroup.Update[T, A, BiGroup[T, A]]] {
 
   import BiGroup.Leaf
 

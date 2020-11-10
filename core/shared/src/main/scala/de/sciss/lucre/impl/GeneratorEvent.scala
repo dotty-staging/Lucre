@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.lucre.Log.logEvent
 
-trait GeneratorEvent[T <: Txn[T], A] extends Event[T, A] {
+trait GeneratorEvent[T <: Txn/*[T]*/, A] extends Event[T, A] {
   final def fire(update: A)(implicit tx: T): Unit = {
     logEvent(s"$this fire $update")
     Push(this, update)

@@ -15,7 +15,7 @@ package de.sciss.lucre
 package impl
 
 /** A trait which combined external input events with self generated events. */
-trait MappingEventNode[T <: Txn[T], A, B]
+trait MappingEventNode[T <: Txn/*[T]*/, A, B]
   extends Event.Node[T] {
 
   protected def inputEvent: EventLike[T, B]

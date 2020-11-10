@@ -18,14 +18,14 @@ import de.sciss.lucre.TxnLike
 import de.sciss.serial.{DataInput, Writable}
 
 object Access {
-  def root[T <: Txn[T]]: Access[T] = impl.PathImpl.root[T]
-  def info[T <: Txn[T]](access: Access[T])(implicit tx: TxnLike, system: Sys): VersionInfo =
+  def root[T <: Txn/*[T]*/]: Access[T] = impl.PathImpl.root[T]
+  def info[T <: Txn/*[T]*/](access: Access[T])(implicit tx: TxnLike, system: Sys): VersionInfo =
     system.versionInfo(access.term)
 
-  def read[T <: Txn[T]](in: DataInput): Access[T] = impl.PathImpl.read(in)
+  def read[T <: Txn/*[T]*/](in: DataInput): Access[T] = impl.PathImpl.read(in)
 }
 
-trait Access[T <: Txn[T]] extends Writable with PathLike {
+trait Access[T <: Txn/*[T]*/] extends Writable with PathLike {
   def ! (implicit tx: T): tx.Acc
 
   def mkString(prefix: String, sep: String, suffix: String): String

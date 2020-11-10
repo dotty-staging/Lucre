@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.serial.DataOutput
 
-trait ConstElemImpl[T <: Txn[T]] extends Elem[T] {
+trait ConstElemImpl[T <: Txn/*[T]*/] extends Elem[T] {
   private[lucre] def event(slot: Int): Event[T, Any] = throw new UnsupportedOperationException
 
   final def write(out: DataOutput): Unit = {

@@ -16,7 +16,7 @@ package impl
 
 import de.sciss.serial.DataOutput
 
-trait ConstObjImpl[T <: Txn[T], A] extends Obj[T] with Publisher[T, A] {
+trait ConstObjImpl[T <: Txn/*[T]*/, A] extends Obj[T] with Publisher[T, A] {
   private[lucre] def event(slot: Int): Event[T, Any] = throw new UnsupportedOperationException
 
   final def changed: EventLike[T, A] = DummyEvent[T, A]

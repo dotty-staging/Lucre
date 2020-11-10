@@ -24,11 +24,11 @@ import scala.language.implicitConversions
 
 object Expr extends expr.Ops {
   // XXX TODO -- we need to rethink this type
-  //  trait Var[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]] extends Expr[S, A] with stm.Var[T, E[T]]
-  //  trait Var[T <: Txn[T], A] extends Expr[T, A] with lucre.Var[Expr[T, A]]
+  //  trait Var[T <: Txn/*[T]*/, A, E[~ <: Txn[~]] <: Expr[~, A]] extends Expr[S, A] with stm.Var[T, E[T]]
+  //  trait Var[T <: Txn/*[T]*/, A] extends Expr[T, A] with lucre.Var[Expr[T, A]]
 
   object Const {
-    def unapply[T <: Txn[T], A](expr: Expr[T, A]): Option[A] =
+    def unapply[T <: Txn/*[T]*/, A](expr: Expr[T, A]): Option[A] =
       if (expr   .isInstanceOf[Const[_, _]]) {
         Some(expr.asInstanceOf[Const[T, A]].constValue)
       } else None
@@ -39,7 +39,7 @@ object Expr extends expr.Ops {
    * not need to use the transaction. String representation, hash-code and equality
    * are defined in terms of the constant peer value.
    */
-  trait Const[T <: Txn[T], +A] extends Expr[T, A] {
+  trait Const[T <: Txn/*[T]*/, +A] extends Expr[T, A] {
     protected def constValue: A
   }
 
@@ -57,18 +57,18 @@ object Expr extends expr.Ops {
       override def toString = s"$name [lo = $opLo, hi = $opHi]"
     }
 
-    trait Extension1[+Repr[~ <: Txn[~]]] extends Extension {
-      def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+    trait Extension1[+Repr[~ <: Txn/*[~]*/]] extends Extension {
+      def readExtension[T <: Txn/*[T]*/](opId: Int, in: DataInput, targets: Targets[T])
                                     (implicit tx: T): Repr[T]
     }
 
-    trait Extension2[+Repr[~ <: Txn[~], _]] extends Extension {
-      def readExtension[T <: Txn[T], T1](opId: Int, in: DataInput, targets: Targets[T])
+    trait Extension2[+Repr[~ <: Txn/*[~]*/, _]] extends Extension {
+      def readExtension[T <: Txn/*[T]*/, T1](opId: Int, in: DataInput, targets: Targets[T])
                                         (implicit tx: T): Repr[T, T1]
     }
 
-    trait Extension3[+Repr[~ <: Txn[~], _, _]] extends Extension {
-      def readExtension[T <: Txn[T], T1, T2](opId: Int, in: DataInput, targets: Targets[T])
+    trait Extension3[+Repr[~ <: Txn/*[~]*/, _, _]] extends Extension {
+      def readExtension[T <: Txn/*[T]*/, T1, T2](opId: Int, in: DataInput, targets: Targets[T])
                                             (implicit tx: T): Repr[T, T1, T2]
     }
 
@@ -85,7 +85,7 @@ object Expr extends expr.Ops {
       def readIdentifiedAdjunct(in: DataInput): Adjunct = {
         val typeId  = in.readInt()
         val peer    = Obj.getType(typeId)
-        new ExObjBridgeImpl(peer.asInstanceOf[Expr.Type[Any, ({ type R[~ <: Txn[~]] <: Expr[~, Any] }) # R]])
+        new ExObjBridgeImpl(peer.asInstanceOf[Expr.Type[Any, ({ type R[~ <: Txn/*[~]*/] <: Expr[~, Any] }) # R]])
       }
     }
 
@@ -95,32 +95,32 @@ object Expr extends expr.Ops {
       def readIdentifiedAdjunct(in: DataInput): Adjunct = {
         val typeId  = in.readInt()
         val peer    = Obj.getType(typeId)
-        new ExSeqObjBridgeImpl(peer.asInstanceOf[Expr.Type[Vec[Any], ({ type R[~ <: Txn[~]] <: Expr[~, Vec[Any]] }) # R]])
+        new ExSeqObjBridgeImpl(peer.asInstanceOf[Expr.Type[Vec[Any], ({ type R[~ <: Txn/*[~]*/] <: Expr[~, Vec[Any]] }) # R]])
       }
     }
   }
 
-  trait Type[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Obj.Type {
+  trait Type[A1, Repr[~ <: Txn/*[~]*/] <: Expr[~, A1]] extends Obj.Type {
     type A = A1
-    type E[T <: Txn[T]] = Repr[T] // yeah, well, we're waiting for Dotty
+    type E[T <: Txn/*[T]*/] = Repr[T] // yeah, well, we're waiting for Dotty
     // N.B.: this causes trouble:
-    //     type Var  [T <: Txn[T]] = Repr[T] with _Expr.Var  [S, A, _Ex]
-    type Var  [T <: Txn[T]] = Repr[T] with lucre.Var[T, Repr[T]]
-    type Const[T <: Txn[T]] = Repr[T] with Expr.Const[T, A]
+    //     type Var  [T <: Txn/*[T]*/] = Repr[T] with _Expr.Var  [S, A, _Ex]
+    type Var  [T <: Txn/*[T]*/] = Repr[T] with lucre.Var[T, Repr[T]]
+    type Const[T <: Txn/*[T]*/] = Repr[T] with Expr.Const[T, A]
 
     // ---- abstract ----
 
-    def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Repr[T]
+    def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Repr[T]
 
-    implicit def format   [T <: Txn[T]]: TFormat[T, Repr[T]]
-    implicit def varFormat[T <: Txn[T]]: TFormat[T, Var [T]]
+    implicit def format   [T <: Txn/*[T]*/]: TFormat[T, Repr[T]]
+    implicit def varFormat[T <: Txn/*[T]*/]: TFormat[T, Var [T]]
 
     implicit def valueFormat: ConstFormat[A]
 
     // ---- public ----
 
     object Var {
-      def unapply[T <: Txn[T]](expr: E[T]): Option[Var[T]] = {
+      def unapply[T <: Txn/*[T]*/](expr: E[T]): Option[Var[T]] = {
         // !!! this wrongly reports `true` for `Const`, probably due
         // to some erasure that scalac doesn't warn about
         // if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[T]]) else None
@@ -129,11 +129,11 @@ object Expr extends expr.Ops {
       }
     }
 
-    implicit def newConst [T <: Txn[T]](value: A     )(implicit tx: T): Const[T]
-    def newVar            [T <: Txn[T]](init: Repr[T])(implicit tx: T): Var  [T]
+    implicit def newConst [T <: Txn/*[T]*/](value: A     )(implicit tx: T): Const[T]
+    def newVar            [T <: Txn/*[T]*/](init: Repr[T])(implicit tx: T): Var  [T]
 
-    def readConst[T <: Txn[T]](in: DataInput)(implicit tx: T): Const[T]
-    def readVar  [T <: Txn[T]](in: DataInput)(implicit tx: T): Var  [T]
+    def readConst[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Const[T]
+    def readVar  [T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Var  [T]
 
     def tryParse(value: Any): Option[A]
   }
@@ -153,4 +153,4 @@ object Expr extends expr.Ops {
  * as a binary operator (e.g., an integer expression that sums two input
  * integer expressions).
  */
-trait Expr[T <: Txn[T], +A] extends ExprLike[T, A] with Obj[T] with Publisher[T, Change[A]]
+trait Expr[T <: Txn/*[T]*/, +A] extends ExprLike[T, A] with Obj[T] with Publisher[T, Change[A]]

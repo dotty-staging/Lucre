@@ -15,7 +15,7 @@ package de.sciss.lucre
 
 import scala.collection.immutable
 
-trait RefMap[T <: Exec[T], K, V] {
+trait RefMap[T <: Exec/*[T]*/, K, V] {
   def put     (key: K, value: V)(implicit tx: T): Option[V]
   def get     (key: K)(implicit tx: T): Option[V]
   def remove  (key: K)(implicit tx: T): Option[V]

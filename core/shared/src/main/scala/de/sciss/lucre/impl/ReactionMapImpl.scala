@@ -19,15 +19,15 @@ import de.sciss.equal.Implicits._
 import scala.collection.immutable.{Map => IMap}
 
 object ReactionMapImpl {
-  def apply[T <: Txn[T]]()(implicit tx: T): ReactionMap[T] = new Impl[T](tx.newIdentMap)
+  def apply[T <: Txn/*[T]*/]()(implicit tx: T): ReactionMap[T] = new Impl[T](??? /*tx.newIdentMap*/)
 
-  private final class Impl[T <: Txn[T]](protected val eventMap: IdentMap[T, IMap[Int, List[Observer[T, _]]]])
+  private final class Impl[T <: Txn/*[T]*/](protected val eventMap: IdentMap[T, IMap[Int, List[Observer[T, _]]]])
     extends Mixin[T] {
 
     override def toString = s"ReactionMap@${hashCode.toHexString}"
   }
 
-  trait Mixin[T <: Txn[T]] extends ReactionMap[T] {
+  trait Mixin[T <: Txn/*[T]*/] extends ReactionMap[T] {
     protected def eventMap: IdentMap[T, IMap[Int, List[Observer[T, _]]]]
 
     // self-reference useful when Mixin is added to an event.Sys

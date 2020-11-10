@@ -17,9 +17,9 @@ package impl
 /** A rooted event does not have sources. This trait provides a simple
  * implementation of `pull` which merely checks if this event has fired or not.
  */
-trait RootEvent[T <: Txn[T], +A] extends Event[T, A] {
+trait RootEvent[T <: Txn/*[T]*/, +A] extends Event[T, A] {
   private[lucre] final def pullUpdate(pull: Pull[T])(implicit tx: T): Option[A] = Some(pull.resolve[A])
 }
 
 /** A generator without further sources. */
-trait RootGeneratorEvent[T <: Txn[T], A] extends GeneratorEvent[T, A] with RootEvent[T, A]
+trait RootGeneratorEvent[T <: Txn/*[T]*/, A] extends GeneratorEvent[T, A] with RootEvent[T, A]

@@ -108,7 +108,7 @@ object Txn {
   /** Allows to share a transaction between two systems, necessary
    * for a cross-system `Obj.copy` operation.
    */
-  def copy[T1 <: Txn[T1], T2 <: Txn[T2], A](fun: (T1, T2) => A)
+  def copy[T1 <: Txn/*[T1]*/, T2 <: Txn/*[T2]*/, A](fun: (T1, T2) => A)
                                            (implicit cursor1: Cursor[T1], cursor2: Cursor[T2]): A = {
     cursor1.step { tx1 =>
       allowNesting = true // allow only for the next cursor step
@@ -124,8 +124,10 @@ object Txn {
   }
 }
 
-trait Txn[T <: Txn[T]] extends Exec[T] with TxnLike {
-  override type I <: Txn[I]
+trait Txn/*[T <: Txn[T]]*/ extends Exec/*[T]*/ with TxnLike {
+  type T <: Txn
+
+  override type I <: Txn // [I]
 
   override def system: Sys
 
@@ -144,4 +146,4 @@ trait Txn[T <: Txn[T]] extends Exec[T] with TxnLike {
   def attrMapOption(obj: Obj[T]): Option[Obj.AttrMap[T]]
 }
 
-trait AnyTxn extends Txn[AnyTxn]
+trait AnyTxn extends Txn // [AnyTxn]

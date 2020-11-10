@@ -17,42 +17,42 @@ import de.sciss.equal.Implicits._
 import de.sciss.lucre.Obj.AttrMap
 import de.sciss.lucre.edit.UndoManager.{CannotRedoException, CannotUndoException}
 import de.sciss.lucre.edit.impl.BasicUndoableEdit
-import de.sciss.lucre.{Obj, Txn}
+import de.sciss.lucre.{Obj, Source, Txn}
 
 object EditAttrMap {
-  def put[T <: Txn[T]](map: AttrMap[T], key: String, value: Obj[T])(implicit tx: T): Unit =
+  def put[T <: Txn/*[T]*/](map: AttrMap[T], key: String, value: Obj[T])(implicit tx: T): Unit =
     UndoManager.find[T].fold(
       putDo  (map, key, value)
     ) { implicit undo =>
       putUndo(map, key, value)
     }
 
-  private def putDo[T <: Txn[T]](map: AttrMap[T], key: String, value: Obj[T])(implicit tx: T): Unit =
+  private def putDo[T <: Txn/*[T]*/](map: AttrMap[T], key: String, value: Obj[T])(implicit tx: T): Unit =
     map.put(key, value)
 
-  def putUndo[T <: Txn[T]](map: AttrMap[T], key: String, value: Obj[T])(implicit tx: T,
+  def putUndo[T <: Txn/*[T]*/](map: AttrMap[T], key: String, value: Obj[T])(implicit tx: T,
                                                                         undo: UndoManager[T]): Unit = {
     val edit = new Put(map, key, value, tx)
     undo.addEdit(edit)
   }
 
-  def remove[T <: Txn[T]](map: AttrMap[T], key: String)(implicit tx: T): Unit =
+  def remove[T <: Txn/*[T]*/](map: AttrMap[T], key: String)(implicit tx: T): Unit =
     UndoManager.find[T].fold(
       removeDo  (map, key)
     ) { implicit undo =>
       removeUndo(map, key)
     }
 
-  private def removeDo[T <: Txn[T]](map: AttrMap[T], key: String)(implicit tx: T): Unit =
+  private def removeDo[T <: Txn/*[T]*/](map: AttrMap[T], key: String)(implicit tx: T): Unit =
     map.remove(key)
 
-  def removeUndo[T <: Txn[T]](map: AttrMap[T], key: String)(implicit tx: T,
+  def removeUndo[T <: Txn/*[T]*/](map: AttrMap[T], key: String)(implicit tx: T,
                                                             undo: UndoManager[T]): Unit = {
     val edit = new Remove(map, key, tx)
     undo.addEdit(edit)
   }
 
-  private abstract class PutRemove[T <: Txn[T]] extends BasicUndoableEdit[T] {
+  private abstract class PutRemove[T <: Txn/*[T]*/] extends BasicUndoableEdit[T] {
     private def invalidMessage = s"$name: value in map changed"
 
     final protected def cannotUndo(): Nothing =
@@ -62,12 +62,12 @@ object EditAttrMap {
       throw new CannotRedoException(invalidMessage)
   }
 
-  private final class Put[T <: Txn[T]](map0: AttrMap[T], key: String, value0: Obj[T], tx0: T)
+  private final class Put[T <: Txn/*[T]*/](map0: AttrMap[T], key: String, value0: Obj[T], tx0: T)
     extends PutRemove[T] {
 
-    private[this] val mapH      = tx0.newHandle(map0  )
-    private[this] val valueH    = tx0.newHandle(value0)
-    private[this] val prevHOpt  = map0.put(key, value0)(tx0).map(v => tx0.newHandle(v))
+    private[this] val mapH    : Source[T, AttrMap[T]] = ??? //  = tx0.newHandle(map0  )
+    private[this] val valueH  : Source[T, Obj[T]] = ??? //  = tx0.newHandle(value0)
+    private[this] val prevHOpt: Option[Source[T, Obj[T]]] = ??? //  = map0.put(key, value0)(tx0).map(v => tx0.newHandle(v))
 
     protected def undoImpl()(implicit tx: T): Unit = {
       val m         = mapH  ()
@@ -94,11 +94,11 @@ object EditAttrMap {
     def name: String = s"Set Attribute $key"
   }
 
-  private final class Remove[T <: Txn[T]](map0: AttrMap[T], key: String, tx0: T)
+  private final class Remove[T <: Txn/*[T]*/](map0: AttrMap[T], key: String, tx0: T)
     extends PutRemove[T] {
 
-    private[this] val mapH      = tx0.newHandle(map0  )
-    private[this] val prevHOpt  = map0.remove(key)(tx0).map(v => tx0.newHandle(v))
+    private[this] val mapH: Source[T, AttrMap[T]] = ??? //     = tx0.newHandle(map0  )
+    private[this] val prevHOpt: Option[Source[T, Obj[T]]] = ??? // = map0.remove(key)(tx0).map(v => tx0.newHandle(v))
 
     protected def undoImpl()(implicit tx: T): Unit = {
       val m         = mapH()

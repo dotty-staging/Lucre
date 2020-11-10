@@ -26,7 +26,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
 
   implicit final def tpe: Expr.Type[A1, Repr] = this
 
-  override def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): E[T] =
+  override def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): E[T] =
     (in.readByte(): @switch) match {
       case 3 => readIdentifiedConst[T](in)
       case 0 =>
@@ -41,7 +41,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
   /** The default implementation reads a type `Int` as operator id `Int`
    * which will be resolved using `readOpExtension`.
    */
-  protected def readNode[T <: Txn[T]](in: DataInput, targets: Event.Targets[T])
+  protected def readNode[T <: Txn/*[T]*/](in: DataInput, targets: Event.Targets[T])
                                      (implicit tx: T): E[T] = {
     val opId = in.readInt()
     readExtension(op = opId, in = in, targets = targets)
@@ -51,32 +51,32 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
    * By default this throws an exception. Sub-classes may use a cookie greater
    * than `3` for other constant types.
    */
-  protected def readCookie[T <: Txn[T]](in: DataInput, cookie: Byte)(implicit tx: T): E[T] =  // sub-class may need tx
+  protected def readCookie[T <: Txn/*[T]*/](in: DataInput, cookie: Byte)(implicit tx: T): E[T] =  // sub-class may need tx
     sys.error(s"Unexpected cookie $cookie")
 
-  implicit final def format[T <: Txn[T]]: TFormat[T, E[T]] /* EventLikeFormat[S, Repr[T]] */ =
+  implicit final def format[T <: Txn/*[T]*/]: TFormat[T, E[T]] /* EventLikeFormat[S, Repr[T]] */ =
     anyFmt.asInstanceOf[Fmt[T]]
 
-  implicit final def varFormat[T <: Txn[T]]: TFormat[T, Var[T]] /* Format[T, S#Acc, ReprVar[T]] */ =
+  implicit final def varFormat[T <: Txn/*[T]*/]: TFormat[T, Var[T]] /* Format[T, S#Acc, ReprVar[T]] */ =
     anyVarFmt.asInstanceOf[VarFmt[T]]
 
   // repeat `implicit` here because IntelliJ IDEA will not recognise it otherwise (SCL-9076)
-  implicit final def newConst[T <: Txn[T]](value: A)(implicit tx: T): Const[T] =
+  implicit final def newConst[T <: Txn/*[T]*/](value: A)(implicit tx: T): Const[T] =
     mkConst[T](tx.newId(), value)
 
-  final def newVar[T <: Txn[T]](init: E[T])(implicit tx: T): Var[T] = {
+  final def newVar[T <: Txn/*[T]*/](init: E[T])(implicit tx: T): Var[T] = {
     val targets = Event.Targets[T]()
     val ref     = targets.id.newVar[E[T]](init)
     mkVar[T](targets, ref, connect = true)
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T]
-  protected def mkVar  [T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)(implicit tx: T): Var[T]
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T]
+  protected def mkVar  [T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)(implicit tx: T): Var[T]
 
-  override final def read[T <: Txn[T]](in: DataInput)(implicit tx: T): E[T] =
+  override final def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): E[T] =
     format[T].readT(in)
 
-  override final def readConst[T <: Txn[T]](in: DataInput)(implicit tx: T): Const[T] = {
+  override final def readConst[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Const[T] = {
     val tpe = in.readInt()
     if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
     val cookie = in.readByte()
@@ -85,13 +85,13 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
   }
 
   @inline
-  private[this] def readIdentifiedConst[T <: Txn[T]](in: DataInput)(implicit tx: T): Const[T] = {
+  private[this] def readIdentifiedConst[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Const[T] = {
     val id      = tx.readId(in)
     val value   = valueFormat.read(in)
     mkConst[T](id, value)(tx)
   }
 
-  override final def readVar[T <: Txn[T]](in: DataInput)(implicit tx: T): Var[T] = {
+  override final def readVar[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Var[T] = {
     val tpe = in.readInt()
     if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
     val targets = Event.Targets.read[T](in)
@@ -101,7 +101,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
   }
 
   @inline
-  private[this] def readIdentifiedVar[T <: Txn[T]](in: DataInput, targets: Event.Targets[T])
+  private[this] def readIdentifiedVar[T <: Txn/*[T]*/](in: DataInput, targets: Event.Targets[T])
                                                   (implicit tx: T): Var[T] = {
     val ref = targets.id.readVar[E[T]](in)
     mkVar[T](targets, ref, connect = false)(tx)
@@ -109,7 +109,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
 
   // ---- private ----
 
-  protected trait ConstImpl[T <: Txn[T]] // (val id: S#Id, val constValue: A)
+  protected trait ConstImpl[T <: Txn/*[T]*/] // (val id: S#Id, val constValue: A)
     extends ExprConstImpl[T, A] {
 
     final def tpe: Obj.Type = self
@@ -120,7 +120,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
       mkConst[Out](txOut.newId(), constValue)
   }
 
-  protected trait VarImpl[T <: Txn[T]]
+  protected trait VarImpl[T <: Txn/*[T]*/]
     extends ExprVarImpl[T, A, E[T]] {
 
     final def tpe: Obj.Type = self
@@ -135,11 +135,11 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]] extends Expr.Type[A1, R
   private[this] val anyFmt    = new Fmt   [AnyTxn]
   private[this] val anyVarFmt = new VarFmt[AnyTxn]
 
-  private[this] final class VarFmt[T <: Txn[T]] extends WritableFormat[T, Var[T]] {
+  private[this] final class VarFmt[T <: Txn/*[T]*/] extends WritableFormat[T, Var[T]] {
     override def readT(in: DataInput)(implicit tx: T): Var[T] = readVar[T](in)
   }
 
-  private[this] final class Fmt[T <: Txn[T]] extends WritableFormat[T, E[T]] {
+  private[this] final class Fmt[T <: Txn/*[T]*/] extends WritableFormat[T, E[T]] {
     override def readT(in: DataInput)(implicit tx: T): E[T] = {
       val tpe = in.readInt()
       if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
@@ -197,7 +197,7 @@ trait ExprTypeExtensible[Ext >: Null <: Expr.Type.Extension] {
 trait ExprTypeExtensibleImpl1[Repr[~ <: Txn[~]]] extends ExprTypeExtensible[Expr.Type.Extension1[Repr]] {
   protected def mkExtArray(size: Int): Array[Expr.Type.Extension1[Repr]] = new Array(size)
 
-  final protected def readExtension[T <: Txn[T]](op: Int, in: DataInput, targets: Targets[T])
+  final protected def readExtension[T <: Txn/*[T]*/](op: Int, in: DataInput, targets: Targets[T])
                                                 (implicit tx: T): Repr[T] = {
     val ext = findExt(op)
     if (ext == null) sys.error(s"Unknown extension operator $op")

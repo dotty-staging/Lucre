@@ -15,7 +15,7 @@ package de.sciss.lucre.confluent
 
 import de.sciss.lucre.{Ident => LIdent}
 
-trait Ident[T <: Txn[T]] extends LIdent[T] {
+trait Ident[T <: Txn/*[T]*/] extends LIdent[T] {
   def base: Int
   def path: Access[T]
 }

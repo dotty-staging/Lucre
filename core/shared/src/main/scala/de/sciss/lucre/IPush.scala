@@ -23,7 +23,7 @@ import scala.annotation.elidable.CONFIG
 import scala.collection.immutable.{Map => IMap}
 
 object IPush {
-  private[lucre] def apply[T <: Exec[T], A](origin: IEvent[T, A], update: A)
+  private[lucre] def apply[T <: Exec/*[T]*/, A](origin: IEvent[T, A], update: A)
                                            (implicit tx: T, targets: ITargets[T]): Unit = {
     val push = new Impl(origin, update)
     logEvent("ipush begin")
@@ -33,12 +33,12 @@ object IPush {
     logEvent("ipull end")
   }
 
-  type Parents[T <: Exec[T]] = Set[IEvent[T, Any]]
+  type Parents[T <: Exec/*[T]*/] = Set[IEvent[T, Any]]
 
-  private def NoParents[T <: Exec[T]]: Parents[T] = Set.empty[IEvent[T, Any]]
+  private def NoParents[T <: Exec/*[T]*/]: Parents[T] = Set.empty[IEvent[T, Any]]
 
   // private type Visited[S <: Sys[T]] = IMap[Event[T, Any], Parents[T]]
-  private final class Reaction[T <: Exec[T], +A](update: A, observers: List[Observer[T, A]]) {
+  private final class Reaction[T <: Exec/*[T]*/, +A](update: A, observers: List[Observer[T, A]]) {
     def apply()(implicit tx: T): Unit =
       observers.foreach(_.apply(update))
   }
@@ -95,7 +95,7 @@ object IPush {
     }
   }
 
-  private final class Impl[T <: Exec[T]](origin: IEvent[T, Any], val update: Any)
+  private final class Impl[T <: Exec/*[T]*/](origin: IEvent[T, Any], val update: Any)
                                         (implicit tx: T, targets: ITargets[T])
     extends IPull[T] {
 
@@ -275,7 +275,7 @@ object IPush {
     override def initialValue(): IMap[Any, IPull[_]] = IMap.empty
   }
 
-  def tryPull[T <: Exec[T], A](source: IEvent[T, A])(implicit tx: T): Option[A] =
+  def tryPull[T <: Exec/*[T]*/, A](source: IEvent[T, A])(implicit tx: T): Option[A] =
     currentPull.get().get(tx).flatMap { p =>
       val pc = p.asInstanceOf[IPull[T]]
       if (pc.contains(source)) pc(source) else None
@@ -290,7 +290,7 @@ object IPull {
   case object Before extends Phase { def isBefore = true  ; def isNow = false }
   case object Now    extends Phase { def isBefore = false ; def isNow = true  }
 }
-trait IPull[T <: Exec[T]] {
+trait IPull[T <: Exec/*[T]*/] {
   /** Assuming that the caller is origin of the event, resolves the update of the given type. */
   def resolve[A]: A
 

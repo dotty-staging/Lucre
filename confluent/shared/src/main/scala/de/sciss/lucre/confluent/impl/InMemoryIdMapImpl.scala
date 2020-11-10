@@ -18,14 +18,14 @@ import de.sciss.lucre.{Ident, IdentMap}
 
 import scala.concurrent.stm.TxnLocal
 
-private[impl] final class InMemoryIdMapImpl[T <: Txn[T], A](val store: InMemoryConfluentMap[T, Int])
+private[impl] final class InMemoryIdMapImpl[T <: Txn/*[T]*/, A](val store: InMemoryConfluentMap[T, Int])
   extends IdentMap[T, A] with InMemoryCacheMapImpl[T, Int] {
 
   private val markDirtyFlag = TxnLocal(false)
 
   private def markDirty()(implicit tx: T): Unit =
     if (!markDirtyFlag.swap(true)(tx.peer)) {
-      tx.addDirtyLocalCache(this)
+      ??? // tx.addDirtyLocalCache(this)
     }
 
   def get(id: Ident[T])(implicit tx: T): Option[A] = {

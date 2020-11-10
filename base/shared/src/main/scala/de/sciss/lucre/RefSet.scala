@@ -15,7 +15,7 @@ package de.sciss.lucre
 
 import scala.collection.immutable
 
-trait RefSet[T <: Exec[T], A] {
+trait RefSet[T <: Exec/*[T]*/, A] {
   def add     (elem: A)(implicit tx: T): Boolean
   def remove  (elem: A)(implicit tx: T): Boolean
   def contains(elem: A)(implicit tx: T): Boolean

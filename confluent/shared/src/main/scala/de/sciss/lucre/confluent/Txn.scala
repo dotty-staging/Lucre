@@ -17,11 +17,13 @@ import de.sciss.lucre
 import de.sciss.lucre.{ConfluentLike, DurableLike, InMemoryLike}
 import de.sciss.serial.{ConstFormat, TFormat}
 
-trait Txn[T <: Txn[T]] extends lucre.Txn[T] { self =>
-  def system: ConfluentLike[T] { type I = self.I }
+trait Txn/*[T <: Txn[T]]*/ extends lucre.Txn/*[T]*/ { self =>
+  def system: ConfluentLike/*[T]*/ { type I = self.I }
 
-  type D <: DurableLike .Txn[D]
-  type I <: InMemoryLike.Txn[I]
+  type T <: Txn
+
+  type D <: DurableLike .Txn/*[D]*/
+  type I <: InMemoryLike.Txn/*[I]*/
 
   implicit def durable: D
 

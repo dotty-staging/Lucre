@@ -19,7 +19,7 @@ import de.sciss.lucre.edit.UndoManager.{CannotRedoException, CannotUndoException
 import de.sciss.lucre.edit.impl.BasicUndoableEdit
 
 object EditExprVar {
-  def apply[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
+  def apply[T <: Txn/*[T]*/, A, E[~ <: Txn/*[~]*/] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
                                                          (implicit tx: T, tpe: Expr.Type[A, E]): Unit =
     UndoManager.find[T].fold(
       applyDo   [T, A, E](vr, value)
@@ -27,18 +27,18 @@ object EditExprVar {
       applyUndo [T, A, E](vr, value)
     }
 
-  def applyDo[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
+  def applyDo[T <: Txn/*[T]*/, A, E[~ <: Txn/*[~]*/] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
                                                            (implicit tx: T): Unit =
     vr() = value
 
-  def applyUndo[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
+  def applyUndo[T <: Txn/*[T]*/, A, E[~ <: Txn/*[~]*/] <: Expr[~, A]](vr: E[T] with Var[T, E[T]], value: E[T])
                                                              (implicit tx: T, tpe: Expr.Type[A, E],
                                                               undo: UndoManager[T]): Unit = {
     val edit = new Apply[T, A, E](vr, value, tx)
     undo.addEdit(edit)
   }
 
-  private final class Apply[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](vr0: E[T] with Var[T, E[T]],
+  private final class Apply[T <: Txn/*[T]*/, A, E[~ <: Txn/*[~]*/] <: Expr[~, A]](vr0: E[T] with Var[T, E[T]],
                                                                           value0: E[T], tx0: T)
                                                                          (implicit tpe: Expr.Type[A, E])
     extends BasicUndoableEdit[T] {

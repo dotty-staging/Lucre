@@ -19,7 +19,7 @@ import de.sciss.lucre.Txn.peer
 
 import scala.concurrent.stm.Ref
 
-trait ObservableImpl[T <: Txn[T], U] extends Observable[T, U] {
+trait ObservableImpl[T <: Txn/*[T]*/, U] extends Observable[T, U] {
   private[this] final class Observation(val fun: T => U => Unit) extends Disposable[T] {
     def dispose()(implicit tx: T): Unit = removeObservation(this)
   }
@@ -41,6 +41,6 @@ trait ObservableImpl[T <: Txn[T], U] extends Observable[T, U] {
   }
 }
 
-trait DummyObservableImpl[T <: Txn[T]] extends Observable[T, Nothing] {
+trait DummyObservableImpl[T <: Txn/*[T]*/] extends Observable[T, Nothing] {
   def react(fun: T => Nothing => Unit)(implicit tx: T): Disposable[T] = Disposable.empty
 }

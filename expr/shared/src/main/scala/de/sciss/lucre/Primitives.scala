@@ -19,15 +19,15 @@ import de.sciss.serial.{ConstFormat, TFormat}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
-trait IntObj      [T <: Txn[T]] extends Expr[T, Int        ]
-trait LongObj     [T <: Txn[T]] extends Expr[T, Long       ]
-trait DoubleObj   [T <: Txn[T]] extends Expr[T, Double     ]
-trait BooleanObj  [T <: Txn[T]] extends Expr[T, Boolean    ]
-trait StringObj   [T <: Txn[T]] extends Expr[T, String     ]
-trait SpanLikeObj [T <: Txn[T]] extends Expr[T, SpanLike   ]
-trait SpanObj     [T <: Txn[T]] extends Expr[T, Span       ]
-trait IntVector   [T <: Txn[T]] extends Expr[T, Vec[Int   ]]
-trait DoubleVector[T <: Txn[T]] extends Expr[T, Vec[Double]]
+trait IntObj      [T <: Txn/*[T]*/] extends Expr[T, Int        ]
+trait LongObj     [T <: Txn/*[T]*/] extends Expr[T, Long       ]
+trait DoubleObj   [T <: Txn/*[T]*/] extends Expr[T, Double     ]
+trait BooleanObj  [T <: Txn/*[T]*/] extends Expr[T, Boolean    ]
+trait StringObj   [T <: Txn/*[T]*/] extends Expr[T, String     ]
+trait SpanLikeObj [T <: Txn/*[T]*/] extends Expr[T, SpanLike   ]
+trait SpanObj     [T <: Txn/*[T]*/] extends Expr[T, Span       ]
+trait IntVector   [T <: Txn/*[T]*/] extends Expr[T, Vec[Int   ]]
+trait DoubleVector[T <: Txn/*[T]*/] extends Expr[T, Vec[Double]]
 
 object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
   import lucre.{IntObj => Repr}
@@ -42,20 +42,20 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     case _      => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -74,20 +74,20 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     case _        => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -107,20 +107,20 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -138,20 +138,20 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -169,20 +169,20 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -200,20 +200,20 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     case _            => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -231,20 +231,20 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     case _        => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -267,20 +267,20 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     case _ => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
@@ -303,20 +303,20 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
     case _ => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
+  private[this] final class _Var[T <: Txn/*[T]*/](val targets: Event.Targets[T],
                                               val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }

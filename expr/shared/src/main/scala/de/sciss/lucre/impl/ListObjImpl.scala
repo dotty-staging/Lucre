@@ -22,7 +22,7 @@ import scala.annotation.{switch, tailrec}
 object ListObjImpl {
   import ListObj.Modifiable
 
-  def newModifiable[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
+  def newModifiable[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
     new Impl1[T, E] {
       protected override val targets: Targets[T]   = Targets[T]()
       protected override val sizeRef: Var[T, Int]  = id.newIntVar(0)
@@ -30,30 +30,30 @@ object ListObjImpl {
       protected override val lastRef: Var[T, C]    = id.newVar[C](null)(tx, CellFmt)
     }
 
-  def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, ListObj[T, A]] =
+  def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, ListObj[T, A]] =
     anyFmt.asInstanceOf[Fmt[T, A]]
 
   private val anyFmt = new Fmt[AnyTxn, Obj[AnyTxn]]
 
-  def modFormat[T <: Txn[T], A <: Elem[T]]: TFormat[T, Modifiable[T, A]] =
+  def modFormat[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Modifiable[T, A]] =
     anyModFmt.asInstanceOf[ModFmt[T, A]]
 
   private val anyModFmt = new ModFmt[AnyTxn, Obj[AnyTxn]]
 
-  private class Fmt[T <: Txn[T], A <: Elem[T]] extends ObjFormat[T, ListObj[T, A]] {
+  private class Fmt[T <: Txn/*[T]*/, A <: Elem[T]] extends ObjFormat[T, ListObj[T, A]] {
     def tpe: Obj.Type = ListObj
   }
 
-  private class ModFmt[T <: Txn[T], A <: Elem[T]] extends ObjFormat[T, Modifiable[T, A]] {
+  private class ModFmt[T <: Txn/*[T]*/, A <: Elem[T]] extends ObjFormat[T, Modifiable[T, A]] {
     def tpe: Obj.Type = ListObj
   }
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] = {
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] = {
     val targets = Targets.read[T](in)
     ListObjImpl.read(in, targets)
   }
 
-  private def read[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](in: DataInput, _targets: Targets[T]): Impl1[T, E] =
+  private def read[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~]](in: DataInput, _targets: Targets[T]): Impl1[T, E] =
     new Impl1[T, E] {
       protected override val targets: Targets[T]   = _targets
       protected override val sizeRef: Var[T, Int]  = id.readIntVar(in)
@@ -61,11 +61,11 @@ object ListObjImpl {
       protected override val lastRef: Var[T, C]    = id.readVar[C](in)
     }
 
-  final class Cell[T <: Txn[T], A](val elem: A,
+  final class Cell[T <: Txn/*[T]*/, A](val elem: A,
                                    val pred: Var[T, Cell[T, A]],
                                    val succ: Var[T, Cell[T, A]])
 
-  private final class Iter[T <: Txn[T], A](private var cell: Cell[T, A])(implicit tx: T) extends Iterator[A] {
+  private final class Iter[T <: Txn/*[T]*/, A](private var cell: Cell[T, A])(implicit tx: T) extends Iterator[A] {
     override def toString: String = if (cell == null) "empty iterator" else "non-empty iterator"
 
     def hasNext: Boolean = cell != null
@@ -87,7 +87,7 @@ object ListObjImpl {
     }
   }
 
-  abstract class Impl[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~], Repr <: Modifiable[T, E[T]]]
+  abstract class Impl[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~], Repr <: Modifiable[T, E[T]]]
     extends Modifiable[T, E[T]] with SingleEventNode[T, ListObj.Update[T, E[T], Repr]] {
 
     list: Repr =>
@@ -355,7 +355,7 @@ object ListObjImpl {
     final def iterator(implicit tx: T): Iterator[A] = new Iter[T, A](headRef())
   }
 
-  private abstract class Impl1[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]] extends Impl[T, E, Impl1[T, E]] {
+  private abstract class Impl1[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~]] extends Impl[T, E, Impl1[T, E]] {
     in =>
 
     final def tpe: Obj.Type = ListObj

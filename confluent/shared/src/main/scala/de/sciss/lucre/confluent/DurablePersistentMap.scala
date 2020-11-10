@@ -18,11 +18,11 @@ import de.sciss.lucre.DataStore
 import de.sciss.serial.{ConstFormat, TFormat}
 
 object DurablePersistentMap {
-  def newConfluentIntMap[T <: Txn[T]](store: DataStore, handler: IndexMapHandler[T],
+  def newConfluentIntMap[T <: Txn/*[T]*/](store: DataStore, handler: IndexMapHandler[T],
                                       isOblivious: Boolean): DurablePersistentMap[T, Int] =
     new ConfluentIntMapImpl[T](store, handler, isOblivious)
 
-  def newConfluentLongMap[T <: Txn[T]](store: DataStore, handler: IndexMapHandler[T],
+  def newConfluentLongMap[T <: Txn/*[T]*/](store: DataStore, handler: IndexMapHandler[T],
                                        isOblivious: Boolean): DurablePersistentMap[T, Long] =
     new ConfluentLongMapImpl[T](store, handler, isOblivious)
 }
@@ -34,7 +34,7 @@ object DurablePersistentMap {
   * @tparam T   the underlying system's transaction type
   * @tparam K   the key type
   */
-trait DurablePersistentMap[T <: Txn[T], /* @spec(KeySpec) */ K] {
+trait DurablePersistentMap[T <: Txn/*[T]*/, /* @spec(KeySpec) */ K] {
   /** Stores a new value for a given write path.
     *
     * The format given is _non_transactional. This is because this trait bridges confluent

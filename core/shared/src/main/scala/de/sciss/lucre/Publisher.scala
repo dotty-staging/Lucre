@@ -13,6 +13,6 @@
 
 package de.sciss.lucre
 
-trait Publisher[T <: Txn[T], +A] {
+trait Publisher[T <: Txn/*[T]*/, +A] {
   def changed: EventLike[T, A]
 }

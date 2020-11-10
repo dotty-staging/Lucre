@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package edit
 
-trait UndoableEdit[T <: Exec[T]] extends Disposable[T] {
+trait UndoableEdit[T <: Exec/*[T]*/] extends Disposable[T] {
   def undo()(implicit tx: T): Unit
   def redo()(implicit tx: T): Unit
 

@@ -18,11 +18,11 @@ import de.sciss.serial
 import de.sciss.serial.{DataInput, TFormat}
 
 object Ident {
-  implicit def format[T <: Exec[T]]: TFormat[T, Ident[T]] = anyFmt.cast
+  implicit def format[T <: Exec/*[T]*/]: TFormat[T, Ident[T]] = anyFmt.cast
 
   private val anyFmt = new IdentFormat[AnyExec]
 }
-trait Ident[T <: Exec[T]] extends Disposable[T] with serial.Writable {
+trait Ident[T <: Exec/*[T]*/] extends Disposable[T] with serial.Writable {
   
   def newVar[A](init: A)(implicit tx: T, format: TFormat[T, A]): Var[T, A]
 

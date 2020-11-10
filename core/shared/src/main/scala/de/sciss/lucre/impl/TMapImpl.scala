@@ -22,7 +22,7 @@ import de.sciss.serial.{DataInput, DataOutput, TFormat}
 import scala.reflect.ClassTag
 
 object TMapImpl {
-  def apply[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]]()(implicit tx: T, 
+  def apply[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]]()(implicit tx: T,
                                                             keyType: Key[K]): MapObj.Modifiable[T, K, Repr] = {
     val targets = Event.Targets[T]()
     new Impl[T, K, Repr](targets) { self =>
@@ -31,32 +31,32 @@ object TMapImpl {
     }
   }
 
-  def format[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]]: TFormat[T, MapObj[T, K, Repr]] =
+  def format[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]]: TFormat[T, MapObj[T, K, Repr]] =
     new Fmt[T, K, Repr]
 
-  def modFormat[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]]: TFormat[T, MapObj.Modifiable[T, K, Repr]] =
+  def modFormat[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]]: TFormat[T, MapObj.Modifiable[T, K, Repr]] =
     new ModFmt[T, K, Repr]
 
-  private class Fmt[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]] // (implicit keyType: Key[K])
+  private class Fmt[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjFormat[T, MapObj[T, K, Repr]] {
 
     def tpe: Obj.Type = MapObj
   }
 
-  private class ModFmt[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]] // (implicit keyType: Key[K])
+  private class ModFmt[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]] // (implicit keyType: Key[K])
     extends ObjFormat[T, MapObj.Modifiable[T, K, Repr]] {
 
     def tpe: Obj.Type = MapObj
   }
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] = {
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] = {
     val targets   = Event.Targets.read(in)
     val keyTypeId = in.readInt()
     val keyType   = Key(keyTypeId) // Obj.getType(keyTypeId).asInstanceOf[Key[_]]
     mkRead(in, targets)(tx, keyType)
   }
 
-  private def mkRead[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]](in: DataInput, targets: Event.Targets[T])
+  private def mkRead[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]](in: DataInput, targets: Event.Targets[T])
                                                                   (implicit tx: T, keyType: Key[K]): Impl[T, K, Repr] =
     new Impl[T, K, Repr](targets) { self =>
       val peer: SkipList.Map[T, K, List[Entry[K, V]]] =
@@ -66,7 +66,7 @@ object TMapImpl {
 
   private final class Entry[K, V](val key: K, val value: V)
 
-  private abstract class Impl[T <: Txn[T], K, Repr[~ <: Txn[~]] <: Elem[~]](protected val targets: Event.Targets[T])
+  private abstract class Impl[T <: Txn/*[T]*/, K, Repr[~ <: Txn/*[~]*/] <: Elem[~]](protected val targets: Event.Targets[T])
                                                                            (implicit val keyType: Key[K])
     extends MapObj.Modifiable[T, K, Repr] with SingleEventNode[T, MapObj.Update[T, K, Repr]] {
     map =>
@@ -79,7 +79,7 @@ object TMapImpl {
 
     // ---- implemented ----
 
-    private[lucre] def copy[Out <: Txn[Out]]()(implicit txIn: T, txOut: Out, context: Copy[T, Out]): Elem[Out] = {
+    private[lucre] def copy[Out <: Txn/*[Out]*/]()(implicit txIn: T, txOut: Out, context: Copy[T, Out]): Elem[Out] = {
       val res = MapObj.Modifiable[Out, K, Elem]()
       iterator.foreach { case (k, v) =>
         res.put(k, context(v))
@@ -121,7 +121,7 @@ object TMapImpl {
     final def keysIterator  (implicit tx: T): Iterator[K] = peer.valuesIterator.flatMap(_.map(_.key  ))
     final def valuesIterator(implicit tx: T): Iterator[V] = peer.valuesIterator.flatMap(_.map(_.value))
 
-    final def $[R[~ <: Txn[~]] <: Repr[~]](key: K)(implicit tx: T, ct: ClassTag[R[T]]): Option[R[T]] =
+    final def $[R[~ <: Txn/*[~]*/] <: Repr[~]](key: K)(implicit tx: T, ct: ClassTag[R[T]]): Option[R[T]] =
       peer.get(key).flatMap { vec =>
         vec.collectFirst {
           case entry if entry.key === key && ct.runtimeClass.isAssignableFrom(entry.value.getClass) =>

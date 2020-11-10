@@ -13,7 +13,7 @@
 
 package de.sciss.lucre
 
-trait Identified[T <: Exec[T]] {
+trait Identified[T <: Exec/*[T]*/] {
 //  val tx: T
 //
 //  def id: tx.Id

@@ -22,7 +22,7 @@ import scala.annotation.switch
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.util.hashing.MurmurHash3
 
-trait EventLike[T <: Txn[T], +A] extends Observable[T, A] {
+trait EventLike[T <: Txn/*[T]*/, +A] extends Observable[T, A] {
   /** Connects the given selector to this event. That is, this event will
    * adds the selector to its propagation targets.
    */
@@ -47,32 +47,32 @@ trait EventLike[T <: Txn[T], +A] extends Observable[T, A] {
 }
 
 object Event {
-  implicit def format[T <: Txn[T]]: TFormat[T, Event[T, Any]] = anyFmt.cast
+  implicit def format[T <: Txn/*[T]*/]: TFormat[T, Event[T, Any]] = anyFmt.cast
 
   private val anyFmt = new Fmt[AnyTxn]
 
-  private[lucre] def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Event[T, Any] = {
+  private[lucre] def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Event[T, Any] = {
     val slot  = in.readByte().toInt
     val node  = Elem.read[T](in)
     node.event(slot)
   }
 
-  private final class Fmt[T <: Txn[T]] extends CastTxnFormat[T, ({ type Repr[~ <: Txn[~]] = Event[~, Any] }) # Repr] {
+  private final class Fmt[T <: Txn/*[T]*/] extends CastTxnFormat[T, ({ type Repr[~ <: Txn/*[~]*/] = Event[~, Any] }) # Repr] {
     override def readT(in: DataInput)(implicit tx: T): Event[T, Any] =
       Event.read(in)
   }
 
-  private type Children[T <: Txn[T]] = Vec[(Byte, Event[T, Any])]
+  private type Children[T <: Txn/*[T]*/] = Vec[(Byte, Event[T, Any])]
 
-  private def NoChildren[T <: Txn[T]]: Children[T] = Vector.empty
+  private def NoChildren[T <: Txn/*[T]*/]: Children[T] = Vector.empty
 
   object Targets {
-    private implicit def childrenFormat[T <: Txn[T]]: TFormat[T, Children[T]] =
+    private implicit def childrenFormat[T <: Txn/*[T]*/]: TFormat[T, Children[T]] =
       anyChildrenFmt.asInstanceOf[ChildrenFmt[T]]
 
     private val anyChildrenFmt = new ChildrenFmt[AnyTxn]
 
-    private final class ChildrenFmt[T <: Txn[T]] extends TFormat[T, Children[T]] {
+    private final class ChildrenFmt[T <: Txn/*[T]*/] extends TFormat[T, Children[T]] {
       override def write(v: Children[T], out: DataOutput): Unit = {
         out./* PACKED */ writeInt(v.size)
         v.foreach { tup =>
@@ -91,26 +91,26 @@ object Event {
       }
     }
 
-    def apply[T <: Txn[T]]()(implicit tx: T): Targets[T] = {
-      val id        = tx.newId()
+    def apply[T <: Txn/*[T]*/]()(implicit tx: T): Targets[T] = {
+      val id: Ident[T] = ??? //        = tx.newId()
       val children  = id.newVar /* newEventVar */[Children[T]](NoChildren)
       new Impl[T](0, id, children)
     }
 
-    def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Targets[T] = {
+    def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Targets[T] = {
       (in.readByte(): @switch) match {
         case 0      => readIdentified(in)
         case cookie => sys.error(s"Unexpected cookie $cookie")
       }
     }
 
-    /* private[lucre] */ def readIdentified[T <: Txn[T]](in: DataInput)(implicit tx: T): Targets[T] = {
-      val id = tx.readId(in)
+    /* private[lucre] */ def readIdentified[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Targets[T] = {
+      val id: Ident[T] = ??? // = tx.readId(in)
       val children = id.readVar /* readEventVar */[Children[T]](in)
       new Impl[T](0, id, children)
     }
 
-    private final class Impl[T <: Txn[T]](cookie: Int, val id: Ident[T], childrenVar: Var[T, Children[T]])
+    private final class Impl[T <: Txn/*[T]*/](cookie: Int, val id: Ident[T], childrenVar: Var[T, Children[T]])
       extends Targets[T] {
 
       def write(out: DataOutput): Unit = {
@@ -166,7 +166,7 @@ object Event {
    * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
    * `propagate` a fired event.
    */
-  sealed trait Targets[T <: Txn[T]] extends Mutable[/*Ident[T],*/ T] /* extends Reactor[T] */ {
+  sealed trait Targets[T <: Txn/*[T]*/] extends Mutable[/*Ident[T],*/ T] /* extends Reactor[T] */ {
     private[lucre] def children(implicit tx: T): Children[T]
 
     /** Adds a dependant to this node target.
@@ -204,7 +204,7 @@ object Event {
    * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
    * targets.
    */
-  trait Node[T <: Txn[T]] extends Elem[T] with Mutable[T] {
+  trait Node[T <: Txn/*[T]*/] extends Elem[T] with Mutable[T] {
     override def toString = s"Node$id"
 
     protected def targets: Targets[T]
@@ -232,7 +232,7 @@ object Event {
  * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
  * split into `Event.Invariant` and `Event.Mutating`.
  */
-trait Event[T <: Txn[T], +A] extends EventLike[T, A] with Writable {
+trait Event[T <: Txn/*[T]*/, +A] extends EventLike[T, A] with Writable {
   // ---- abstract ----
 
   def node: Event.Node[T]

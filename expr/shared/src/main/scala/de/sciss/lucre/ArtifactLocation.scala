@@ -26,7 +26,7 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
 
   final val typeId = 0x10003
 
-//  def tmp[T <: Txn[T]]()(implicit tx: T): Const[T] = {
+//  def tmp[T <: Txn/*[T]*/]()(implicit tx: T): Const[T] = {
 //    val dir   = File.createTemp("artifacts", "tmp", directory = true)
 //    newConst(dir)
 //  }
@@ -50,24 +50,24 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  protected def mkConst[T <: Txn/*[T]*/](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
+  protected def mkVar[T <: Txn/*[T]*/](targets: Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
     val res = new _Var[T](tx, targets, vr)
     if (connect) res.connect()
     res
   }
 
-  private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
+  private[this] final class _Const[T <: Txn/*[T]*/](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val tx: T, val targets: Targets[T], val ref: lucre.Var[T, E[T]])
+  private[this] final class _Var[T <: Txn/*[T]*/](val tx: T, val targets: Targets[T], val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
 /** An artifact location is a directory on an external storage. */
-trait ArtifactLocation[T <: Txn[T]] extends Expr[T, Value] {
+trait ArtifactLocation[T <: Txn/*[T]*/] extends Expr[T, Value] {
   /** Alias for `value` */
   def directory(implicit tx: T): Value = value
 }

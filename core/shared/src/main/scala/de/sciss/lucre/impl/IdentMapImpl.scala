@@ -17,10 +17,10 @@ package impl
 import scala.concurrent.stm.TMap
 
 object IdentMapImpl {
-  def apply[T <: Txn[T], A](intView: T => Ident[T] => Int): IdentMap[T, A] =
+  def apply[T <: Txn/*[T]*/, A](intView: T => Ident[T] => Int): IdentMap[T, A] =
     new InMemoryInt[T, A](intView)
 
-  private final class InMemoryInt[T <: Txn[T], A](intView: T => Ident[T] => Int)
+  private final class InMemoryInt[T <: Txn/*[T]*/, A](intView: T => Ident[T] => Int)
     extends IdentMap[T, A] {
 
     private[this] val peer = TMap.empty[Int, A]

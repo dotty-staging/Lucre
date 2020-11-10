@@ -22,7 +22,7 @@ import scala.concurrent.stm.{InTxn, TxnExecutor, Ref => ScalaRef}
 object InMemoryImpl {
   def apply(): InMemory = new System
 
-  trait Mixin[T <: InMemoryLike.Txn[T]] extends InMemoryLike[T] with ReactionMapImpl.Mixin[T] {
+  trait Mixin[T <: InMemoryLike.Txn/*[T]*/] extends InMemoryLike[T] with ReactionMapImpl.Mixin[T] {
     private[this] final val idCnt = ScalaRef(0)
 
     //    protected val idIntView: T => Ident[]
@@ -45,7 +45,7 @@ object InMemoryImpl {
 //        val id  = tx.newId()
         val v   = init(tx)
 //        id.newVar[A](v)
-        tx.newHandle(v) // new EphemeralHandle(v)
+        ??? // tx.newHandle(v) // new EphemeralHandle(v)
       }
 
     // may nest
@@ -69,7 +69,7 @@ object InMemoryImpl {
 
   private def opNotSupported(name: String): Nothing = sys.error(s"Operation not supported: $name")
 
-  private final class IdImpl[T <: InMemoryLike.Txn[T]](tx: T)(val id: Int) extends InMemoryLike.Id[T] {
+  private final class IdImpl[T <: InMemoryLike.Txn/*[T]*/](tx: T)(val id: Int) extends InMemoryLike.Id[T] {
     def write(out: DataOutput): Unit = ()
 
     override def toString         = s"<$id>"
@@ -77,9 +77,9 @@ object InMemoryImpl {
 
     def dispose()(implicit tx: T): Unit = ()
 
-    def !(implicit tx: T): InMemoryLike.Id[T] = {
+    def !(implicit tx: T): tx.Id /*InMemoryLike.Id[T]*/ = {
       // require (tx eq this.tx)
-      this
+      ??? // this
     }
 
     def newVar[A](init: A)(implicit tx: T, format: TFormat[T, A]): Var[T, A] = {
@@ -130,7 +130,7 @@ object InMemoryImpl {
     override def toString = s"InMemory.Txn@${hashCode.toHexString}"
   }
 
-  trait TxnMixin[T <: InMemoryLike.Txn[T]] extends BasicTxnImpl[T] with InMemoryLike.Txn[T] {
+  trait TxnMixin[T <: InMemoryLike.Txn/*[T]*/] extends BasicTxnImpl[T] with InMemoryLike.Txn/*[T]*/ {
     self: T =>
 
     implicit def inMemoryCursor: Cursor[I] = system
@@ -162,7 +162,7 @@ object InMemoryImpl {
     def attrMap(obj: Obj[T]): Obj.AttrMap[T] = {
       implicit val tx: T = this
       val am  = system.attrMap
-      val id  = obj.id.!
+      val id: Ident[T] = ??? //  = obj.id.!
       am.getOrElse(id, {
         val m = MapObj.Modifiable[T, String, Obj]()
         am.put(id, m)
@@ -173,7 +173,7 @@ object InMemoryImpl {
     override def attrMapOption(obj: Obj[T]): Option[Obj.AttrMap[T]] = {
       implicit val tx: T = this
       val am  = system.attrMap
-      val id  = obj.id.!
+      val id: Ident[T] = ??? // = obj.id.!
       am.get(id)
     }
   }

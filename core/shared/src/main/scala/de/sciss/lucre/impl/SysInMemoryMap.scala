@@ -16,7 +16,7 @@ package impl
 
 import scala.concurrent.stm.TMap
 
-final class SysInMemoryMap[T <: Txn[T], K, V] extends RefMap[T, K, V] {
+final class SysInMemoryMap[T <: Txn/*[T]*/, K, V] extends RefMap[T, K, V] {
   private[this] val peer = TMap.empty[K, V]
 
   def put     (key: K, value: V )(implicit tx: T): Option[V]  = peer.put      (key, value) (tx.peer)

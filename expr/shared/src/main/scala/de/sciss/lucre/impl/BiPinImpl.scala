@@ -24,13 +24,13 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 object BiPinImpl {
   import BiPin.{Added, Entry, Leaf, Modifiable, Moved, Removed, Update}
 
-  type Tree[T <: Txn[T], A] = SkipList.Map[T, Long, Leaf[T, A]]
+  type Tree[T <: Txn/*[T]*/, A] = SkipList.Map[T, Long, Leaf[T, A]]
 
-  def newEntry[T <: Txn[T], A <: Elem[T]](key: LongObj[T], value: A)(implicit tx: T): Entry[T, A] =
+  def newEntry[T <: Txn/*[T]*/, A <: Elem[T]](key: LongObj[T], value: A)(implicit tx: T): Entry[T, A] =
     if (Expr.isConst(key))     ConstEntry(              key, value)
     else                   new NodeEntry (Targets[T](), key, value).connect()
 
-  def readEntry[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): Entry[T, A] = {
+  def readEntry[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput)(implicit tx: T): Entry[T, A] = {
     val tpe = in.readInt()
     if (tpe != Entry.typeId) sys.error(s"Type mismatch. Found $tpe, expected ${Entry.typeId}")
     in.readByte() match {
@@ -45,28 +45,28 @@ object BiPinImpl {
     }
   }
 
-  def entryFormat[T <: Txn[T], A <: Elem[T]]: TFormat[T, Entry[T, A]] =
+  def entryFormat[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Entry[T, A]] =
     anyEntryFmt.asInstanceOf[EntryFmt[T, A]]
 
   private val anyEntryFmt = new EntryFmt[AnyTxn, Obj[AnyTxn]]
 
-  private final class EntryFmt[T <: Txn[T], A <: Elem[T]] extends WritableFormat[T, Entry[T, A]] {
+  private final class EntryFmt[T <: Txn/*[T]*/, A <: Elem[T]] extends WritableFormat[T, Entry[T, A]] {
     override def readT(in: DataInput)(implicit tx: T): Entry[T, A] = readEntry(in)
   }
 
-  def readIdentifiedEntry[T <: Txn[T]](in: DataInput)(implicit tx: T): Elem[T] = {
+  def readIdentifiedEntry[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Elem[T] = {
     val targets = Targets.read[T](in)
     readEntry(in, targets)
   }
 
-  private def readEntry[T <: Txn[T], A <: Elem[T]](in: DataInput, targets: Targets[T])
+  private def readEntry[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput, targets: Targets[T])
                                                   (implicit tx: T): Entry[T, A] = {
     val key     = LongObj.read(in)
     val value   = Elem.read(in).asInstanceOf[A]
     new NodeEntry(targets, key, value)
   }
 
-  private trait EntryImpl[T <: Txn[T], A <: Elem[T]] extends Entry[T, A] {
+  private trait EntryImpl[T <: Txn/*[T]*/, A <: Elem[T]] extends Entry[T, A] {
     final def tpe: Elem.Type = Entry
 
     protected final def writeData(out: DataOutput): Unit = {
@@ -75,7 +75,7 @@ object BiPinImpl {
     }
   }
 
-  private case class ConstEntry[T <: Txn[T], A <: Elem[T]](key: LongObj[T], value: A)
+  private case class ConstEntry[T <: Txn/*[T]*/, A <: Elem[T]](key: LongObj[T], value: A)
     extends EntryImpl[T, A] with ConstElemImpl[T] {
 
     def changed: EventLike[T, Change[Long]] = DummyEvent[T, Change[Long]]
@@ -84,7 +84,7 @@ object BiPinImpl {
       ConstEntry(context(key), context[Elem](value))
   }
 
-  private final class NodeEntry[T <: Txn[T], A <: Elem[T]](protected val targets: Targets[T],
+  private final class NodeEntry[T <: Txn/*[T]*/, A <: Elem[T]](protected val targets: Targets[T],
                                                            val key: LongObj[T], val value: A)
     extends EntryImpl[T, A] with SingleEventNode[T, Change[Long]] {
 
@@ -106,17 +106,17 @@ object BiPinImpl {
     }
   }
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] = {
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] = {
     val targets = Targets.read(in)
     BiPinImpl.readImpl(in, targets)
   }
 
-  private implicit def leafFormat[T <: Txn[T], A <: Elem[T]]: TFormat[T, Leaf[T, A]] =
+  private implicit def leafFormat[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Leaf[T, A]] =
     anyLeafFmt.asInstanceOf[LeafFmt[T, A]]
 
   private val anyLeafFmt = new LeafFmt[AnyTxn, Obj[AnyTxn]]
 
-  private final class LeafFmt[T <: Txn[T], A <: Elem[T]] extends TFormat[T, Leaf[T, A]] {
+  private final class LeafFmt[T <: Txn/*[T]*/, A <: Elem[T]] extends TFormat[T, Leaf[T, A]] {
     override def write(leaf: BiPin.Leaf[T, A], out: DataOutput): Unit = {
       val sz = leaf.size
       out.writeInt(sz)
@@ -131,26 +131,26 @@ object BiPinImpl {
     }
   }
 
-  def newModifiable[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
+  def newModifiable[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
     new Impl1[T, E](Targets[T]()) {
       val tree: Tree[T, A] = newTree()
     }
 
-  def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiPin[T, A]] =
+  def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiPin[T, A]] =
     anyFmt.asInstanceOf[Fmt[T, A, BiPin[T, A]]]
 
-  def modifiableFormat[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiPin.Modifiable[T, A]] =
+  def modifiableFormat[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, BiPin.Modifiable[T, A]] =
     anyFmt.asInstanceOf[Fmt[T, A, BiPin.Modifiable[T, A]]]
 
   private val anyFmt = new Fmt[AnyTxn, Obj[AnyTxn], BiPin[AnyTxn, Obj[AnyTxn]]]
 
-  private def readImpl[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](in: DataInput, targets: Targets[T])
+  private def readImpl[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~]](in: DataInput, targets: Targets[T])
                                                               (implicit tx: T): Impl1[T, E] =
     new Impl1[T, E](targets) {
       val tree: Tree[T, A] = readTree(in)
     }
 
-  private class Fmt[T <: Txn[T], A <: Elem[T], Repr <: BiPin[T, A]]
+  private class Fmt[T <: Txn/*[T]*/, A <: Elem[T], Repr <: BiPin[T, A]]
     extends ObjFormat[T, Repr] {
 
     def tpe: Obj.Type = BiPin
@@ -169,7 +169,7 @@ object BiPinImpl {
     }
   }
 
-  abstract class Impl[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~], Repr <: Modifiable[T, E[T]]]
+  abstract class Impl[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~], Repr <: Modifiable[T, E[T]]]
     extends Modifiable[T, E[T]]
       with SingleEventNode[T, Update[T, E[T], Repr]] {
 
@@ -334,7 +334,7 @@ object BiPinImpl {
       }
   }
 
-  private abstract class Impl1[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](protected val targets: Targets[T])
+  private abstract class Impl1[T <: Txn/*[T]*/, E[~ <: Txn[~]] <: Elem[~]](protected val targets: Targets[T])
     extends Impl[T, E, Impl1[T, E]] { in =>
 
     def tpe: Obj.Type = BiPin

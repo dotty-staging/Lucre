@@ -17,7 +17,7 @@ package impl
 import de.sciss.equal.Implicits._
 import de.sciss.serial.{DataInput, WritableFormat}
 
-trait ObjFormat[T <: Txn[T], Repr <: Obj[T]]
+trait ObjFormat[T <: Txn/*[T]*/, Repr <: Obj[T]]
   extends WritableFormat[T, Repr] {
 
   protected def tpe: Obj.Type
@@ -29,5 +29,5 @@ trait ObjFormat[T <: Txn[T], Repr <: Obj[T]]
   }
 }
 
-trait ObjCastFormat[T <: Txn[T], Repr[~ <: Txn[~]] <: Obj[~]]
+trait ObjCastFormat[T <: Txn/*[T]*/, Repr[~ <: Txn/*[~]*/] <: Obj[~]]
   extends CastTxnFormat[T, Repr] with ObjFormat[T, Repr[T]]

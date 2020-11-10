@@ -23,23 +23,23 @@ object SkipOctree {
   implicit def nonTxnPointView[P, A](implicit view: A => P): (A, Any) => P =
     (a, _) => view(a)
 
-  def empty[T <: Exec[T], P, H <: HyperCube[P, H], A](hyperCube: H)
+  def empty[T <: Exec/*[T]*/, P, H <: HyperCube[P, H], A](hyperCube: H)
                                       (implicit tx: T, pointView: (A, T) => P, space: Space[P, H],
                                        keyFormat: TFormat[T, A]): SkipOctree[T, P, H, A] =
     DetSkipOctree.empty[T, P, H, A](hyperCube)
 
-  def read[T <: Exec[T], P, H <: HyperCube[P, H], A](in: DataInput)
+  def read[T <: Exec/*[T]*/, P, H <: HyperCube[P, H], A](in: DataInput)
                                                          (implicit tx: T, pointView: (A, T) => P,
                                                           space: Space[P, H],
                                                           keyFormat: TFormat[T, A]): SkipOctree[T, P, H, A] =
     DetSkipOctree.read[T, P, H, A](in)
 
-  implicit def format[T <: Exec[T], P,
+  implicit def format[T <: Exec/*[T]*/, P,
     H <: HyperCube[P, H], A](implicit view: (A) => P, space: Space[P, H],
                               keyFormat: TFormat[T, A]): TFormat[T, SkipOctree[T, P, H, A]] =
     new Fmt[T, P, H, A]
 
-  private final class Fmt[T <: Exec[T], P, H <: HyperCube[P, H], A](implicit view: (A) => P, space: Space[P, H],
+  private final class Fmt[T <: Exec/*[T]*/, P, H <: HyperCube[P, H], A](implicit view: (A) => P, space: Space[P, H],
                                                                          keyFormat: TFormat[T, A])
     extends WritableFormat[T, SkipOctree[T, P, H, A]] {
 
@@ -55,7 +55,7 @@ object SkipOctree {
  * of Scala's mutable `Map` and adds further operations such
  * as range requires and nearest neighbour search.
  */
-trait SkipOctree[T <: Exec[T], P, H, A] extends Mutable[T] {
+trait SkipOctree[T <: Exec/*[T]*/, P, H, A] extends Mutable[T] {
   /** The space (i.e., resolution and dimensionality) underlying the tree. */
   def space: Space[P, H]
 

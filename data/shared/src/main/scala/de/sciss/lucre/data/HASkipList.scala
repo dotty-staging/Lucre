@@ -54,7 +54,7 @@ object HASkipList {
 
   private final val SER_VERSION = 76
 
-  private final class SetFmt[T <: Exec[T], A](keyObserver: SkipList.KeyObserver[T, A])
+  private final class SetFmt[T <: Exec/*[T]*/, A](keyObserver: SkipList.KeyObserver[T, A])
                                              (implicit ordering: TOrdering[T, A],
                                               keyFormat: TFormat[T, A])
     extends TFormat[T, HASkipList.Set[T, A]] {
@@ -67,7 +67,7 @@ object HASkipList {
     override def toString = "HASkipList.Set.format"
   }
 
-  private final class MapFmt[T <: Exec[T], A, B](keyObserver: SkipList.KeyObserver[T, A])
+  private final class MapFmt[T <: Exec/*[T]*/, A, B](keyObserver: SkipList.KeyObserver[T, A])
                                                 (implicit ordering: TOrdering[T, A],
                                                  keyFormat: TFormat[T, A],
                                                  valueFormat: TFormat[T, B])
@@ -79,7 +79,7 @@ object HASkipList {
     override def toString = "HASkipList.Map.format"
   }
 
-  def debugFindLevel[T <: Exec[T], A, E](list: SkipList[T, A, E], key: A)(implicit tx: T): Int =
+  def debugFindLevel[T <: Exec/*[T]*/, A, E](list: SkipList[T, A, E], key: A)(implicit tx: T): Int =
     list match {
       case impl0: HASkipList[T, A, E] =>
         val h = impl0.height
@@ -107,7 +107,7 @@ object HASkipList {
       case _ => sys.error(s"Not a HA Skip List: $list")
     }
 
-  private final class SetImpl[T <: Exec[T], A](id: Ident[T], val minGap: Int,
+  private final class SetImpl[T <: Exec/*[T]*/, A](id: Ident[T], val minGap: Int,
                                                protected val keyObserver: SkipList.KeyObserver[T, A],
                                                _downNode: SetImpl[T, A] => Var[T, Node[T, A, A]])
                                               (implicit val ordering: TOrdering[T, A],
@@ -146,7 +146,7 @@ object HASkipList {
     }
   }
 
-  private final class MapImpl[T <: Exec[T], A, B](id: Ident[T], val minGap: Int,
+  private final class MapImpl[T <: Exec/*[T]*/, A, B](id: Ident[T], val minGap: Int,
                                                   protected val keyObserver: SkipList.KeyObserver[T, A],
                                                   _downNode: MapImpl[T, A, B] => Var[T, Map.Node[T, A, B]])
                                                  (implicit val ordering : TOrdering[T, A],
@@ -264,7 +264,7 @@ object HASkipList {
     }
   }
 
-  private abstract class Impl[T <: Exec[T], A, E](final val id: Ident[T])
+  private abstract class Impl[T <: Exec/*[T]*/, A, E](final val id: Ident[T])
     extends HASkipList[T, A, E] with HeadOrBranch[T, A, E] with TFormat[T, Node[T, A, E]] with MutableImpl[T] {
     impl =>
 
@@ -1035,14 +1035,14 @@ object HASkipList {
     }
   }
 
-  sealed trait HeadOrBranch[T <: Exec[T], A, E] {
+  sealed trait HeadOrBranch[T <: Exec/*[T]*/, A, E] {
     private[HASkipList] def updateDown(i: Int, n: Node[T, A, E])(implicit tx: T): Unit
 
     private[HASkipList] def insertAfterSplit(pIdx: Int, splitKey: A, left: Node[T, A, E], right: Node[T, A, E],
                                              id: Ident[T])(implicit tx: T, list: Impl[T, A, E]): Branch[T, A, E]
   }
 
-  sealed trait Node[T <: Exec[T], A, E] {
+  sealed trait Node[T <: Exec/*[T]*/, A, E] {
 
     private[HASkipList] def removeColumn(idx: Int)(implicit /*tx: T,*/ list: Impl[T, A, E]): Node[T, A, E]
 
@@ -1108,7 +1108,7 @@ object HASkipList {
     def asBranch: Branch[T, A, E]
   }
 
-  private final class SetLeaf[T <: Exec[T], A](private[HASkipList] val entries: Vector[A])
+  private final class SetLeaf[T <: Exec/*[T]*/, A](private[HASkipList] val entries: Vector[A])
     extends Leaf[T, A, A] {
 
     protected override def copy(newEntries: Vector[A]): Leaf[T, A, A] = new SetLeaf(newEntries)
@@ -1116,7 +1116,7 @@ object HASkipList {
     override def key(idx: Int): A = entries(idx)
   }
 
-  private final class MapLeaf[T <: Exec[T], A, B](private[HASkipList] val entries: Vector[(A, B)])
+  private final class MapLeaf[T <: Exec/*[T]*/, A, B](private[HASkipList] val entries: Vector[(A, B)])
     extends Leaf[T, A, (A, B)] {
 
     protected override def copy(newEntries: Vector[(A, B)]): Leaf[T, A, (A, B)] = new MapLeaf(newEntries)
@@ -1124,7 +1124,7 @@ object HASkipList {
     override def key(idx: Int): A = entries(idx)._1
   }
 
-  sealed trait Leaf[T <: Exec[T], A, E] extends Node[T, A, E] {
+  sealed trait Leaf[T <: Exec/*[T]*/, A, E] extends Node[T, A, E] {
     override def toString: String = entries.mkString("Leaf(", ",", ")")
 
     private[HASkipList] def entries: Vector[E]
@@ -1225,7 +1225,7 @@ object HASkipList {
   }
 
   object Branch {
-    private[HASkipList] def read[T <: Exec[T], A, B](in: DataInput, isRight: Boolean, id: Ident[T])
+    private[HASkipList] def read[T <: Exec/*[T]*/, A, B](in: DataInput, isRight: Boolean, id: Ident[T])
                                                     (implicit tx: T, list: Impl[T, A, B]): Branch[T, A, B] = {
       import list.keyFormat
       val sz    = in.readByte().toInt
@@ -1238,7 +1238,7 @@ object HASkipList {
     }
   }
 
-  final class Branch[T <: Exec[T], A, B](private[HASkipList] val keys : Vector[A],
+  final class Branch[T <: Exec/*[T]*/, A, B](private[HASkipList] val keys : Vector[A],
                                          private[HASkipList] val downs: Vector[Var[T, Node[T, A, B]]])
     extends HeadOrBranch[T, A, B] with Node[T, A, B] {
 
@@ -1367,9 +1367,9 @@ object HASkipList {
   }
 
   object Set {
-    type Node  [T <: Exec[T], A] = HASkipList.Node  [T, A, A]
-    type Branch[T <: Exec[T], A] = HASkipList.Branch[T, A, A]
-    type Leaf  [T <: Exec[T], A] = HASkipList.Leaf  [T, A, A]
+    type Node  [T <: Exec/*[T]*/, A] = HASkipList.Node  [T, A, A]
+    type Branch[T <: Exec/*[T]*/, A] = HASkipList.Branch[T, A, A]
+    type Leaf  [T <: Exec/*[T]*/, A] = HASkipList.Leaf  [T, A, A]
 
     /** Creates a new empty skip list with default minimum gap parameter of `2` and no key observer.
      * Type parameter `S` specifies the STM system to use. Type parameter `A`
@@ -1380,7 +1380,7 @@ object HASkipList {
      *                      for specialized versions and transactional restrictions.
      * @param   keyFormat      the format for the elements, in case a persistent STM is used.
      */
-    def empty[T <: Exec[T], A](implicit tx: T, ord: TOrdering[T, A],
+    def empty[T <: Exec/*[T]*/, A](implicit tx: T, ord: TOrdering[T, A],
                                keyFormat: TFormat[T, A]): HASkipList.Set[T, A] =
       empty()
 
@@ -1397,7 +1397,7 @@ object HASkipList {
      *                      for specialized versions and transactional restrictions.
      * @param   keyFormat  the format for the elements, in case a persistent STM is used.
      */
-    def empty[T <: Exec[T], A](minGap: Int = 2,
+    def empty[T <: Exec/*[T]*/, A](minGap: Int = 2,
                                keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                               (implicit tx: T, ord: TOrdering[T, A],
                                keyFormat: TFormat[T, A]): HASkipList.Set[T, A] = {
@@ -1407,17 +1407,17 @@ object HASkipList {
       // no reasonable app would use a node size > 255
       if (minGap < 1 || minGap > 126) sys.error(s"Minimum gap ($minGap) cannot be less than 1 or greater than 126")
 
-      val implId = tx.newId()
+      val implId: Ident[T] = ??? //  = tx.newId()
       new SetImpl[T, A](implId, minGap, keyObserver, list => {
         implId.newVar[Node[T, A]](null)(tx, list)
       })
     }
 
-    def read[T <: Exec[T], A](in: DataInput, keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+    def read[T <: Exec/*[T]*/, A](in: DataInput, keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                              (implicit tx: T, ordering: TOrdering[T, A],
                               keyFormat: TFormat[T, A]): HASkipList.Set[T, A] = {
 
-      val id      = tx.readId(in)
+      val id: Ident[T] = ??? //       = tx.readId(in)
       val version = in.readByte()
       if (version != SER_VERSION)
         sys.error(s"Incompatible serialized version (found $version, required $SER_VERSION).")
@@ -1426,18 +1426,18 @@ object HASkipList {
       new SetImpl[T, A](id, minGap, keyObserver, list => id.readVar[Node[T, A]](in)(list))
     }
 
-    def format[T <: Exec[T], A](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+    def format[T <: Exec/*[T]*/, A](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                                (implicit ordering: TOrdering[T, A],
                                 keyFormat: TFormat[T, A]): TFormat[T, HASkipList.Set[T, A]] =
       new SetFmt[T, A](keyObserver)
   }
 
-  trait Set[T <: Exec[T], A] extends SkipList.Set[T, A] with HASkipList[T, A, A]
+  trait Set[T <: Exec/*[T]*/, A] extends SkipList.Set[T, A] with HASkipList[T, A, A]
 
   object Map {
-    type Node  [T <: Exec[T], A, B] = HASkipList.Node  [T, A, (A, B)]
-    type Branch[T <: Exec[T], A, B] = HASkipList.Branch[T, A, (A, B)]
-    type Leaf  [T <: Exec[T], A, B] = HASkipList.Leaf  [T, A, (A, B)]
+    type Node  [T <: Exec/*[T]*/, A, B] = HASkipList.Node  [T, A, (A, B)]
+    type Branch[T <: Exec/*[T]*/, A, B] = HASkipList.Branch[T, A, (A, B)]
+    type Leaf  [T <: Exec/*[T]*/, A, B] = HASkipList.Leaf  [T, A, (A, B)]
 
     /** Creates a new empty skip list with default minimum gap parameter of `2` and no key observer.
      * Type parameter `S` specifies the STM system to use. Type parameter `A`
@@ -1448,7 +1448,7 @@ object HASkipList {
      *                      for specialized versions and transactional restrictions.
      * @param   keyFormat      the format for the elements, in case a persistent STM is used.
      */
-    def empty[T <: Exec[T], A, B](implicit tx: T, ord: Ordering[A],
+    def empty[T <: Exec/*[T]*/, A, B](implicit tx: T, ord: Ordering[A],
                                   keyFormat: TFormat[T, A],
                                   valueFormat: TFormat[T, B]): HASkipList.Map[T, A, B] =
       empty()
@@ -1466,7 +1466,7 @@ object HASkipList {
      *                      for specialized versions and transactional restrictions.
      * @param   keyFormat  the format for the elements, in case a persistent STM is used.
      */
-    def empty[T <: Exec[T], A, B](minGap: Int = 2,
+    def empty[T <: Exec/*[T]*/, A, B](minGap: Int = 2,
                                   keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                                  (implicit tx: T, ord: Ordering[A],
                                   keyFormat: TFormat[T, A],
@@ -1477,18 +1477,18 @@ object HASkipList {
       // no reasonable app would use a node size > 255
       if (minGap < 1 || minGap > 126) sys.error(s"Minimum gap ($minGap) cannot be less than 1 or greater than 126")
 
-      val implId = tx.newId()
+      val implId: Ident[T] = ??? //  = tx.newId()
       new MapImpl[T, A, B](implId, minGap, keyObserver, list => {
         implId.newVar[Node[T, A, B]](null)(tx, list)
       })
     }
 
-    def read[T <: Exec[T], A, B](in: DataInput, keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+    def read[T <: Exec/*[T]*/, A, B](in: DataInput, keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                                 (implicit tx: T, ordering: TOrdering[T, A],
                                  keyFormat: TFormat[T, A],
                                  valueFormat: TFormat[T, B]): HASkipList.Map[T, A, B] = {
 
-      val id      = tx.readId(in)
+      val id: Ident[T] = ??? //       = tx.readId(in)
       val version = in.readByte()
       if (version != SER_VERSION) sys.error(s"Incompatible serialized version (found $version, required $SER_VERSION).")
 
@@ -1496,17 +1496,17 @@ object HASkipList {
       new MapImpl[T, A, B](id, minGap, keyObserver, list => id.readVar[Node[T, A, B]](in)(list))
     }
 
-    def format[T <: Exec[T], A, B](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+    def format[T <: Exec/*[T]*/, A, B](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                                       (implicit ordering: TOrdering[T, A],
                                        keyFormat: TFormat[T, A],
                                        valueFormat: TFormat[T, B]): TFormat[T, HASkipList.Map[T, A, B]] =
       new MapFmt[T, A, B](keyObserver)
   }
 
-  trait Map[T <: Exec[T], A, B]
+  trait Map[T <: Exec/*[T]*/, A, B]
     extends SkipList.Map[T, A, B] with HASkipList[T, A, (A, B)]
 }
-trait HASkipList[T <: Exec[T], A, E] extends SkipList[T, A, E] {
+trait HASkipList[T <: Exec/*[T]*/, A, E] extends SkipList[T, A, E] {
   def top(implicit tx: T): Option[HASkipList.Node[T, A, E]]
 
   /** Finds the right-most key which

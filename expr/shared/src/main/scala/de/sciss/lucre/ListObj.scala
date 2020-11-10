@@ -21,7 +21,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 object ListObj extends Obj.Type {
   final val typeId  = 23
 
-  final case class Update[T <: Txn[T], A, +Repr <: ListObj[T, A]](list: Repr, changes: Vec[Change[A]])
+  final case class Update[T <: Txn/*[T]*/, A, +Repr <: ListObj[T, A]](list: Repr, changes: Vec[Change[A]])
 
   sealed trait Change[+A] {
     def index: Int
@@ -36,21 +36,21 @@ object ListObj extends Obj.Type {
 
   object Modifiable {
     /** Returns a format for a modifiable list. */
-    implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, Modifiable[T, A]] =
+    implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, Modifiable[T, A]] =
       Impl.modFormat[T, A]
 
-    def read[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
+    def read[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
       format[T, A].readT(in)
 
     /** Creates a new empty linked list. */
-    def apply[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
+    def apply[T <: Txn/*[T]*/, E[~ <: Txn/*[~]*/] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
       Impl.newModifiable[T, E]
   }
 
   /** Modifiable extension of the linked list. Elements can be appended or prepended in O(1).
    * Removal of the head or last element is O(1). Arbitrary removal takes O(N).
    */
-  trait Modifiable[T <: Txn[T], A] extends ListObj[T, A] with Event.Node[T] {
+  trait Modifiable[T <: Txn/*[T]*/, A] extends ListObj[T, A] with Event.Node[T] {
     def addLast(elem: A)(implicit tx: T): Unit
     def addHead(elem: A)(implicit tx: T): Unit
 
@@ -66,13 +66,13 @@ object ListObj extends Obj.Type {
     override def changed: EventLike[T, Update[T, A, Modifiable[T, A]]]
   }
 
-  implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, ListObj[T, A]] =
+  implicit def format[T <: Txn/*[T]*/, A <: Elem[T]]: TFormat[T, ListObj[T, A]] =
     Impl.format[T, A]
 
-  def read[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): ListObj[T, A] =
+  def read[T <: Txn/*[T]*/, A <: Elem[T]](in: DataInput)(implicit tx: T): ListObj[T, A] =
     format[T, A].readT(in)
 
-  override def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
+  override def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] =
     Impl.readIdentifiedObj(in)
 }
 
@@ -83,7 +83,7 @@ object ListObj extends Obj.Type {
  *
  * @tparam A      the element type of the list
  */
-trait ListObj[T <: Txn[T], A] extends Obj[T] with Publisher[T, ListObj.Update[T, A, ListObj[T, A]]] {
+trait ListObj[T <: Txn/*[T]*/, A] extends Obj[T] with Publisher[T, ListObj.Update[T, A, ListObj[T, A]]] {
   def isEmpty (implicit tx: T): Boolean
   def nonEmpty(implicit tx: T): Boolean
   def size    (implicit tx: T): Int

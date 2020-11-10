@@ -16,6 +16,6 @@ package impl
 
 import de.sciss.serial.DataInput
 
-final class IdentFormat[T <: Exec[T]] extends CastExecFormat[T, Ident] {
-  def readT(in: DataInput)(implicit tx: T): Ident[T] = tx.readId(in)
+final class IdentFormat[T <: Exec/*[T]*/] extends CastExecFormat[T, Ident] {
+  def readT(in: DataInput)(implicit tx: T): Ident[T] = ??? // tx.readId(in)
 }

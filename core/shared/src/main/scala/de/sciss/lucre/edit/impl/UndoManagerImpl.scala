@@ -23,12 +23,12 @@ import de.sciss.lucre.impl.{DummyObservableImpl, ObservableImpl}
 import scala.concurrent.stm.Ref
 
 object UndoManagerImpl {
-  def apply[T <: Txn[T]](): UndoManager[T] = new Impl[T]
-  def dummy[T <: Txn[T]]  : UndoManager[T] = anyDummy.asInstanceOf[UndoManager[T]]
+  def apply[T <: Txn/*[T]*/](): UndoManager[T] = new Impl[T]
+  def dummy[T <: Txn/*[T]*/]  : UndoManager[T] = anyDummy.asInstanceOf[UndoManager[T]]
 
   private val anyDummy = new Dummy[AnyTxn]
 
-  private final class Dummy[T <: Txn[T]] extends UndoManager[T] with DummyObservableImpl[T] {
+  private final class Dummy[T <: Txn/*[T]*/] extends UndoManager[T] with DummyObservableImpl[T] {
     def addEdit(edit: UndoableEdit[T])(implicit tx: T): Unit = ()
 
     def capture[A](name: String)(block: => A)(implicit tx: T): A = block
@@ -49,7 +49,7 @@ object UndoManagerImpl {
     def dispose ()(implicit tx: T): Unit = ()
   }
 
-  private final class Impl[T <: Txn[T]]
+  private final class Impl[T <: Txn/*[T]*/]
     extends UndoManager[T] with ObservableImpl[T, UndoManager.Update[T]] { impl =>
 
     private[this] val toUndo    = Ref[List[UndoableEdit[T]]](Nil)
@@ -213,7 +213,7 @@ object UndoManagerImpl {
     }
   }
 
-  private class Compound[T <: Txn[T]](val name: String, val edits: List[UndoableEdit[T]], val significant: Boolean)
+  private class Compound[T <: Txn/*[T]*/](val name: String, val edits: List[UndoableEdit[T]], val significant: Boolean)
     extends UndoableEdit[T] {
 
     def isEmpty : Boolean = edits.isEmpty

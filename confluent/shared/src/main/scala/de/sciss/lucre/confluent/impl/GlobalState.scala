@@ -21,10 +21,10 @@ import de.sciss.serial.{DataInput, DataOutput, TFormat}
 private[impl] object GlobalState {
   private val SER_VERSION = 0x436F6E666C6E7400L  // "Conflnt\0"
 
-  implicit def format[T <: Txn[T], D <: DurableLike.Txn[D]]: TFormat[D, GlobalState[T, D]] =
+  implicit def format[T <: Txn/*[T]*/, D <: DurableLike.Txn/*[D]*/]: TFormat[D, GlobalState[T, D]] =
     new Fmt[T, D]
 
-  private final class Fmt[T <: Txn[T], D <: DurableLike.Txn[D]]
+  private final class Fmt[T <: Txn/*[T]*/, D <: DurableLike.Txn/*[D]*/]
     extends TFormat[D, GlobalState[T, D]] {
 
     def write(v: GlobalState[T, D], out: DataOutput): Unit = {
@@ -42,9 +42,9 @@ private[impl] object GlobalState {
       if (serVer != SER_VERSION)
         throw new IllegalStateException(s"Incompatible serialized version. Found $serVer but require $SER_VERSION")
       val durRootId     = in.readInt() // readInt()
-      val idCnt         = tx.readCachedIntVar(in)
-      val versionLinear = tx.readCachedIntVar(in)
-      val versionRandom = tx.readCachedLongVar(in)
+      val idCnt        : Var[D, Int] = ??? // tx.readCachedIntVar(in)
+      val versionLinear: Var[D, Int] = ??? // tx.readCachedIntVar(in)
+      val versionRandom: Var[D, Long] = ??? // tx.readCachedLongVar(in)
       val partialTree   = Ancestor.readTree[D, Long](in)(tx, TFormat.Long, _.toInt)
       GlobalState[T, D](durRootId = durRootId, idCnt = idCnt, versionLinear = versionLinear,
         versionRandom = versionRandom, partialTree = partialTree)
@@ -52,6 +52,6 @@ private[impl] object GlobalState {
   }
 }
 
-private[impl] final case class GlobalState[T <: Txn[T], D <: DurableLike.Txn[D]](
+private[impl] final case class GlobalState[T <: Txn/*[T]*/, D <: DurableLike.Txn/*[D]*/](
                                                                                   durRootId: Int, idCnt: Var[D, Int], versionLinear: Var[D, Int], versionRandom: Var[D, Long],
                                                                                   partialTree:  Ancestor.Tree[D, Long])

@@ -44,26 +44,26 @@ object SkipList {
   }
 
   object Set {
-    def empty[T <: Exec[T], A](implicit tx: T, ord: TOrdering[T, A],
+    def empty[T <: Exec/*[T]*/, A](implicit tx: T, ord: TOrdering[T, A],
                                keyFormat: TFormat[T, A]): SkipList.Set[T, A] =
       HASkipList.Set.empty[T, A]
 
-    def empty[T <: Exec[T], A](keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
+    def empty[T <: Exec/*[T]*/, A](keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
                               (implicit tx: T, ord: TOrdering[T, A],
                                keyFormat: TFormat[T, A]): SkipList.Set[T, A] =
       HASkipList.Set.empty[T, A](keyObserver = keyObserver)
 
-    def read[T <: Exec[T], A](in: DataInput, keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
+    def read[T <: Exec/*[T]*/, A](in: DataInput, keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
                              (implicit tx: T, ord: TOrdering[T, A],
                               keyFormat: TFormat[T, A]): SkipList.Set[T, A] =
       HASkipList.Set.read[T, A](in, keyObserver)
 
-    implicit def format[T <: Exec[T], A](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+    implicit def format[T <: Exec/*[T]*/, A](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                                             (implicit ord: TOrdering[T, A],
                                              keyFormat: TFormat[T, A]): TFormat[T, Set[T, A]] =
       new SetFmt[T, A](keyObserver)
 
-    private final class SetFmt[T <: Exec[T], A](keyObserver: SkipList.KeyObserver[T, A])
+    private final class SetFmt[T <: Exec/*[T]*/, A](keyObserver: SkipList.KeyObserver[T, A])
                                                (implicit ord: TOrdering[T, A],
                                                 keyFormat: TFormat[T, A])
       extends WritableFormat[T, Set[T, A]] {
@@ -76,31 +76,31 @@ object SkipList {
   }
 
   object Map {
-    def empty[T <: Exec[T], A, B](implicit tx: T, ord: Ordering[A],
+    def empty[T <: Exec/*[T]*/, A, B](implicit tx: T, ord: Ordering[A],
                                   keyFormat: ConstFormat[A],
                                   valueFormat: TFormat[T, B]): SkipList.Map[T, A, B] =
       HASkipList.Map.empty[T, A, B]
 
-    def empty[T <: Exec[T], A, B](keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
+    def empty[T <: Exec/*[T]*/, A, B](keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
                                  (implicit tx: T, ord: Ordering[A],
                                   keyFormat: ConstFormat[A],
                                   valueFormat: TFormat[T, B]): SkipList.Map[T, A, B] =
       HASkipList.Map.empty[T, A, B](keyObserver = keyObserver)
 
-    def read[T <: Exec[T], A, B](in: DataInput,
+    def read[T <: Exec/*[T]*/, A, B](in: DataInput,
                                  keyObserver: SkipList.KeyObserver[T, A] = NoKeyObserver)
                                 (implicit tx: T, ord: Ordering[A],
                                  keyFormat: ConstFormat[A],
                                  valueFormat: TFormat[T, B]): SkipList.Map[T, A, B] =
       HASkipList.Map.read[T, A, B](in, keyObserver)
 
-    def format[T <: Exec[T], A, B](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
+    def format[T <: Exec/*[T]*/, A, B](keyObserver: SkipList.KeyObserver[T, A] = SkipList.NoKeyObserver)
                                       (implicit ord: Ordering[A],
                                        keyFormat: ConstFormat[A],
                                        valueFormat: TFormat[T, B]): TFormat[T, Map[T, A, B]] =
       new MapFmt[T, A, B](keyObserver)
 
-    private final class MapFmt[T <: Exec[T], A, B](keyObserver: SkipList.KeyObserver[T, A])
+    private final class MapFmt[T <: Exec/*[T]*/, A, B](keyObserver: SkipList.KeyObserver[T, A])
                                                   (implicit ord: Ordering[A],
                                                    keyFormat: ConstFormat[A],
                                                    valueFormat: TFormat[T, B])
@@ -113,7 +113,7 @@ object SkipList {
     }
   }
 
-  trait Set[T <: Exec[T], A] extends SkipList[T, A, A] {
+  trait Set[T <: Exec/*[T]*/, A] extends SkipList[T, A, A] {
     /** Inserts a new key into the set.
      *
      * @param   key  the key to insert
@@ -130,7 +130,7 @@ object SkipList {
     def remove(key: A)(implicit tx: T): Boolean
   }
 
-  trait Map[T <: Exec[T], A, B] extends SkipList[T, A, (A, B)] {
+  trait Map[T <: Exec/*[T]*/, A, B] extends SkipList[T, A, (A, B)] {
 
     def keysIterator  (implicit tx: T): Iterator[A]
     def valuesIterator(implicit tx: T): Iterator[B]
@@ -163,7 +163,7 @@ object SkipList {
   }
 }
 
-trait SkipList[T <: Exec[T], A, E] extends Mutable[T] {
+trait SkipList[T <: Exec/*[T]*/, A, E] extends Mutable[T] {
   /** Searches for the Branch of a given key.
    *
    * @param   key   the key to search for

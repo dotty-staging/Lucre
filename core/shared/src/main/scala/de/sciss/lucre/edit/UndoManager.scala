@@ -20,12 +20,12 @@ import de.sciss.lucre.edit.impl.UndoManagerImpl
 import scala.concurrent.stm.TxnLocal
 
 object UndoManager {
-  def dummy[T <: Txn[T]]: UndoManager[T] = UndoManagerImpl.dummy
+  def dummy[T <: Txn/*[T]*/]: UndoManager[T] = UndoManagerImpl.dummy
 
-  def apply[T <: Txn[T]](): UndoManager[T] =
+  def apply[T <: Txn/*[T]*/](): UndoManager[T] =
     UndoManagerImpl()
 
-  def using[T <: Txn[T], A](m: UndoManager[T])(body: => A)(implicit tx: T): A = {
+  def using[T <: Txn/*[T]*/, A](m: UndoManager[T])(body: => A)(implicit tx: T): A = {
     val before = current.swap(m)
     try {
       body
@@ -34,10 +34,10 @@ object UndoManager {
     }
   }
 
-  def find[T <: Txn[T]](implicit tx: T): Option[UndoManager[T]] =
+  def find[T <: Txn/*[T]*/](implicit tx: T): Option[UndoManager[T]] =
     Option(current().asInstanceOf[UndoManager[T]])
 
-  final case class Update[T <: Txn[T]](m: UndoManager[T], undoName: Option[String], redoName: Option[String]) {
+  final case class Update[T <: Txn/*[T]*/](m: UndoManager[T], undoName: Option[String], redoName: Option[String]) {
     def canUndo: Boolean = undoName.isDefined
     def canRedo: Boolean = redoName.isDefined
   }
@@ -47,7 +47,7 @@ object UndoManager {
   final class CannotUndoException(message: String) extends RuntimeException(message)
   final class CannotRedoException(message: String) extends RuntimeException(message)
 }
-trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoManager.Update[T]] {
+trait UndoManager[T <: Txn/*[T]*/] extends Disposable[T] with Observable[T, UndoManager.Update[T]] {
   /** Add another edit to the history.
    * Unless merging is blocked, it tries to merge this edit
    * with the most recent edit. Afterwards,

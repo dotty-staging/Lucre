@@ -16,7 +16,7 @@ package de.sciss.lucre.impl
 import de.sciss.lucre.{Exec, Mutable}
 import de.sciss.serial.DataOutput
 
-trait MutableImpl[T <: Exec[T]] extends Mutable[T] {
+trait MutableImpl[T <: Exec/*[T]*/] extends Mutable[T] {
   final override def dispose()(implicit tx: T): Unit = {
     id.dispose()
     disposeData()

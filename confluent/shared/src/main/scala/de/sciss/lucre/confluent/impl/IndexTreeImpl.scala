@@ -17,14 +17,14 @@ import de.sciss.lucre.data.Ancestor
 import de.sciss.lucre.{DurableLike, Disposable}
 import de.sciss.serial.{DataOutput, Writable}
 
-private[impl] trait IndexTree[D <: DurableLike.Txn[D]] extends Writable with Disposable[D] {
+private[impl] trait IndexTree[D <: DurableLike.Txn/*[D]*/] extends Writable with Disposable[D] {
   def tree : Ancestor.Tree[D, Long]
   def level: Int
   def term : Long
 }
 
 // an index tree holds the pre- and post-lists for each version (full) tree
-private[impl] final class IndexTreeImpl[D <: DurableLike.Txn[D]](val tree: Ancestor.Tree[D, Long], val level: Int)
+private[impl] final class IndexTreeImpl[D <: DurableLike.Txn/*[D]*/](val tree: Ancestor.Tree[D, Long], val level: Int)
   extends IndexTree[D] {
 
   override def hashCode: Int = term.toInt

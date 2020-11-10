@@ -24,7 +24,7 @@ trait Sys /*[S <: Sys[S]]*/ extends Base /*[S]*/ {
   //  type I <: InMemoryLike[I]
 
   /** The transaction type of the system. */
-  type T <: Txn[T]
+  type T <: Txn // [T]
 
   /** Reads the root object representing the stored data structure,
    * or provides a newly initialized one via the `init` argument,

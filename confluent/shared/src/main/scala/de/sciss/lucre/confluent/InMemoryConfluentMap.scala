@@ -16,11 +16,11 @@ package de.sciss.lucre.confluent
 import de.sciss.lucre.confluent.impl.InMemoryConfluentMapImpl
 
 object InMemoryConfluentMap {
-  def newIntMap [T <: Txn[T]]: InMemoryConfluentMap[T, Int]  = new InMemoryConfluentMapImpl[T, Int]
-  def newLongMap[T <: Txn[T]]: InMemoryConfluentMap[T, Long] = new InMemoryConfluentMapImpl[T, Long]
+  def newIntMap [T <: Txn/*[T]*/]: InMemoryConfluentMap[T, Int]  = new InMemoryConfluentMapImpl[T, Int]
+  def newLongMap[T <: Txn/*[T]*/]: InMemoryConfluentMap[T, Long] = new InMemoryConfluentMapImpl[T, Long]
 }
 
-trait InMemoryConfluentMap[T <: Txn[T], K] {
+trait InMemoryConfluentMap[T <: Txn/*[T]*/, K] {
   def put[A](key: K, value: A, tx: T)(implicit path: tx.Acc): Unit
 
   /** Finds the most recent value for an entity `id` with respect to version `path`.

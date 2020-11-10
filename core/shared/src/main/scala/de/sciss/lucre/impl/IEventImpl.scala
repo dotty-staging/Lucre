@@ -14,7 +14,7 @@
 package de.sciss.lucre
 package impl
 
-trait IEventImpl[T <: Exec[T], +A] extends IEvent[T, A] {
+trait IEventImpl[T <: Exec/*[T]*/, +A] extends IEvent[T, A] {
   protected def targets: ITargets[T]
   
   def --->(sink: IEvent[T, Any])(implicit tx: T): Unit =

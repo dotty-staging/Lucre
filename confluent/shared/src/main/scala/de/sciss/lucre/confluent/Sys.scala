@@ -23,10 +23,10 @@ import scala.collection.immutable.{IndexedSeq => Vec}
   * `LucreConfluent`, it was decided to just name it `confluent.Sys`.
   */
 trait Sys extends LSys {
-  type D <: DurableLike .Txn[D]
-  type I <: InMemoryLike.Txn[I]
+  type D <: DurableLike .Txn/*[D]*/
+  type I <: InMemoryLike.Txn/*[I]*/
 
-  type T               <: confluent.Txn[T]
+  type T               <: confluent.Txn/*[T]*/
   final type Id         = confluent.Ident[T]
   final type Acc        = confluent.Access[T]
   final type Var[A]     = lucre.Var[T, A] // confluent.Var[/*T,*/ A]

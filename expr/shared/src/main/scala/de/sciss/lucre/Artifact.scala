@@ -21,15 +21,15 @@ import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 object Artifact extends Obj.Type /*with ArtifactPlatform*/ {
   final val typeId = 0x10008
 
-  def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Artifact[T] =
+  def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Artifact[T] =
     format[T].readT(in)
 
-  implicit def format[T <: Txn[T]]: TFormat[T, Artifact[T]] = Impl.format
+  implicit def format[T <: Txn/*[T]*/]: TFormat[T, Artifact[T]] = Impl.format
 
-  def apply[T <: Txn[T]](location: ArtifactLocation[T], child: Child)(implicit tx: T): Artifact.Modifiable[T] =
+  def apply[T <: Txn/*[T]*/](location: ArtifactLocation[T], child: Child)(implicit tx: T): Artifact.Modifiable[T] =
     Impl(location, child)
 
-  def apply[T <: Txn[T]](location: ArtifactLocation[T], file: Value)(implicit tx: T): Artifact.Modifiable[T] =
+  def apply[T <: Txn/*[T]*/](location: ArtifactLocation[T], file: Value)(implicit tx: T): Artifact.Modifiable[T] =
     apply(location, Value.relativize(location.directory, file))
 
   object Value extends ConstFormat[Value] {
@@ -70,15 +70,15 @@ object Artifact extends Obj.Type /*with ArtifactPlatform*/ {
   type Value = URI
 
   object Modifiable {
-    def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Modifiable[T] =
+    def read[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Modifiable[T] =
       format[T].readT(in)
 
-    def copy[T <: Txn[T]](from: Artifact[T])(implicit tx: T): Modifiable[T] =
+    def copy[T <: Txn/*[T]*/](from: Artifact[T])(implicit tx: T): Modifiable[T] =
       Impl.copy(from)
 
-    implicit def format[T <: Txn[T]]: TFormat[T, Modifiable[T]] = Impl.modFormat
+    implicit def format[T <: Txn/*[T]*/]: TFormat[T, Modifiable[T]] = Impl.modFormat
   }
-  trait Modifiable[T <: Txn[T]] extends Artifact[T] {
+  trait Modifiable[T <: Txn/*[T]*/] extends Artifact[T] {
     def child_=(value: Child)(implicit tx: T): Unit
   }
 
@@ -86,11 +86,11 @@ object Artifact extends Obj.Type /*with ArtifactPlatform*/ {
 
   // ---- Type.Expr ----
 
-  def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
+  def readIdentifiedObj[T <: Txn/*[T]*/](in: DataInput)(implicit tx: T): Obj[T] =
     Impl.readIdentifiedArtifact(in)
 }
 /** An artifact is a file on an external storage. */
-trait Artifact[T <: Txn[T]] extends Expr[T, Artifact.Value] {
+trait Artifact[T <: Txn/*[T]*/] extends Expr[T, Artifact.Value] {
   import Artifact.{Child, Modifiable}
 
   def location: ArtifactLocation[T]

@@ -21,7 +21,7 @@ import scala.annotation.elidable.CONFIG
 import scala.collection.immutable.{Map => IMap}
 
 object Push {
-  private[lucre] def apply[T <: Txn[T], A](origin: Event[T, A], update: A)(implicit tx: T): Unit = {
+  private[lucre] def apply[T <: Txn/*[T]*/, A](origin: Event[T, A], update: A)(implicit tx: T): Unit = {
     val push = new Impl(origin, update)
     logEvent("push begin")
     push.visitChildren(origin)
@@ -30,17 +30,17 @@ object Push {
     logEvent("pull end")
   }
 
-  type Parents[T <: Txn[T]] = Set[Event[T, Any]]
+  type Parents[T <: Txn/*[T]*/] = Set[Event[T, Any]]
 
-  private def NoParents[T <: Txn[T]]: Parents[T] = Set.empty[Event[T, Any]]
+  private def NoParents[T <: Txn/*[T]*/]: Parents[T] = Set.empty[Event[T, Any]]
 
-  // private type Visited[T <: Txn[T]] = IMap[Event[T, Any], Parents[T]]
-  private final class Reaction[T <: Txn[T], +A](update: A, observers: List[Observer[T, A]]) {
+  // private type Visited[T <: Txn/*[T]*/] = IMap[Event[T, Any], Parents[T]]
+  private final class Reaction[T <: Txn/*[T]*/, +A](update: A, observers: List[Observer[T, A]]) {
     def apply()(implicit tx: T): Unit =
       observers.foreach(_.apply(update))
   }
 
-  private final class Impl[T <: Txn[T]](origin: Event[T, Any], val update: Any)(implicit tx: T)
+  private final class Impl[T <: Txn/*[T]*/](origin: Event[T, Any], val update: Any)(implicit tx: T)
     extends Pull[T] {
 
     private[this] var pushMap   = IMap(origin -> NoParents[T])
@@ -88,7 +88,7 @@ object Push {
 
     def pull(): Unit = {
       val reactions: List[Reaction[T, Any]] = pushMap.iterator.flatMap { case (event, _) =>
-        val observers = tx.reactionMap.getEventReactions(event)
+        val observers = (??? : ReactionMap[T]) /*tx.reactionMap*/.getEventReactions(event)
         if (observers.nonEmpty || event.isInstanceOf[Caching])
           apply[Any](event).map(new Reaction(_, observers)) else None
       } .toList
@@ -122,7 +122,7 @@ object Push {
   }
 }
 
-trait Pull[T <: Txn[T]] {
+trait Pull[T <: Txn/*[T]*/] {
   /** Assuming that the caller is origin of the event, resolves the update of the given type. */
   def resolve[A]: A
 
