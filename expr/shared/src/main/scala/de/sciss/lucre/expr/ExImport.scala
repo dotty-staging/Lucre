@@ -21,7 +21,8 @@ import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 import scala.language.implicitConversions
 
-object ExImport /*extends ExImportPlatform*/ {
+object ExImport extends ExImport
+trait ExImport {
   implicit def stringLiteralExOps (x: String): StringLiteralExOps = new StringLiteralExOps(x)
   implicit def intLiteralExOps    (x: Int   ): IntLiteralExOps    = new IntLiteralExOps   (x)
   implicit def longLiteralExOps   (x: Long  ): LongLiteralExOps   = new LongLiteralExOps  (x)
