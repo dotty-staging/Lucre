@@ -18,7 +18,7 @@ lazy val deps = new {
   val expr = new {
     def equal: String = core.equal
 //    val fileUtil      = "1.1.5"
-    val asyncFile     = "0.1.0"
+    val asyncFile     = "0.1.1"
     val span          = "2.0.0"
   }
   val confluent = new {
