@@ -15,7 +15,7 @@ package de.sciss.lucre
 
 import de.sciss.equal.Implicits._
 import de.sciss.lucre.IPull.Phase
-import de.sciss.lucre.Log.logEvent
+import de.sciss.lucre.Log.{event => logEvent}
 import de.sciss.model.Change
 
 import scala.annotation.elidable
@@ -26,11 +26,11 @@ object IPush {
   private[lucre] def apply[T <: Exec[T], A](origin: IEvent[T, A], update: A)
                                            (implicit tx: T, targets: ITargets[T]): Unit = {
     val push = new Impl(origin, update)
-    logEvent("ipush begin")
+    logEvent.debug("ipush begin")
     push.visitChildren(origin)
-    logEvent("ipull begin")
+    logEvent.debug("ipull begin")
     push.pull()
-    logEvent("ipull end")
+    logEvent.debug("ipull end")
   }
 
   type Parents[T <: Exec[T]] = Set[IEvent[T, Any]]
@@ -109,7 +109,7 @@ object IPush {
 
     private[this] def addVisited(child: IEvent[T, Any], parent: IEvent[T, Any]): Boolean = {
       val parents = pushMap.getOrElse(child, NoParents)
-      logEvent(s"${indent}visit $child  (new ? ${parents.isEmpty})")
+      logEvent.debug(s"${indent}visit $child  (new ? ${parents.isEmpty})")
       pushMap += ((child, parents + parent))
       parents.isEmpty
     }
@@ -151,7 +151,7 @@ object IPush {
             if (hasObs) opt.map(new Reaction(_, observers)) else None
           } else None
         } .toList
-        logEvent(s"numReactions = ${reactions.size}")
+        logEvent.debug(s"numReactions = ${reactions.size}")
         reactions.foreach(_.apply())
       } finally {
         if (isNew) currentPull.set(m0)
@@ -159,12 +159,12 @@ object IPush {
     }
 
     def resolve[A]: A = {
-      logEvent(s"${indent}resolve")
+      logEvent.debug(s"${indent}resolve")
       update.asInstanceOf[A]
     }
 
     def resolveChange[A](implicit phase: IPull.Phase): A = {
-      logEvent(s"${indent}resolveChange")
+      logEvent.debug(s"${indent}resolveChange")
       val ch = update.asInstanceOf[Change[A]]
       if (phase.isNow) ch.now else ch.before
     }
@@ -183,7 +183,7 @@ object IPush {
       try {
         pullMap.get(source) match {
           case Some(res) =>
-            logEvent(s"${indent}pull $source  (new ? false; state = ${res.state})")
+            logEvent.debug(s"${indent}pull $source  (new ? false; state = ${res.state})")
             if (res.hasFull) {
               res.full.asInstanceOf[Option[A]]
             } else {
@@ -192,7 +192,7 @@ object IPush {
               v
             }
           case _ =>
-            logEvent(s"${indent}pull $source  (new ? true)")
+            logEvent.debug(s"${indent}pull $source  (new ? true)")
             val v   = source.pullUpdate(this)
             val res = new Value
             res.setFull(v)
@@ -259,7 +259,7 @@ object IPush {
         }
         val isOld   = resOpt.isDefined
 
-        logEvent(s"${indent}pull $source  (old ? $isOld; state = ${res.state})")
+        logEvent.debug(s"${indent}pull $source  (old ? $isOld; state = ${res.state})")
         if      (isOld && res.hasPhase      ) res.resolvePhase[A]
         else if (isOld && res.full.isDefined) res.resolveFull [A]
         else {

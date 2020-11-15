@@ -14,7 +14,7 @@
 package de.sciss.lucre
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.Log.logEvent
+import de.sciss.lucre.Log.{event => logEvent}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.CONFIG
@@ -23,11 +23,11 @@ import scala.collection.immutable.{Map => IMap}
 object Push {
   private[lucre] def apply[T <: Txn[T], A](origin: Event[T, A], update: A)(implicit tx: T): Unit = {
     val push = new Impl(origin, update)
-    logEvent("push begin")
+    logEvent.debug("push begin")
     push.visitChildren(origin)
-    logEvent("pull begin")
+    logEvent.debug("pull begin")
     push.pull()
-    logEvent("pull end")
+    logEvent.debug("pull end")
   }
 
   type Parents[T <: Txn[T]] = Set[Event[T, Any]]
@@ -53,7 +53,7 @@ object Push {
 
     private[this] def addVisited(child: Event[T, Any], parent: Event[T, Any]): Boolean = {
       val parents = pushMap.getOrElse(child, NoParents)
-      logEvent(s"${indent}visit $child  (new ? ${parents.isEmpty})")
+      logEvent.debug(s"${indent}visit $child  (new ? ${parents.isEmpty})")
       pushMap += ((child, parents + parent))
       parents.isEmpty
     }
@@ -92,12 +92,12 @@ object Push {
         if (observers.nonEmpty || event.isInstanceOf[Caching])
           apply[Any](event).map(new Reaction(_, observers)) else None
       } .toList
-      logEvent(s"numReactions = ${reactions.size}")
+      logEvent.debug(s"numReactions = ${reactions.size}")
       reactions.foreach(_.apply())
     }
 
     def resolve[A]: A = {
-      logEvent(s"${indent}resolve")
+      logEvent.debug(s"${indent}resolve")
       update.asInstanceOf[A]
     }
 
@@ -107,10 +107,10 @@ object Push {
       try {
         pullMap.get(source) match {
           case Some(res) =>
-            logEvent(s"${indent}pull $source  (new ? false)")
+            logEvent.debug(s"${indent}pull $source  (new ? false)")
             res.asInstanceOf[Option[A]]
           case _ =>
-            logEvent(s"${indent}pull $source  (new ? true)")
+            logEvent.debug(s"${indent}pull $source  (new ? true)")
             val res = source.pullUpdate(this)
             pullMap += ((source, res))
             res

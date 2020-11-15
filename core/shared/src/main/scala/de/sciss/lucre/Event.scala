@@ -14,7 +14,7 @@
 package de.sciss.lucre
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.Log.logEvent
+import de.sciss.lucre.Log.{event => logEvent}
 import de.sciss.lucre.impl.CastTxnFormat
 import de.sciss.serial.{DataInput, DataOutput, TFormat, Writable}
 
@@ -130,26 +130,26 @@ object Event {
       override def toString = s"Targets$id"
 
       private[lucre] def add(slot: Int, sel: Event[T, Any])(implicit tx: T): Boolean = {
-        logEvent(s"$this.add($slot, $sel)")
+        logEvent.debug(s"$this.add($slot, $sel)")
         val tup = (slot.toByte, sel)
         val seq = childrenVar() // .get // .getFresh
-        logEvent(s"$this - old children = $seq")
+        logEvent.debug(s"$this - old children = $seq")
         childrenVar() = seq :+ tup
         !seq.exists(_._1.toInt === slot)
       }
 
       private[lucre] def remove(slot: Int, sel: Event[T, Any])(implicit tx: T): Boolean = {
-        logEvent(s"$this.remove($slot, $sel)")
+        logEvent.debug(s"$this.remove($slot, $sel)")
         val tup = (slot, sel)
         val xs = childrenVar() // .getOrElse(NoChildren)
-        logEvent(s"$this - old children = $xs")
+        logEvent.debug(s"$this - old children = $xs")
         val i = xs.indexOf(tup)
         if (i >= 0) {
           val xs1 = xs.patch(i, Vector.empty, 1) // XXX crappy way of removing a single element
           childrenVar() = xs1
           !xs1.exists(_._1.toInt === slot)
         } else {
-          logEvent(s"$this - selector not found")
+          logEvent.debug(s"$this - selector not found")
           false
         }
       }

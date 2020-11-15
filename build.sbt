@@ -12,6 +12,7 @@ lazy val deps = new {
   }
   val core = new {
     val equal         = "0.1.6"
+    val log           = "0.1.1"
     val model         = "0.3.5"
     val scalaSTM      = "0.11.0"
   }
@@ -58,6 +59,7 @@ lazy val commonSettings = Seq(
   },
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
+  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
   libraryDependencies += {
     "org.scalatest" %%% "scalatest" % deps.test.scalaTest % Test
   },
@@ -101,7 +103,7 @@ lazy val base = crossProject(JSPlatform, JVMPlatform).in(file("base"))
   )
 
 lazy val geom = crossProject(JSPlatform, JVMPlatform).in(file("geom"))
-  .dependsOn(base)    // XXX TODO --- this is just because of new serializers
+//  .dependsOn(base)    // XXX TODO --- this is just because of new serializers
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
@@ -142,6 +144,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
     name := s"$baseName-core",
     libraryDependencies ++= Seq(
       "de.sciss"      %%% "equal"     % deps.core.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
+      "de.sciss"      %%% "log"       % deps.core.log,
       "de.sciss"      %%% "model"     % deps.core.model,
       "org.scala-stm" %%% "scala-stm" % deps.core.scalaSTM
     ),

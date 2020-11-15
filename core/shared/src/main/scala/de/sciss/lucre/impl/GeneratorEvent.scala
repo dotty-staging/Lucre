@@ -14,11 +14,11 @@
 package de.sciss.lucre
 package impl
 
-import de.sciss.lucre.Log.logEvent
+import de.sciss.lucre.Log.{event => logEvent}
 
 trait GeneratorEvent[T <: Txn[T], A] extends Event[T, A] {
   final def fire(update: A)(implicit tx: T): Unit = {
-    logEvent(s"$this fire $update")
+    logEvent.debug(s"$this fire $update")
     Push(this, update)
   }
 }

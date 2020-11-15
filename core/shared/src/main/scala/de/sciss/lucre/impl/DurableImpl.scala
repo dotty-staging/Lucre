@@ -15,7 +15,7 @@ package de.sciss.lucre
 package impl
 
 import de.sciss.equal.Implicits._
-import de.sciss.lucre.Log.logTxn
+import de.sciss.lucre.Log.{txn => logTxn}
 import de.sciss.serial.{DataInput, DataOutput, TFormat}
 
 import scala.annotation.elidable
@@ -98,39 +98,39 @@ object DurableImpl {
     // this increases a durable variable, thus ensures markDirty() already
     def newIdValue()(implicit tx: T): Int = {
       val id = idCntVar() + 1
-      logTxn(s"new   <$id>")
+      logTxn.debug(s"new   <$id>")
       idCntVar() = id
       id
     }
 
     def write(id: Long)(valueFun: DataOutput => Unit)(implicit tx: T): Unit = {
-      logTxn(s"writeL <$id>")
+      logTxn.debug(s"writeL <$id>")
       store.put(_.writeLong(id))(valueFun)
     }
 
     def write(id: Int)(valueFun: DataOutput => Unit)(implicit tx: T): Unit = {
-      logTxn(s"write <$id>")
+      logTxn.debug(s"write <$id>")
       store.put(_.writeInt(id))(valueFun)
     }
 
     def remove(id: Long)(implicit tx: T): Unit = {
-      logTxn(s"removL <$id>")
+      logTxn.debug(s"removL <$id>")
       store.remove(_.writeLong(id))
     }
 
     def remove(id: Int)(implicit tx: T): Unit = {
-      logTxn(s"remov <$id>")
+      logTxn.debug(s"remov <$id>")
       store.remove(_.writeInt(id))
       //         tx.markDirty()
     }
 
     def tryRead[A](id: Long)(valueFun: DataInput => A)(implicit tx: T): Option[A] = {
-      logTxn(s"readL  <$id>")
+      logTxn.debug(s"readL  <$id>")
       store.get(_.writeLong(id))(valueFun)
     }
 
     def read[A](id: Int)(valueFun: DataInput => A)(implicit tx: T): A = {
-      logTxn(s"read  <$id>")
+      logTxn.debug(s"read  <$id>")
       store.get(_.writeInt(id))(valueFun).getOrElse(sys.error(s"Key not found $id"))
     }
 

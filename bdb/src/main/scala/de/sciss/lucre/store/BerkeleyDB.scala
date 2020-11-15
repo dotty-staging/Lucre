@@ -19,7 +19,7 @@ import java.util.concurrent.{ConcurrentLinkedQueue, TimeUnit}
 
 import com.sleepycat.je.OperationStatus.SUCCESS
 import com.sleepycat.je.{Database, DatabaseConfig, DatabaseEntry, Environment, EnvironmentConfig, LockMode, Transaction, TransactionConfig}
-import de.sciss.lucre.Log.logTxn
+import de.sciss.lucre.Log.{txn => logTxn}
 import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.meta.field
@@ -281,10 +281,10 @@ object BerkeleyDB {
       Txn.addResource(this)
       val res = env.beginTransaction(null, txnCfg)
       val id  = res.getId
-      logTxn(s"txn begin  <$id>")
+      logTxn.debug(s"txn begin  <$id>")
       ScalaTxn.afterRollback {
         case ScalaTxn.RolledBack(cause) =>
-          logTxn(s"txn rollback <$id>")
+          logTxn.debug(s"txn rollback <$id>")
           // currently, it seems Scala-STM swallows the uncaught exception as soon
           // as we have registered this afterRollback handler. As a remedy, we'll
           // explicitly print that exception trace.
@@ -303,13 +303,13 @@ object BerkeleyDB {
     def shouldCommit(implicit txn: InTxnEnd): Boolean = {
       val dbTxn = dbTxnRef()
       try {
-        logTxn(s"txn commit <${dbTxn.getId}>")
+        logTxn.debug(s"txn commit <${dbTxn.getId}>")
         dbTxn.commit()
         true
       } catch {
         case NonFatal(e) =>
           e.printStackTrace()
-          logTxn(s"txn abort <${dbTxn.getId}>")
+          logTxn.debug(s"txn abort <${dbTxn.getId}>")
           dbTxn.abort()
           false
       }

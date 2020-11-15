@@ -14,11 +14,11 @@
 package de.sciss.lucre
 package impl
 
-import Log.logEvent
+import Log.{event => logEvent}
 
 trait IGeneratorEvent[T <: Exec[T], A] extends IEventImpl[T, A] {
   final def fire(update: A)(implicit tx: T): Unit = {
-    logEvent(s"$this fire $update")
+    logEvent.debug(s"$this fire $update")
     IPush(this, update)(tx, targets)
   }
 }
