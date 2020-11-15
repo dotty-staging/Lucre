@@ -78,7 +78,7 @@ object BiPinImpl {
   private case class ConstEntry[T <: Txn[T], A <: Elem[T]](key: LongObj[T], value: A)
     extends EntryImpl[T, A] with ConstElemImpl[T] {
 
-    def changed: EventLike[T, Change[Long]] = DummyEvent[T, Change[Long]]
+    def changed: EventLike[T, Change[Long]] = DummyEvent()
 
     private[lucre] override def copy[Out <: Txn[Out]]()(implicit txIn: T, txOut: Out, context: Copy[T, Out]): Elem[Out] =
       ConstEntry(context(key), context[Elem](value))

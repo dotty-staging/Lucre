@@ -15,7 +15,7 @@ package de.sciss.lucre.confluent
 package impl
 
 import de.sciss.lucre
-import de.sciss.lucre.confluent.Log.log
+import de.sciss.lucre.Log.{confluent => log}
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.impl.BasicTxnImpl
 import de.sciss.lucre.{Confluent, Durable, DurableLike, IdentMap, InMemory, MapObj, Obj, ReactionMap}
@@ -103,7 +103,7 @@ trait TxnMixin[Tx <: Txn[Tx]]
   private def markBeforeCommit(): Unit =
     if (!markBeforeCommitFlag) {
       markBeforeCommitFlag = true
-      log("....... txn dirty .......")
+      log.debug("....... txn dirty .......")
       ScalaTxn.beforeCommit(handleBeforeCommit)(peer)
     }
 
@@ -122,7 +122,7 @@ trait TxnMixin[Tx <: Txn[Tx]]
 
   final def newId(): Id = {
     val res = new ConfluentId[T](system.newIdValue()(this), Path.empty[T])
-    log(s"txn newId $res")
+    log.debug(s"txn newId $res")
     res
   }
 
@@ -207,12 +207,12 @@ trait TxnMixin[Tx <: Txn[Tx]]
     newHandle(value)
 
   final def getNonTxn[A](id: Id)(implicit format: ConstFormat[A]): A = {
-    log(s"txn get $id")
+    log.debug(s"txn get $id")
     fullCache.getCacheNonTxn[A](id.base, this)(id.path, format).getOrElse(sys.error(s"No value for $id"))
   }
 
   final def getTxn[A](id: Id)(implicit format: TFormat[T, A]): A = {
-    log(s"txn get' $id")
+    log.debug(s"txn get' $id")
     fullCache.getCacheTxn[A](id.base, this)(id.path, format).getOrElse(sys.error(s"No value for $id"))
   }
 
@@ -276,7 +276,7 @@ trait TxnMixin[Tx <: Txn[Tx]]
   override final def readId(in: DataInput): Id = {
     val base  = in./* PACKED */ readInt()
     val res   = new ConfluentId(base, Path.readAndAppend[T](in, readAccess)(this))
-    log(s"txn readId $res")
+    log.debug(s"txn readId $res")
     res
   }
 
@@ -329,7 +329,7 @@ private[impl] final class RootTxn(val system: Confluent, val peer: InTxn)
   extends RootTxnMixin[Confluent.Txn, Durable.Txn] with TxnImpl {
 
   lazy val durable: Durable.Txn = {
-    log("txn durable")
+    log.debug("txn durable")
     system.durable.wrap(peer)
   }
 }

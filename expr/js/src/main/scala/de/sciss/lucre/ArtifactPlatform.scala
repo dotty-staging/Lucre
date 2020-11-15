@@ -16,6 +16,6 @@ package de.sciss.lucre
 import java.net.URI
 
 trait ArtifactPlatform {
-  private[lucre] def fileToURI(path: String): URI =
+  private[sciss] def fileToURI(path: String): URI =
     throw new UnsupportedOperationException
 }

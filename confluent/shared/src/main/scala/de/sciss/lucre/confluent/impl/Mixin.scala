@@ -14,7 +14,7 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.confluent.Log.log
+import de.sciss.lucre.Log.{confluent => log}
 import de.sciss.lucre.confluent.impl.DurableCacheMapImpl.Store
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.data.Ancestor
@@ -102,7 +102,7 @@ trait Mixin[Tx <: Txn[Tx]]
 
   final def createTxn(dtx: D, inputAccess: Access[T], retroactive: Boolean, cursorCache: Cache[T],
                       systemTimeNanos: Long): T = {
-    log(s"::::::: atomic - input access = $inputAccess${if (retroactive) " - retroactive" else ""} :::::::")
+    log.debug(s"::::::: atomic - input access = $inputAccess${if (retroactive) " - retroactive" else ""} :::::::")
     wrapRegular(dtx, inputAccess, retroactive, cursorCache, systemTimeNanos)
   }
 
@@ -130,7 +130,7 @@ trait Mixin[Tx <: Txn[Tx]]
 
   final def rootJoin[A](init: T => A)
                        (implicit itx: TxnLike, format: TFormat[T, A]): Ref[T, A] = {
-    log("::::::: rootJoin :::::::")
+    log.debug("::::::: rootJoin :::::::")
     TxnExecutor.defaultAtomic { itx =>
       implicit val tx: T = wrapRoot(itx)
       rootBody(init)
@@ -171,7 +171,7 @@ trait Mixin[Tx <: Txn[Tx]]
     }
 
   private def executeRoot[A](fun: T => A): A = LTxn.atomic { itx =>
-    log("::::::: root :::::::")
+    log.debug("::::::: root :::::::")
     val tx = wrapRoot(itx)
     fun(tx)
   }
@@ -219,7 +219,7 @@ trait Mixin[Tx <: Txn[Tx]]
     } else {
       if (newVersion) flushOldTree() else tx.inputAccess.term
     }
-    log(s"::::::: txn flush - ${if (newTree) "meld " else ""}term = ${outTerm.toInt} :::::::")
+    log.debug(s"::::::: txn flush - ${if (newTree) "meld " else ""}term = ${outTerm.toInt} :::::::")
     if (newVersion) writeVersionInfo(outTerm)
     flush(outTerm, caches)
   }
@@ -447,7 +447,7 @@ trait Mixin[Tx <: Txn[Tx]]
   private def writeNewTree(index: Access[T], level: Int)(implicit tx: T): Unit = {
     val dtx   = durableTx(tx)
     val term  = index.term
-    log(s"txn new tree ${term.toInt}")
+    log.debug(s"txn new tree ${term.toInt}")
     val tree  = Ancestor.newTree[D, Long](term)(dtx, implicitly[TFormat[D, Long]], _.toInt)
     val it    = new IndexTreeImpl(tree, level)
     val vInt  = term.toInt

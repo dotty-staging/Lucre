@@ -17,7 +17,7 @@ import java.io.File
 import java.net.URI
 
 trait ArtifactPlatform {
-  private[lucre] def fileToURI(path: String): URI = if (path.isEmpty) Artifact.Value.empty else {
+  private[sciss] def fileToURI(path: String): URI = if (path.isEmpty) Artifact.Value.empty else {
     val f = new File(path)
     f.toURI
   }

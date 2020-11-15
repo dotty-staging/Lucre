@@ -18,9 +18,9 @@ import de.sciss.model.Change
 
 object IDummyEvent {
   /** This method is cheap. */
-  def apply[T <: Exec[T], A]: IEvent[T, A] = anyDummy.asInstanceOf[IEvent[T, A]]
+  def apply[T <: Exec[T], A](): IEvent[T, A] = anyDummy.asInstanceOf[IEvent[T, A]]
 
-  def applyChange[T <: Exec[T], A]: IChangeEvent[T, A] = anyChangeDummy.asInstanceOf[IChangeEvent[T, A]]
+  def change[T <: Exec[T], A]: IChangeEvent[T, A] = anyChangeDummy.asInstanceOf[IChangeEvent[T, A]]
 
   private val anyDummy        = new Impl       [AnyExec]
   private val anyChangeDummy  = new ChangeImpl [AnyExec]

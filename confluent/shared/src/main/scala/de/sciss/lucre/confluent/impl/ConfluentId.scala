@@ -14,7 +14,7 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.confluent.Log.log
+import de.sciss.lucre.Log.{confluent => log}
 import de.sciss.lucre.Var
 import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 
@@ -36,7 +36,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
 
   final def newVar[A](init: A)(implicit tx: T, format: TFormat[T, A]): Var[T, A] = {
     val res = makeVar[A](alloc())
-    log(s"txn newVar $res")
+    log.debug(s"txn newVar $res")
     res.setInit(init)
     res
   }
@@ -44,7 +44,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
   final def newBooleanVar(init: Boolean)(implicit tx: T): Var[T, Boolean] = {
     val id  = alloc()
     val res = new BooleanVar(id)
-    log(s"txn newVar $res")
+    log.debug(s"txn newVar $res")
     res.setInit(init)
     res
   }
@@ -52,7 +52,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
   final def newIntVar(init: Int)(implicit tx: T): Var[T, Int] = {
     val id  = alloc()
     val res = new IntVar(id)
-    log(s"txn newVar $res")
+    log.debug(s"txn newVar $res")
     res.setInit(init)
     res
   }
@@ -60,7 +60,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
   final def newLongVar(init: Long)(implicit tx: T): Var[T, Long] = {
     val id  = alloc()
     val res = new LongVar(id)
-    log(s"txn newVar $res")
+    log.debug(s"txn newVar $res")
     res.setInit(init)
     res
   }
@@ -76,7 +76,7 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
 
   final def readVar[A](in: DataInput)(implicit format: TFormat[T, A]): Var[T, A] = {
     val res = makeVar[A](readSource(in))
-    log(s"txn read $res")
+    log.debug(s"txn read $res")
     res
   }
 
@@ -93,19 +93,19 @@ private abstract class IdImpl[T <: Txn[T]] extends Ident[T] {
 
   final def readBooleanVar(in: DataInput): Var[T, Boolean] = {
     val res = new BooleanVar(readSource(in))
-    log(s"txn read $res")
+    log.debug(s"txn read $res")
     res
   }
 
   final def readIntVar(in: DataInput): Var[T, Int] = {
     val res = new IntVar(readSource(in))
-    log(s"txn read $res")
+    log.debug(s"txn read $res")
     res
   }
 
   final def readLongVar(in: DataInput): Var[T, Long] = {
     val res = new LongVar(readSource(in))
-    log(s"txn read $res")
+    log.debug(s"txn read $res")
     res
   }
 }

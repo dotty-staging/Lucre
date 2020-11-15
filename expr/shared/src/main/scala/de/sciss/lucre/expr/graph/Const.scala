@@ -23,7 +23,7 @@ object Const {
 
     override def toString: String = peer.toString
 
-    def changed: IChangeEvent[T, A] = IDummyEvent.applyChange
+    def changed: IChangeEvent[T, A] = IDummyEvent.change
 
     def value(implicit tx: T): A = peer
 

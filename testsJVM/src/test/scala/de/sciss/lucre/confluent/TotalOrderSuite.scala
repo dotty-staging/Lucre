@@ -36,7 +36,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   val RND_SEED         = 0L
 
   // make sure we don't look tens of thousands of actions
-  Log.showLog = false
+  // Log.showLog = false
 
   withSys[Confluent, Confluent.Txn]("Confluent", () => {
     val dir = File.createTempFile("total-order", "_database")

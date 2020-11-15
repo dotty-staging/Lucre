@@ -16,7 +16,7 @@ package impl
 
 object DummyEvent {
   /** This method is cheap. */
-  def apply[T <: Txn[T], A]: DummyEvent[T, A] = anyDummy.asInstanceOf[DummyEvent[T, A]]
+  def apply[T <: Txn[T], A](): DummyEvent[T, A] = anyDummy.asInstanceOf[DummyEvent[T, A]]
 
   private val anyDummy = new Impl[AnyTxn]
 

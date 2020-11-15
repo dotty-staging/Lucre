@@ -48,7 +48,7 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   val cube: IntCube = IntCube(0x40000000, 0x40000000, 0x40000000, 0x40000000)
 
   // make sure we don't look tens of thousands of actions
-  Log.showLog = false
+  // Log.showLog = false
 
   def withSys[S <: ConfluentLike[T], T <: Txn[T]](sysName: String, sysCreator: () => S, sysCleanUp: (S, Boolean) => Unit): Unit = {
     withTree[T](sysName, () => {

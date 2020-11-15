@@ -53,7 +53,7 @@ class SkipListSuite extends AnyFeatureSpec with GivenWhenThen {
   val rnd: Random[InTxn] = InTxnRandom(SEED)
 
   // make sure we don't look tens of thousands of actions
-  Log.showLog = false
+  // Log.showLog = false
 
   def withSys[S <: ConfluentLike[T], T <: Txn[T]](sysName: String, sysCreator: () => S, sysCleanUp: S => Unit): Unit = {
     if (TWO_GAP_SIZES) {

@@ -14,7 +14,7 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.confluent.Log.log
+import de.sciss.lucre.Log.{confluent => log}
 import de.sciss.serial.{ConstFormat, TFormat}
 
 import scala.concurrent.stm.{InTxn, TxnLocal}
@@ -141,7 +141,7 @@ object DurableCacheMapImpl {
 
     def flush(key: K, outTerm: Long, store: Store[T, K])(implicit tx: T): Unit = {
       val pathOut = path.addTerm(outTerm)
-      log(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
+      log.debug(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
       store.putImmutable(key, value, tx)(pathOut, format)
     }
   }
@@ -154,7 +154,7 @@ object DurableCacheMapImpl {
 
     def flush(key: K, outTerm: Long, store: Store[T, K])(implicit tx: T): Unit = {
       val pathOut = path.addTerm(outTerm)
-      log(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
+      log.debug(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
 //      val out = DataOutput()
 //      format.write(value, out)
 //      val arr = out.toByteArray
@@ -283,7 +283,7 @@ object InMemoryCacheMapImpl {
 
     def flush(key: K, outTerm: Long, store: Store[T, K])(implicit tx: T): Unit = {
       val pathOut = path.addTerm(outTerm)
-      log(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
+      log.debug(s"txn flush write $value for ${pathOut.mkString(s"<$key @ ", ",", ">")}")
       store.put(key, value, tx)(pathOut)
     }
   }

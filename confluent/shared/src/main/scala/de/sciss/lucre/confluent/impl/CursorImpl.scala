@@ -16,7 +16,7 @@ package confluent
 package impl
 
 import de.sciss.lucre.confluent.Cursor.Data
-import de.sciss.lucre.confluent.Log.logCursor
+import de.sciss.lucre.Log.{confluent => logCursor}
 import de.sciss.lucre.{Ident => LIdent, Txn => LTxn, Var => LVar}
 import de.sciss.serial.{DataInput, DataOutput, TFormat, WritableFormat}
 
@@ -129,7 +129,7 @@ object CursorImpl {
                                dtx: D1, fun: T => A): A = {
       val tx: T = system.createTxn(dtx = dtx, inputAccess = inputAccess, retroactive = retroactive,
         cursorCache = this, systemTimeNanos = systemTimeNanos)
-      logCursor(s"${data.id} step. input path = $inputAccess")
+      logCursor.debug(s"${data.id} step. input path = $inputAccess")
       fun(tx)
     }
 
@@ -137,7 +137,7 @@ object CursorImpl {
       implicit val dtx: D1 = system.durableTx(tx)
       val newPath = tx.inputAccess.addTerm(term)
       data.path() = newPath
-      logCursor(s"${data.id} flush path = $newPath")
+      logCursor.debug(s"${data.id} flush path = $newPath")
     }
 
     def position  (implicit tx: T ): Access[T]  = positionD(system.durableTx(tx))
@@ -147,7 +147,7 @@ object CursorImpl {
       data.dispose()
 //      id  .dispose()
 //      path.dispose()
-      logCursor(s"${data.id} dispose")
+      logCursor.debug(s"${data.id} dispose")
     }
 
     def write(out: DataOutput): Unit = data.write(out)

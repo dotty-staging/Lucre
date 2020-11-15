@@ -19,7 +19,7 @@ import de.sciss.serial.DataOutput
 trait ConstObjImpl[T <: Txn[T], A] extends Obj[T] with Publisher[T, A] {
   private[lucre] def event(slot: Int): Event[T, Any] = throw new UnsupportedOperationException
 
-  final def changed: EventLike[T, A] = DummyEvent[T, A]
+  final def changed: EventLike[T, A] = DummyEvent()
 
   final def write(out: DataOutput): Unit = {
     out.writeInt(tpe.typeId)

@@ -14,7 +14,7 @@
 package de.sciss.lucre.confluent
 package impl
 
-import de.sciss.lucre.confluent.Log.log
+import de.sciss.lucre.Log.{confluent => log}
 import de.sciss.lucre.Var
 import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 
@@ -33,7 +33,7 @@ private[impl] final class HandleImpl[T <: Txn[T], A](stale: A, writeIndex: Acces
 
   def meld(from: Access[T])(implicit tx: T): A = {
     if (writeTerm == 0L) throw new IllegalStateException(s"Cannot meld a handle that was not yet flushed: $this")
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     tx.addInputVersion(from)
     apply1(from)
   }
@@ -108,24 +108,24 @@ private[impl] final class VarImpl[T <: Txn[T], A](protected val id: Ident[T],
   extends BasicVar[T, A] {
 
   def meld(from: Access[T])(implicit tx: T): A = {
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     val idm = new ConfluentId[T](id.base, from)
     tx.addInputVersion(from)
     tx.getNonTxn[A](idm)(format)
   }
 
   def update(v: A)(implicit tx: T): Unit = {
-    log(s"$this set $v")
+    log.debug(s"$this set $v")
     tx.putNonTxn(id, v)(format)
   }
 
   def apply()(implicit tx: T): A = {
-    log(s"$this get")
+    log.debug(s"$this get")
     tx.getNonTxn[A](id)(format)
   }
 
   def setInit(v: A)(implicit tx: T): Unit = {
-    log(s"$this ini $v")
+    log.debug(s"$this ini $v")
     tx.putNonTxn(id, v)(format)
   }
 
@@ -137,24 +137,24 @@ private[impl] final class VarTxImpl[T <: Txn[T], A](protected val id: Ident[T])
   extends BasicVar[T, A] {
 
   def meld(from: Access[T])(implicit tx: T): A = {
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     val idm = new ConfluentId[T](id.base, from)
     tx.addInputVersion(from)
     tx.getTxn[A](idm)
   }
 
   def update(v: A)(implicit tx: T): Unit = {
-    log(s"$this set $v")
+    log.debug(s"$this set $v")
     tx.putTxn(id, v)
   }
 
   def apply()(implicit tx: T): A = {
-    log(s"$this get")
+    log.debug(s"$this get")
     tx.getTxn(id)
   }
 
   def setInit(v: A)(implicit tx: T): Unit = {
-    log(s"$this ini $v")
+    log.debug(s"$this ini $v")
     tx.putTxn(id, v)
   }
 
@@ -172,19 +172,19 @@ private final class RootVar[T <: Txn[T], A](id1: Int, name: String)
   private def id(implicit tx: T): Ident[T] = new ConfluentId[T](id1, tx.inputAccess)
 
   def meld(from: Access[T])(implicit tx: T): A = {
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     val idm = new ConfluentId[T](id1, from)
     tx.addInputVersion(from)
     tx.getTxn(idm)(format)
   }
 
   def update(v: A)(implicit tx: T): Unit = {
-    log(s"$this set $v")
+    log.debug(s"$this set $v")
     tx.putTxn(id, v)(format)
   }
 
   def apply()(implicit tx: T): A = {
-    log(s"$this get")
+    log.debug(s"$this get")
     tx.getTxn(id)(format)
   }
 
@@ -204,24 +204,24 @@ private[impl] final class BooleanVar[T <: Txn[T]](protected val id: Ident[T])
   extends BasicVar[T, Boolean] with ConstFormat[Boolean] {
 
   def meld(from: Access[T])(implicit tx: T): Boolean = {
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     val idm = new ConfluentId[T](id.base, from)
     tx.addInputVersion(from)
     tx.getNonTxn[Boolean](idm)(this)
   }
 
   def apply()(implicit tx: T): Boolean = {
-    log(s"$this get")
+    log.debug(s"$this get")
     tx.getNonTxn[Boolean](id)(this)
   }
 
   def setInit(v: Boolean)(implicit tx: T): Unit = {
-    log(s"$this ini $v")
+    log.debug(s"$this ini $v")
     tx.putNonTxn(id, v)(this)
   }
 
   def update(v: Boolean)(implicit tx: T): Unit = {
-    log(s"$this set $v")
+    log.debug(s"$this set $v")
     tx.putNonTxn(id, v)(this)
   }
 
@@ -237,24 +237,24 @@ private[impl] final class IntVar[T <: Txn[T]](protected val id: Ident[T])
   extends BasicVar[T, Int] with ConstFormat[Int] {
 
   def meld(from: Access[T])(implicit tx: T): Int = {
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     val idm = new ConfluentId[T](id.base, from)
     tx.addInputVersion(from)
     tx.getNonTxn[Int](idm)
   }
 
   def apply()(implicit tx: T): Int = {
-    log(s"$this get")
+    log.debug(s"$this get")
     tx.getNonTxn[Int](id)(this)
   }
 
   def setInit(v: Int)(implicit tx: T): Unit = {
-    log(s"$this ini $v")
+    log.debug(s"$this ini $v")
     tx.putNonTxn(id, v)(this)
   }
 
   def update(v: Int)(implicit tx: T): Unit = {
-    log(s"$this set $v")
+    log.debug(s"$this set $v")
     tx.putNonTxn(id, v)(this)
   }
 
@@ -270,24 +270,24 @@ private[impl] final class LongVar[T <: Txn[T]](protected val id: Ident[T])
   extends BasicVar[T, Long] with ConstFormat[Long] {
 
   def meld(from: Access[T])(implicit tx: T): Long = {
-    log(s"$this meld $from")
+    log.debug(s"$this meld $from")
     val idm = new ConfluentId[T](id.base, from)
     tx.addInputVersion(from)
     tx.getNonTxn[Long](idm)
   }
 
   def apply()(implicit tx: T): Long = {
-    log(s"$this get")
+    log.debug(s"$this get")
     tx.getNonTxn[Long](id)(this)
   }
 
   def setInit(v: Long)(implicit tx: T): Unit = {
-    log(s"$this ini $v")
+    log.debug(s"$this ini $v")
     tx.putNonTxn(id, v)(this)
   }
 
   def update(v: Long)(implicit tx: T): Unit = {
-    log(s"$this set $v")
+    log.debug(s"$this set $v")
     tx.putNonTxn(id, v)(this)
   }
 
