@@ -119,7 +119,7 @@ object Artifact {
       def fallback(): Unit = repr_=(lift(v))
 
       v match {
-        case Some(f) if f.getHost.nonEmpty =>
+        case Some(f) if f.getPath.nonEmpty =>
           repr match {
             case Some(am: _Artifact.Modifiable[T]) =>
               tryRelativize(am.location, f) match {
