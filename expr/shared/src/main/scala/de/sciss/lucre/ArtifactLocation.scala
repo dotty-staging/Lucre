@@ -34,14 +34,42 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
 //  implicit def valueFormat: ConstFormat[Value] = TFormat.File
 
   implicit final object valueFormat extends ConstFormat[Value] {
+    private final val SER_VERSION = 2
+
     def write(v: Value, out: DataOutput): Unit = {
       val str = v.toString
+      out.writeByte(SER_VERSION )
       out.writeUTF(str)
     }
 
     def read(in: DataInput): Value = {
-      val str = in.readUTF()
-      new URI(str)
+      // This is quite tricky because we
+      // did not use cookies before, and we
+      // need to be able to read old
+      // artifact values that were plain
+      // File paths.
+      // Since writeUTF writes a big-endian
+      // short of the size of the byte-encoded
+      // string, putting a single version byte
+      // that is at least 2 is "OK", as it will
+      // just produce problems with paths longer
+      // than 511 bytes, which we can exclude historically.
+      val p   = in.position
+      val rem = in.size - p
+      if (rem >= 1) {
+        val ver = in.readByte()
+        if (ver == SER_VERSION) {
+          val str = in.readUTF()
+          if (str.isEmpty) Value.empty else new URI(str)
+        } else {
+          if (ver > SER_VERSION) sys.error(s"Unexpected serialization version ($ver != $SER_VERSION)")
+          in.position = p
+          val filePath = in.readUTF()
+          Artifact.fileToURI(filePath)
+        }
+      } else {
+        Value.empty
+      }
     }
   }
 

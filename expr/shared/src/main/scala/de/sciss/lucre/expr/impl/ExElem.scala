@@ -15,7 +15,7 @@ package de.sciss.lucre
 package expr
 package impl
 
-import java.io.File
+import java.net.URI
 import java.util
 
 import de.sciss.lucre.expr.graph.Const
@@ -87,7 +87,11 @@ object ExElem {
       case 'F' => in.readFloat()
       case 'D' => in.readDouble()
       case 'L' => in.readLong()
-      case 'f' => new File(in.readUTF())
+      case 'u' =>
+        Artifact.Value.read(in)
+      case 'f' => // backwards compatibility
+        val path = in.readUTF()
+        Artifact.fileToURI(path)
       case '\u0000' => null
     }
 
@@ -230,9 +234,14 @@ object ExElem {
       out.writeLong(l)
       ref0
 
-    case f: File =>
-      out.writeByte('f')
-      out.writeUTF(f.getPath)
+//    case f: File =>
+//      out.writeByte('f')
+//      out.writeUTF(f.getPath)
+//      ref0
+
+    case u: URI =>
+      out.writeByte('u')
+      Artifact.Value.write(u, out)
       ref0
 
     case null =>

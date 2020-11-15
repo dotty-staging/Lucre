@@ -18,7 +18,7 @@ import java.net.URI
 import de.sciss.lucre.impl.{ArtifactImpl => Impl}
 import de.sciss.serial.{ConstFormat, DataInput, DataOutput, TFormat}
 
-object Artifact extends Obj.Type /*with ArtifactPlatform*/ {
+object Artifact extends Obj.Type with ArtifactPlatform {
   final val typeId = 0x10008
 
   def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Artifact[T] =
@@ -53,13 +53,19 @@ object Artifact extends Obj.Type /*with ArtifactPlatform*/ {
 
     def empty: Value = new URI(null, "", null)
 
-    private final val SER_VERSION = 1
+    private final val SER_VERSION = 2
 
     def read(in: DataInput): Value = {
       val ver = in.readByte()
-      if (ver != SER_VERSION) sys.error(s"Unexpected serialization version ($ver != $SER_VERSION)")
-      val s = in.readUTF()
-      new URI(s)
+      if (ver != SER_VERSION) {
+        if (ver == 1) { // old school plain path
+          val filePath = in.readUTF()
+          return fileToURI(filePath)
+        }
+        sys.error(s"Unexpected serialization version ($ver != $SER_VERSION)")
+      }
+      val str = in.readUTF()
+      if (str.isEmpty) Value.empty else new URI(str)
     }
 
     def write(v: Value, out: DataOutput): Unit = {
