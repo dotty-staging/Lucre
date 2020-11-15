@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.2.0-SNAPSHOT"
+lazy val projectVersion   = "4.2.0"
 lazy val mimaVersion      = "4.2.0"
 
 lazy val deps = new {
@@ -59,7 +59,9 @@ lazy val commonSettings = Seq(
   },
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
-  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
+  concurrentRestrictions in Global ++= Seq(
+    Tags.limitAll(2), Tags.limit(Tags.Test, 1) // with cross-builds we otherwise get OutOfMemoryError
+  ),
   libraryDependencies += {
     "org.scalatest" %%% "scalatest" % deps.test.scalaTest % Test
   },
