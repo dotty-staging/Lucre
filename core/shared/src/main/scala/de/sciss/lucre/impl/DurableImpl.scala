@@ -139,7 +139,9 @@ object DurableImpl {
     def exists(id: Long)(implicit tx: T): Boolean = store.contains(_.writeLong(id))
   }
 
-  trait TxnMixin[T <: D[T]] extends DurableLike.Txn[T] with BasicTxnImpl[T] {
+  trait TxnMixin[T <: D[T], I1 <: InMemoryLike.Txn[I1]]
+    extends DurableLike.Txn[T] with BasicTxnImpl[T, I1] {
+
     self: T =>
 
     implicit def inMemoryCursor: Cursor[I] = system.inMemory
@@ -470,7 +472,7 @@ object DurableImpl {
   }
 
   private final class TxnImpl(val system: System, val peer: InTxn)
-    extends TxnMixin[Durable.Txn] with Durable.Txn {
+    extends TxnMixin[Durable.Txn, InMemory.Txn] with Durable.Txn {
 
     lazy val inMemory: InMemory.Txn = system.inMemory.wrap(peer)
 

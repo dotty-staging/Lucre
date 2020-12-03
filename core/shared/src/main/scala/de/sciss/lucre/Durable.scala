@@ -23,7 +23,7 @@ object Durable {
     DurableImpl(mainStore = mainStore)
 
   trait Txn extends DurableLike.Txn[Txn] {
-    final type I = InMemory.Txn
+    override final type I = InMemory.Txn
   }
 }
 

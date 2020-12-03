@@ -130,7 +130,7 @@ object InMemoryImpl {
     override def toString = s"InMemory.Txn@${hashCode.toHexString}"
   }
 
-  trait TxnMixin[T <: InMemoryLike.Txn[T]] extends BasicTxnImpl[T] with InMemoryLike.Txn[T] {
+  trait TxnMixin[T <: InMemoryLike.Txn[T]] extends BasicTxnImpl[T, T] with InMemoryLike.Txn[T] {
     self: T =>
 
     implicit def inMemoryCursor: Cursor[I] = system

@@ -34,7 +34,7 @@ lazy val deps = new {
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq(/* "3.0.0-M1", */ "2.13.3", "2.12.12"),
+  crossScalaVersions  := Seq("3.0.0-M2", "2.13.4", "2.12.12"),
 )
 
 lazy val commonSettings = Seq(
@@ -42,17 +42,19 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.13.3",
+  scalaVersion        := "2.13.4",
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
   scalacOptions in (Compile, compile) ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
+    val dot    = isDotty.value
     // note: https://github.com/lampepfl/dotty/issues/8634 
-    if (!(isDotty.value: @sbtUnchecked) && jdkGt8) Seq("-release", "8") else Nil
+    if (!dot && jdkGt8) Seq("-release", "8") else Nil
   }, // JDK >8 breaks API; skip scala-doc
   scalacOptions      ++= {
-    if (loggingEnabled && isSnapshot.value) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
+    val dot    = isDotty.value
+    if (dot || (loggingEnabled && isSnapshot.value)) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
   sources in (Compile, doc) := {
     if (isDotty.value: @sbtUnchecked) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken

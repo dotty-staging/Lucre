@@ -18,14 +18,14 @@ import de.sciss.lucre
 import de.sciss.lucre.Log.{confluent => log}
 import de.sciss.lucre.confluent.impl.{PathImpl => Path}
 import de.sciss.lucre.impl.BasicTxnImpl
-import de.sciss.lucre.{Confluent, Durable, DurableLike, IdentMap, InMemory, MapObj, Obj, ReactionMap}
+import de.sciss.lucre.{Confluent, Durable, DurableLike, IdentMap, InMemory, InMemoryLike, MapObj, Obj, ReactionMap}
 import de.sciss.serial.{ConstFormat, DataInput, TFormat}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Queue => IQueue}
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
 
-trait TxnMixin[Tx <: Txn[Tx]]
-  extends Txn[Tx] with BasicTxnImpl[Tx] with VersionInfo.Modifiable {
+trait TxnMixin[Tx <: Txn[Tx], I1 <: InMemoryLike.Txn[I1]]
+  extends Txn[Tx] with BasicTxnImpl[Tx, I1] with VersionInfo.Modifiable {
   self: Tx =>
 
   type T = Tx
@@ -283,7 +283,7 @@ trait TxnMixin[Tx <: Txn[Tx]]
   override def toString = s"confluent.Sys#Tx$inputAccess"
 }
 
-trait RegularTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D]] extends TxnMixin[Tx] {
+trait RegularTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D], I1 <: InMemoryLike.Txn[I1]] extends TxnMixin[Tx, I1] {
   self: Tx =>
 
   protected def cursorCache: Cache[T]
@@ -294,8 +294,8 @@ trait RegularTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D]] extends TxnMixin[T
   override def toString = s"Confluent#Tx$inputAccess"
 }
 
-trait RootTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D]]
-  extends TxnMixin[Tx] {
+trait RootTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D], I1 <: InMemoryLike.Txn[I1]]
+  extends TxnMixin[Tx, I1] {
   self: Tx =>
 
   final val inputAccess: Access[T] = Path.root[T]
@@ -320,13 +320,13 @@ private[impl] sealed trait TxnImpl extends Confluent.Txn /*Txn[Confluent.Txn]*/ 
 private[impl] final class RegularTxn(val system: Confluent, val durable: Durable.Txn,
                                val inputAccess: Access[Confluent.Txn], val isRetroactive: Boolean,
                                val cursorCache: Cache[Confluent.Txn])
-  extends RegularTxnMixin[Confluent.Txn, Durable.Txn] with TxnImpl {
+  extends RegularTxnMixin[Confluent.Txn, Durable.Txn, InMemory.Txn] with TxnImpl {
 
   lazy val peer: InTxn = durable.peer
 }
 
 private[impl] final class RootTxn(val system: Confluent, val peer: InTxn)
-  extends RootTxnMixin[Confluent.Txn, Durable.Txn] with TxnImpl {
+  extends RootTxnMixin[Confluent.Txn, Durable.Txn, InMemory.Txn] with TxnImpl {
 
   lazy val durable: Durable.Txn = {
     log.debug("txn durable")

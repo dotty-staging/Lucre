@@ -27,8 +27,8 @@ object Confluent {
   trait Txn extends confluent.Txn[Txn] {
     def system: Confluent
 
-    type D = Durable  .Txn
-    type I = InMemory .Txn
+    override type D = Durable  .Txn
+    override type I = InMemory .Txn
   }
 }
 

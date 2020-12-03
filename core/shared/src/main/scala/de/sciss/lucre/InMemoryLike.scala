@@ -23,7 +23,7 @@ object InMemoryLike {
   }
 
   trait Txn[T <: Txn[T]] extends lucre.Txn[T] {
-    type I = T
+    override type I = T
 
     override def system: InMemoryLike[T]
 
