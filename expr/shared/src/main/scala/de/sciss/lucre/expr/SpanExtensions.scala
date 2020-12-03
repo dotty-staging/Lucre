@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.impl.{ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
 import de.sciss.lucre.{Copy, Elem, Expr, LongObj, Obj, SpanObj, Txn}
 import de.sciss.serial.DataInput
 import de.sciss.span.Span
@@ -31,7 +31,7 @@ object SpanExtensions  {
 
   type _Ex[T <: Txn[T]] = SpanObj[T]
 
-  private[this] object LongTuple1s extends Expr.Type.Extension1[LongObj] {
+  private[this] object LongTuple1s extends ExprTypeExtension1[LongObj] {
     // final val arity = 1
     final val opLo: Int = UnaryOp.Start .id
     final val opHi: Int = UnaryOp.Length.id
@@ -51,7 +51,7 @@ object SpanExtensions  {
     }
   }
 
-  private[this] object SpanTuple2s extends Expr.Type.Extension1[SpanObj] {
+  private[this] object SpanTuple2s extends ExprTypeExtension1[SpanObj] {
     // final val arity = 2
     final val opLo: Int = BinaryOp.Apply.id
     final val opHi: Int = BinaryOp.Shift.id

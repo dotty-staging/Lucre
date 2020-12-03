@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprNodeImpl, ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.impl.{ExprNodeImpl, ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
 import de.sciss.lucre.{BooleanObj, Copy, Elem, Expr, IntObj, Obj, Pull, Txn}
 import de.sciss.model.Change
 import de.sciss.serial.{DataInput, DataOutput}
@@ -31,7 +31,7 @@ object BooleanExtensions  {
 
   private[this] type _Ex[T <: Txn[T]] = BooleanObj[T]
 
-  private[this] object BooleanTuple1s extends Expr.Type.Extension1[BooleanObj] {
+  private[this] object BooleanTuple1s extends ExprTypeExtension1[BooleanObj] {
     // final val arity = 1
     final val opLo: Int = Not.id
     final val opHi: Int = Not.id
@@ -58,7 +58,7 @@ object BooleanExtensions  {
       new Tuple1[Out, T1, ReprT1](Targets[Out](), op, context(_1)).connect()
   }
 
-  private[this] object BooleanTuple2s extends Expr.Type.Extension1[BooleanObj] {
+  private[this] object BooleanTuple2s extends ExprTypeExtension1[BooleanObj] {
     // final val arity = 2
     final val opLo: Int = And   .id
     final val opHi: Int = IntGeq.id

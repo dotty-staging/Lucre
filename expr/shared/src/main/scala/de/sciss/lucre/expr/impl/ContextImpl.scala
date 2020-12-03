@@ -104,7 +104,8 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
                 markers()     = oldMarkers
               } else {
                 val m         = newMarkers.max
-                val n         = terminals().apply(m)
+                val term      = terminals()   // help dotty
+                val n         = term(m)
                 n.sourceMap  += (ref -> exp)
                 markers()     = oldMarkers union newMarkers
               }

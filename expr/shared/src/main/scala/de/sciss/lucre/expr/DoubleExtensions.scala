@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
 import de.sciss.lucre.{Copy, DoubleObj, Elem, Expr, Obj, Txn}
 import de.sciss.serial.DataInput
 
@@ -30,7 +30,7 @@ object DoubleExtensions {
 
   type _Ex[T <: Txn[T]] = DoubleObj[T]
 
-  private[this] object DoubleTuple1s extends Expr.Type.Extension1[DoubleObj] {
+  private[this] object DoubleTuple1s extends ExprTypeExtension1[DoubleObj] {
     // final val arity = 1
     final val opLo: Int = UnaryOp.Neg .id
     final val opHi: Int = UnaryOp.Tanh.id
@@ -88,7 +88,7 @@ object DoubleExtensions {
       new Tuple1[Out, T1, ReprT1](Targets[Out](), op, context(_1)).connect()
   }
 
-  private[this] object DoubleTuple2s extends Expr.Type.Extension1[DoubleObj] {
+  private[this] object DoubleTuple2s extends ExprTypeExtension1[DoubleObj] {
     // final val arity = 2
     final val opLo: Int = BinaryOp.Plus .id
     final val opHi: Int = BinaryOp.Wrap2.id

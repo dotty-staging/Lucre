@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.impl.{ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
 import de.sciss.lucre.{Copy, Elem, Expr, Obj, StringObj, Txn}
 import de.sciss.serial.DataInput
 
@@ -27,7 +27,7 @@ object StringExtensions  {
 
   type _Ex[T <: Txn[T]] = StringObj[T]
 
-  private[this] object StringTuple2s extends Expr.Type.Extension1[StringObj] {
+  private[this] object StringTuple2s extends ExprTypeExtension1[StringObj] {
     // final val arity = 2
     final val opLo: Int = BinaryOp.Append.id
     final val opHi: Int = BinaryOp.Append.id

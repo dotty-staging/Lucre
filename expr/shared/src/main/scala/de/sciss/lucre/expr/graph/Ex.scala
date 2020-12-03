@@ -105,7 +105,7 @@ object Ex /*extends ExPlatform*/ {
 //    _initPlatform
   }
 
-  final case class MapExOption[A, B] private (in: Ex[Option[A]], it: It[A], fun: Ex[B])
+  final case class MapExOption[A, B] private[Ex] (in: Ex[Option[A]], it: It[A], fun: Ex[B])
     extends Ex[Option[B]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Option[B]]
@@ -120,7 +120,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  final case class MapExSeq[A, B] private (in: Ex[Seq[A]], it: It[A], fun: Ex[B])
+  final case class MapExSeq[A, B] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Ex[B])
     extends Ex[Seq[B]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[B]]
@@ -135,7 +135,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  final case class MapActOption[A] private (in: Ex[Option[A]], it: It[A], fun: Act)
+  final case class MapActOption[A] private[Ex] (in: Ex[Option[A]], it: It[A], fun: Act)
     extends Act.Option {
 
     type Repr[T <: Txn[T]] = IAction.Option[T]
@@ -150,7 +150,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  final case class MapSeqAct[A] private (in: Ex[Seq[A]], it: It[A], fun: Act) extends Act {
+  final case class MapSeqAct[A] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Act) extends Act {
     type Repr[T <: Txn[T]] = IAction[T]
 
     override def productPrefix: String = s"Ex$$MapSeqAct" // serialization
@@ -163,7 +163,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  final case class FlatMapExOption[A, B] private(in: Ex[Option[A]], it: It[A], fun: Ex[Option[B]])
+  final case class FlatMapExOption[A, B] private[Ex] (in: Ex[Option[A]], it: It[A], fun: Ex[Option[B]])
     extends Ex[Option[B]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Option[B]]
@@ -178,7 +178,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  final case class FlatMapExSeq[A, B] private (in: Ex[Seq[A]], it: It[A], fun: Ex[Seq[B]])
+  final case class FlatMapExSeq[A, B] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Ex[Seq[B]])
     extends Ex[Seq[B]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[B]]
@@ -193,7 +193,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  final case class FlatMapExSeqOption[A, B] private (in: Ex[Seq[A]], it: It[A], fun: Ex[Option[B]])
+  final case class FlatMapExSeqOption[A, B] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Ex[Option[B]])
     extends Ex[Seq[B]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[B]]

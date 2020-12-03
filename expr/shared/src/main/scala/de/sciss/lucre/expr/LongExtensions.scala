@@ -15,7 +15,7 @@ package de.sciss.lucre
 package expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
 import de.sciss.serial.DataInput
 
 import scala.annotation.switch
@@ -30,7 +30,7 @@ object LongExtensions {
 
   type _Ex[T <: Txn[T]] = LongObj[T]
 
-  private[this] object LongTuple1s extends Expr.Type.Extension1[LongObj] {
+  private[this] object LongTuple1s extends ExprTypeExtension1[LongObj] {
     // final val arity = 1
     final val opLo: Int = UnaryOp.Neg  .id
     final val opHi: Int = UnaryOp.Cubed.id
@@ -53,7 +53,7 @@ object LongExtensions {
     }
   }
 
-  private[this] object LongTuple2s extends Expr.Type.Extension1[LongObj] {
+  private[this] object LongTuple2s extends ExprTypeExtension1[LongObj] {
     // final val arity = 2
     final val opLo: Int = BinaryOp.Plus  .id
     final val opHi: Int = BinaryOp.AbsDif.id

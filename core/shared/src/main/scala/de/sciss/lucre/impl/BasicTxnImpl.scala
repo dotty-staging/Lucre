@@ -19,7 +19,7 @@ import scala.concurrent.stm.{Txn => ScalaTxn, Ref => ScalaRef}
 trait BasicTxnImpl[T <: Txn[T], I1 <: Txn[I1]] extends Txn[T] {
   self: T =>
 
-  type I = I1   // Dotty bug; we have to fix the type here
+  type I = I1   // Dotty constraint; we have to fix the type here
 
   def beforeCommit(fun: T => Unit): Unit =
     ScalaTxn.beforeCommit(_ => fun(this))(peer)

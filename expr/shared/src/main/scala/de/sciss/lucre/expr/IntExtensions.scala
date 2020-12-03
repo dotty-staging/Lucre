@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op}
+import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
 import de.sciss.lucre.{BooleanObj, Copy, Elem, Expr, IntObj, Obj, Txn}
 import de.sciss.serial.DataInput
 
@@ -30,7 +30,7 @@ object IntExtensions {
 
   type _Ex[T <: Txn[T]] = IntObj[T]
 
-  private[this] object IntTuple1s extends Expr.Type.Extension1[IntObj] {
+  private[this] object IntTuple1s extends ExprTypeExtension1[IntObj] {
     // final val arity = 1
     final val opLo: Int = Neg         .id
     final val opHi: Int = BooleanToInt.id
@@ -54,7 +54,7 @@ object IntExtensions {
     }
   }
 
-  private[this] object IntTuple2s extends Expr.Type.Extension1[IntObj] {
+  private[this] object IntTuple2s extends ExprTypeExtension1[IntObj] {
     // final val arity = 2
     final val opLo: Int = Plus  .id
     final val opHi: Int = AbsDif.id

@@ -204,7 +204,10 @@ object CellViewImpl {
     extends ExprLike[T, A, _Ex] with CellView.VarR[T, A] {
 
     // ! important to unwrap, otherwise we get infinite recursion with `repr = repr` !
-    override def repr(implicit tx: T): Repr = h().apply()
+    override def repr(implicit tx: T): Repr = {
+      val ex: LVar[T, _Ex[T]] = h()    // help dotty
+      ex()
+    }
 
     def repr_=(value: Repr)(implicit tx: T): Unit = h().update(value)
 

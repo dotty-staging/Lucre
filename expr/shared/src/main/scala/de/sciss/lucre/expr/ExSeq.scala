@@ -74,7 +74,7 @@ object ExSeq {
     }
   }
 
-  final case class Count[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class Count[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Int] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Int]
@@ -120,7 +120,7 @@ object ExSeq {
     }
   }
 
-  final case class DropWhile[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class DropWhile[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[A]]
@@ -158,7 +158,7 @@ object ExSeq {
     }
   }
 
-  final case class Exists[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class Exists[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Boolean] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Boolean]
@@ -220,7 +220,7 @@ object ExSeq {
     }
   }
 
-  final case class Filter[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class Filter[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[A]]
@@ -259,7 +259,7 @@ object ExSeq {
     }
   }
 
-  final case class FilterNot[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class FilterNot[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[A]]
@@ -274,7 +274,7 @@ object ExSeq {
     }
   }
 
-  final case class Forall[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class Forall[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Boolean] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Boolean]
@@ -312,7 +312,7 @@ object ExSeq {
     }
   }
 
-  final case class Find[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class Find[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Option[A]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
@@ -350,7 +350,7 @@ object ExSeq {
     }
   }
 
-  final case class FindLast[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class FindLast[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Option[A]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
@@ -390,7 +390,7 @@ object ExSeq {
     }
   }
 
-  final case class IndexWhere[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class IndexWhere[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Int] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Int]
@@ -415,7 +415,7 @@ object ExSeq {
       inValue.flatMap(_.peer.flatMap(bridge.tryParseObj(_)))
   }
 
-  final case class Select[A] private (in: Ex[Seq[Obj]])(implicit bridge: Obj.Bridge[A])
+  final case class Select[A](in: Ex[Seq[Obj]])(implicit bridge: Obj.Bridge[A])
     extends Ex[Seq[A]] with ProductWithAdjuncts {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[A]]
@@ -443,7 +443,7 @@ object ExSeq {
     }
   }
 
-  final case class SelectFirst[A] private (in: Ex[Seq[Obj]])(implicit bridge: Obj.Bridge[A])
+  final case class SelectFirst[A](in: Ex[Seq[Obj]])(implicit bridge: Obj.Bridge[A])
     extends Ex[Option[A]] with ProductWithAdjuncts {
 
     type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
@@ -486,7 +486,7 @@ object ExSeq {
     }
   }
 
-  final case class TakeWhile[A] private (in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
+  final case class TakeWhile[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
     type Repr[T <: Txn[T]] = IExpr[T, Seq[A]]

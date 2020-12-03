@@ -46,32 +46,6 @@ object Expr extends expr.Ops {
   def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
 
   object Type {
-    trait Extension {
-      def name: String
-
-      /** Lowest id of handled operators */
-      val opLo : Int
-      /** Highest id of handled operators. Note: This value is _inclusive_ */
-      val opHi : Int
-
-      override def toString = s"$name [lo = $opLo, hi = $opHi]"
-    }
-
-    trait Extension1[Repr[~ <: Txn[~]]] extends Extension {
-      def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
-                                    (implicit tx: T): Repr[T]
-    }
-
-    trait Extension2[Repr[~ <: Txn[~], _]] extends Extension {
-      def readExtension[T <: Txn[T], T1](opId: Int, in: DataInput, targets: Targets[T])
-                                        (implicit tx: T): Repr[T, T1]
-    }
-
-    trait Extension3[Repr[~ <: Txn[~], _, _]] extends Extension {
-      def readExtension[T <: Txn[T], T1, T2](opId: Int, in: DataInput, targets: Targets[T])
-                                            (implicit tx: T): Repr[T, T1, T2]
-    }
-
     private lazy val _init: Unit = {
       Adjunct.addFactory(Type.ObjBridge)
       Adjunct.addFactory(Type.SeqObjBridge)
