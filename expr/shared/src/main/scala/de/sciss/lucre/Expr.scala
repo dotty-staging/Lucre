@@ -57,17 +57,17 @@ object Expr extends expr.Ops {
       override def toString = s"$name [lo = $opLo, hi = $opHi]"
     }
 
-    trait Extension1[+Repr[~ <: Txn[~]]] extends Extension {
+    trait Extension1[Repr[~ <: Txn[~]]] extends Extension {
       def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
                                     (implicit tx: T): Repr[T]
     }
 
-    trait Extension2[+Repr[~ <: Txn[~], _]] extends Extension {
+    trait Extension2[Repr[~ <: Txn[~], _]] extends Extension {
       def readExtension[T <: Txn[T], T1](opId: Int, in: DataInput, targets: Targets[T])
                                         (implicit tx: T): Repr[T, T1]
     }
 
-    trait Extension3[+Repr[~ <: Txn[~], _, _]] extends Extension {
+    trait Extension3[Repr[~ <: Txn[~], _, _]] extends Extension {
       def readExtension[T <: Txn[T], T1, T2](opId: Int, in: DataInput, targets: Targets[T])
                                             (implicit tx: T): Repr[T, T1, T2]
     }

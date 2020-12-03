@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.2.0"
+lazy val projectVersion   = "4.2.1-SNAPSHOT"
 lazy val mimaVersion      = "4.2.0"
 
 lazy val deps = new {
@@ -19,7 +19,7 @@ lazy val deps = new {
   val expr = new {
     def equal: String = core.equal
 //    val fileUtil      = "1.1.5"
-    val asyncFile     = "0.1.1"
+    val asyncFile     = "0.1.2"
     val span          = "2.0.0"
   }
   val confluent = new {
@@ -42,7 +42,7 @@ lazy val commonSettings = Seq(
   organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.13.4",
+  scalaVersion        := "3.0.0-M2", // "2.13.4",
   scalacOptions      ++= Seq(
     "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
   ),
@@ -55,6 +55,10 @@ lazy val commonSettings = Seq(
   scalacOptions      ++= {
     val dot    = isDotty.value
     if (dot || (loggingEnabled && isSnapshot.value)) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
+  },
+  scalacOptions ++= {
+    val dot = isDotty.value
+    if (dot) Seq("-Ytasty-reader") else Nil, // WTF
   },
   sources in (Compile, doc) := {
     if (isDotty.value: @sbtUnchecked) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
@@ -75,15 +79,15 @@ lazy val agpl = "AGPL v3+" -> url("http://www.gnu.org/licenses/agpl-3.0.txt")
 // i.e. root = full sub project. if you depend on root, will draw all sub modules.
 lazy val root = project.withId(baseNameL).in(file("."))
   .aggregate(
-    base      .jvm, base      .js,
-    adjunct   .jvm, adjunct   .js,
-    geom      .jvm, geom      .js,
-    data      .jvm, data      .js,
-    core      .jvm, core      .js,
-    expr      .jvm, expr      .js,
-    confluent .jvm, confluent .js,
+    base      .jvm, // base      .js,
+    adjunct   .jvm, // adjunct   .js,
+    geom      .jvm, // geom      .js,
+    data      .jvm, // data      .js,
+    core      .jvm, // core      .js,
+    expr      .jvm, // expr      .js,
+    confluent .jvm, // confluent .js,
+    tests     .jvm, // tests     .js,
     bdb,
-    tests     .jvm, tests     .js,
     testsJVM,
   )
 //  .dependsOn(base, adjunct, geom, data, core, expr, confluent, bdb)
@@ -96,7 +100,7 @@ lazy val root = project.withId(baseNameL).in(file("."))
     mimaFailOnNoPrevious := false
   )
 
-lazy val base = crossProject(JSPlatform, JVMPlatform).in(file("base"))
+lazy val base = crossProject(JVMPlatform /* , JSPlatform */).in(file("base"))
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
@@ -106,7 +110,7 @@ lazy val base = crossProject(JSPlatform, JVMPlatform).in(file("base"))
     ),
   )
 
-lazy val geom = crossProject(JSPlatform, JVMPlatform).in(file("geom"))
+lazy val geom = crossProject(JVMPlatform /* , JSPlatform */).in(file("geom"))
 //  .dependsOn(base)    // XXX TODO --- this is just because of new serializers
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
@@ -118,7 +122,7 @@ lazy val geom = crossProject(JSPlatform, JVMPlatform).in(file("geom"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-geom" % mimaVersion)
   )
 
-lazy val adjunct = crossProject(JSPlatform, JVMPlatform).in(file("adjunct"))
+lazy val adjunct = crossProject(JVMPlatform /* , JSPlatform */).in(file("adjunct"))
   .dependsOn(base)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
@@ -130,7 +134,7 @@ lazy val adjunct = crossProject(JSPlatform, JVMPlatform).in(file("adjunct"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-adjunct" % mimaVersion)
   )
 
-lazy val data = crossProject(JSPlatform, JVMPlatform).in(file("data"))
+lazy val data = crossProject(JVMPlatform /* , JSPlatform */).in(file("data"))
   .dependsOn(base, geom)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
@@ -139,7 +143,7 @@ lazy val data = crossProject(JSPlatform, JVMPlatform).in(file("data"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-data" % mimaVersion)
   )
 
-lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
+lazy val core = crossProject(JVMPlatform /* , JSPlatform */).in(file("core"))
   .dependsOn(data)
   .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
@@ -164,13 +168,10 @@ lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
-lazy val expr = crossProject(JSPlatform, JVMPlatform).in(file("expr"))
+lazy val expr = crossProject(JVMPlatform /* , JSPlatform */).in(file("expr"))
   .dependsOn(core, adjunct)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
-//  .jsSettings(
-//    libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % "1.0.0",  // SimpleDateFormat
-//  )
   .settings(
     name := s"$baseName-expr",
     libraryDependencies ++= Seq(
@@ -180,13 +181,8 @@ lazy val expr = crossProject(JSPlatform, JVMPlatform).in(file("expr"))
     ),
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
-//  .jvmSettings(
-//    libraryDependencies ++= Seq(
-////      "de.sciss" %% "fileutil"  % deps.expr.fileUtil,
-//    ),
-//  )
 
-lazy val confluent = crossProject(JSPlatform, JVMPlatform).in(file("confluent"))
+lazy val confluent = crossProject(JVMPlatform /* , JSPlatform */).in(file("confluent"))
   .dependsOn(core)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
@@ -208,7 +204,7 @@ lazy val bdb = project.withId(s"$baseNameL-bdb").in(file("bdb"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-bdb" % mimaVersion)
   )
 
-lazy val tests = crossProject(JSPlatform, JVMPlatform).in(file("tests"))
+lazy val tests = crossProject(JVMPlatform /* , JSPlatform */).in(file("tests"))
   .dependsOn(core, expr, confluent)
   .settings(commonSettings)
   .settings(noPublishSettings)

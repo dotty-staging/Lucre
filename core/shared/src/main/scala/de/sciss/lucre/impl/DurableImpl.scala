@@ -144,6 +144,8 @@ object DurableImpl {
 
     self: T =>
 
+    override type I = I1   // Dotty bug; we have to fix the type here
+
     implicit def inMemoryCursor: Cursor[I] = system.inMemory
 
     private[lucre] final def reactionMap: ReactionMap[T] = system.reactionMap
