@@ -24,11 +24,13 @@ import de.sciss.serial.{ConstFormat, DataInput, TFormat}
 import scala.collection.immutable.{IndexedSeq => Vec, Queue => IQueue}
 import scala.concurrent.stm.{InTxn, Txn => ScalaTxn}
 
-trait TxnMixin[Tx <: Txn[Tx], I1 <: InMemoryLike.Txn[I1]]
+trait TxnMixin[Tx <: Txn[Tx], D1 <: DurableLike .Txn[D1], I1 <: InMemoryLike.Txn[I1]]
   extends Txn[Tx] with BasicTxnImpl[Tx, I1] with VersionInfo.Modifiable {
   self: Tx =>
 
   type T = Tx
+  override type I = I1  // Dotty problems
+  override type D = D1  // Dotty problems
 
   // ---- abstract ----
 
@@ -283,7 +285,9 @@ trait TxnMixin[Tx <: Txn[Tx], I1 <: InMemoryLike.Txn[I1]]
   override def toString = s"confluent.Sys#Tx$inputAccess"
 }
 
-trait RegularTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D], I1 <: InMemoryLike.Txn[I1]] extends TxnMixin[Tx, I1] {
+trait RegularTxnMixin[Tx <: Txn[Tx], D1 <: DurableLike.Txn[D1], I1 <: InMemoryLike.Txn[I1]]
+  extends TxnMixin[Tx, D1, I1] {
+
   self: Tx =>
 
   protected def cursorCache: Cache[T]
@@ -294,8 +298,8 @@ trait RegularTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D], I1 <: InMemoryLike
   override def toString = s"Confluent#Tx$inputAccess"
 }
 
-trait RootTxnMixin[Tx <: Txn[Tx], D <: DurableLike.Txn[D], I1 <: InMemoryLike.Txn[I1]]
-  extends TxnMixin[Tx, I1] {
+trait RootTxnMixin[Tx <: Txn[Tx], D1 <: DurableLike.Txn[D1], I1 <: InMemoryLike.Txn[I1]]
+  extends TxnMixin[Tx, D1, I1] {
   self: Tx =>
 
   final val inputAccess: Access[T] = Path.root[T]
