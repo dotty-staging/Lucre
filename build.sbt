@@ -39,7 +39,7 @@ lazy val commonJvmSettings = Seq(
 
 lazy val commonSettings = Seq(
   version             := projectVersion,
-  organization        := "de.scExOpsiss",
+  organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.13.4",
