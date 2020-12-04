@@ -17,7 +17,7 @@ import de.sciss.lucre.{BooleanObj, DoubleObj, IntObj, LongObj, SpanLikeObj, Span
 
 import scala.language.implicitConversions
 
-object Ops extends Ops
+//object Ops extends Ops
 trait Ops {
   implicit def intObjOps      [T <: Txn[T]](obj: IntObj     [T]): IntExtensions     .Ops[T] = new IntExtensions     .Ops(obj)
   implicit def longObjOps     [T <: Txn[T]](obj: LongObj    [T]): LongExtensions    .Ops[T] = new LongExtensions    .Ops(obj)

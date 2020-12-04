@@ -339,8 +339,8 @@ object BiGroupImpl {
     final def add(span: SpanLikeObj[T], elem: A)(implicit tx: T): Entry[T, A] = {
       log(s"$this.add($span, $elem)")
       val spanVal = span.value
-      val tgt     = Targets[T]()(tx)
-      val entry: Entry[T, A] = mkEntry(targets, span, elem) // new EntryImpl[T, A](tgt, span, elem).connect()
+      val eTgt    = Targets[T]()(tx)
+      val entry: Entry[T, A] = mkEntry(eTgt, span, elem)
       addNoFire(spanVal, entry)
 
       changed += entry

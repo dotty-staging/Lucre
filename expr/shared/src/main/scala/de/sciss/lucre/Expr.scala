@@ -21,7 +21,7 @@ import de.sciss.serial.{ConstFormat, DataInput, TFormat}
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.implicitConversions
 
-object Expr /*extends expr.Ops*/ {
+object Expr extends expr.Ops {
   // XXX TODO -- we need to rethink this type
   //  trait Var[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]] extends Expr[S, A] with stm.Var[T, E[T]]
   //  trait Var[T <: Txn[T], A] extends Expr[T, A] with lucre.Var[Expr[T, A]]
