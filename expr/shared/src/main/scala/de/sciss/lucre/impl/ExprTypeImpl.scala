@@ -26,13 +26,13 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
 
   implicit final def tpe: Expr.Type[A1, Repr] = this
 
-  type Ext = ExprTypeExtension1[Repr]
+//  type Ext = ExprTypeExtension1[Repr]
 
-  protected def mkExtArray(size: Int): Array[Ext] = new Array(size)
+  protected def mkExtArray(size: Int): Array[ExprTypeExtension1[Repr]] = new Array(size)
 
   private[this] var extensions = mkExtArray(0) // new Array[Ext](0)
 
-  final protected def addExtension(extensions: Array[Ext], ext: Ext): Array[Ext] = {
+  final protected def addExtension(extensions: Array[ExprTypeExtension1[Repr]], ext: ExprTypeExtension1[Repr]): Array[ExprTypeExtension1[Repr]] = {
     val opLo = ext.opLo
     val opHi = ext.opHi
     require (opLo <= opHi, s"Lo ($opLo) must be less than or equal hi ($opHi)")
@@ -49,7 +49,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     extensions1
   }
 
-  final protected def findExt(extensions: Array[Ext], op: Int): Ext = {
+  final protected def findExt(extensions: Array[ExprTypeExtension1[Repr]], op: Int): ExprTypeExtension1[Repr] = {
     var index = 0
     var low   = 0
     var high  = extensions.length - 1
@@ -68,9 +68,9 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     null
   }
 
-  final def registerExtension(ext: Ext): Unit = extensions = addExtension(extensions, ext)
+  final def registerExtension(ext: ExprTypeExtension1[Repr]): Unit = extensions = addExtension(extensions, ext)
 
-  final protected def findExt(op: Int): Ext = findExt(extensions, op)
+  final protected def findExt(op: Int): ExprTypeExtension1[Repr] = findExt(extensions, op)
 
   final protected def readExtension[T <: Txn[T]](op: Int, in: DataInput, targets: Targets[T])
                                                 (implicit tx: T): Repr[T] = {
