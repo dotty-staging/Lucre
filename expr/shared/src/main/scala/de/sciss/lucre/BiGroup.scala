@@ -14,7 +14,7 @@
 package de.sciss.lucre
 
 import de.sciss.lucre.geom.LongSquare
-//import de.sciss.lucre.impl.{BiGroupImpl => Impl}
+import de.sciss.lucre.impl.{BiGroupImpl => Impl}
 import de.sciss.serial.{DataInput, TFormat}
 import de.sciss.span.SpanLike
 import de.sciss.{model => m}
@@ -36,7 +36,7 @@ object BiGroup extends Obj.Type {
 
   // ---- updates ----
 
-  final case class Update[T <: Txn[T], A, +Repr <: BiGroup[T, A]](group: Repr, changes: List[Change[T, A]])
+  final case class Update[T <: Txn[T], A, +Repr](group: Repr, changes: List[Change[T, A]])
 
   sealed trait Change[T <: Txn[T], +A] {
     def elem: Entry[T, A]
@@ -63,10 +63,10 @@ object BiGroup extends Obj.Type {
     def unapply[T <: Txn[T], A](entry: Entry[T, A]): Entry[T, A] = entry
 
     implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, Entry[T, A]] =
-      ??? // Impl.entryFormat[T, A]
+      Impl.entryFormat[T, A]
 
     def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
-      ??? // Impl.readIdentifiedEntry(in)
+      Impl.readIdentifiedEntry(in)
   }
 
   trait Entry[T <: Txn[T], +A] extends Obj[T] with Publisher[T, m.Change[SpanLike]] {
@@ -80,10 +80,10 @@ object BiGroup extends Obj.Type {
 
   object Modifiable {
     implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup.Modifiable[T, A]] =
-      ??? // Impl.modifiableFormat[T, A]
+      Impl.modifiableFormat[T, A]
 
     def apply[T <: Txn[T], E[~ <: Txn[~]] <: Elem[~]](implicit tx: T): Modifiable[T, E[T]] =
-      ??? // Impl.newModifiable[T, E]
+      Impl.newModifiable[T, E]
 
     def read[T <: Txn[T], A <: Elem[T]](in: DataInput)(implicit tx: T): Modifiable[T, A] =
       format[T, A].readT(in)
@@ -100,10 +100,10 @@ object BiGroup extends Obj.Type {
   }
 
   implicit def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup[T, A]] =
-    ??? // Impl.format[T, A]
+    Impl.format[T, A]
 
   def readIdentifiedObj[T <: Txn[T]](in: DataInput)(implicit tx: T): Obj[T] =
-    ??? // Impl.readIdentifiedObj(in)
+    Impl.readIdentifiedObj(in)
 }
 
 trait BiGroup[T <: Txn[T], A] extends Obj[T] with Publisher[T, BiGroup.Update[T, A, BiGroup[T, A]]] {
