@@ -41,7 +41,7 @@ object InMemoryLike {
   }
 }
 trait InMemoryLike[Tx <: InMemoryLike.Txn[Tx]] extends Sys with Cursor[Tx] {
-  final type Id       = InMemoryLike.Id[T]
+//  final type Id       = InMemoryLike.Id[T]
 
   type T = Tx // InMemoryLike.Txn[T]
 

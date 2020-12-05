@@ -13,7 +13,6 @@
 
 package de.sciss.lucre.confluent
 
-import de.sciss.lucre
 import de.sciss.lucre.{DataStore, DurableLike, InMemoryLike, TxnLike, confluent, Sys => LSys}
 import de.sciss.serial.{DataInput, TFormat}
 
@@ -27,10 +26,9 @@ trait Sys extends LSys {
   type I <: InMemoryLike.Txn[I]
 
   type T               <: confluent.Txn[T]
-  final type Id         = confluent.Ident[T]
-  final type Acc        = confluent.Access[T]
-  final type Var[A]     = lucre.Var[T, A] // confluent.Var[/*T,*/ A]
-  // final type Entry[A]   = Sys.Entry[T, A]
+//  final type Id         = confluent.Ident[T]
+//  final type Acc        = confluent.Access[T]
+//  final type Var[A]     = lucre.Var[T, A]
 
   def durable : DurableLike [D]
   def inMemory: InMemoryLike[I]

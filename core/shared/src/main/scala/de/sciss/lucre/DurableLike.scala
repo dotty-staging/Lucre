@@ -40,7 +40,7 @@ object DurableLike {
 }
 trait DurableLike[Tx <: DurableLike.Txn[Tx]] extends Sys /*[S]*/ with Cursor[Tx] {
 
-  final type Id          = DurableLike.Id[T]
+//  final type Id          = DurableLike.Id[T]
 
   type T = Tx
 

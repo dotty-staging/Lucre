@@ -195,9 +195,9 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   }
 
   val pointFilter3D: IntPoint3DLike => Boolean = { p =>
-    val dx = if( p.x < cube.cx ) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
-    val dy = if( p.y < cube.cy ) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
-    val dz = if( p.z < cube.cz ) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
+    val dx: Long = if( p.x < cube.cx ) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
+    val dy: Long = if( p.y < cube.cy ) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
+    val dz: Long = if( p.z < cube.cz ) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
     dx <= 0xB504F300L && dy <= 0xB504F300L && dz <= 0xB504F300L &&
       (dx * dx + dy * dy > 0L) &&
       (dx * dx + dz * dz > 0L) &&

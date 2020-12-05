@@ -15,6 +15,7 @@ package de.sciss.lucre
 
 import de.sciss.lucre.data.SkipList
 import de.sciss.lucre.store.BerkeleyDB
+import de.sciss.serial.TFormat
 
 // XXX TODO turn this into a ScalaTest spec
 object StaleTxnTest {
@@ -36,7 +37,7 @@ object StaleTxnTest {
       val l = SkipList.Set.empty[T, Int]()
       l.add(12)
       l.add(34)
-      implicit val fmt = SkipList.Set.format[T, Int]()
+      implicit val fmt: TFormat[T, SkipList.Set[T, Int]] = SkipList.Set.format[T, Int]()
       tx.newHandle(l)
     }
 

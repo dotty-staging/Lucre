@@ -122,7 +122,7 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
     var currPoints       = Set.empty[PL]
     var prevs = 0
     var h: Branch = h0
-    do {
+    while ({
       assert(h.hyperCube == q, s"Root level quad is ${h.hyperCube} while it should be $q in level n - $prevs")
       val nextUnlinkedOcs  = currUnlinkedOcs
       val nextPoints       = currPoints
@@ -166,7 +166,9 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
       assert( pointsOnlyInNext.isEmpty, "Points in next which aren't in current (" + pointsOnlyInNext.take( 10 ) + "); in level n-" + prevs )
       h = h.prevOption.orNull
       prevs += 1
-    } while( h != null )
+
+      h != null
+    }) ()
   }
 
   def verifyElems[T <: Txn[T], PL, P <: PL, H](access: LTSource[T, SkipOctree[T, PL, H, P]],
@@ -280,9 +282,9 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   }
 
   val pointFilter3D: (IntPoint3DLike) => Boolean = { p =>
-    val dx = if (p.x < cube.cx) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
-    val dy = if (p.y < cube.cy) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
-    val dz = if (p.z < cube.cz) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
+    val dx: Long = if (p.x < cube.cx) (cube.cx + (cube.extent - 1)).toLong - p.x else p.x - (cube.cx - cube.extent)
+    val dy: Long = if (p.y < cube.cy) (cube.cy + (cube.extent - 1)).toLong - p.y else p.y - (cube.cy - cube.extent)
+    val dz: Long = if (p.z < cube.cz) (cube.cz + (cube.extent - 1)).toLong - p.z else p.z - (cube.cz - cube.extent)
     dx <= 0xB504F300L && dy <= 0xB504F300L && dz <= 0xB504F300L &&
       dx * dx + dy * dy > 0L &&
       dx * dx + dz * dz > 0L &&

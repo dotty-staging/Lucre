@@ -78,6 +78,8 @@ object DurableImpl {
 
 //    def position(implicit tx: T): Unit = ()
 
+    type Id = DurableLike.Id[T]
+
     def debugListUserRecords()(implicit tx: T): Seq[Id] = {
       val b   = Seq.newBuilder[Id]
       val cnt = idCntVar()
