@@ -184,10 +184,13 @@ object BiGroupImpl {
     def tpe: Obj.Type = BiGroup
   }
 
-  private[lucre] final class EntryImpl[T <: Txn[T], A <: Elem[T]](val targets : Targets[T],
-                                                                  val span    : SpanLikeObj[T],
-                                                                  val value   : A
-                                                                 )
+  def mkEntry[T <: Txn[T], A <: Elem[T]](tgt: Targets[T], span: SpanLikeObj[T], elem: A)(implicit tx: T): Entry[T, A] =
+    new EntryImpl[T, A](tgt, span, elem).connect()
+
+  private final class EntryImpl[T <: Txn[T], A <: Elem[T]](val targets : Targets[T],
+                                                           val span    : SpanLikeObj[T],
+                                                           val value   : A
+                                                          )
     extends SingleEventNode[T, Change[SpanLike]] with Entry[T, A] {
 
     def tpe: Obj.Type = Entry
