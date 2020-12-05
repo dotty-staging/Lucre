@@ -60,7 +60,8 @@ class SkipListSuite extends AnyFeatureSpec with GivenWhenThen {
       withList[T]("HA-1 (" + sysName + ")", { oo =>
         implicit val sys: S = sysCreator()
         implicit val format: TFormat[T, HASkipList.Set[T, Int]] = HASkipList.Set.format[T, Int](oo)
-        val (access, cursor) = sys.cursorRoot { implicit tx =>
+        // Note: Dotty crashes if we don't add type parameters to `cursorRoot`
+        val (access, cursor) = sys.cursorRoot[HASkipList.Set[T, Int], LCursor[T]] { implicit tx =>
           HASkipList.Set.empty[T, Int](minGap = 1, keyObserver = oo)
         } { implicit tx => _ => sys.newCursor() }
         (cursor, access, () => sysCleanUp(sys))
@@ -69,6 +70,7 @@ class SkipListSuite extends AnyFeatureSpec with GivenWhenThen {
     withList[T]("HA-2 (" + sysName + ")", { oo =>
       implicit val sys: S = sysCreator()
       implicit val format: TFormat[T, HASkipList.Set[T, Int]] = HASkipList.Set.format[T, Int](oo)
+      // Note: Dotty crashes if we don't add type parameters to `cursorRoot`
       val (access, cursor) = sys.cursorRoot[HASkipList.Set[T, Int], LCursor[T]] { implicit tx =>
         HASkipList.Set.empty[T, Int](minGap = 2, keyObserver = oo)
       } {

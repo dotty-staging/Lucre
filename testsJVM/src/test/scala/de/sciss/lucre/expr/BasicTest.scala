@@ -1,8 +1,8 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.store.BerkeleyDB
-//import de.sciss.lucre.expr.Ops._
-import de.sciss.lucre.{Cursor, Durable, Expr, IntObj, Txn}
+import de.sciss.lucre.expr.Ops._
+import de.sciss.lucre._
 import de.sciss.model.Change
 
 object BasicTest {

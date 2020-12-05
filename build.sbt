@@ -80,6 +80,8 @@ lazy val root = project.withId(baseNameL).in(file("."))
     geom      .jvm, geom      .js,
     data      .jvm, data      .js,
     core      .jvm, core      .js,
+    expr0     .jvm, expr0     .js,
+    expr1     .jvm, expr1     .js,
     expr      .jvm, expr      .js,
     confluent .jvm, confluent .js,
     tests     .jvm, tests     .js,
@@ -164,17 +166,38 @@ lazy val core = crossProject(JVMPlatform, JSPlatform).in(file("core"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
-lazy val expr = crossProject(JVMPlatform, JSPlatform).in(file("expr"))
+// Dotty has currently cycle problems compiling F-bounded types.
+// A work-around is to split the sources.
+
+lazy val expr0 = crossProject(JVMPlatform, JSPlatform).in(file("expr0"))
   .dependsOn(core, adjunct)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
-    name := s"$baseName-expr",
+    name := s"$baseName-expr0",
     libraryDependencies ++= Seq(
       "de.sciss" %%% "asyncfile" % deps.expr.asyncFile,
       "de.sciss" %%% "equal"     % deps.expr.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
       "de.sciss" %%% "span"      % deps.expr.span,
     ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr0" % mimaVersion)
+  )
+
+lazy val expr1 = crossProject(JVMPlatform, JSPlatform).in(file("expr1"))
+  .dependsOn(expr0)
+  .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
+  .settings(
+    name := s"$baseName-expr1",
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr1" % mimaVersion)
+  )
+
+lazy val expr = crossProject(JVMPlatform, JSPlatform).in(file("expr"))
+  .dependsOn(expr0, expr1)
+  .settings(commonSettings)
+  .jvmSettings(commonJvmSettings)
+  .settings(
+    name := s"$baseName-expr",
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
 

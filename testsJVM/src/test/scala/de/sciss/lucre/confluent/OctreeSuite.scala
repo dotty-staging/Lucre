@@ -53,10 +53,9 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   def withSys[S <: ConfluentLike[T], T <: Txn[T]](sysName: String, sysCreator: () => S, sysCleanUp: (S, Boolean) => Unit): Unit = {
     withTree[T](sysName, () => {
       val system = sysCreator()
-      // import SpaceFormats.{IntPoint3DFormat, IntCubeFormat}
       implicit val pointView = (p: IntPoint3D, _: Any) => p
-//      implicit val ser = DetSkipOctree.format[T, IntPoint3DLike, IntPoint3D, IntCube, IntPoint3D]
-      val (access, cursor) = system.cursorRoot { implicit tx =>
+      // Note: Dotty crashes if we don't add type parameters to `cursorRoot`
+      val (access, cursor) = system.cursorRoot[DetSkipOctree[T, IntPoint3DLike, IntCube, IntPoint3D], LCursor[T]] { implicit tx =>
         DetSkipOctree.empty[T, IntPoint3DLike, IntCube, IntPoint3D](cube)
       } {
         implicit tx => _ => system.newCursor()
