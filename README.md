@@ -1,6 +1,6 @@
 # Lucre
 
-[![Build Status](https://travis-ci.org/Sciss/Lucre.svg?branch=main)](https://travis-ci.org/Sciss/Lucre)
+[![Build Status](https://github.com/Sciss/Lucre/workflows/Scala%20CI/badge.svg?branch=main)](https://github.com/Sciss/Lucre/actions?query=workflow%3A%22Scala+CI%22)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13)
 
 ## statement
@@ -21,7 +21,7 @@ Further reading:
 
 ## requirements / installation
 
-Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.13, 2.12 (JVM) and Scala 2.13 (JS).
+Lucre builds with [sbt](http://www.scala-sbt.org/) against Scala 2.12, 2.13, Dotty (JVM) and Scala 2.13 (JS).
 The last version to support Scala 2.11 was v3.13.1.
 
 __N.B.__: On Scala.js, currently the types `Artifact` and `ArtifactLocation` are missing, as there is no notion of
@@ -57,7 +57,7 @@ Or just for a selected module:
 
 Where `{module}` is any of the above names.
 
-The current version `v` is `"4.2.0"`.
+The current version `v` is `"4.3.0"`.
 
 ## contributing
 
