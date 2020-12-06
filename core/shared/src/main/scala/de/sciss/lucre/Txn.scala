@@ -144,4 +144,4 @@ trait Txn[T <: Txn[T]] extends Exec[T] with TxnLike {
   def attrMapOption(obj: Obj[T]): Option[Obj.AttrMap[T]]
 }
 
-trait AnyTxn extends Txn[AnyTxn]
+final abstract class AnyTxn extends Txn[AnyTxn]

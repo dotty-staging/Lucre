@@ -15,7 +15,7 @@ package de.sciss.lucre.impl
 
 import de.sciss.lucre.Event.Targets
 import de.sciss.lucre.Txn
-import de.sciss.serial.{DataInput, DataOutput, TFormat, WritableFormat}
+import de.sciss.serial.DataInput
 
 trait ExprTypeExtension {
   def name: String
