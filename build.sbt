@@ -48,8 +48,11 @@ lazy val commonSettings = Seq(
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
   scalaVersion        := "2.13.4",
   scalacOptions      ++= Seq(
-    "-Xlint", "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xsource:2.13"
+    "-deprecation", "-unchecked", "-feature", "-encoding", "utf8"
   ),
+  scalacOptions ++= {
+    if (isDotty.value) Nil else Seq("-Xlint", "-Xsource:2.13")
+  },
   scalacOptions in (Compile, compile) ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
     val dot    = isDotty.value
@@ -61,7 +64,7 @@ lazy val commonSettings = Seq(
     if (dot || (loggingEnabled && isSnapshot.value)) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
   sources in (Compile, doc) := {
-    if (isDotty.value: @sbtUnchecked) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
+    if (isDotty.value) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
   },
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
