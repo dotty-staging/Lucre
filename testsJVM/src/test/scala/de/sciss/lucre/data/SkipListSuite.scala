@@ -39,8 +39,8 @@ class SkipListSuite extends AnyFeatureSpec with GivenWhenThen {
   val DATABASE      = true
 
   // large
-  val NUM1 = 0x040000
-  val NUM2 = 0x020000 // 0x100000
+  val NUM1 = if (TestUtil.isShort) 0x040000/4 else 0x040000
+  val NUM2 = if (TestUtil.isShort) 0x020000/4 else 0x020000 // 0x100000
 
   require(NUM1 >= 1 && NUM2 >= 6)
 

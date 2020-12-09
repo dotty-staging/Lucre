@@ -35,7 +35,7 @@ object AncestorSuite2 {
 class AncestorSuite2 extends AnyFeatureSpec with GivenWhenThen {
   import AncestorSuite2._
 
-  val NUM1      = 4096 // 10000             // gets frickin slow, hopefully online in the control structure 10000     // 933 // 10000
+  val NUM1      = if (TestUtil.isShort) 4096/4 else 4096 // 10000             // gets frickin slow, hopefully online in the control structure 10000     // 933 // 10000
   val MARK_LIVE = 0.25              // percentage of elements marked (0 to 1)
   val RETRO_CHILD_PERCENTAGE  = 0.2 // from those elements marked, amount which are inserted as retro-children (0 to 1)
   val RETRO_PARENT_PERCENTAGE = 0.2 // from those elements marked, amount which are inserted as retro-parents (0 to 1)

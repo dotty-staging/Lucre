@@ -29,10 +29,10 @@ class BiGroupSpec extends ConfluentEventSpec {
 
   "BiGroup" should "report correct event successions" in { system =>
     val spans0 = Vec(
-      Span( 3300000, 8900000),
-      Span( 3400000, 9400000),
-      Span( 4900000, 8500000),
-      Span( 5600000,10600000)
+      Span(3300000, 8900000),
+      Span(3400000, 9400000),
+      Span(4900000, 8500000),
+      Span(5600000, 10600000)
     )
 
     val spans1 = Vec(

@@ -60,7 +60,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
   val TEST1            = true   // large consistency test
   val TEST2            = true   // small boundary cases test
 
-  val NUM = 0x10000    // 0x80000  // 0x200000
+  val NUM = if (TestUtil.isShort) 0x10000/4 else 0x10000    // 0x80000  // 0x200000
   val RND_SEED = 0L
 
   if (IN_MEMORY) {

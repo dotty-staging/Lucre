@@ -40,7 +40,7 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
   val IN_MEMORY       = true
   val DATABASE        = true
 
-  val n       = 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
+  val n       = if (TestUtil.isShort) 0x1000/4 else 0x1000    // tree size ;  0xE0    // 0x4000 is the maximum acceptable speed
   val n2: Int = n >> 3    // 0x1000    // range query and nn
 
   val rnd = new util.Random(2L) // ( 12L )
