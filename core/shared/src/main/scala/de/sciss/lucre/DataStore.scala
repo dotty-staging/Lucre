@@ -2,7 +2,7 @@
  *  DataStore.scala
  *  (Lucre 4)
  *
- *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2021 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Affero General Public License v3+
  *
@@ -31,7 +31,7 @@ object DataStore {
 }
 trait DataStore extends Closeable {
   def put     (keyFun: DataOutput => Unit)(valueFun: DataOutput => Unit)(implicit tx: TxnLike): Unit
-  def get[A]  (keyFun: DataOutput => Unit)(valueFun: DataInput => A)(    implicit tx: TxnLike): Option[A]
+  def get[A]  (keyFun: DataOutput => Unit)(valueFun: DataInput  => A   )(implicit tx: TxnLike): Option[A]
   def contains(keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean
   def remove  (keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean
 

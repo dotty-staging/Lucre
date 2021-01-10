@@ -2,7 +2,7 @@
  *  ExElem.scala
  *  (Lucre 4)
  *
- *  Copyright (c) 2009-2020 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2021 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Affero General Public License v3+
  *
@@ -102,69 +102,71 @@ object ExElem {
     val numAdj    = in.readByte()
     val numElem   = arity + numAdj
     val className = if (Character.isUpperCase(prefix.charAt(0))) s"$SupportedPck.$prefix" else prefix
+    // XXX SJS
+    ???
 
-    val res = try {
-      if (numElem == 0 && className.charAt(className.length - 1) == '$') {
-        // case object
-        val companion = Class.forName(s"$className").getField("MODULE$").get(null)
-        companion.asInstanceOf[Product]
-
-      } else {
-
-        // cf. stackoverflow #3039822
-        val companion = Class.forName(s"$className$$").getField("MODULE$").get(null)
-        val elems = new Array[AnyRef](numElem)
-        var i = 0
-        while (i < arity) {
-          elems(i) = read(in, ref).asInstanceOf[AnyRef]
-          i += 1
-        }
-        val i1 = i + numAdj
-        while (i < i1) {
-          elems(i) = Adjunct.read(in)
-          i += 1
-        }
-        //    val m         = companion.getClass.getMethods.find(_.getName == "apply")
-        //      .getOrElse(sys.error(s"No apply method found on $companion"))
-        val ms = companion.getClass.getMethods
-        var m = null: java.lang.reflect.Method
-        var j = 0
-        while (m == null && j < ms.length) {
-          val mj = ms(j)
-          if (mj.getName == "apply") {
-            if (mj.getParameterCount == numElem) {
-              val types = mj.getParameterTypes
-              // actually check the types to deal with overloaded `apply` method.
-              var k = 0
-              while (k < types.length) {
-                val tpe = types(k)
-                // XXX TODO --- cheesy shortcut for https://stackoverflow.com/questions/7082997/
-                if (tpe.isPrimitive || tpe.isAssignableFrom(elems(k).getClass)) k += 1
-                else {
-                  k = Int.MaxValue
-                }
-              }
-              if (k == types.length) m = mj
-            }
-          }
-          j += 1
-        }
-        if (m == null) {
-          sys.error(s"No apply method found on $companion")
-        }
-
-        m.invoke(companion, elems: _*).asInstanceOf[Product]
-      }
-
-    } catch {
-      case NonFatal(e) =>
-        throw new IllegalArgumentException(s"While de-serializing $prefix", e)
-    }
-
-    val id        = ref.count
-    ref.map      += ((id, res))
-    ref.count     = id + 1
-    res
+//    val res = try {
+//      if (numElem == 0 && className.charAt(className.length - 1) == '$') {
+//        // case object
+//        val companion = Class.forName(s"$className").getField("MODULE$").get(null)
+//        companion.asInstanceOf[Product]
+//
+//      } else {
+//
+//        // cf. stackoverflow #3039822
+//        val companion = Class.forName(s"$className$$").getField("MODULE$").get(null)
+//        val elems = new Array[AnyRef](numElem)
+//        var i = 0
+//        while (i < arity) {
+//          elems(i) = read(in, ref).asInstanceOf[AnyRef]
+//          i += 1
+//        }
+//        val i1 = i + numAdj
+//        while (i < i1) {
+//          elems(i) = Adjunct.read(in)
+//          i += 1
+//        }
+//        //    val m         = companion.getClass.getMethods.find(_.getName == "apply")
+//        //      .getOrElse(sys.error(s"No apply method found on $companion"))
+//        val ms = companion.getClass.getMethods
+//        var m = null: java.lang.reflect.Method
+//        var j = 0
+//        while (m == null && j < ms.length) {
+//          val mj = ms(j)
+//          if (mj.getName == "apply") {
+//            if (mj.getParameterCount == numElem) {
+//              val types = mj.getParameterTypes
+//              // actually check the types to deal with overloaded `apply` method.
+//              var k = 0
+//              while (k < types.length) {
+//                val tpe = types(k)
+//                // XXX TODO --- cheesy shortcut for https://stackoverflow.com/questions/7082997/
+//                if (tpe.isPrimitive || tpe.isAssignableFrom(elems(k).getClass)) k += 1
+//                else {
+//                  k = Int.MaxValue
+//                }
+//              }
+//              if (k == types.length) m = mj
+//            }
+//          }
+//          j += 1
+//        }
+//        if (m == null) {
+//          sys.error(s"No apply method found on $companion")
+//        }
+//
+//        m.invoke(companion, elems: _*).asInstanceOf[Product]
+//      }
+//
+//    } catch {
+//      case NonFatal(e) =>
+//        throw new IllegalArgumentException(s"While de-serializing $prefix", e)
+//    }
+//
+//    val id        = ref.count
+//    ref.map      += ((id, res))
+//    ref.count     = id + 1
+//    res
   }
 
   def write[A](v: A, out: DataOutput): Unit = write(v, out, null)
@@ -263,9 +265,16 @@ object ExElem {
       case hasAdj: ProductWithAdjuncts => hasAdj.adjuncts
       case _ => Nil
     }
-    val pck     = p.getClass.getPackage.getName
-    val prefix  = p.productPrefix
-    val name    = if (pck == SupportedPck) prefix else s"$pck.$prefix"
+    // `getPackage` not supported by Scala.js:
+    // val pck     = p.getClass.getPackage.getName
+    // Java 9+:
+    // val pck     = p.getClass.getPackageName
+    val cn      = p.getClass.getName
+    // val name    = if (pck == "de.sciss.synth.ugen") prefix else s"$pck.$prefix"
+    val name    = if (cn.startsWith(SupportedPck)) p.productPrefix else {
+      val nm  = cn.length - 1
+      if (cn.charAt(nm) == '$') cn.substring(0, nm) else cn
+    }
     out.writeUTF(name)
     out.writeShort(p.productArity)
     out.writeByte(adjuncts.size)
