@@ -15,7 +15,7 @@ package de.sciss.lucre
 package expr
 
 import de.sciss.lucre.expr.graph.{Control, It}
-import de.sciss.lucre.expr.impl.{ExElem, GraphBuilderMixin, GraphFormatMixin}
+import de.sciss.lucre.expr.impl.{GraphBuilderMixin, GraphFormatMixin}
 import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
 
 import scala.collection.immutable.{IndexedSeq => Vec, Seq => ISeq}
@@ -81,16 +81,16 @@ object Graph {
 
     def write(g: Graph, out: DataOutput): Unit = {
       out.writeShort(SER_VERSION)
-      val ref = null: ExElem.RefMapOut
-      val cx = g.controls
-      writeControls(cx, out, ref)
+      val ref = new ExElem.RefMapOut(out)
+      val cx  = g.controls
+      writeControls(cx, ref)
     }
 
     def read(in: DataInput): Graph = {
       val cookie = in.readShort()
       require(cookie == SER_VERSION, s"Unexpected cookie $cookie")
-      val ref = new ExElem.RefMapIn
-      val cx = readControls(in, ref)
+      val ref = new ExElem.RefMapIn(in)
+      val cx = readControls(ref)
       Graph(cx)
     }
   }

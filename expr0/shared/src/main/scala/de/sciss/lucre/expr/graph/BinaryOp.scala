@@ -15,14 +15,14 @@ package de.sciss.lucre.expr
 package graph
 
 import java.net.{URI => _URI}
-
 import de.sciss.asyncfile.Ops.URIOps
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDiv, NumDouble, NumInt, NumLogic, Ord, Widen2}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.span.SpanLike
 
-object BinaryOp /*extends BinaryOpPlatform*/ {
+object BinaryOp extends ProductReader[BinaryOp[_, _, _ , _]] {
   abstract class Op[A, B, C] extends Product {
     def apply(a: A, b: B): C
   }
@@ -764,6 +764,14 @@ object BinaryOp /*extends BinaryOpPlatform*/ {
       a.changed -/-> changed
       b.changed -/-> changed
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): BinaryOp[_, _, _ , _] = {
+    require (arity == 3 && adjuncts.isEmpty)
+    val _op = in.readProductT[Op[Any, Any, _]]()
+    val _a  = in.readEx[Any]()
+    val _b  = in.readEx[Any]()
+    new BinaryOp(_op, _a, _b)
   }
 }
 final case class BinaryOp[A1, A2, A3, A](op: BinaryOp.Op[A1, A2, A], a: Ex[A1], b: Ex[A2])

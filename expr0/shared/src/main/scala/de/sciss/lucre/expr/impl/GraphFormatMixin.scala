@@ -13,42 +13,43 @@
 
 package de.sciss.lucre.expr.impl
 
+import de.sciss.lucre.expr.ExElem
 import de.sciss.lucre.expr.graph.Control
-import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
 trait GraphFormatMixin {
   protected final def writeControls(controls: Vec[Control.Configured],
-                                    out: DataOutput, ref0: ExElem.RefMapOut): ExElem.RefMapOut = {
-    var ref = ref0
+                                    ref: ExElem.RefMapOut): Unit = {
+    val out = ref.out
     out.writeInt(controls.size)
     controls.foreach { conf =>
-      ref = ExElem.write(conf.control, out, ref)
+      ref.writeProduct(conf.control) // ExElem.write(conf.control, out, ref)
       val m = conf.properties
       out.writeInt(m.size)
       m.foreach { case (key, v) =>
         out.writeUTF(key)
-        ref = ExElem.write(v, out, ref)
+        ref.writeElem(v)
       }
     }
-    ref
   }
 
-  protected final def readControls(in: DataInput, ref: ExElem.RefMapIn): Vec[Control.Configured] = {
+  protected final def readControls(ref: ExElem.RefMapIn): Vec[Control.Configured] = {
+    val in  = ref.in
     val szC = in.readInt()
     val cxb = Vec.newBuilder[Control.Configured]
     cxb.sizeHint(szC)
     var i = 0
     while (i < szC) {
-      val ctl = ExElem.read(in, ref).asInstanceOf[Control]
+      val ctl = ref.readProductT[Control]()
+      // not ref.readMap because we don't (unfortunately?) encode the 'S' key type
       val mSz = in.readInt()
       val mb  = Map.newBuilder[String, Any]
       mb.sizeHint(mSz)
       var j = 0
       while (j < mSz) {
         val k = in.readUTF()
-        val v = ExElem.read(in, ref)
+        val v = ref.readElem()
         mb += k -> v
         j  += 1
       }

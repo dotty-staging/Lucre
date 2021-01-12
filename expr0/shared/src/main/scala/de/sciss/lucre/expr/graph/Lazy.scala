@@ -10,6 +10,7 @@
  *  For further information, please contact Hanns Holger Rutz at
  *  contact@sciss.de
  */
+
 package de.sciss.lucre
 package expr
 package graph

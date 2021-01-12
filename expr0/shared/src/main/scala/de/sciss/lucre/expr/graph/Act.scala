@@ -15,10 +15,11 @@ package de.sciss.lucre
 package expr
 package graph
 
+import ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
 
-object Act {
-  def apply(xs: Act*): Act = SeqImpl(xs)
+object Act extends ProductReader[Act] {
+  def apply(xs: Act*): Act = Apply(xs)
 
   /** Creates an action that can link or loop back to itself.
     * It does so by calling the function `f` with a trigger
@@ -48,7 +49,7 @@ object Act {
       xs.foreach(_.executeAction())
   }
 
-  private final case class SeqImpl(xs: Seq[Act]) extends Act {
+  private final case class Apply(xs: Seq[Act]) extends Act {
     type Repr[T <: Txn[T]] = IAction[T]
 
     override def productPrefix = "Act" // serialization
@@ -57,7 +58,15 @@ object Act {
       new ExpandedSeq(xs.map(_.expand[T]))
   }
 
-  final case class Link[A](source: Trig, sink: Act)
+  object Link extends ProductReader[Link] {
+    override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): Link = {
+      require (arity == 2 && adjuncts.isEmpty)
+      val _source = in.readTrig()
+      val _sink   = in.readAct()
+      new Link(_source, _sink)
+    }
+  }
+  final case class Link(source: Trig, sink: Act)
     extends Control {
 
     override def productPrefix = s"Act$$Link" // serialization
@@ -73,41 +82,13 @@ object Act {
     }
   }
 
-//  /** Treats an expression of actions as an action, simply
-//    * expanding its value every time it is called.
-//    */
-//  implicit def flatten(in: Ex[Act]): Act = Flatten(in)
-
-//  trait Option[T <: Txn[T]] extends IExpr[T, _Option[Act]] {
-//    def executeAction()(implicit tx: T): Boolean
-//  }
-
   trait Option extends Act {
     type Repr[T <: Txn[T]] <: IAction.Option[T]
   }
 
   implicit final class OptionOps(private val in: Act.Option) extends AnyVal {
-    //    def isEmpty   : Ex[Boolean] = ...
-    //    def isDefined : Ex[Boolean] = ...
-
     def orElse(that: Act): Act = OrElse(in, that)
   }
-
-//  private final class ExpandedFlatten[T <: Txn[T]](in: IExpr[T, Act])(implicit ctx: Context[T])
-//    extends IActionImpl[T] {
-//
-//    def executeAction()(implicit tx: T): Unit = {
-//      val act = in.value
-//      // XXX TODO --- nesting produces all sorts of problems
-//      // why did we try to do that in the first place?
-////      val (actEx, d) = ctx.nested {
-////        act.expand[T]
-////      }
-//      val actEx = act.expand[T]
-//      actEx.executeAction()
-////      d.dispose()
-//    }
-//  }
 
   private final class ExpandedOrElse[T <: Txn[T]](a: IAction.Option[T], b: IAction[T])/*(implicit ctx: Context[T])*/
     extends IActionImpl[T] {
@@ -118,6 +99,14 @@ object Act {
     }
   }
 
+  object OrElse extends ProductReader[OrElse] {
+    override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): OrElse = {
+      require (arity == 2 && adjuncts.isEmpty)
+      val _a = in.readProductT[Act.Option]()
+      val _b = in.readAct()
+      new OrElse(_a, _b)
+    }
+  }
   final case class OrElse(a: Act.Option, b: Act) extends Act {
     override def productPrefix = s"Act$$OrElse" // serialization
 
@@ -127,22 +116,18 @@ object Act {
       new ExpandedOrElse(a.expand[T], b.expand[T])
   }
 
-//  final case class Flatten(in: Ex[Act]) extends Act {
-//
-//    override def productPrefix = s"Act$$Flatten" // serialization
-//
-//    type Repr[T <: Txn[T]] = IAction[T]
-//
-//    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
-//      new ExpandedFlatten(in.expand[T])
-//  }
-
   private final class ExpandedNop[T <: Txn[T]]/*(implicit ctx: Context[T])*/
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = ()
   }
 
+  object Nop extends ProductReader[Nop] {
+    override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): Nop = {
+      require (arity == 0 && adjuncts.isEmpty)
+      new Nop()
+    }
+  }
   final case class Nop() extends Act {
 
     override def productPrefix = s"Act$$Nop" // serialization
@@ -151,6 +136,14 @@ object Act {
 
     protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
       new ExpandedNop
+  }
+
+  // ---- serialization ----
+
+  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): Act = {
+    require (arity == 1 && adjuncts.isEmpty)
+    val _xs = in.readVec(in.readAct())
+    Act(_xs: _*)
   }
 }
 trait Act extends Lazy {

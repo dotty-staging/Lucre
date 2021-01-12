@@ -1,11 +1,11 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.3.1-SNAPSHOT"
-lazy val mimaVersion      = "4.3.0"
+lazy val projectVersion   = "4.4.0-SNAPSHOT"
+lazy val mimaVersion      = "4.4.0"
 
 lazy val deps = new {
   val base = new {
-    val serial        = "2.0.0"
+    val serial        = "2.0.1-SNAPSHOT"
   }
   val adjunct = new {
     val numbers       = "0.2.1"

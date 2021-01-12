@@ -13,11 +13,12 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.expr.{Context, IControl, ITrigger}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
+import de.sciss.lucre.expr.{Context, ExElem, IControl, ITrigger}
 import de.sciss.lucre.impl.IGeneratorEvent
-import de.sciss.lucre.{Exec, IEvent, IPull, ITargets, Txn}
+import de.sciss.lucre.{Adjunct, Exec, IEvent, IPull, ITargets, Txn}
 
-object LoadBang {
+object LoadBang extends ProductReader[LoadBang] {
   private final class Expanded[T <: Exec[T]](implicit protected val targets: ITargets[T])
     extends IControl[T] with ITrigger[T] with IGeneratorEvent[T, Unit] {
 
@@ -33,6 +34,10 @@ object LoadBang {
     def initControl()(implicit tx: T): Unit = fire(())
   }
 
+  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): LoadBang = {
+    require (arity == 0 && adjuncts.isEmpty)
+    new LoadBang()
+  }
 }
 final case class LoadBang() extends Control with Trig {
   type Repr[T <: Exec[T]] = IControl[T] with ITrigger[T]

@@ -14,6 +14,7 @@
 package de.sciss.lucre
 package expr
 
+import de.sciss.lucre.expr.ExElem.ProductReader
 import de.sciss.lucre.expr.graph.Ex
 
 object LucreExpr {
@@ -51,5 +52,15 @@ object LucreExpr {
     graph.Artifact        .init()
     graph.ArtifactLocation.init()
     graph.Folder          .init()
+
+    ExElem.addProductReaderSq({
+      import graph._
+      Seq[ProductReader[Product]](
+        Act, Act.Nop, Act.OrElse, Act.Link,
+        BinaryOp,
+        LoadBang,
+        PrintLn,
+      )
+    })
   }
 }

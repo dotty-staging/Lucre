@@ -14,10 +14,11 @@
 package de.sciss.lucre.expr
 package graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.{IExpr, Txn}
+import de.sciss.lucre.{Adjunct, IExpr, Txn}
 
-object PrintLn {
+object PrintLn extends ProductReader[PrintLn] {
   private final class Expanded[T <: Txn[T]](text: IExpr[T, String]) extends IActionImpl[T] {
     def executeAction()(implicit tx: T): Unit = {
       val s = text.value
@@ -25,6 +26,12 @@ object PrintLn {
         println(s)
       }
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): PrintLn = {
+    require (arity == 1 && adjuncts.isEmpty)
+    val _text = in.readEx[String]()
+    new PrintLn(_text)
   }
 }
 final case class PrintLn(text: Ex[String]) extends Act {
