@@ -15,6 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.Adjunct.{FromAny, HasDefault}
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction, IControl, graph}
 import de.sciss.lucre.impl.IChangeGeneratorEvent
@@ -40,7 +41,7 @@ sealed trait CaseDef[A] extends Ex[A] with ProductWithAdjuncts {
   def adjuncts: List[Adjunct] = fromAny :: Nil
 }
 
-object Quote {
+object Quote extends ProductReader[Quote[_]] {
   private final class ExpandedImpl[T <: Txn[T], A](in: IExpr[T, A])(implicit val fromAny: FromAny[A])
     extends Expanded[T, A] {
 
@@ -60,6 +61,13 @@ object Quote {
   }
 
   trait Expanded[T <: Txn[T], A] extends CaseDef.Expanded[T, A]
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Quote[_] = {
+    require (arity == 1 && adj == 1)
+    val _in = in.readEx[Any]()
+    val _fromAny: FromAny[Any] = in.readAdjunct()
+    new Quote[Any](_in)(_fromAny)
+  }
 }
 final case class Quote[A](in: Ex[A])(implicit val fromAny: FromAny[A])
   extends CaseDef[A] {
@@ -70,7 +78,7 @@ final case class Quote[A](in: Ex[A])(implicit val fromAny: FromAny[A])
     new Quote.ExpandedImpl(in.expand[T])
 }
 
-object Var {
+object Var extends ProductReader[Var[_]] {
   def apply[A](init: Ex[A])(implicit from: FromAny[A]): Var[A] = Impl(init)
 
   def apply[A]()(implicit from: FromAny[A], default: HasDefault[A]): Var[A] =
@@ -80,6 +88,14 @@ object Var {
 //    def set(in: Ex[A]): Act = Set(x, in)
 //  }
 
+  object Set extends ProductReader[Set[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
+      require (arity == 2 && adj == 0)
+      val _vr = in.readProductT[Var[Any]]()
+      val _in = in.readEx[Any]()
+      new Set(_vr, _in)
+    }
+  }
   final case class Set[A](vr: Var[A], in: Ex[A]) extends Act {
     override def productPrefix: String = s"Var$$Set"  // serialization
 
@@ -89,6 +105,14 @@ object Var {
       new SetExpanded(vr.expand[T], in.expand[T])
   }
 
+  object Update extends ProductReader[Update[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Update[_] = {
+      require (arity == 2 && adj == 0)
+      val _vr = in.readProductT[Var[Any]]()
+      val _in = in.readEx[Any]()
+      new Update(_vr, _in)
+    }
+  }
   final case class Update[A](vr: Var[A], in: Ex[A]) extends Control {
     override def productPrefix: String = s"Var$$Update"  // serialization
 
@@ -198,6 +222,13 @@ object Var {
       import ctx.targets
       new Var.ExpandedImpl[T, A](init.expand[T], tx)
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Var[_] = {
+    require (arity == 1 && adj == 1)
+    val _init = in.readEx[Any]()
+    val _fromAny: FromAny[Any] = in.readAdjunct()
+    Var(_init)(_fromAny)
   }
 }
 trait Var[A] extends Ex[A] with CaseDef[A] with Attr.Like[A] with ProductWithAdjuncts {

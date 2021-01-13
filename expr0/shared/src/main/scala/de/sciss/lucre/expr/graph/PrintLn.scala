@@ -16,7 +16,7 @@ package graph
 
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.{Adjunct, IExpr, Txn}
+import de.sciss.lucre.{IExpr, Txn}
 
 object PrintLn extends ProductReader[PrintLn] {
   private final class Expanded[T <: Txn[T]](text: IExpr[T, String]) extends IActionImpl[T] {
@@ -28,8 +28,8 @@ object PrintLn extends ProductReader[PrintLn] {
     }
   }
 
-  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): PrintLn = {
-    require (arity == 1 && adjuncts.isEmpty)
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): PrintLn = {
+    require (arity == 1 && adj == 0)
     val _text = in.readEx[String]()
     new PrintLn(_text)
   }

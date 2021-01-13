@@ -59,8 +59,8 @@ object Act extends ProductReader[Act] {
   }
 
   object Link extends ProductReader[Link] {
-    override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): Link = {
-      require (arity == 2 && adjuncts.isEmpty)
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Link = {
+      require (arity == 2 && adj == 0)
       val _source = in.readTrig()
       val _sink   = in.readAct()
       new Link(_source, _sink)
@@ -100,8 +100,8 @@ object Act extends ProductReader[Act] {
   }
 
   object OrElse extends ProductReader[OrElse] {
-    override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): OrElse = {
-      require (arity == 2 && adjuncts.isEmpty)
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OrElse = {
+      require (arity == 2 && adj == 0)
       val _a = in.readProductT[Act.Option]()
       val _b = in.readAct()
       new OrElse(_a, _b)
@@ -123,8 +123,8 @@ object Act extends ProductReader[Act] {
   }
 
   object Nop extends ProductReader[Nop] {
-    override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): Nop = {
-      require (arity == 0 && adjuncts.isEmpty)
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Nop = {
+      require (arity == 0 && adj == 0)
       new Nop()
     }
   }
@@ -140,8 +140,8 @@ object Act extends ProductReader[Act] {
 
   // ---- serialization ----
 
-  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): Act = {
-    require (arity == 1 && adjuncts.isEmpty)
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Act = {
+    require (arity == 1 && adj == 0)
     val _xs = in.readVec(in.readAct())
     Act(_xs: _*)
   }

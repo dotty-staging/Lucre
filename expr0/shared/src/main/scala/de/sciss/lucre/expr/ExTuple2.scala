@@ -14,10 +14,11 @@
 package de.sciss.lucre
 package expr
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.impl.IChangeEventImpl
 
-object ExTuple2 {
+object ExTuple2 extends ProductReader[ExTuple2[_, _]] {
   private[lucre] final class Expanded[T <: Txn[T], T1, T2](val _1: IExpr[T, T1], val _2: IExpr[T, T2])
                                                           (implicit protected val targets: ITargets[T])
     extends IExpr[T, (T1, T2)] with IChangeEventImpl[T, (T1, T2)] {
@@ -42,6 +43,13 @@ object ExTuple2 {
       val _2V: T2 = pull.expr(_2)
       (_1V, _2V)
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ExTuple2[_, _] = {
+    require (arity == 2 && adj == 0)
+    val _1 = in.readEx()
+    val _2 = in.readEx()
+    new ExTuple2(_1, _2)
   }
 }
 final case class ExTuple2[T1, T2](_1: Ex[T1], _2: Ex[T2]) extends Ex[(T1, T2)] {

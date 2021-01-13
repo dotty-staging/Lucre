@@ -13,17 +13,18 @@
 
 package de.sciss.lucre.expr.graph
 
-import java.net.URI
-
 import de.sciss.lucre.Obj.AttrMap
 import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.expr.{CellView, Context}
 import de.sciss.lucre.{Adjunct, Disposable, IExpr, ProductWithAdjuncts, Source, Txn, ArtifactLocation => _ArtifactLocation, Obj => LObj}
 import de.sciss.serial.DataInput
 
-object ArtifactLocation {
+import java.net.URI
+
+object ArtifactLocation extends ProductReader[ArtifactLocation] {
   private lazy val _init: Unit = Adjunct.addFactory(Bridge)
 
   def init(): Unit = _init
@@ -107,6 +108,13 @@ object ArtifactLocation {
 
     def react(fun: T => Option[URI] => Unit)(implicit tx: T): Disposable[T] =
       new AttrMapExprObs[T, URI](map = attr, key = key, fun = fun, tx0 = tx)(_ArtifactLocation)
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ArtifactLocation = {
+    require (arity == 2 && adj == 0)
+    val _key      = in.readString()
+    val _default  = in.readEx[URI]()
+    new ArtifactLocation(_key, _default)
   }
 }
 final case class ArtifactLocation(key: String, default: Ex[URI] = new URI(null, null, null))

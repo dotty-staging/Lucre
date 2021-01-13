@@ -41,12 +41,30 @@ object ExElem {
   }
 
   trait ProductReader[+A] {
-    def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): A
+    def read(in: RefMapIn, key: String, arity: Int, adj: Int): A
   }
 
-  private val mapRead = mutable.Map.empty[String, ProductReader[Product]]
+  private val mapRead = mutable.Map[String, ProductReader[Product]](
+    ("scala.Tuple2", MiscReader)
+  )
+
+  private object MiscReader extends ProductReader[Product] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Product =
+      if (key == "scala.Tuple2") {
+        require (arity == 2 && adj == 0)
+        val _1 = in.readElem()
+        val _2 = in.readElem()
+        (_1, _2)
+
+      } else {
+        sys.error(s"Unexpected key $key")
+      }
+  }
 
   final class RefMapOut(out0: DataOutput) extends serial.RefMapOut(out0) {
+    override protected def isDefaultPackage(pck: String): Boolean =
+      pck == DefaultPackage
+
     override protected def writeIdentifiedProduct(p: Product): Unit = {
       val adjuncts = p match {
         case hasAdj: ProductWithAdjuncts => hasAdj.adjuncts
@@ -91,22 +109,24 @@ object ExElem {
     def readTrig    (): Trig    = readProductT()
     def readEx   [A](): Ex[A]   = readProductT()
 
+    def readAdjunct[A <: Adjunct](): A = Adjunct.readT(in)
+
     override protected def readProductWithCookie(cookie: Char): Product = super.readProductWithCookie(cookie)
 
     override protected def readProductWithKey(key: String, arity: Int): Product = {
-      val numAdj    = in.readByte().toInt
-      val adjuncts  = if (numAdj == 0) Nil else {
-        val b = List.newBuilder[Adjunct]
-        b.sizeHint(numAdj)
-        var i = 0
-        while (i < numAdj) {
-          b += Adjunct.read(in)
-          i += 1
-        }
-        b.result()
-      }
+      val adj = in.readByte().toInt
+//      val adjuncts  = if (adk == 0) Nil else {
+//        val b = List.newBuilder[Adjunct]
+//        b.sizeHint(adk)
+//        var i = 0
+//        while (i < adk) {
+//          b += Adjunct.read(in)
+//          i += 1
+//        }
+//        b.result()
+//      }
       val r = mapRead.getOrElse(key, throw new NoSuchElementException(s"Unknown element '$key'"))
-      r.read(this, key, arity, adjuncts)
+      r.read(this, key, arity, adj)
     }
 
     override protected def readIdentifiedConst(): graph.Const[_] = {

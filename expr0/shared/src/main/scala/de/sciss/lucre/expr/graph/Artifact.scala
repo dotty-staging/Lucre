@@ -13,11 +13,9 @@
 
 package de.sciss.lucre.expr.graph
 
-import java.io.IOException
-import java.net.URI
-
 import de.sciss.lucre.Obj.AttrMap
 import de.sciss.lucre.edit.{EditArtifact, EditAttrMap}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.UnaryOp.FileParentOption
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
@@ -25,9 +23,11 @@ import de.sciss.lucre.expr.{CellView, Context}
 import de.sciss.lucre.{Adjunct, Disposable, IExpr, ProductWithAdjuncts, Source, Txn, Artifact => _Artifact, ArtifactLocation => _ArtifactLocation, Obj => LObj}
 import de.sciss.serial.DataInput
 
+import java.io.IOException
+import java.net.URI
 import scala.util.{Failure, Success, Try}
 
-object Artifact {
+object Artifact extends ProductReader[Artifact] {
   private lazy val _init: Unit = Adjunct.addFactory(Bridge)
 
   def init(): Unit = _init
@@ -134,6 +134,13 @@ object Artifact {
 
     def react(fun: T => Option[URI] => Unit)(implicit tx: T): Disposable[T] =
       new AttrMapExprObs[T, URI](map = attr, key = key, fun = fun, tx0 = tx)(_Artifact)
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Artifact = {
+    require (arity == 2 && adj == 0)
+    val _key      = in.readString()
+    val _default  = in.readEx[URI]()
+    new Artifact(_key, _default)
   }
 }
 final case class Artifact(key: String, default: Ex[URI] = new URI(null, null, null))

@@ -15,9 +15,9 @@ package de.sciss.lucre.expr
 package graph
 
 import java.net.{URI => _URI}
-
 import de.sciss.asyncfile.Ops.URIOps
 import de.sciss.lucre.Adjunct.{HasDefault, Num, NumBool, NumFrac, NumInt, ScalarOrd, ToNum, Widen, WidenToDouble}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.UnaryOp.Op
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
 import de.sciss.lucre.impl.IEventImpl
@@ -25,7 +25,7 @@ import de.sciss.lucre.{Adjunct, Exec, IExpr, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.model.Change
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
-object UnaryOp /*extends UnaryOpPlatform*/ {
+object UnaryOp extends ProductReader[UnaryOp[_, _]] {
   abstract class Op[A1, A2] extends Product {
     def apply(a: A1): A2
   }
@@ -354,6 +354,12 @@ object UnaryOp /*extends UnaryOpPlatform*/ {
 
   // ---- general ----
 
+  object ToStr extends ProductReader[ToStr[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ToStr[_] = {
+      require (arity == 0 && adj == 0)
+      new ToStr()
+    }
+  }
   final case class ToStr[A]() extends NamedOp[A, String] {
     def apply(a: A) : String = a.toString
 
@@ -362,24 +368,48 @@ object UnaryOp /*extends UnaryOpPlatform*/ {
 
   // ---- Option ----
 
+  object OptionSome extends ProductReader[OptionSome[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OptionSome[_] = {
+      require (arity == 0 && adj == 0)
+      new OptionSome()
+    }
+  }
   final case class OptionSome[A]() extends NamedOp[A, Option[A]] {
     def apply(a: A): Option[A] = Some(a)
 
     override def name = "OptionSome"
   }
 
+  object OptionIsEmpty extends ProductReader[OptionIsEmpty[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OptionIsEmpty[_] = {
+      require (arity == 0 && adj == 0)
+      new OptionIsEmpty()
+    }
+  }
   final case class OptionIsEmpty[A]() extends NamedOp[Option[A], Boolean] {
     def apply(a: Option[A]): Boolean = a.isEmpty
 
     override def name = "OptionIsEmpty"
   }
 
+  object OptionIsDefined extends ProductReader[OptionIsDefined[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OptionIsDefined[_] = {
+      require (arity == 0 && adj == 0)
+      new OptionIsDefined()
+    }
+  }
   final case class OptionIsDefined[A]() extends NamedOp[Option[A], Boolean] {
     def apply(a: Option[A]): Boolean = a.isDefined
 
     override def name = "OptionIsDefined"
   }
 
+  object OptionToList extends ProductReader[OptionToList[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OptionToList[_] = {
+      require (arity == 0 && adj == 0)
+      new OptionToList()
+    }
+  }
   final case class OptionToList[A]() extends NamedOp[Option[A], scala.List[A]] {
     def apply(a: Option[A]): scala.List[A] = a.toList
 
@@ -388,6 +418,13 @@ object UnaryOp /*extends UnaryOpPlatform*/ {
 
  // XXX TODO are we sure that this is the way to go
  // and that we do not want to add an exception throwing mechanism to Ex?
+   object OptionGet extends ProductReader[OptionGet[_]] {
+     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OptionGet[_] = {
+       require (arity == 0 && adj == 1)
+       val _d: HasDefault[Any] = in.readAdjunct()
+       new OptionGet[Any]()(_d)
+     }
+   }
   final case class OptionGet[A]()(implicit d: HasDefault[A])
     extends NamedOp[Option[A], A] with ProductWithAdjuncts {
 
@@ -576,7 +613,7 @@ object UnaryOp /*extends UnaryOpPlatform*/ {
   }
 
   final case class StringNonEmpty() extends NamedOp[String, Boolean] {
-    def apply(a: String): Boolean = !a.isEmpty
+    def apply(a: String): Boolean = a.nonEmpty
     override def name = "StringNonEmpty"
   }
 
@@ -730,6 +767,13 @@ object UnaryOp /*extends UnaryOpPlatform*/ {
     override def toString: String = s"UnaryOp($op, $a)"
 
     protected def mapValue(av: A1)(implicit tx: T): A = op(av)
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): UnaryOp[_ , _] = {
+    require (arity == 2 && adj == 0)
+    val _op = in.readProductT[Op[Any, _]]()
+    val _a  = in.readEx[Any]()
+    new UnaryOp(_op, _a)
   }
 
   // XXX TODO: let's do this at another point when `Const` is no longer `Lazy`

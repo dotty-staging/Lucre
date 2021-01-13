@@ -13,12 +13,13 @@
 
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedMapSeqIn, MappedIExpr}
 import de.sciss.lucre.expr.graph.{Ex, It, Obj}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn, expr}
 
-object ExSeq {
+object ExSeq extends ProductReader[ExSeq[_]] {
   private final class Expanded[T <: Txn[T], A](elems: Seq[IExpr[T, A]])(implicit protected val targets: ITargets[T])
     extends IExpr[T, Seq[A]] with IChangeEventImpl[T, Seq[A]] {
 
@@ -74,6 +75,15 @@ object ExSeq {
     }
   }
 
+  object Count extends ProductReader[Count[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Count[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new Count(_in, _it, _p)
+    }
+  }
   final case class Count[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Int] {
 
@@ -120,6 +130,15 @@ object ExSeq {
     }
   }
 
+  object DropWhile extends ProductReader[DropWhile[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): DropWhile[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new DropWhile(_in, _it, _p)
+    }
+  }
   final case class DropWhile[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
@@ -158,6 +177,15 @@ object ExSeq {
     }
   }
 
+  object Exists extends ProductReader[Exists[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Exists[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new Exists(_in, _it, _p)
+    }
+  }
   final case class Exists[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Boolean] {
 
@@ -170,29 +198,6 @@ object ExSeq {
       val itEx = it.expand[T]
       import ctx.targets
       new ExistsExpanded[T, A](inEx, itEx, p, tx)
-    }
-  }
-
-  private final class ForallExpanded[T <: Txn[T], A](in: IExpr[T, Seq[A]], it: It.Expanded[T, A],
-                                                     fun: Ex[Boolean], tx0: T)
-                                                    (implicit targets: ITargets[T], ctx: Context[T])
-    extends ExpandedMapSeqIn[T, A, Boolean, Boolean](in, it, fun, tx0) {
-
-    override def toString: String = s"$in.forall($fun)"
-
-    protected def emptyOut: Boolean = true
-
-    protected def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[T, Boolean] => Boolean)
-                             (implicit tx: T): Boolean = {
-      assert (tuples.size == inV.size)
-      val iterator = inV.iterator zip tuples.iterator
-      while (iterator.hasNext) {
-        val (vn, (f, _)) = iterator.next()
-        it.setValue(vn)
-        val funV = elem(f)
-        if (!funV) return false
-      }
-      true
     }
   }
 
@@ -220,6 +225,15 @@ object ExSeq {
     }
   }
 
+  object Filter extends ProductReader[Filter[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Filter[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new Filter(_in, _it, _p)
+    }
+  }
   final case class Filter[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
@@ -259,6 +273,15 @@ object ExSeq {
     }
   }
 
+  object FilterNot extends ProductReader[FilterNot[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): FilterNot[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new FilterNot(_in, _it, _p)
+    }
+  }
   final case class FilterNot[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
@@ -274,6 +297,39 @@ object ExSeq {
     }
   }
 
+  private final class ForallExpanded[T <: Txn[T], A](in: IExpr[T, Seq[A]], it: It.Expanded[T, A],
+                                                     fun: Ex[Boolean], tx0: T)
+                                                    (implicit targets: ITargets[T], ctx: Context[T])
+    extends ExpandedMapSeqIn[T, A, Boolean, Boolean](in, it, fun, tx0) {
+
+    override def toString: String = s"$in.forall($fun)"
+
+    protected def emptyOut: Boolean = true
+
+    protected def buildResult(inV: Seq[A], tuples: Tuples)(elem: IExpr[T, Boolean] => Boolean)
+                             (implicit tx: T): Boolean = {
+      assert (tuples.size == inV.size)
+      val iterator = inV.iterator zip tuples.iterator
+      while (iterator.hasNext) {
+        val (vn, (f, _)) = iterator.next()
+        it.setValue(vn)
+        val funV = elem(f)
+        if (!funV) return false
+      }
+      true
+    }
+  }
+
+
+  object Forall extends ProductReader[Forall[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Forall[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new Forall(_in, _it, _p)
+    }
+  }
   final case class Forall[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Boolean] {
 
@@ -312,6 +368,15 @@ object ExSeq {
     }
   }
 
+  object Find extends ProductReader[Find[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Find[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new Find(_in, _it, _p)
+    }
+  }
   final case class Find[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Option[A]] {
 
@@ -350,6 +415,15 @@ object ExSeq {
     }
   }
 
+  object FindLast extends ProductReader[FindLast[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): FindLast[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new FindLast(_in, _it, _p)
+    }
+  }
   final case class FindLast[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Option[A]] {
 
@@ -390,6 +464,15 @@ object ExSeq {
     }
   }
 
+  object IndexWhere extends ProductReader[IndexWhere[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IndexWhere[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new IndexWhere(_in, _it, _p)
+    }
+  }
   final case class IndexWhere[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Int] {
 
@@ -412,9 +495,17 @@ object ExSeq {
     extends MappedIExpr[T, Seq[Obj], Seq[A]](in, tx0) {
 
     protected def mapValue(inValue: Seq[Obj])(implicit tx: T): Seq[A] =
-      inValue.flatMap(_.peer.flatMap(bridge.tryParseObj(_)))
+      inValue.flatMap(_.peer[T].flatMap(bridge.tryParseObj(_)))
   }
 
+  object Select extends ProductReader[Select[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Select[_] = {
+      require (arity == 1 && adj == 1)
+      val _in = in.readEx[Seq[Obj]]()
+      val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+      new Select[Any](_in)(_bridge)
+    }
+  }
   final case class Select[A](in: Ex[Seq[Obj]])(implicit bridge: Obj.Bridge[A])
     extends Ex[Seq[A]] with ProductWithAdjuncts {
 
@@ -438,11 +529,19 @@ object ExSeq {
     extends MappedIExpr[T, Seq[Obj], Option[A]](in, tx0) {
 
     protected def mapValue(inValue: Seq[Obj])(implicit tx: T): Option[A] = {
-      val it = inValue.iterator.flatMap(_.peer.flatMap(bridge.tryParseObj(_)))
+      val it = inValue.iterator.flatMap(_.peer[T].flatMap(bridge.tryParseObj(_)))
       if (it.hasNext) Some(it.next()) else None
     }
   }
 
+  object SelectFirst extends ProductReader[SelectFirst[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): SelectFirst[_] = {
+      require (arity == 1 && adj == 1)
+      val _in = in.readEx[Seq[Obj]]()
+      val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+      new SelectFirst[Any](_in)(_bridge)
+    }
+  }
   final case class SelectFirst[A](in: Ex[Seq[Obj]])(implicit bridge: Obj.Bridge[A])
     extends Ex[Option[A]] with ProductWithAdjuncts {
 
@@ -486,6 +585,15 @@ object ExSeq {
     }
   }
 
+  object TakeWhile extends ProductReader[TakeWhile[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): TakeWhile[_] = {
+      require (arity == 3 && adj == 0)
+      val _in = in.readEx[Seq[Any]]()
+      val _it = in.readProductT[It[Any]]()
+      val _p  = in.readEx[Boolean]()
+      new TakeWhile(_in, _it, _p)
+    }
+  }
   final case class TakeWhile[A](in: Ex[Seq[A]], it: It[A], p: Ex[Boolean])
     extends Ex[Seq[A]] {
 
@@ -501,6 +609,11 @@ object ExSeq {
     }
   }
 
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ExSeq[_] = {
+    require (arity == 1 && adj == 0)
+    val _elems = in.readVec(in.readEx[Any]())
+    new ExSeq(_elems: _*)
+  }
 }
 final case class ExSeq[A](elems: Ex[A]*) extends Ex[Seq[A]] {
 

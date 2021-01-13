@@ -13,12 +13,13 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, ITrigger}
 import de.sciss.lucre.impl.IEventImpl
 import de.sciss.lucre.{Exec, IEvent, IExpr, IPull, ITargets, Txn}
 import de.sciss.model.Change
 
-object Changed {
+object Changed extends ProductReader[Changed[_]] {
   private final class Expanded[T <: Exec[T], A](in: IExpr[T, A], tx0: T)
                                                (implicit protected val targets: ITargets[T])
     extends ITrigger[T] with IEventImpl[T, Unit] {
@@ -38,6 +39,12 @@ object Changed {
 
     def dispose()(implicit tx: T): Unit =
       in.changed -/-> changed
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Changed[_] = {
+    require (arity == 1 && adj == 0)
+    val _in = in.readEx()
+    new Changed(_in)
   }
 }
 final case class Changed[A](in: Ex[A]) extends Trig {

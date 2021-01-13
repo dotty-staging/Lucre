@@ -14,11 +14,12 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.edit.UndoManager
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction}
 import de.sciss.lucre.{IExpr, Sys, Txn}
 
-object Edit {
+object Edit extends ProductReader[Ex[Edit]] {
   def apply(): Ex[Edit] = Impl()
 
   private final class ApplyExpanded[T <: Txn[T]](e: IExpr[T, Edit], act: IAction[T])
@@ -36,6 +37,14 @@ object Edit {
     private[lucre] def peer[T <: Txn[T]](implicit tx: T): UndoManager[T] = UndoManager.dummy
   }
 
+  object Apply extends ProductReader[Apply] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Apply = {
+      require (arity == 2 && adj == 0)
+      val _e    = in.readEx[Edit]()
+      val _act  = in.readAct()
+      new Apply(_e, _act)
+    }
+  }
   final case class Apply(e: Ex[Edit], act: Act) extends Act {
     override def productPrefix: String = s"Edit$$Apply"  // serialization
 
@@ -59,6 +68,15 @@ object Edit {
     }
   }
 
+  object Named extends ProductReader[Named] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Named = {
+      require (arity == 2 && adj == 0)
+      val _e      = in.readEx[Edit]()
+      val _name   = in.readEx[String]()
+      val _act    = in.readVec(in.readAct())
+      new Named(_e, _name, _act: _*)
+    }
+  }
   final case class Named(e: Ex[Edit], name: Ex[String], act: Act*) extends Act {
     override def productPrefix: String = s"Edit$$Named"  // serialization
 
@@ -82,6 +100,11 @@ object Edit {
 
     protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
       new Const.Expanded(new Expanded[T](ctx.undoManager, tx.system))
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Ex[Edit] = {
+    require (arity == 0 && adj == 0)
+    Edit()
   }
 
   implicit final class Ops(private val x: Ex[Edit]) extends AnyVal {

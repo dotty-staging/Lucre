@@ -14,11 +14,12 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.expr.Context
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.MappedIExpr
 import de.sciss.lucre.{IExpr, IPull, ITargets, Txn}
 import de.sciss.model.Change
 
-object OptionGet {
+object OptionGet extends ProductReader[OptionGet[_]] {
   private final class Expanded[T <: Txn[T], A](in: IExpr[T, Option[A]], tx0: T)(implicit targets: ITargets[T])
     extends MappedIExpr[T, Option[A], A](in, tx0) {
 
@@ -35,6 +36,12 @@ object OptionGet {
           if (before == now) None else Some(Change(before, now))
         }
       }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): OptionGet[_] = {
+    require (arity == 1 && adj == 0)
+    val _in = in.readEx[Option[Any]]()
+    new OptionGet(_in)
   }
 }
 case class OptionGet[A](in: Ex[Option[A]]) extends Ex[A] {

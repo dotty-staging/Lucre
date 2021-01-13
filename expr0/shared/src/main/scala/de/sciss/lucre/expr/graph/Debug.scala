@@ -14,16 +14,23 @@
 package de.sciss.lucre.expr
 package graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.{IExpr, Txn}
 
 object Debug {
-  object PrintNow {
+  object PrintNow extends ProductReader[PrintNow] {
     private final class Expanded[T <: Txn[T]](text: IExpr[T, String]) extends IActionImpl[T] {
       def executeAction()(implicit tx: T): Unit = {
         val s = text.value
         print(s)
       }
+    }
+
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): PrintNow = {
+      require (arity == 1 && adj == 0)
+      val _text = in.readEx[String]()
+      new PrintNow(_text)
     }
   }
   /** An action that prints a text expression "now" that is directly inside a transaction,

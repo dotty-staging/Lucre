@@ -14,9 +14,9 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
-import de.sciss.lucre.expr.{Context, ExElem, IControl, ITrigger}
+import de.sciss.lucre.expr.{Context, IControl, ITrigger}
 import de.sciss.lucre.impl.IGeneratorEvent
-import de.sciss.lucre.{Adjunct, Exec, IEvent, IPull, ITargets, Txn}
+import de.sciss.lucre.{Exec, IEvent, IPull, ITargets, Txn}
 
 object LoadBang extends ProductReader[LoadBang] {
   private final class Expanded[T <: Exec[T]](implicit protected val targets: ITargets[T])
@@ -34,8 +34,8 @@ object LoadBang extends ProductReader[LoadBang] {
     def initControl()(implicit tx: T): Unit = fire(())
   }
 
-  override def read(in: RefMapIn, key: String, arity: Int, adjuncts: List[Adjunct]): LoadBang = {
-    require (arity == 0 && adjuncts.isEmpty)
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): LoadBang = {
+    require (arity == 0 && adj == 0)
     new LoadBang()
   }
 }

@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, graph}
 import de.sciss.lucre.impl.IChangeGeneratorEvent
 import de.sciss.lucre.{IChangeEvent, IExpr, IPull, ITargets, Txn}
@@ -21,7 +22,7 @@ import de.sciss.model.Change
 
 import scala.concurrent.stm.Ref
 
-object It {
+object It extends ProductReader[It[_]] {
   trait Expanded[T <: Txn[T], A] extends IExpr[T, A] {
     def setValue(value: A /*, dispatch: Boolean*/)(implicit tx: T): Unit
 
@@ -41,7 +42,6 @@ object It {
 //      }
     }
 
-
     override private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[A]] =
       throw new IllegalArgumentException("pullUpdate on It.Expanded")
 
@@ -49,14 +49,17 @@ object It {
       value // pull.resolveChange(isNow = isNow) // throw new AssertionError("Should never be here")
     }
 
-    //    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[A]] =
-//      Some(pull.resolve)
-
     def value(implicit tx: T): A = valueRef()
 
     def dispose()(implicit tx: T): Unit = ()
 
     def changed: IChangeEvent[T, A] = this
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): It[_] = {
+    require (arity == 1 && adj == 0)
+    val _token = in.readInt()
+    new It(_token)
   }
 }
 /** A glue element to make `map` and `flatMap` work. */

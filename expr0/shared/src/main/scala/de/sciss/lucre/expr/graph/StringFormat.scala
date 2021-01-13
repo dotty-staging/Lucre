@@ -20,6 +20,7 @@ import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{IChangeEvent, IExpr, IPull, ITargets, Txn}
 
 object StringFormat {
+  // XXX TODO: should listen to `in`
   private final class Expanded[T <: Txn[T]](in: IExpr[T, String], args: Seq[IExpr[T, Any]], tx0: T)
                                            (implicit protected val targets: ITargets[T])
     extends IExpr[T, String] with IChangeEventImpl[T, String] {
@@ -50,28 +51,6 @@ object StringFormat {
       }
       tryFormat(inV, argsV)
     }
-
-//    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[String]] = {
-//      val inEvt   = in.changed
-//      val inChOpt = if (pull.contains(inEvt)) pull (inEvt) else None
-//      val inCh    = inChOpt.getOrElse {
-//        val inV = in.value
-//        Change(inV, inV)
-//      }
-//      val argsCh = args.map { arg =>
-//        val argEvt    = arg.changed
-//        val argChOpt  = if (pull.contains(argEvt)) pull (argEvt) else None
-//        argChOpt.getOrElse {
-//          val argV = arg.value
-//          Change(argV, argV)
-//        }
-//      }
-//
-//      val before  = tryFormat(inCh.before, argsCh.map(_.before))
-//      val now     = tryFormat(inCh.now   , argsCh.map(_.now   ))
-//      val ch      = Change(before, now)
-//      if (ch.isSignificant) Some(ch) else None
-//    }
 
     def dispose()(implicit tx: T): Unit =
       args.foreach { a =>

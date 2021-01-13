@@ -168,52 +168,6 @@ object TernaryOp {
       value1(_1v, _2v, _3v)
     }
 
-//    private[lucre] def pullUpdate(pull: IPull[T])(implicit tx: T): Option[Change[A]] = {
-//      val _1c = a.changed
-//      val _2c = b.changed
-//      val _3c = c.changed
-//
-//      val _1ch = if (pull.contains(_1c)) pull(_1c) else None
-//      val _2ch = if (pull.contains(_2c)) pull(_2c) else None
-//      val _3ch = if (pull.contains(_3c)) pull(_3c) else None
-//
-//      (_1ch, _2ch, _3ch) match {
-//        case (Some(ach), None, None) =>
-//          val bv      = b.value
-//          val cv      = c.value
-//          val before  = value1(ach.before , bv, cv)
-//          val now     = value1(ach.now    , bv, cv)
-//          if (before == now) None else Some(Change(before, now))
-//        case (None, Some(bch), None) =>
-//          val av      = a.value
-//          val cv      = c.value
-//          val before  = value1(av, bch.before , cv)
-//          val now     = value1(av, bch.now    , cv)
-//          if (before == now) None else Some(Change(before, now))
-//        case (None, None, Some(cch)) =>
-//          val av      = a.value
-//          val bv      = b.value
-//          val before  = value1(av, bv, cch.before )
-//          val now     = value1(av, bv, cch.now    )
-//          if (before == now) None else Some(Change(before, now))
-//        case (Some(ach), Some(bch), None) =>
-//          val cv      = c.value
-//          val before  = value1(ach.before , bch.before, cv)
-//          val now     = value1(ach.now    , bch.now   , cv)
-//          if (before == now) None else Some(Change(before, now))
-//        case (None, Some(bch), Some(cch)) =>
-//          val av      = a.value
-//          val before  = value1(av, bch.before , cch.before)
-//          val now     = value1(av, bch.now    , cch.now   )
-//          if (before == now) None else Some(Change(before, now))
-//        case (Some(ach), Some(bch), Some(cch)) =>
-//          val before  = value1(ach.before , bch.before, cch.before)
-//          val now     = value1(ach.now    , bch.now   , cch.now   )
-//          if (before == now) None else Some(Change(before, now))
-//        case _ => None
-//      }
-//    }
-
     @inline
     private def value1(av: A1, bv: A2, cv: A3): A = {
       op.apply(av, bv, cv)

@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
 import de.sciss.lucre.expr.impl.CellViewImpl.CatVarImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl}
@@ -23,7 +24,7 @@ import de.sciss.model.Change
 import scala.annotation.tailrec
 import scala.concurrent.stm.Ref
 
-object Attr {
+object Attr extends ProductReader[Attr[_]] {
   trait Like[A] {
     def update(in: Ex[A]): Control
     def set   (in: Ex[A]): Act
@@ -83,7 +84,7 @@ object Attr {
       }
 
     } else {
-      val ctxFull = bridge.contextCellView(key)
+      val ctxFull = bridge.contextCellView[T](key)
       ctx.selfOption match {
         case Some(self) =>
           val objFull = bridge.cellView(self, key)
@@ -191,7 +192,7 @@ object Attr {
     } else {
       ctx.selfOption match {
         case Some(self) =>
-          val firstP  = bridge.contextCellView(key)
+          val firstP  = bridge.contextCellView[T](key)
           val secondP = bridge.cellView(self, key)
           val opt: Option[Form[T]] = ctx.attr.get(key)
           val firstVr = opt match {
@@ -206,9 +207,17 @@ object Attr {
     }
   }
 
-  object WithDefault {
+  object WithDefault extends ProductReader[WithDefault[_]] {
     def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =
       Impl(key, default)
+
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): WithDefault[_] = {
+      require (arity == 2 && adj == 1)
+      val _key      = in.readString()
+      val _default  = in.readEx[Any]()
+      val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+      WithDefault(_key, _default)(_bridge)
+    }
 
     private final case class Impl[A](key: String, default: Ex[A])(implicit val bridge: Obj.Bridge[A])
       extends WithDefault[A] with ProductWithAdjuncts {
@@ -311,6 +320,15 @@ object Attr {
     }
   }
 
+  object Update extends ProductReader[Update[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Update[_] = {
+      require (arity == 2 && adj == 1)
+      val _source = in.readEx[Any]()
+      val _key    = in.readString()
+      val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+      new Update(_source, _key)(_bridge)
+    }
+  }
   final case class Update[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
     extends Control with ProductWithAdjuncts {
 
@@ -327,6 +345,15 @@ object Attr {
     override def adjuncts: scala.List[Adjunct] = bridge :: Nil
   }
 
+  object Set extends ProductReader[Set[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
+      require (arity == 2 && adj == 1)
+      val _source = in.readEx[Any]()
+      val _key    = in.readString()
+      val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+      new Set(_source, _key)(_bridge)
+    }
+  }
   final case class Set[A](source: Ex[A], key: String)(implicit bridge: Obj.Bridge[A])
     extends Act with ProductWithAdjuncts {
 
@@ -340,6 +367,13 @@ object Attr {
     }
 
     override def adjuncts: scala.List[Adjunct] = bridge :: Nil
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Attr[_] = {
+    require (arity == 1 && adj == 1)
+    val _key    = in.readString()
+    val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+    new Attr(_key)(_bridge)
   }
 }
 final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
