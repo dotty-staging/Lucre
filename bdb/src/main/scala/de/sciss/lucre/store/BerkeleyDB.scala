@@ -14,14 +14,13 @@
 package de.sciss.lucre
 package store
 
-import java.io.{File, FileNotFoundException}
-import java.util.concurrent.{ConcurrentLinkedQueue, TimeUnit}
-
 import com.sleepycat.je.OperationStatus.SUCCESS
 import com.sleepycat.je.{Database, DatabaseConfig, DatabaseEntry, Environment, EnvironmentConfig, LockMode, Transaction, TransactionConfig}
 import de.sciss.lucre.Log.{txn => logTxn}
 import de.sciss.serial.{DataInput, DataOutput}
 
+import java.io.{File, FileNotFoundException}
+import java.util.concurrent.{ConcurrentLinkedQueue, TimeUnit}
 import scala.annotation.meta.field
 import scala.concurrent.duration.Duration
 import scala.concurrent.stm.{InTxnEnd, TxnLocal, Txn => ScalaTxn}
@@ -114,14 +113,6 @@ object BerkeleyDB {
   private final class Factory(dir: File, config: Config)
     extends DataStore.Factory {
 
-    // legacy
-    def this(dir: File, allowCreate: Boolean, logLevel: LogLevel) = this(dir, {
-      val config = Config()
-      config.logLevel    = logLevel
-      config.allowCreate = allowCreate
-      config.build
-    })
-
     private[this] /* lazy */ val txe: TxEnv = {
       val envCfg = new EnvironmentConfig()
       val txnCfg = new TransactionConfig()
@@ -194,7 +185,7 @@ object BerkeleyDB {
         db.put(dbTxn, keyE, valueE)
       }
 
-    def get[A](keyFun: DataOutput => Unit)(valueFun: DataInput => A)(implicit tx: TxnLike): Option[A] = {
+    def get[A](keyFun: DataOutput => Unit)(valueFun: DataInput => A)(implicit tx: TxnLike): Option[A] =
       txe.withIO { (io, dbTxn) =>
         val out     = io.out
         val keyE    = io.keyE
@@ -212,9 +203,8 @@ object BerkeleyDB {
           None
         }
       }
-    }
 
-    def flatGet[A](keyFun: DataOutput => Unit)(valueFun: DataInput => Option[A])(implicit tx: TxnLike): Option[A] = {
+    def flatGet[A](keyFun: DataOutput => Unit)(valueFun: DataInput => Option[A])(implicit tx: TxnLike): Option[A] =
       txe.withIO { (io, dbTxn) =>
         val out     = io.out
         val keyE    = io.keyE
@@ -232,9 +222,8 @@ object BerkeleyDB {
           None
         }
       }
-    }
 
-    def contains(keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean = {
+    def contains(keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean =
       txe.withIO { (io, dbTxn) =>
         val out       = io.out
         val keyE      = io.keyE
@@ -247,9 +236,8 @@ object BerkeleyDB {
         keyE.setData(data, 0, keySize)
         db.get(dbTxn, keyE, partialE, LockMode.READ_UNCOMMITTED) == SUCCESS
       }
-    }
 
-    def remove(keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean = {
+    def remove(keyFun: DataOutput => Unit)(implicit tx: TxnLike): Boolean =
       txe.withIO { (io, dbTxn) =>
         val out       = io.out
         val keyE      = io.keyE
@@ -261,7 +249,6 @@ object BerkeleyDB {
         keyE.setData(data, 0, keySize)
         db.delete(dbTxn, keyE) == SUCCESS
       }
-    }
 
     def close(): Unit = db.close()
 
