@@ -134,13 +134,16 @@ object ExElem {
       graph.Const(value)
     }
 
+    override protected def readCustomElem(cookie: Char): Any =
+      if (cookie == 'f') { // backwards compatibility
+        val path = in.readUTF()
+        Artifact.fileToURI(path)
+      } else {
+        super.readCustomElem(cookie)
+      }
+
     override protected def readIdentifiedU(): U = {
       Artifact.Value.read(in)
-
-//      case 'f' => // backwards compatibility
-//        val path = in.readUTF()
-//        Artifact.fileToURI(path)
-
     }
   }
 

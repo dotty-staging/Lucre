@@ -14,13 +14,14 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.IPush.Parents
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, IAction, ITrigger, TrigOps}
 import de.sciss.lucre.impl.IGeneratorEvent
 import de.sciss.lucre.{IEvent, IPull, ITargets, Txn}
 
 import scala.language.implicitConversions
 
-object Trig {
+object Trig extends ProductReader[Trig] {
   final val Some: Option[Unit] = scala.Some(())
 
   implicit def ops(t: Trig): TrigOps = new TrigOps(t)
@@ -60,6 +61,11 @@ object Trig {
       import ctx.targets
       new Expanded[T]
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Trig = {
+    require (arity == 0 && adj == 0)
+    Trig()
   }
 }
 

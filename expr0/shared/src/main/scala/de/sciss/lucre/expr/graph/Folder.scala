@@ -16,6 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.Adjunct.HasDefault
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.edit.EditFolder
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedObjMakeImpl, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{CellView, Context, IAction}
@@ -26,13 +27,18 @@ import de.sciss.serial.{DataInput, TFormat}
 
 import scala.concurrent.stm.Ref
 
-object Folder {
+object Folder extends ProductReader[Ex[Folder]] {
   private lazy val _init: Unit =
     Adjunct.addFactory(Bridge)
 
   def init(): Unit = _init
 
   def apply(): Ex[Folder] with Obj.Make = Apply()
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Ex[Folder] = {
+    require (arity == 0 && adj == 0)
+    Folder()
+  }
 
   private[lucre] object Empty extends Folder {
     private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] = None
@@ -136,7 +142,7 @@ object Folder {
     private def setObj(v: Folder)(implicit tx: T): Unit /*Option[Change[A]]*/ = {
       obs.swap(Disposable.empty).dispose()
       // XXX TODO --- should we also fire when size has been non-zero and v.peer is empty?
-      v.peer.foreach { f =>
+      v.peer[T].foreach { f =>
         val newObs = f.changed.react { implicit tx => upd =>
           val now     = mapValue(upd.list)
           val before  = ref.swap(now)
@@ -189,6 +195,13 @@ object Folder {
     protected def mapValue(f: ListObj[T, LObj[T]])(implicit tx: T): Int = f.size
   }
 
+  object Size extends ProductReader[Size] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Size = {
+      require (arity == 1 && adj == 0)
+      val _in = in.readEx[Folder]()
+      new Size(_in)
+    }
+  }
   final case class Size(in: Ex[Folder]) extends Ex[Int] {
     override def productPrefix: String = s"Folder$$Size" // serialization
 
@@ -207,6 +220,13 @@ object Folder {
     protected def mapValue(f: ListObj[T, LObj[T]])(implicit tx: T): Boolean = f.isEmpty
   }
 
+  object IsEmpty extends ProductReader[IsEmpty] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IsEmpty = {
+      require (arity == 1 && adj == 0)
+      val _in = in.readEx[Folder]()
+      new IsEmpty(_in)
+    }
+  }
   final case class IsEmpty(in: Ex[Folder]) extends Ex[Boolean] {
     override def productPrefix: String = s"Folder$$IsEmpty" // serialization
 
@@ -225,6 +245,13 @@ object Folder {
     protected def mapValue(f: ListObj[T, LObj[T]])(implicit tx: T): Boolean = f.nonEmpty
   }
 
+  object NonEmpty extends ProductReader[NonEmpty] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): NonEmpty = {
+      require (arity == 1 && adj == 0)
+      val _in = in.readEx[Folder]()
+      new NonEmpty(_in)
+    }
+  }
   final case class NonEmpty(in: Ex[Folder]) extends Ex[Boolean] {
     override def productPrefix: String = s"Folder$$NonEmpty" // serialization
 
@@ -252,6 +279,13 @@ object Folder {
     }
   }
 
+  object Children extends ProductReader[Children] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Children = {
+      require (arity == 1 && adj == 0)
+      val _in = in.readEx[Folder]()
+      new Children(_in)
+    }
+  }
   final case class Children(in: Ex[Folder]) extends Ex[Seq[Obj]] {
     override def productPrefix: String = s"Folder$$Children" // serialization
 
@@ -268,9 +302,9 @@ object Folder {
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = {
-      in.value.peer.foreach { f =>
+      in.value.peer[T].foreach { f =>
         val v   = elem.value
-        val obj = source.toObj(v)
+        val obj = source.toObj[T](v)
         EditFolder.append(f, obj)
       }
     }
@@ -281,9 +315,9 @@ object Folder {
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = {
-      in.value.peer.foreach { f =>
+      in.value.peer[T].foreach { f =>
         val v   = elem.value
-        val obj = source.toObj(v)
+        val obj = source.toObj[T](v)
         EditFolder.prepend(f, obj)
       }
     }
@@ -293,7 +327,7 @@ object Folder {
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = {
-      in.value.peer.foreach { f =>
+      in.value.peer[T].foreach { f =>
         var rem = math.min(n.value, f.size)
         while (rem > 0) {
           EditFolder.removeHead(f)
@@ -307,7 +341,7 @@ object Folder {
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = {
-      in.value.peer.foreach { f =>
+      in.value.peer[T].foreach { f =>
         var rem = math.min(n.value, f.size)
         while (rem > 0) {
           EditFolder.removeLast(f)
@@ -321,12 +355,21 @@ object Folder {
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = {
-      in.value.peer.foreach { f =>
+      in.value.peer[T].foreach { f =>
         EditFolder.clear(f)
       }
     }
   }
 
+  object Append extends ProductReader[Append[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Append[_] = {
+      require (arity == 2 && adj == 1)
+      val _in     = in.readEx[Folder]()
+      val _elem   = in.readEx[Any]()
+      val _source: Obj.Source[Any] = in.readAdjunct()
+      new Append[Any](_in, _elem)(_source)
+    }
+  }
   final case class Append[A](in: Ex[Folder], elem: Ex[A])(implicit source: Obj.Source[A])
     extends Act with ProductWithAdjuncts {
 
@@ -340,6 +383,15 @@ object Folder {
     def adjuncts: List[Adjunct] = source :: Nil
   }
 
+  object Prepend extends ProductReader[Prepend[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Prepend[_] = {
+      require (arity == 2 && adj == 1)
+      val _in   = in.readEx[Folder]()
+      val _elem = in.readEx[Any]()
+      val _source: Obj.Source[Any] = in.readAdjunct()
+      new Prepend[Any](_in, _elem)(_source)
+    }
+  }
   final case class Prepend[A](in: Ex[Folder], elem: Ex[A])(implicit source: Obj.Source[A])
     extends Act with ProductWithAdjuncts {
 
@@ -353,6 +405,14 @@ object Folder {
     def adjuncts: List[Adjunct] = source :: Nil
   }
 
+  object Drop extends ProductReader[Drop] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Drop = {
+      require (arity == 2 && adj == 0)
+      val _in = in.readEx[Folder]()
+      val _n  = in.readEx()
+      new Drop(_in, _n)
+    }
+  }
   final case class Drop(in: Ex[Folder], n: Ex[Int])
     extends Act {
 
@@ -364,6 +424,14 @@ object Folder {
       new DropExpanded(in.expand[T], n.expand[T])
   }
 
+  object DropRight extends ProductReader[DropRight] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): DropRight = {
+      require (arity == 2 && adj == 0)
+      val _in = in.readEx[Folder]()
+      val _n  = in.readEx()
+      new DropRight(_in, _n)
+    }
+  }
   final case class DropRight(in: Ex[Folder], n: Ex[Int])
     extends Act {
 
@@ -375,6 +443,13 @@ object Folder {
       new DropRightExpanded(in.expand[T], n.expand[T])
   }
 
+  object Clear extends ProductReader[Clear] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Clear = {
+      require (arity == 1 && adj == 0)
+      val _in = in.readEx[Folder]()
+      new Clear(_in)
+    }
+  }
   final case class Clear(in: Ex[Folder])
     extends Act {
 

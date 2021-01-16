@@ -13,15 +13,16 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.equal.Implicits._
 import de.sciss.lucre.Adjunct.{FromAny, HasDefault, Ord, Scalar, ScalarOrd}
-import de.sciss.lucre.{Adjunct, IExpr, Txn}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
+import de.sciss.lucre.{Adjunct, IExpr, Txn}
 import de.sciss.serial.DataInput
-import de.sciss.equal.Implicits._
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
-import java.net.{URI => _URI}
 
+import java.net.{URI => _URI}
 import scala.language.implicitConversions
 
 object Ex /*extends ExPlatform*/ {
@@ -105,6 +106,15 @@ object Ex /*extends ExPlatform*/ {
 //    _initPlatform
   }
 
+  object MapExOption extends ProductReader[MapExOption[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): MapExOption[_, _] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Option[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readEx[Any]()
+      new MapExOption(_in, _it, _fun)
+    }
+  }
   final case class MapExOption[A, B] private[Ex] (in: Ex[Option[A]], it: It[A], fun: Ex[B])
     extends Ex[Option[B]] {
 
@@ -120,6 +130,15 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
+  object MapExSeq extends ProductReader[MapExSeq[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): MapExSeq[_, _] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Seq[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readEx[Any]()
+      new MapExSeq(_in, _it, _fun)
+    }
+  }
   final case class MapExSeq[A, B] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Ex[B])
     extends Ex[Seq[B]] {
 
@@ -135,6 +154,15 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
+  object MapActOption extends ProductReader[MapActOption[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): MapActOption[_] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Option[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readAct()
+      new MapActOption(_in, _it, _fun)
+    }
+  }
   final case class MapActOption[A] private[Ex] (in: Ex[Option[A]], it: It[A], fun: Act)
     extends Act.Option {
 
@@ -150,6 +178,15 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
+  object MapSeqAct extends ProductReader[MapSeqAct[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): MapSeqAct[_] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Seq[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readAct()
+      new MapSeqAct(_in, _it, _fun)
+    }
+  }
   final case class MapSeqAct[A] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Act) extends Act {
     type Repr[T <: Txn[T]] = IAction[T]
 
@@ -163,6 +200,15 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
+  object FlatMapExOption extends ProductReader[FlatMapExOption[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): FlatMapExOption[_, _] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Option[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readEx[Option[Any]]()
+      new FlatMapExOption(_in, _it, _fun)
+    }
+  }
   final case class FlatMapExOption[A, B] private[Ex] (in: Ex[Option[A]], it: It[A], fun: Ex[Option[B]])
     extends Ex[Option[B]] {
 
@@ -178,6 +224,15 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
+  object FlatMapExSeq extends ProductReader[FlatMapExSeq[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): FlatMapExSeq[_, _] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Seq[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readEx[Seq[Any]]()
+      new FlatMapExSeq(_in, _it, _fun)
+    }
+  }
   final case class FlatMapExSeq[A, B] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Ex[Seq[B]])
     extends Ex[Seq[B]] {
 
@@ -193,6 +248,15 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
+  object FlatMapExSeqOption extends ProductReader[FlatMapExSeqOption[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): FlatMapExSeqOption[_, _] = {
+      require (arity == 3 && adj == 0)
+      val _in   = in.readEx[Seq[Any]]()
+      val _it   = in.readProductT[It[Any]]()
+      val _fun  = in.readEx[Option[Any]]()
+      new FlatMapExSeqOption(_in, _it, _fun)
+    }
+  }
   final case class FlatMapExSeqOption[A, B] private[Ex] (in: Ex[Seq[A]], it: It[A], fun: Ex[Option[B]])
     extends Ex[Seq[B]] {
 

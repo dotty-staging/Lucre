@@ -13,11 +13,12 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, ITrigger}
 import de.sciss.lucre.impl.IEventImpl
 import de.sciss.lucre.{Exec, IEvent, IPull, ITargets, Txn}
 
-object TTBinaryOp {
+object TTBinaryOp extends ProductReader[TTBinaryOp] {
   sealed trait Op extends Product {
     def apply(a: Boolean, b: Boolean): Boolean
 
@@ -28,18 +29,36 @@ object TTBinaryOp {
     override def toString: String = name
   }
 
+  object And extends ProductReader[And] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): And = {
+      require (arity == 0 && adj == 0)
+      new And
+    }
+  }
   final case class And() extends Op {
     def apply(a: Boolean, b: Boolean): Boolean = a & b
 
     def name = "And"
   }
 
+  object Or extends ProductReader[Or] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Or = {
+      require (arity == 0 && adj == 0)
+      new Or
+    }
+  }
   final case class Or() extends Op {
     def apply(a: Boolean, b: Boolean): Boolean = a | b
 
     def name = "Or"
   }
 
+  object Xor extends ProductReader[Xor] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Xor = {
+      require (arity == 0 && adj == 0)
+      new Xor
+    }
+  }
   final case class Xor() extends Op {
     def apply(a: Boolean, b: Boolean): Boolean = a ^ b
 
@@ -72,6 +91,14 @@ object TTBinaryOp {
       a.changed -/-> changed
       b.changed -/-> changed
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): TTBinaryOp = {
+    require (arity == 3 && adj == 0)
+    val _op = in.readProductT[Op]()
+    val _a  = in.readTrig()
+    val _b  = in.readTrig()
+    new TTBinaryOp(_op, _a, _b)
   }
 }
 final case class TTBinaryOp(op: TTBinaryOp.Op, a: Trig, b: Trig) extends Trig {

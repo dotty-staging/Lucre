@@ -14,10 +14,11 @@
 package de.sciss.lucre.expr
 package graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, Txn}
 
-object QuaternaryOp {
+object QuaternaryOp extends ProductReader[QuaternaryOp[_, _, _, _, _]] {
   abstract class Op[A, B, C, D, E] extends Product {
     def apply(a: A, b: B, c: C, d: D): E
   }
@@ -34,6 +35,12 @@ object QuaternaryOp {
 
   // ---- Seq ----
 
+  object SeqMkString extends ProductReader[SeqMkString[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): SeqMkString[_] = {
+      require (arity == 0 && adj == 0)
+      new SeqMkString()
+    }
+  }
   final case class SeqMkString[A]() extends NamedOp[Seq[A], String, String, String, String] {
     def apply(a: Seq[A], b: String, c: String, d: String): String =
       a.mkString(b, c, d)
@@ -41,6 +48,12 @@ object QuaternaryOp {
     def name = "SeqMkString"
   }
 
+  object SeqPatch extends ProductReader[SeqPatch[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): SeqPatch[_, _] = {
+      require (arity == 0 && adj == 0)
+      new SeqPatch()
+    }
+  }
   final case class SeqPatch[A, B >: A]() extends NamedOp[Seq[A], Int, Seq[B], Int, Seq[B]] {
     def apply(a: Seq[A], from: Int, other: Seq[B], replaced: Int): Seq[B] =
       a.patch(from, other, replaced)
@@ -92,6 +105,16 @@ object QuaternaryOp {
       c.changed -/-> changed
       d.changed -/-> changed
     }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): QuaternaryOp[_, _, _, _, _] = {
+    require (arity == 5 && adj == 0)
+    val _op = in.readProductT[Op[Any, Any, Any, Any, Any]]()
+    val _a  = in.readEx[Any]()
+    val _b  = in.readEx[Any]()
+    val _c  = in.readEx[Any]()
+    val _d  = in.readEx[Any]()
+    new QuaternaryOp(_op, _a, _b, _c, _d)
   }
 }
 final case class QuaternaryOp[A1, A2, A3, A4, A](op: QuaternaryOp.Op[A1, A2, A3, A4, A],

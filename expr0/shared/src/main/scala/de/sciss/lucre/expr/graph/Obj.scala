@@ -15,6 +15,7 @@ package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.Adjunct.HasDefault
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl, ITriggerConsumer}
@@ -57,7 +58,8 @@ object Obj {
 
   def empty: Ex[Obj] = Const(Empty)
 
-  private[lucre] case object Empty extends Obj {
+  // scalac: illegal cyclic...
+  private[lucre] case object Empty extends Obj with ProductReader[Product /*Empty.type*/] {
     override def productPrefix: String = s"Obj$$Empty$$"  // serialization
     override def toString     : String = "Obj<empty>"
 
@@ -65,6 +67,11 @@ object Obj {
 
     private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] =
       None // throw new IllegalStateException("Object has not been created yet")
+
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Empty.type = {
+      require (arity == 0 && adj == 0)
+      this
+    }
   }
 
   private final class Impl[In <: Txn[In]](in: LSource[In, LObj[In]], system: Sys)
@@ -111,12 +118,12 @@ object Obj {
 
     protected def make()(implicit tx: T): Obj = {
       val v     = ex.value
-      val peer  = cm.toObj(v)
+      val peer  = cm.toObj[T](v)
       wrap(peer)
     }
   }
 
-  object Make {
+  object Make extends ProductReader[Make] {
     def apply[A](ex: Ex[A])(implicit cm: CanMake[A]): Make = Impl(ex)
 
     private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) 
@@ -134,6 +141,13 @@ object Obj {
         import ctx.targets
         new MakeExpanded(ex.expand[T])
       }
+    }
+
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Make = {
+      require (arity == 1 && adj == 1)
+      val _ex = in.readEx[Any]()
+      val _cm: CanMake[Any] = in.readAdjunct()
+      Make(_ex)(_cm)
     }
   }
   trait Make extends Ex[Obj] {
@@ -266,7 +280,7 @@ object Obj {
 
     private def setObj(newObj: Obj, init: Boolean)(implicit tx: T): Unit = {
       // println(s"newObj = $newObj, bridge = $bridge, key = $key")
-      val newView = newObj.peer.map(p => bridge.cellView(p, key))
+      val newView = newObj.peer[T].map(p => bridge.cellView(p, key))
       viewRef()   = newView
       val obsNew = newView.fold[Disposable[T]](Disposable.empty)(_.react { implicit tx => now =>
         setNewValue(now)
@@ -297,8 +311,18 @@ object Obj {
     }
   }
 
-  object Attr {
-    final case class Update[A](obj: Ex[Obj], key: String,value: Ex[A])(implicit bridge: Obj.Bridge[A])
+  object Attr extends ProductReader[Attr[_]] {
+    object Update extends ProductReader[Update[_]] {
+      override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Update[_] = {
+        require (arity == 3 && adj == 1)
+        val _obj    = in.readEx[Obj]()
+        val _key    = in.readString()
+        val _value  = in.readEx[Any]()
+        val _bridge: Bridge[Any] = in.readAdjunct()
+        new Update(_obj, _key, _value)(_bridge)
+      }
+    }
+    final case class Update[A](obj: Ex[Obj], key: String, value: Ex[A])(implicit bridge: Obj.Bridge[A])
       extends Control with ProductWithAdjuncts {
 
       override def productPrefix: String = s"Obj$$Attr$$Update"  // serialization
@@ -312,6 +336,17 @@ object Obj {
 
       override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
+
+    object Set extends ProductReader[Set[_]] {
+      override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
+        require (arity == 3 && adj == 1)
+        val _obj    = in.readEx[Obj]()
+        val _key    = in.readString()
+        val _value  = in.readEx[Any]()
+        val _bridge: Bridge[Any] = in.readAdjunct()
+        new Set(_obj, _key, _value)(_bridge)
+      }
+    }
     final case class Set[A](obj: Ex[Obj], key: String, value: Ex[A])(implicit bridge: Obj.Bridge[A])
       extends Act with ProductWithAdjuncts {
 
@@ -324,8 +359,15 @@ object Obj {
 
       override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
-  }
 
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Attr[_] = {
+      require (arity == 2 && adj == 1)
+      val _obj  = in.readEx[Obj]()
+      val _key  = in.readString()
+      val _bridge: Bridge[Any] = in.readAdjunct()
+      new Attr(_obj, _key)(_bridge)
+    }
+  }
   // XXX TODO --- this should be merged with graph.Attr ?
   final case class Attr[A](obj: Ex[Obj], key: String)(implicit val bridge: Bridge[A])
     extends Ex[Option[A]] with _Attr.Like[A] with ProductWithAdjuncts {
@@ -350,9 +392,9 @@ object Obj {
 
     protected def make()(implicit tx: T): Obj = {
       val v = ex.value
-      v.peer match {
+      v.peer[T] match {
         case Some(orig) =>
-          val cpy: LObj[T] = LObj.copy(orig)
+          val cpy: LObj[T] = LObj.copy[T, T, LObj](orig)
           wrap(cpy)
 
         case None => Empty
@@ -360,7 +402,7 @@ object Obj {
     }
   }
 
-  object Copy {
+  object Copy extends ProductReader[Copy] {
     def apply(obj: Ex[Obj]): Copy = Impl(obj)
 
     private final case class Impl(obj: Ex[Obj])
@@ -377,12 +419,18 @@ object Obj {
         new CopyExpanded[T](obj.expand[T])
       }
     }
+
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Copy = {
+      require (arity == 1 && adj == 0)
+      val _ex = in.readEx[Obj]()
+      Copy(_ex)
+    }
   }
   type Copy = Make
   // trait Copy extends Make
 
-  object As {
-    def apply[A: Bridge](obj: Ex[Obj]): Ex[Option[A]] = Impl(obj)
+  object As extends ProductReader[Ex[Option[_]]] {
+    def apply[A](obj: Ex[Obj])(implicit bridge: Bridge[A]): Ex[Option[A]] = Impl(obj)
 
     // XXX TODO --- we should use cell-views instead, because this way we won't notice
     // changes to the value representation (e.g. a `StringObj.Var` contents change)
@@ -391,7 +439,7 @@ object Obj {
       extends MappedIExpr[T, Obj, Option[A]](in, tx0) {
 
       protected def mapValue(inValue: Obj)(implicit tx: T): Option[A] =
-        inValue.peer.flatMap(bridge.tryParseObj(_))
+        inValue.peer[T].flatMap(bridge.tryParseObj(_))
     }
 
     private final case class Impl[A](obj: Ex[Obj])(implicit val bridge: Bridge[A])
@@ -409,6 +457,13 @@ object Obj {
         import ctx.targets
         new Expanded[T, A](obj.expand[T], tx)
       }
+    }
+
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Ex[Option[_]] = {
+      require (arity == 1 && adj == 1)
+      val _obj = in.readEx[Obj]()
+      val _bridge: Bridge[Any] = in.readAdjunct()
+      As(_obj)(_bridge)
     }
   }
 }

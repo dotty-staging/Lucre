@@ -15,10 +15,11 @@ package de.sciss.lucre.expr
 package graph
 
 import de.sciss.lucre.Adjunct.{NumDouble, NumFrac, Widen2}
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 
-object QuinaryOp {
+object QuinaryOp extends ProductReader[QuinaryOp[_, _, _, _, _, _]] {
   abstract class Op[A, B, C, D, E, F] extends Product {
     def apply(a: A, b: B, c: C, d: D, e: E): F
   }
@@ -35,6 +36,14 @@ object QuinaryOp {
 
   // ---- numeric ----
 
+  object LinLin extends ProductReader[LinLin[_, _, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): LinLin[_, _, _] = {
+      require (arity == 0 && adj == 2)
+      val _w  : Widen2[Any, Any, Any] = in.readAdjunct()
+      val _num: NumFrac[Any]          = in.readAdjunct()
+      new LinLin[Any, Any, Any]()(_w, _num)
+    }
+  }
   final case class LinLin[A1, A2, A]()(implicit w: Widen2[A1, A2, A], num: NumFrac[A])
     extends NamedOp[A1, A1, A1, A2, A2, A] with ProductWithAdjuncts {
 
@@ -53,6 +62,14 @@ object QuinaryOp {
     def adjuncts: List[Adjunct] = w :: num :: Nil
   }
 
+  object LinExp extends ProductReader[LinExp[_, _, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): LinExp[_, _, _] = {
+      require (arity == 0 && adj == 2)
+      val _w  : Widen2[Any, Any, Any] = in.readAdjunct()
+      val _num: NumDouble[Any]        = in.readAdjunct()
+      new LinExp[Any, Any, Any]()(_w, _num)
+    }
+  }
   final case class LinExp[A1, A2, A]()(implicit w: Widen2[A1, A2, A], num: NumDouble[A])
     extends NamedOp[A1, A1, A1, A2, A2, A] with ProductWithAdjuncts {
 
@@ -74,6 +91,14 @@ object QuinaryOp {
     def adjuncts: List[Adjunct] = w :: num :: Nil
   }
 
+  object ExpLin extends ProductReader[ExpLin[_, _, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ExpLin[_, _, _] = {
+      require (arity == 0 && adj == 2)
+      val _w  : Widen2[Any, Any, Any] = in.readAdjunct()
+      val _num: NumDouble[Any]        = in.readAdjunct()
+      new ExpLin[Any, Any, Any]()(_w, _num)
+    }
+  }
   final case class ExpLin[A1, A2, A]()(implicit w: Widen2[A1, A2, A], num: NumDouble[A])
     extends NamedOp[A1, A1, A1, A2, A2, A] with ProductWithAdjuncts {
 
@@ -99,6 +124,14 @@ object QuinaryOp {
     def adjuncts: List[Adjunct] = w :: num :: Nil
   }
 
+  object ExpExp extends ProductReader[ExpExp[_, _, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ExpExp[_, _, _] = {
+      require (arity == 0 && adj == 2)
+      val _w  : Widen2[Any, Any, Any] = in.readAdjunct()
+      val _num: NumDouble[Any]        = in.readAdjunct()
+      new ExpExp[Any, Any, Any]()(_w, _num)
+    }
+  }
   final case class ExpExp[A1, A2, A]()(implicit w: Widen2[A1, A2, A], num: NumDouble[A])
     extends NamedOp[A1, A1, A1, A2, A2, A] with ProductWithAdjuncts {
 
@@ -175,9 +208,20 @@ object QuinaryOp {
       e.changed -/-> changed
     }
   }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): QuinaryOp[_, _, _, _, _, _] = {
+    require (arity == 6 && adj == 0)
+    val _op = in.readProductT[Op[Any, Any, Any, Any, Any, Any]]()
+    val _a  = in.readEx[Any]()
+    val _b  = in.readEx[Any]()
+    val _c  = in.readEx[Any]()
+    val _d  = in.readEx[Any]()
+    val _e  = in.readEx[Any]()
+    new QuinaryOp(_op, _a, _b, _c, _d, _e)
+  }
 }
 final case class QuinaryOp[A1, A2, A3, A4, A5, A](op: QuinaryOp.Op[A1, A2, A3, A4, A5, A],
-                                                 a: Ex[A1], b: Ex[A2], c: Ex[A3], d: Ex[A4], e: Ex[A5])
+                                                  a: Ex[A1], b: Ex[A2], c: Ex[A3], d: Ex[A4], e: Ex[A5])
   extends Ex[A] {
 
   type Repr[T <: Txn[T]] = IExpr[T, A]

@@ -14,13 +14,14 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, ITrigger, graph}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Caching, IChangeEvent, IExpr, IPull, IPush, ITargets, Txn}
 
 import scala.concurrent.stm.Ref
 
-object Latch {
+object Latch extends ProductReader[Latch[_]] {
   private final class Expanded[T <: Txn[T], A](in: IExpr[T, A], trig: ITrigger[T], tx0: T)
                                               (implicit protected val targets: ITargets[T])
     extends IExpr[T, A] with IChangeEventImpl[T, A] with Caching {
@@ -45,6 +46,13 @@ object Latch {
         ref()         = newValue
         newValue
       }
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Latch[_] = {
+    require (arity == 2 && adj == 0)
+    val _in   = in.readEx[Any]()
+    val _trig = in.readTrig()
+    new Latch(_in, _trig)
   }
 }
 /** Latches the expression based on the trigger argument.

@@ -13,13 +13,14 @@
 
 package de.sciss.lucre.expr.graph
 
-import java.util.Locale
-
 import de.sciss.lucre.expr.Context
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{IChangeEvent, IExpr, IPull, ITargets, Txn}
 
-object StringFormat {
+import java.util.Locale
+
+object StringFormat extends ProductReader[StringFormat] {
   // XXX TODO: should listen to `in`
   private final class Expanded[T <: Txn[T]](in: IExpr[T, String], args: Seq[IExpr[T, Any]], tx0: T)
                                            (implicit protected val targets: ITargets[T])
@@ -58,6 +59,13 @@ object StringFormat {
       }
 
     def changed: IChangeEvent[T, String] = this
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): StringFormat = {
+    require (arity == 2 && adj == 0)
+    val _in   = in.readEx[String]()
+    val _args = in.readVec(in.readEx[Any]())
+    new StringFormat(_in, _args)
   }
 }
 

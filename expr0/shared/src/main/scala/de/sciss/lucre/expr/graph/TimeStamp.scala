@@ -13,17 +13,24 @@
 
 package de.sciss.lucre.expr.graph
 
-import java.util.Locale
-
 import de.sciss.lucre.IPush.Parents
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, IAction, ITrigger, graph}
 import de.sciss.lucre.impl.{IChangeEventImpl, IGeneratorEvent}
 import de.sciss.lucre.{Caching, IChangeEvent, IExpr, IPull, IPush, ITargets, Txn}
 
+import java.util.Locale
 import scala.concurrent.stm.{Ref, TxnLocal}
 
-object TimeStamp {
+object TimeStamp extends ProductReader[TimeStamp] {
+  object Update extends ProductReader[Update] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Update = {
+      require (arity == 1 && adj == 0)
+      val _ts = in.readProductT[TimeStamp]()
+      new Update(_ts)
+    }
+  }
   final case class Update(ts: TimeStamp) extends Act {
     override def productPrefix: String = s"TimeStamp$$Update" // serialization
 
@@ -35,15 +42,13 @@ object TimeStamp {
     }
   }
 
-//  final case class Format__(ts: TimeStamp, s: Ex[String]) extends Ex[String] {
-//    override def productPrefix: String = s"TimeStamp$$Format" // serialization
-//
-//    type Repr[T <: Txn[T]] = IExpr[T, String]
-//
-//    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = ...
-//  }
-
-  final case class Format[T <: Txn[T]]() extends BinaryOp.Op[Long, String, String] {
+  object Format extends ProductReader[Format] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Format = {
+      require (arity == 0 && adj == 0)
+      new Format()
+    }
+  }
+  final case class Format() extends BinaryOp.Op[Long, String, String] {
     override def productPrefix = s"TimeStamp$$Format" // serialization
 
     def apply(a: Long, b: String): String =
@@ -55,10 +60,6 @@ object TimeStamp {
           s"Invalid format '$b'"
       }
   }
-
-//  trait Expanded[T <: Txn[T]] extends IExpr[T, Long] {
-//    def update(epochMillis: Long)(implicit tx: T): Unit
-//  }
 
   // ---- impl ----
 
@@ -116,6 +117,11 @@ object TimeStamp {
     def changed: IChangeEvent[T, Long] = this
 
     def dispose()(implicit tx: T): Unit = ()
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): TimeStamp = {
+    require (arity == 0 && adj == 0)
+    new TimeStamp()
   }
 }
 // XXX TODO --- should move to SoundProcesses and use `ExprContext.get.universe.scheduler.time` ?

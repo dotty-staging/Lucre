@@ -13,6 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
+import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction}
 import de.sciss.lucre.impl.IChangeEventImpl
@@ -34,7 +35,7 @@ final case class If(cond: Ex[Boolean]) {
     IfThenAct(cond, branch)
 }
 
-sealed trait Then[+A] /*extends Ex[Option[A]]*/ {
+sealed trait Then[+A] extends Product {
   def cond  : Ex[Boolean]
   def result: Ex[A]
 
@@ -53,6 +54,14 @@ sealed trait Then[+A] /*extends Ex[Option[A]]*/ {
   * @see  [[Else]]
   * @see  [[ElseIf]]
   */
+object IfThen extends ProductReader[IfThen[_]] {
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IfThen[_] = {
+    require (arity == 2 && adj == 0)
+    val _cond   = in.readEx[Boolean]()
+    val _result = in.readEx[Any]()
+    new IfThen(_cond, _result)
+  }
+}
 final case class IfThen[+A](cond: Ex[Boolean], result: Ex[A]) extends Then[A]
 
 final case class ElseIf[+A](pred: Then[A], cond: Ex[Boolean]) {
@@ -60,14 +69,22 @@ final case class ElseIf[+A](pred: Then[A], cond: Ex[Boolean]) {
     ElseIfThen[B](pred, cond, branch)
 }
 
+object ElseIfThen extends ProductReader[ElseIfThen[_]] {
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ElseIfThen[_] = {
+    require (arity == 3 && adj == 0)
+    val _pred   = in.readProductT[Then[Any]]()
+    val _cond   = in.readEx[Boolean]()
+    val _result = in.readEx[Any]()
+    new ElseIfThen(_pred, _cond, _result)
+  }
+}
 final case class ElseIfThen[+A](pred: Then[A], cond: Ex[Boolean], result: Ex[A])
   extends Then[A]
 
-object Else {
+object Else extends ProductReader[Else[_]] {
   private type Case[T <: Txn[T], A] = (IExpr[T, Boolean], IExpr[T, A])
 
-  private def gather[T <: Txn[T], A](e: Then[A])(implicit ctx: Context[T],
-                                                        tx: T): List[Case[T, A]] = {
+  private def gather[T <: Txn[T], A](e: Then[A])(implicit ctx: Context[T], tx: T): List[Case[T, A]] = {
     @tailrec
     def loop(t: Then[A], res: List[Case[T, A]]): List[Case[T, A]] = {
       val condEx  = t.cond  .expand[T]
@@ -194,6 +211,13 @@ object Else {
       default.changed.-/->(this)
     }
   }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Else[_] = {
+    require (arity == 2 && adj == 0)
+    val _pred     = in.readProductT[Then[Any]]()
+    val _default  = in.readEx[Any]()
+    new Else(_pred, _default)
+  }
 }
 final case class Else[A](pred: Then[A], default: Ex[A]) extends Ex[A] {
   type Repr[T <: Txn[T]] = IExpr[T, A]
@@ -219,8 +243,7 @@ final case class ElseIfAct(pred: ThenAct, cond: Ex[Boolean]) {
 object ThenAct {
   private type Case[T <: Txn[T]] = (IExpr[T, Boolean], IAction[T])
 
-  private def gather[T <: Txn[T]](e: ThenAct)(implicit ctx: Context[T],
-                                                 tx: T): List[Case[T]] = {
+  private def gather[T <: Txn[T]](e: ThenAct)(implicit ctx: Context[T], tx: T): List[Case[T]] = {
     @tailrec
     def loop(t: ThenAct, res: List[Case[T]]): List[Case[T]] = {
       val condEx  = t.cond  .expand[T]
@@ -279,12 +302,19 @@ sealed trait ThenAct extends Act {
   }
 }
 
-object ElseAct {
+object ElseAct extends ProductReader[ElseAct] {
   private final class Expanded[T <: Txn[T]](pred: IAction.Option[T], default: IAction[T])
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit =
       if (!pred.executeIfDefined()) default.executeAction()
+  }
+
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ElseAct = {
+    require (arity == 2 && adj == 0)
+    val _pred     = in.readProductT[ThenAct]()
+    val _default  = in.readAct()
+    new ElseAct(_pred, _default)
   }
 }
 final case class ElseAct(pred: ThenAct, default: Act) extends Act {
@@ -299,6 +329,15 @@ final case class ElseAct(pred: ThenAct, default: Act) extends Act {
   }
 }
 
+object ElseIfThenAct extends ProductReader[ElseIfThenAct] {
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ElseIfThenAct = {
+    require (arity == 3 && adj == 0)
+    val _pred   = in.readProductT[ThenAct]()
+    val _cond   = in.readEx[Boolean]()
+    val _result = in.readAct()
+    new ElseIfThenAct(_pred, _cond, _result)
+  }
+}
 final case class ElseIfThenAct(pred: ThenAct, cond: Ex[Boolean], result: Act) extends ThenAct
 
 /** A side effecting conditional block. To turn it into a full `if-then-else` construction,
@@ -307,4 +346,12 @@ final case class ElseIfThenAct(pred: ThenAct, cond: Ex[Boolean], result: Act) ex
   * @see  [[Else]]
   * @see  [[ElseIf]]
   */
+object IfThenAct extends ProductReader[IfThenAct] {
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IfThenAct = {
+    require (arity == 2 && adj == 0)
+    val _cond   = in.readEx[Boolean]()
+    val _result = in.readAct()
+    new IfThenAct(_cond, _result)
+  }
+}
 final case class IfThenAct(cond: Ex[Boolean], result: Act) extends ThenAct
