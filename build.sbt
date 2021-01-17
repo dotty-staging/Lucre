@@ -19,7 +19,7 @@ lazy val deps = new {
   val expr = new {
     def equal: String = core.equal
     val asyncFile     = "0.1.2"
-    val span          = "2.0.0"
+    val span          = "2.0.1"
   }
   val confluent = new {
     val finger        = "1.5.5"

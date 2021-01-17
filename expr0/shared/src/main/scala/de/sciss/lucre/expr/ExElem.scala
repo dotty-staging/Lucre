@@ -17,6 +17,7 @@ import de.sciss.lucre.expr.graph.{Act, Control, Ex, Trig}
 import de.sciss.lucre.{Adjunct, Artifact, Exec, Ident, ProductWithAdjuncts, Var}
 import de.sciss.serial
 import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
+import de.sciss.span
 
 import java.net.URI
 import scala.collection.immutable.{IndexedSeq => Vec}
@@ -45,7 +46,12 @@ object ExElem {
   }
 
   private val mapRead = mutable.Map[String, ProductReader[Product]](
-    ("scala.Tuple2", MiscReader)
+    ("scala.Tuple2", MiscReader),
+    ("de.sciss.span.Span"       , SpanLikeReader),
+    ("de.sciss.span.Span$All"   , SpanLikeReader),
+    ("de.sciss.span.Span$From"  , SpanLikeReader),
+    ("de.sciss.span.Span$Until" , SpanLikeReader),
+    ("de.sciss.span.Span$Void"  , SpanLikeReader),
   )
 
   private object MiscReader extends ProductReader[Product] {
@@ -58,6 +64,37 @@ object ExElem {
 
       } else {
         sys.error(s"Unexpected key $key")
+      }
+  }
+
+  private object SpanLikeReader extends ProductReader[Product] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Product =
+      key match {
+        case "de.sciss.span.Span" =>
+          require (arity == 2 && adj == 0)
+          val _1 = in.readLong()
+          val _2 = in.readLong()
+          span.Span(_1, _2)
+
+        case "de.sciss.span.Span$All" =>
+          require (arity == 0 && adj == 0)
+          span.Span.All
+
+        case "de.sciss.span.Span$From" =>
+          require (arity == 1 && adj == 0)
+          val _start = in.readLong()
+          span.Span.From(_start)
+
+        case "de.sciss.span.Span$Until" =>
+          require (arity == 1 && adj == 0)
+          val _stop = in.readLong()
+          span.Span.Until(_stop)
+
+        case "de.sciss.span.Span$Void" =>
+          require (arity == 0 && adj == 0)
+          span.Span.Void
+
+        case _ => sys.error(s"Unexpected key $key")
       }
   }
 
