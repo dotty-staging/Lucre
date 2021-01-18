@@ -70,7 +70,7 @@ object Edit extends ProductReader[Ex[Edit]] {
 
   object Named extends ProductReader[Named] {
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Named = {
-      require (arity == 2 && adj == 0)
+      require (arity == 3 && adj == 0)
       val _e      = in.readEx[Edit]()
       val _name   = in.readEx[String]()
       val _act    = in.readVec(in.readAct())
