@@ -14,11 +14,12 @@
 package de.sciss.lucre.expr
 package graph
 
-import java.util.regex.PatternSyntaxException
 import de.sciss.lucre.Adjunct.{Num, Widen2}
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.impl.IChangeEventImpl
 import de.sciss.lucre.{Adjunct, Exec, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
+
+import scala.util.control.NonFatal
 
 object TernaryOp extends ProductReader[TernaryOp[_, _, _, _]] {
   abstract class Op[A, B, C, D] extends Product {
@@ -116,7 +117,8 @@ object TernaryOp extends ProductReader[TernaryOp[_, _, _, _]] {
       try {
         s.split(regex, limit)
       } catch {
-        case _: PatternSyntaxException => Nil
+//        case _: PatternSyntaxException => Nil -- type does not exist on SJS!
+        case NonFatal(_) => Nil
       }
 
     def name = "StringSplit"
