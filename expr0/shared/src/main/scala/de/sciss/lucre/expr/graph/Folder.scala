@@ -40,7 +40,7 @@ object Folder extends ProductReader[Ex[Folder]] {
     Folder()
   }
 
-  private[lucre] object Empty extends Folder {
+  private[lucre] case object Empty extends Folder {
     private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] = None
 
     override def toString: String = "Folder<empty>"
@@ -55,7 +55,7 @@ object Folder extends ProductReader[Ex[Folder]] {
 
     protected def make()(implicit tx: T): Folder = {
       val peer = LFolder[T]()
-      new Impl(tx.newHandle(peer), tx.system)
+      new Impl[T](tx.newHandle(peer), tx.system)
     }
   }
 

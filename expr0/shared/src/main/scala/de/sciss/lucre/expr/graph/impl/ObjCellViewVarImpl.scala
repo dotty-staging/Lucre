@@ -59,7 +59,7 @@ abstract class ObjCellViewVarImpl[T <: Txn[T], Dur[~ <: Txn[~]] <: LObj[~],
   final def apply()(implicit tx: T): Option[In] = repr.map(lower)
 
   final def update(v: Option[In])(implicit tx: T): Unit = {
-    val peer = v.flatMap(_.peer)
+    val peer = v.flatMap(_.peer[T])
     repr = peer
   }
 
@@ -68,29 +68,43 @@ abstract class ObjCellViewVarImpl[T <: Txn[T], Dur[~ <: Txn[~]] <: LObj[~],
 
   private final class Observation(attr: AttrMap[T], fun: T => Option[In] => Unit,
                                   tx0: T) extends Disposable[T] {
-    private[this] val ref = Ref(Option.empty[(Dur[T], Disposable[T])])
+    // XXX TODO --- what was I thinking here? Can we even store an LObj without tx.newHandle here?
+    // does not seem to make sense, as comparisons won't work under Confluent system
+    private[this] val ref = Ref(Option.empty[Dur[T]])
 
-    private def mkDurObs(d: Dur[T])(implicit tx: T): Disposable[T] =
-      d.changed.react { implicit tx => _ =>
-        val ex = lower(d)
-        fun(tx)(Some(ex))
-      }
+    // XXX TODO: this was bad. The `Ex[Obj]` should not fire if there are
+    // transformations of the underlying durable object. Because anything
+    // that might make sense, such as `Folder.size`, will anyway have to be
+    // observed directly.
+    // private[this] val ref = Ref(Option.empty[(Dur[T], Disposable[T])])
+    //
+    //private def mkDurObs(d: Dur[T])(implicit tx: T): Disposable[T] =
+    //  d.changed.react { implicit tx => _ =>
+    //    val ex = lower(d)
+    //    fun(tx)(Some(ex))
+    //  }
 
     private def setObj(repr: Repr)(implicit tx: T): Boolean =
       (ref(), repr) match {
         case (None, Some(dNew))  =>
-          val newObs = mkDurObs(dNew)
-          ref() = Some((dNew, newObs))
+          // val newObs = mkDurObs(dNew)
+          // ref() = Some((dNew, newObs))
+          ref() = Some(dNew)
           true
-        case (Some((_, oldObs)), None) =>
-          oldObs.dispose()
+
+        case (Some(_ /*, oldObs */), None) =>
+          // oldObs.dispose()
           ref() = None
           true
-        case (Some((dOld, oldObs)), Some(dNew)) if dOld != dNew =>
-          val newObs = mkDurObs(dNew)
-          ref() = Some((dNew, newObs))
-          oldObs.dispose()
+
+        // XXX TODO should apply Source instead; this may fire false positives
+        case (Some(dOld /*, oldObs */), Some(dNew)) if dOld != dNew =>
+          // val newObs = mkDurObs(dNew)
+          // ref() = Some((dNew, newObs))
+          ref() = Some(dNew)
+          // oldObs.dispose()
           true
+
         case _ => false
       }
 
@@ -113,7 +127,7 @@ abstract class ObjCellViewVarImpl[T <: Txn[T], Dur[~ <: Txn[~]] <: LObj[~],
 
     def dispose()(implicit tx: T): Unit = {
       attrObs.dispose()
-      ref.swap(None).foreach(_._2.dispose())
+      ref.swap(None) // .foreach(_._2.dispose())
     }
   }
 }
