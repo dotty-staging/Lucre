@@ -467,6 +467,8 @@ object Adjunct {
         }
         Some(b.result())
 
+      case i: scala.Int => Some(i :: Nil)
+
       case _ => None
     }
   }
@@ -687,6 +689,10 @@ object Adjunct {
         }
         Some(b.result())
 
+      case d: scala.Double  => Some(d :: Nil)
+      case f: scala.Float   => Some(f.toDouble :: Nil)
+      case i: scala.Int     => Some(i.toDouble :: Nil)
+
       case _ => None
     }
   }
@@ -843,6 +849,8 @@ object Adjunct {
           }
         }
         Some(b.result())
+
+      case x: scala.Boolean => Some(x :: Nil)
 
       case _ => None
     }
