@@ -100,7 +100,7 @@ object LucreExpr {
         QuinaryOp, QuinaryOp.LinLin, QuinaryOp.LinExp, QuinaryOp.ExpLin, QuinaryOp.ExpExp,
         Quote,
         Rand,
-        Rand2,
+        // Rand2,
         Random,
         RangeRand,
         Span, Span.From, Span.Until, Span.All, Span.Void,
