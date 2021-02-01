@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.Adjunct.{FromAny, HasDefault}
+import de.sciss.lucre.Adjunct.{FromAny, HasDefault, NumInt}
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
@@ -124,6 +124,44 @@ object Var extends ProductReader[Var[_]] {
     }
   }
 
+  object Inc extends ProductReader[Inc[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Inc[_] = {
+      require (arity == 1 && adj == 1)
+      val _vr   = in.readProductT[Var[Any]]()
+      implicit val _num: NumInt[Any] = in.readAdjunct()
+      new Inc(_vr)
+    }
+  }
+  final case class Inc[A](vr: Var[A])(implicit num: NumInt[A]) extends Act with ProductWithAdjuncts {
+    override def productPrefix: String = s"Var$$Inc"  // serialization
+
+    type Repr[T <: Txn[T]] = IAction[T]
+
+    override def adjuncts: List[Adjunct] = num :: Nil
+
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new IncExpanded(vr.expand[T])
+  }
+
+  object Dec extends ProductReader[Dec[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Dec[_] = {
+      require (arity == 1 && adj == 1)
+      val _vr   = in.readProductT[Var[Any]]()
+      implicit val _num: NumInt[Any] = in.readAdjunct()
+      new Dec(_vr)
+    }
+  }
+  final case class Dec[A](vr: Var[A])(implicit num: NumInt[A]) extends Act with ProductWithAdjuncts {
+    override def productPrefix: String = s"Var$$Dec"  // serialization
+
+    type Repr[T <: Txn[T]] = IAction[T]
+
+    override def adjuncts: List[Adjunct] = num :: Nil
+
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new DecExpanded(vr.expand[T])
+  }
+
   trait Expanded[T <: Txn[T], A] extends CaseDef.Expanded[T, A] with IExpr.Var[T, A]
 
   // ---- private ----
@@ -211,6 +249,26 @@ object Var extends ProductReader[Var[_]] {
     def changed: IChangeEvent[T, A] = this
   }
 
+  private final class IncExpanded[T <: Txn[T], A](vr: Var.Expanded[T, A])(implicit num: NumInt[A])
+    extends IActionImpl[T] {
+
+    def executeAction()(implicit tx: T): Unit = {
+      val vBefore = vr.value
+      val vNow    = num.plus(vBefore, num.one)
+      vr.update(new Const.Expanded(vNow))
+    }
+  }
+
+  private final class DecExpanded[T <: Txn[T], A](vr: Var.Expanded[T, A])(implicit num: NumInt[A])
+    extends IActionImpl[T] {
+
+    def executeAction()(implicit tx: T): Unit = {
+      val vBefore = vr.value
+      val vNow    = num.minus(vBefore, num.one)
+      vr.update(new Const.Expanded(vNow))
+    }
+  }
+
   private final case class Impl[A](init: Ex[A])(implicit val fromAny: FromAny[A]) extends Var[A] {
     override def productPrefix: String = "Var"  // serialization
 
@@ -231,6 +289,11 @@ object Var extends ProductReader[Var[_]] {
     Var(_init)(_fromAny)
   }
 }
-trait Var[A] extends Ex[A] with CaseDef[A] with Attr.Like[A] with ProductWithAdjuncts {
+trait Var[A] extends Ex[A] with CaseDef[A] with Attr.Like[A] with ProductWithAdjuncts { self =>
   type Repr[T <: Txn[T]] = Var.Expanded[T, A]
+
+  def transform(f: Ex[A] => Ex[A]): Act = set(f(self))
+  
+  def inc(implicit num: NumInt[A]): Act = Var.Inc(self)
+  def dec(implicit num: NumInt[A]): Act = Var.Dec(self)
 }

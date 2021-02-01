@@ -25,7 +25,7 @@ import scala.annotation.tailrec
 import scala.concurrent.stm.Ref
 
 object Attr extends ProductReader[Attr[_]] {
-  trait Like[A] {
+  trait Like[A] { self =>
     def update(in: Ex[A]): Control
     def set   (in: Ex[A]): Act
   }
@@ -286,8 +286,10 @@ object Attr extends ProductReader[Attr[_]] {
   }
   // N.B. we use a trait here not a case class, because
   // we reuse the interface elsewhere (SP -> Artifact)
-  trait WithDefault[A] extends Ex[A] with Like[A] {
+  trait WithDefault[A] extends Ex[A] with Like[A] { self =>
     def default: Ex[A]
+
+    def transform(f: Ex[A] => Ex[A]): Act = set(f(self))
   }
 
   private[lucre] final class Expanded[T <: Txn[T], A](key: String, attrView: CellView[T, Option[A]], tx0: T)

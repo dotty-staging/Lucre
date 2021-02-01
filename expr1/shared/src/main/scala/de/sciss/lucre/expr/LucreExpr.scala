@@ -123,7 +123,7 @@ object LucreExpr {
         UnOp.SpanLikeIsEmpty, UnOp.SpanLikeNonEmpty, UnOp.SpanLikeClosedOption, UnOp.SpanLikeStartOption,
         UnOp.SpanLikeStopOption, UnOp.SpanLikeLengthOption, UnOp.SpanStart, UnOp.SpanStop, UnOp.SpanLength,
         UnOp.FileParentOption, UnOp.FilePath, UnOp.FileName, UnOp.FileBase, UnOp.FileExtL,
-        Var, Var.Set, Var.Update,
+        Var, Var.Set, Var.Update, Var.Inc, Var.Dec,
       )
     })
   }
