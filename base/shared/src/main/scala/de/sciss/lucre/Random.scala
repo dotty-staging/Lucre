@@ -27,20 +27,20 @@ object Random {
  */
 trait Random[-T] {
   /** Generates a random `Boolean` value. */
-  def nextBoolean  ()(implicit tx: T): Boolean
+  def nextBoolean()(implicit tx: T): Boolean
 
   /** Generates a random `Double` value, uniformly distributed
    * between `0.0` (inclusive) and `1.0` (exclusive).
    */
-  def nextDouble   ()(implicit tx: T): Double
+  def nextDouble()(implicit tx: T): Double
 
   /** Generates a random `Float` value, uniformly distributed
    * between `0.0f` (inclusive) and `1.0f` (exclusive).
    */
-  def nextFloat    ()(implicit tx: T): Float
+  def nextFloat()(implicit tx: T): Float
 
   /** Generates a random `Int` value in the range `Int.MinValue` to `Int.MaxValue`. */
-  def nextInt      ()(implicit tx: T): Int
+  def nextInt()(implicit tx: T): Int
 
   /** Generates a random `Int` value in the range of 0 (inclusive) until the specified value `n` (exclusive). */
   def nextInt(n: Int)(implicit tx: T): Int
@@ -51,7 +51,7 @@ trait Random[-T] {
    * Because it uses the same algorithm as `java.util.Random`, with a seed of only 48 bits,
    * this function will not return all possible long values!
    */
-  def nextLong     ()(implicit tx: T): Long
+  def nextLong()(implicit tx: T): Long
 
   /** Resets the internal seed value to the given argument. */
   def setSeed(seed: Long)(implicit tx: T): Unit

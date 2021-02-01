@@ -229,6 +229,9 @@ object Adjunct {
     def one : A
 
     // random
+    /** A random number between zero (inclusive) and `a` (exclusive).
+      * `a` may be negative, but it must not be zero.
+      */
     def rand [Tx](a: A      )(implicit r: Random[Tx], tx: Tx): A
     def rand2[Tx](a: A      )(implicit r: Random[Tx], tx: Tx): A
     def rangeRand[Tx](a: A, b: A)(implicit r: Random[Tx], tx: Tx): A

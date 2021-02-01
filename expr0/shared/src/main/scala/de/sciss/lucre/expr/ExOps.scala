@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Adjunct.{Eq, HasDefault, Num, NumBool, NumDiv, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, ToTrig, Trig, BinaryOp => BinOp, QuaternaryOp => QuadOp, QuinaryOp => QuinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, Latch, Obj, Rand, Random, ToTrig, Trig, BinaryOp => BinOp, QuaternaryOp => QuadOp, QuinaryOp => QuinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 // XXX TODO --- use constant optimizations
@@ -64,7 +64,8 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def cosh     [B](implicit wd: WidenToDouble[A, B]): Ex[B] = UnOp(UnOp.Cosh      [A, B](), x)
   def tanh     [B](implicit wd: WidenToDouble[A, B]): Ex[B] = UnOp(UnOp.Tanh      [A, B](), x)
 
-  //  def rand      (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand  [A](), x)
+//  def rand(implicit num: Num[A], gen: Random): Ex[A] with Act = Rand(x, gen)
+
   //  def rand2     (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand2 [A](), x)
   //  def coin      (implicit num: NumDouble[A] ): Ex[num.Boolean] = UnOp(UnOp.Coin  [A, num.Boolean]()(num), x)
 

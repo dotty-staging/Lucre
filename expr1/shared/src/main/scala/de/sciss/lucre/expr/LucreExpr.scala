@@ -98,6 +98,8 @@ object LucreExpr {
         QuaternaryOp, QuaternaryOp.SeqMkString, QuaternaryOp.SeqPatch,
         QuinaryOp, QuinaryOp.LinLin, QuinaryOp.LinExp, QuinaryOp.ExpLin, QuinaryOp.ExpExp,
         Quote,
+        Rand,
+        Random,
         Span, Span.From, Span.Until, Span.All, Span.Void,
         StringFormat,
         TBinaryOp, TBinaryOp.And,
