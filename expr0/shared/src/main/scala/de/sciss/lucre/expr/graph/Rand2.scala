@@ -19,7 +19,7 @@ import de.sciss.lucre.expr.graph.impl.AbstractRand
 import de.sciss.lucre.expr.{Context, IAction}
 import de.sciss.lucre.{Adjunct, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn, Random => LRandom}
 
-object Rand extends ProductReader[Rand[_]] {
+object Rand2 extends ProductReader[Rand2[_]] {
   private final class Expanded[T <: Txn[T], A](hi: IExpr[T, A] /*, tx0: T*/)
                                               (implicit protected val targets: ITargets[T], num: Num[A], gen: LRandom[T])
     extends AbstractRand[T, A](num.zero) {
@@ -28,12 +28,12 @@ object Rand extends ProductReader[Rand[_]] {
 
     override protected def mkNewValue()(implicit tx: T): A = {
       val hiVal = hi.value
-      num.rand[T](hiVal)
+      num.rand2[T](hiVal)
     }
 
     override protected def pullNewValue(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): A = {
       val hiVal = pull.expr(hi)
-      num.rand[T](hiVal)
+      num.rand2[T](hiVal)
     }
 
 //    override def dispose()(implicit tx: T): Unit = {
@@ -42,16 +42,18 @@ object Rand extends ProductReader[Rand[_]] {
 //    }
   }
 
-  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Rand[_] = {
+  override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Rand2[_] = {
     require (arity == 2 && adj == 1)
     val _hi   = in.readEx[Any]()
     val _gen  = in.readProductT[Random]()
     implicit val _num: Num[Any] = in.readAdjunct()
-    new Rand(_hi, _gen)
+    new Rand2(_hi, _gen)
   }
 }
-/** A random number between zero (inclusive) and a given `hi` boundary (exclusive).
+/** A random number between `-hi` and `+hi`.
   * `hi` may be negative, but it must not be zero.
+  * The boundaries are inclusive
+  * for integer numbers. For floating point numbers, the `hi` bound is exclusive.
   *
   * This is both an expression and an action. The action draws a new random number,
   * the expression reports the last drawn value.
@@ -60,14 +62,14 @@ object Rand extends ProductReader[Rand[_]] {
   *
   * {{{
   *   val gen = Random()
-  *   val r100 = gen.rand(100)
+  *   val r44 = gen.rand2(4)
   *   Act(
-  *     r100, // draw new number
-  *     PrintLn("Random number: " ++ r100.toStr)  // print current value
+  *     r44, // draw new number
+  *     PrintLn("Random number (-4 to +4): " ++ r44.toStr)  // print current value
   *   )
   * }}}
   */
-final case class Rand[A](hi: Ex[A], gen: Random)(implicit num: Num[A])
+final case class Rand2[A](hi: Ex[A], gen: Random)(implicit num: Num[A])
   extends Ex[A] with Act with ProductWithAdjuncts {
 
   type Repr[T <: Txn[T]] = IExpr[T, A] with IAction[T]
@@ -75,5 +77,5 @@ final case class Rand[A](hi: Ex[A], gen: Random)(implicit num: Num[A])
   override def adjuncts: List[Adjunct] = num :: Nil
 
   override protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
-    new Rand.Expanded[T, A](hi.expand[T] /*, tx*/)(ctx.targets, num, gen.expand[T])
+    new Rand2.Expanded[T, A](hi.expand[T] /*, tx*/)(ctx.targets, num, gen.expand[T])
 }

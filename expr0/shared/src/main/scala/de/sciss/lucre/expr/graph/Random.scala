@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph
 
-import de.sciss.lucre.Adjunct.Num
+import de.sciss.lucre.Adjunct.{HasDefault, Num, NumDouble}
 import de.sciss.lucre.Txn.{peer => txPeer}
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.{Context, IControl}
@@ -72,5 +72,11 @@ object Random extends ProductReader[Random] {
 trait Random extends Control {
   type Repr[T <: Txn[T]] <: IControl[T] with LRandom[T]
 
-  def rand[A](hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = Rand(hi, this)
+  def rand      [A]           (hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = Rand          (hi, this)
+  def rand2     [A]           (hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = Rand2         (hi, this)
+  def rangeRand [A](lo: Ex[A], hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = RangeRand (lo, hi, this)
+
+  def coin[A, B](prob: Ex[A])
+                (implicit num: NumDouble[A] { type Boolean = B }, default: HasDefault[B]): Ex[num.Boolean] with Act =
+    Coin(prob, this)
 }
