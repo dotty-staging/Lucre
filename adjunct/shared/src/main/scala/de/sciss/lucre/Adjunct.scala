@@ -37,6 +37,7 @@ object Adjunct {
       case BooleanTop               .id => BooleanTop
       case BooleanSeqTop            .id => BooleanSeqTop
       case LongTop                  .id => LongTop
+      case LongSeqTop               .id => LongSeqTop
       case StringTop                .id => StringTop
       case Widen.idIdentity             => Widen.identity[Any]
       case Widen .intSeqSeq         .id => Widen .intSeqSeq
@@ -153,6 +154,7 @@ object Adjunct {
   trait EqLowPriority {
     implicit def intSeqTop   : IntSeqTop    .type = IntSeqTop
     implicit def doubleSeqTop: DoubleSeqTop .type = DoubleSeqTop
+    implicit def longSeqTop  : LongSeqTop   .type = LongSeqTop
   }
 
   object Eq extends EqLowPriority {
@@ -342,6 +344,7 @@ object Adjunct {
   trait ToNumLowPriority {
     implicit def intSeqTop    : IntSeqTop   .type = IntSeqTop
     implicit def doubleSeqTop : DoubleSeqTop.type = DoubleSeqTop
+    implicit def longSeqTop   : LongSeqTop  .type = LongSeqTop
   }
   object ToNum extends ToNumLowPriority {
     implicit def intTop       : IntTop      .type = IntTop
@@ -374,6 +377,7 @@ object Adjunct {
 //    implicit def stringTop  : StringTop .type = StringTop
     implicit def intSeqTop    : FromAny[Seq[Int     ]] = IntSeqTop
     implicit def doubleSeqTop : FromAny[Seq[Double  ]] = DoubleSeqTop
+    implicit def longSeqTop   : FromAny[Seq[Long    ]] = LongSeqTop
 //    implicit def booleanSeqTop: FromAny[Seq[Boolean ]] = BooleanSeqTop
 
     def empty[A]: FromAny[A] = anyEmpty.asInstanceOf[FromAny[A]]
@@ -406,6 +410,7 @@ object Adjunct {
     implicit def longTop      : LongTop   .type = LongTop
     implicit def intSeqTop    : HasDefault[Seq[Int]]    = IntSeqTop
     implicit def doubleSeqTop : HasDefault[Seq[Double]] = DoubleSeqTop
+    implicit def longSeqTop   : HasDefault[Seq[Long]]   = LongSeqTop
   }
   /** A type class saying some default value is provided for a type.
     * This is often a convention, such as "zero" for numeric types,
@@ -570,6 +575,51 @@ object Adjunct {
     // ---- HasDefault ----
 
     def defaultValue: Int = 0
+  }
+
+  object LongSeqTop
+    extends NumInt      [Seq[Long]]
+      with  SeqLikeNum  [Long]
+      with  SeqLikeToNum[Long]
+      with  FromAny     [Seq[Long]] {
+
+    final val id = 7
+
+    protected val peer: LongTop.type = LongTop
+
+    def not(a: In): In = unOp(a)(peer.not)
+
+    def and (a: In, b: In): In = binOp(a, b)(peer.and)
+    def or  (a: In, b: In): In = binOp(a, b)(peer.or)
+    def xor (a: In, b: In): In = binOp(a, b)(peer.xor)
+
+    def lcm (a: In, b: In): In = binOp(a, b)(peer.lcm)
+    def gcd (a: In, b: In): In = binOp(a, b)(peer.gcd)
+
+    def shiftLeft         (a: In, b: In): In = binOp(a, b)(peer.shiftLeft)
+    def shiftRight        (a: In, b: In): In = binOp(a, b)(peer.shiftRight)
+    def unsignedShiftRight(a: In, b: In): In = binOp(a, b)(peer.unsignedShiftRight)
+
+    def div (a: In, b: In): In = binOp(a, b)(peer.div)
+
+    def fromAny(in: Any): Option[Seq[scala.Long]] = in match {
+      case sq: Seq[_] =>
+        val b   = Seq.newBuilder[scala.Long]
+        val it  = sq.iterator
+        while (it.hasNext) {
+          it.next() match {
+            case i: scala.Long  => b += i
+            case i: scala.Int   => b += i.toLong
+            case _              => return None
+          }
+        }
+        Some(b.result())
+
+      case i: scala.Long => Some(i        :: Nil)
+      case i: scala.Int  => Some(i.toLong :: Nil)
+
+      case _ => None
+    }
   }
 
   object LongTop
