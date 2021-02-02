@@ -153,7 +153,7 @@ object Random extends ProductReader[Random] {
   final case class Until[A](hi: Ex[A], gen: Random)(implicit num: Num[A])
     extends Ex[A] with Act with ProductWithAdjuncts {
 
-    override def productPrefix: String = s"Random$$Util"  // serialization
+    override def productPrefix: String = s"Random$$Until"  // serialization
 
     type Repr[T <: Txn[T]] = IExpr[T, A] with IAction[T]
 
