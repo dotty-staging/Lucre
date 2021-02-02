@@ -87,7 +87,7 @@ object LucreExpr {
         ExSeq.FindLast, ExSeq.IndexWhere, ExSeq.Select, ExSeq.SelectFirst, ExSeq.TakeWhile,
         ExTuple2,
         Folder, Folder.Size, Folder.IsEmpty, Folder.NonEmpty, Folder.Children, Folder.Append, Folder.Prepend,
-        Folder.Drop, Folder.DropRight, Folder.Clear,
+        Folder.Drop, Folder.DropRight, Folder.Clear, Folder.Remove,
         IfThen, IfThenAct, Else, ElseAct, ElseIfThen, ElseIfThenAct,
         It,
         Latch,

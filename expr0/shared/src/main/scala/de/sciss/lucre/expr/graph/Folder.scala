@@ -361,6 +361,19 @@ object Folder extends ProductReader[Ex[Folder]] {
     }
   }
 
+  private final class RemoveExpanded[T <: Txn[T]](in: IExpr[T, Folder], elem: IExpr[T, Obj])
+    extends IActionImpl[T] {
+
+    def executeAction()(implicit tx: T): Unit = {
+      in.value.peer[T].foreach { f =>
+        val v   = elem.value
+        v.peer[T].foreach { obj =>
+          EditFolder.remove(f, obj)
+        }
+      }
+    }
+  }
+
   object Append extends ProductReader[Append[_]] {
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Append[_] = {
       require (arity == 2 && adj == 1)
@@ -460,16 +473,37 @@ object Folder extends ProductReader[Ex[Folder]] {
     protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
       new ClearExpanded(in.expand[T])
   }
+  
+  object Remove extends ProductReader[Remove] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Remove = {
+      require (arity == 2 && adj == 0)
+      val _in   = in.readEx[Folder]()
+      val _elem = in.readEx[Obj]()
+      new Remove(_in, _elem)
+    }
+  }
+  final case class Remove(in: Ex[Folder], elem: Ex[Obj]) extends Act {
+
+    override def productPrefix: String = s"Folder$$Remove" // serialization
+
+    type Repr[T <: Txn[T]] = IAction[T]
+
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
+      new RemoveExpanded(in.expand[T], elem.expand[T])
+  }
 
   implicit final class Ops(private val f: Ex[Folder]) extends AnyVal {
     /** Prepends an element to the folder */
     def prepend[A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Prepend(f, elem)
+    
     /** Appends an element to the folder */
     def append [A](elem: Ex[A])(implicit source: Obj.Source[A]): Act = Append (f, elem)
+    
     /** Drops the `n` first elements from the folder.
       * If the folder contains less elements than `n`, the folder will become empty.
       */
     def drop(n: Ex[Int]): Act = Drop(f, n)
+    
     /** Drops the `n` last elements from the folder.
       * If the folder contains less elements than `n`, the folder will become empty.
       */
@@ -482,6 +516,8 @@ object Folder extends ProductReader[Ex[Folder]] {
     def nonEmpty: Ex[Boolean]   = NonEmpty(f)
     
     def children: Ex[Seq[Obj]]  = Children(f)
+
+    def remove(obj: Ex[Obj]): Act = Remove(f, obj)
   }
 }
 /** The representation of a folder within an expression program.

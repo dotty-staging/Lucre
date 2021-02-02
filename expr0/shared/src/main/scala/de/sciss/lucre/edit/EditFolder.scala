@@ -15,8 +15,11 @@ package de.sciss.lucre
 package edit
 
 import de.sciss.equal.Implicits._
+import de.sciss.lucre.Txn.{peer => txPeer}
 import de.sciss.lucre.edit.UndoManager.{CannotRedoException, CannotUndoException}
 import de.sciss.lucre.edit.impl.BasicUndoableEdit
+
+import scala.concurrent.stm.Ref
 
 object EditFolder {
   def append[T <: Txn[T]](parent: Folder[T], child: Obj[T])
@@ -90,6 +93,22 @@ object EditFolder {
     val res   = parent(index)
     val edit  = new RemoveAt(parent, index, tx)
     undo.addEdit(edit)
+    res
+  }
+
+  def remove[T <: Txn[T]](parent: Folder[T], child: Obj[T])
+                           (implicit tx: T): Boolean =
+    UndoManager.find[T].fold(
+      removeDo  (parent, child) >= 0
+    ) { implicit undo =>
+      removeUndo(parent, child)
+    }
+
+  def removeUndo[T <: Txn[T]](parent: Folder[T], child: Obj[T])
+                               (implicit tx: T, undo: UndoManager[T]): Boolean = {
+    val edit  = new Remove(parent, child, tx)
+    val res   = edit.removed
+    if (res) undo.addEdit(edit)
     res
   }
 
@@ -240,6 +259,41 @@ object EditFolder {
       val found = removeAtDo(parentH(), index)
       val c     = childH()
       if (found !== c) throw new CannotRedoException(s"$name: element at given index is not $c")
+    }
+
+    def name: String = "Remove from Folder"
+  }
+
+  // ---- private: remove ----
+
+  private def removeDo[T <: Txn[T]](parent: Folder[T], child: Obj[T])(implicit tx: T): Int = {
+    val idx = parent.indexOf(child)
+    if (idx >= 0) parent.removeAt(idx)
+    idx
+  }
+
+  private final class Remove[T <: Txn[T]](parent0: Folder[T], child0: Obj[T], tx0: T)
+    extends BasicUndoableEdit[T] {
+
+    private[this] val parentH   = tx0.newHandle(parent0)
+    private[this] val childH    = tx0.newHandle(child0)
+    private[this] val indexH    = Ref(removeDo(parent0, child0)(tx0))
+
+    def removed(implicit tx: T): Boolean = indexH() >= 0
+
+    protected def undoImpl()(implicit tx: T): Unit = {
+      val p     = parentH ()
+      val c     = childH  ()
+      val index = indexH  ()
+      val sz    = p.size
+      if (sz <= index) throw new CannotUndoException(s"$name: contents has changed")
+      p.insert(index, c)
+    }
+
+    protected def redoImpl()(implicit tx: T): Unit = {
+      val found = removeDo(parentH(), childH())
+      if (found < 0) throw new CannotRedoException(s"$name: contents has changed")
+      indexH()    = found
     }
 
     def name: String = "Remove from Folder"
