@@ -21,7 +21,7 @@ abstract class ObjImplBase[In <: Txn[In], Repr[~ <: Txn[~]] <: LObj[~]](in: LSou
 
   type Peer[~ <: Txn[~]] = Repr[~]
 
-  private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Repr[T]] = {
+  def peer[T <: Txn[T]](implicit tx: T): Option[Repr[T]] = {
     require (tx.system == system)
     val out = in.asInstanceOf[LSource[T, Repr[T]]]
     Some(out())

@@ -65,7 +65,7 @@ object Obj {
 
     type Peer[~ <: Txn[~]] = LObj[~]
 
-    private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] =
+    def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] =
       None // throw new IllegalStateException("Object has not been created yet")
 
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Empty.type = {
@@ -470,5 +470,5 @@ object Obj {
 trait Obj {
   type Peer[~ <: Txn[~]] <: LObj[~]
 
-  private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]]
+  def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]]
 }

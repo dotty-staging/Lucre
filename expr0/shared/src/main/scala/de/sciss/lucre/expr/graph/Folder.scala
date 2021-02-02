@@ -41,7 +41,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   }
 
   private[lucre] case object Empty extends Folder {
-    private[lucre] def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] = None
+    def peer[T <: Txn[T]](implicit tx: T): Option[Peer[T]] = None
 
     override def toString: String = "Folder<empty>"
   }
