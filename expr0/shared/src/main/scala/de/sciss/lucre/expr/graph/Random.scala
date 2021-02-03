@@ -94,6 +94,11 @@ object Random extends ProductReader[Random] {
 
     type Repr[T <: Txn[T]] = IExpr[T, B] with IAction[T]
 
+    /** Convenient method that returns the `Coin` itself. This can be used
+      * for additional clarity when writing `Bang() ---> coin.update` instead of `Bang() ---> coin`.
+      */
+    def update: Act = this
+
     override def adjuncts: List[Adjunct] = num :: default :: Nil
 
     override protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
@@ -156,6 +161,11 @@ object Random extends ProductReader[Random] {
     override def productPrefix: String = s"Random$$Until"  // serialization
 
     type Repr[T <: Txn[T]] = IExpr[T, A] with IAction[T]
+
+    /** Convenient method that returns the `Until` itself. This can be used
+      * for additional clarity when writing `Bang() ---> x.update` instead of `Bang() ---> x`.
+      */
+    def update: Act = this
 
     override def adjuncts: List[Adjunct] = num :: Nil
 
@@ -226,6 +236,11 @@ object Random extends ProductReader[Random] {
     override def productPrefix: String = s"Random$$Range" // serialization
 
     type Repr[T <: Txn[T]] = IExpr[T, A] with IAction[T]
+
+    /** Convenient method that returns the `Range` itself. This can be used
+      * for additional clarity when writing `Bang() ---> x.update` instead of `Bang() ---> x`.
+      */
+    def update: Act = this
 
     override def adjuncts: List[Adjunct] = num :: Nil
 
