@@ -14,7 +14,7 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Adjunct.{Eq, HasDefault, Num, NumBool, NumDiv, NumDouble, NumFrac, NumInt, Ord, ScalarOrd, ToNum, Widen, Widen2, WidenToDouble}
-import de.sciss.lucre.expr.graph.{Act, Attr, Changed, Ex, Latch, Obj, ToTrig, Trig, BinaryOp => BinOp, QuaternaryOp => QuadOp, QuinaryOp => QuinOp, TernaryOp => TernOp, UnaryOp => UnOp}
+import de.sciss.lucre.expr.graph.{Attr, Changed, Ex, Latch, Obj, ToTrig, Trig, BinaryOp => BinOp, QuaternaryOp => QuadOp, QuinaryOp => QuinOp, TernaryOp => TernOp, UnaryOp => UnOp}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
 // XXX TODO --- use constant optimizations
@@ -92,17 +92,22 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def min[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Min[A, A1, A2](), x, that)
   def max[A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Max[A, A1, A2](), x, that)
 
+  /** Bit-wise AND */
   def &   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.And[A](), x, that)
+  /** Bit-wise OR */
   def |   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Or [A](), x, that)
+  /** Bit-wise XOR */
   def ^   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Xor[A](), x, that)
 
 //  /** Integer division */
 //  def /   (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.IDiv[A](), x, that)
 
-  /** Currently a shortcut for `&`. */
+  /** Logical AND */
   def &&  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.And   [A](), x, that)
-  /** Currently a shortcut for `|`. */
+  /** Logical OR */
   def ||  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.Or    [A](), x, that)
+  /** Logical XOR */
+  def ^^  (that: Ex[A])(implicit num: NumBool[A]): Ex[A] = BinOp(BinOp.Xor   [A](), x, that)
 
   def lcm (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Lcm   [A](), x, that)
   def gcd (that: Ex[A])(implicit num: NumInt [A]): Ex[A] = BinOp(BinOp.Gcd   [A](), x, that)
@@ -725,7 +730,7 @@ final class StringLiteralExOps(private val x: String) extends AnyVal {
 
   def size: Int /*Ex[Int]*/ = x.length
 
-  def nonEmpty: Boolean /*Ex[Boolean]*/ = !x.isEmpty
+  def nonEmpty: Boolean /*Ex[Boolean]*/ = x.nonEmpty
 
   def ++ (that: Ex[String]): Ex[String] = BinOp(BinOp.StringConcat(), x, that)
 

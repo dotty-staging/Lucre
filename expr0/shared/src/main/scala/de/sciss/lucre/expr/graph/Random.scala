@@ -292,13 +292,15 @@ object Random extends ProductReader[Random] {
 trait Random extends Control {
   type Repr[T <: Txn[T]] <: IControl[T] with LRandom[T]
 
-  def until[A](hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = Random.Until(hi, this)
+  def until[A](hi: Ex[A])(implicit num: Num[A]): Random.Until[A] =
+    Random.Until(hi, this)
 
 //  def rand2[A](hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = Rand2(hi, this)
 
-  def range[A](lo: Ex[A], hi: Ex[A])(implicit num: Num[A]): Ex[A] with Act = Random.Range(lo, hi, this)
+  def range[A](lo: Ex[A], hi: Ex[A])(implicit num: Num[A]): Random.Range[A] =
+    Random.Range(lo, hi, this)
 
   def coin[A, B](prob: Ex[A])
-                (implicit num: NumDouble[A] { type Boolean = B }, default: HasDefault[B]): Ex[num.Boolean] with Act =
+                (implicit num: NumDouble[A] { type Boolean = B }, default: HasDefault[B]): Random.Coin[A, B] =
     Random.Coin(prob, this)
 }
