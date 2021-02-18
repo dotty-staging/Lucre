@@ -58,7 +58,8 @@ object Expr /*extends expr.Ops*/ {
       def readIdentifiedAdjunct(in: DataInput): Adjunct = {
         val typeId  = in.readInt()
         val peer    = Obj.getType(typeId)
-        new ExObjBridgeImpl(peer.asInstanceOf[Expr.Type[Any, ({ type R[~ <: Txn[~]] <: Expr[~, Any] }) # R]])
+        val peerT: Expr.Type[scala.Any, Expr.Any] = peer.asInstanceOf
+        new ExObjBridgeImpl[scala.Any, Expr.Any](peerT)
       }
     }
 
@@ -68,7 +69,8 @@ object Expr /*extends expr.Ops*/ {
       def readIdentifiedAdjunct(in: DataInput): Adjunct = {
         val typeId  = in.readInt()
         val peer    = Obj.getType(typeId)
-        new ExSeqObjBridgeImpl(peer.asInstanceOf[Expr.Type[Vec[Any], ({ type R[~ <: Txn[~]] <: Expr[~, Vec[Any]] }) # R]])
+        val peerT: Expr.Type[Vec[scala.Any], Expr.AnyVec] = peer.asInstanceOf
+        new ExSeqObjBridgeImpl[scala.Any, Expr.AnyVec](peerT)
       }
     }
   }
@@ -108,8 +110,12 @@ object Expr /*extends expr.Ops*/ {
     def readConst[T <: Txn[T]](in: DataInput)(implicit tx: T): Const[T]
     def readVar  [T <: Txn[T]](in: DataInput)(implicit tx: T): Var  [T]
 
-    def tryParse(value: Any): Option[A]
+    def tryParse(value: scala.Any): Option[A]
   }
+
+  // work-around for https://github.com/lampepfl/dotty/issues/11464
+  private type Any    [T <: Txn[T]] = ({ type R[~ <: Txn[~]] <: Expr[~,     scala.Any ] }) # R[T]
+  private type AnyVec [T <: Txn[T]] = ({ type R[~ <: Txn[~]] <: Expr[~, Vec[scala.Any]] }) # R[T]
 }
 
 /** An expression is a computation that reduces to a single value of type `A`.
