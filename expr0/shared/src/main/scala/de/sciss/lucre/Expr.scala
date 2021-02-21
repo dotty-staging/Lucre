@@ -58,7 +58,7 @@ object Expr /*extends expr.Ops*/ {
       def readIdentifiedAdjunct(in: DataInput): Adjunct = {
         val typeId  = in.readInt()
         val peer    = Obj.getType(typeId)
-        val peerT: Expr.Type[scala.Any, Expr.Any] = peer.asInstanceOf
+        val peerT   = peer.asInstanceOf[Expr.Type[scala.Any, Expr.Any]]
         new ExObjBridgeImpl[scala.Any, Expr.Any](peerT)
       }
     }
@@ -69,7 +69,7 @@ object Expr /*extends expr.Ops*/ {
       def readIdentifiedAdjunct(in: DataInput): Adjunct = {
         val typeId  = in.readInt()
         val peer    = Obj.getType(typeId)
-        val peerT: Expr.Type[Vec[scala.Any], Expr.AnyVec] = peer.asInstanceOf
+        val peerT   = peer.asInstanceOf[Expr.Type[Vec[scala.Any], Expr.AnyVec]]
         new ExSeqObjBridgeImpl[scala.Any, Expr.AnyVec](peerT)
       }
     }

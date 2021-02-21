@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.4.2"
+lazy val projectVersion   = "4.4.3"
 lazy val mimaVersion      = "4.4.0"
 
 lazy val deps = new {
