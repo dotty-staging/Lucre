@@ -1,7 +1,7 @@
 # Lucre
 
 [![Build Status](https://github.com/Sciss/Lucre/workflows/Scala%20CI/badge.svg?branch=main)](https://github.com/Sciss/Lucre/actions?query=workflow%3A%22Scala+CI%22)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre_2.13)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre-core_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucre-core_2.13)
 
 ## statement
 
