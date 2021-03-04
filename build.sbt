@@ -50,20 +50,20 @@ lazy val commonSettings = Seq(
     "-deprecation", "-unchecked", "-feature", "-encoding", "utf8"
   ),
   scalacOptions ++= {
-    if (isDotty.value) Nil else Seq("-Xlint", "-Xsource:2.13")
+    if (scalaVersion.value.startsWith("3")) Nil else Seq("-Xlint", "-Xsource:2.13")
   },
   scalacOptions in (Compile, compile) ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
-    val dot    = isDotty.value
-    // note: https://github.com/lampepfl/dotty/issues/8634 
+    val dot    = scalaVersion.value.startsWith("3")
+    // note: https://github.com/lampepfl/dotty/issues/8634
     if (!dot && jdkGt8) Seq("-release", "8") else Nil
   }, // JDK >8 breaks API; skip scala-doc
   scalacOptions      ++= {
-    val dot    = isDotty.value
+    val dot    = scalaVersion.value.startsWith("3")
     if (dot || (loggingEnabled && isSnapshot.value)) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
   sources in (Compile, doc) := {
-    if (isDotty.value) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
+    if (scalaVersion.value.startsWith("3")) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
   },
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
