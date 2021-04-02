@@ -18,7 +18,7 @@ lazy val deps = new {
   }
   val expr = new {
     def equal: String = core.equal
-    val asyncFile     = "0.1.2"
+    val asyncFile     = "0.1.3"
     val span          = "2.0.2"
   }
   val confluent = new {
@@ -28,12 +28,12 @@ lazy val deps = new {
     val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest     = "3.2.4"
+    val scalaTest     = "3.2.7"
   }
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq("3.0.0-RC1", "2.13.4", "2.12.13"),
+  crossScalaVersions  := Seq("3.0.0-RC2", "2.13.5", "2.12.13"),
 )
 
 // sonatype plugin requires that these are in global
@@ -45,7 +45,7 @@ lazy val commonSettings = Seq(
 //  organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.13.4",
+  scalaVersion        := "2.13.5",
   scalacOptions      ++= Seq(
     "-deprecation", "-unchecked", "-feature", "-encoding", "utf8"
   ),
@@ -149,7 +149,7 @@ lazy val data = crossProject(JVMPlatform, JSPlatform).in(file("data"))
 
 lazy val core = crossProject(JVMPlatform, JSPlatform).in(file("core"))
   .dependsOn(data)
-  .enablePlugins(BuildInfoPlugin)
+//  .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
@@ -160,15 +160,15 @@ lazy val core = crossProject(JVMPlatform, JSPlatform).in(file("core"))
       "de.sciss"      %%% "model"     % deps.core.model,
       "org.scala-stm" %%% "scala-stm" % deps.core.scalaSTM
     ),
-    buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
-      BuildInfoKey.map(homepage) {
-        case (k, opt) => k -> opt.get
-      },
-      BuildInfoKey.map(licenses) {
-        case (_, Seq((lic, _))) => "license" -> lic
-      }
-    ),
-    buildInfoPackage := "de.sciss.lucre",
+//    buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
+//      BuildInfoKey.map(homepage) {
+//        case (k, opt) => k -> opt.get
+//      },
+//      BuildInfoKey.map(licenses) {
+//        case (_, Seq((lic, _))) => "license" -> lic
+//      }
+//    ),
+//    buildInfoPackage := "de.sciss.lucre",
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
