@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.4.3"
+lazy val projectVersion   = "4.4.4"
 lazy val mimaVersion      = "4.4.0"
 
 lazy val deps = new {
@@ -14,7 +14,7 @@ lazy val deps = new {
     val equal         = "0.1.6"
     val log           = "0.1.1"
     val model         = "0.3.5"
-    val scalaSTM      = "0.11.0"
+    val scalaSTM      = "0.11.1"
   }
   val expr = new {
     def equal: String = core.equal
@@ -149,7 +149,7 @@ lazy val data = crossProject(JVMPlatform, JSPlatform).in(file("data"))
 
 lazy val core = crossProject(JVMPlatform, JSPlatform).in(file("core"))
   .dependsOn(data)
-//  .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
@@ -160,15 +160,15 @@ lazy val core = crossProject(JVMPlatform, JSPlatform).in(file("core"))
       "de.sciss"      %%% "model"     % deps.core.model,
       "org.scala-stm" %%% "scala-stm" % deps.core.scalaSTM
     ),
-//    buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
-//      BuildInfoKey.map(homepage) {
-//        case (k, opt) => k -> opt.get
-//      },
-//      BuildInfoKey.map(licenses) {
-//        case (_, Seq((lic, _))) => "license" -> lic
-//      }
-//    ),
-//    buildInfoPackage := "de.sciss.lucre",
+    buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
+      BuildInfoKey.map(homepage) {
+        case (k, opt) => k -> opt.get
+      },
+      BuildInfoKey.map(licenses) {
+        case (_, Seq((lic, _))) => "license" -> lic
+      }
+    ),
+    buildInfoPackage := "de.sciss.lucre",
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
