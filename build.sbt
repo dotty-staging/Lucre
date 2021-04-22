@@ -28,12 +28,12 @@ lazy val deps = new {
     val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest     = "3.2.7"
+    val scalaTest     = "3.2.8"
   }
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq("3.0.0-RC2", "2.13.5", "2.12.13"),
+  crossScalaVersions  := Seq("3.0.0-RC3", "2.13.5", "2.12.13"),
 )
 
 // sonatype plugin requires that these are in global
