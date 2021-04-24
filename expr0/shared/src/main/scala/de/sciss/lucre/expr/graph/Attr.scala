@@ -195,11 +195,12 @@ object Attr extends ProductReader[Attr[_]] {
           val firstP  = bridge.contextCellView[T](key)
           val secondP = bridge.cellView(self, key)
           val opt: Option[Form[T]] = ctx.attr.get(key)
-          val firstVr = opt match {
-            case Some(ex: Var.Expanded[T, _]) => Some(ex)
-            case _                            => None
+          opt match {
+            case Some(ex: Var.Expanded[T, _]) =>
+              new FlatVarCellView(firstP, Some(ex), secondP)
+            case _ =>
+              new FlatVarCellView(firstP, None, secondP)
           }
-          new FlatVarCellView(firstP, firstVr, secondP)
 
         case None =>  // if there is no 'self', simply give up on the idea of attributes
           CellView.Var.empty
