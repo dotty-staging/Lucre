@@ -28,12 +28,12 @@ lazy val deps = new {
     val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val scalaTest     = "3.2.8"
+    val scalaTest     = "3.2.9"
   }
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq("3.0.0-RC3", "2.13.5", "2.12.13"),
+  crossScalaVersions  := Seq("3.0.0", "2.13.5", "2.12.13"),
 )
 
 // sonatype plugin requires that these are in global
@@ -50,21 +50,22 @@ lazy val commonSettings = Seq(
     "-deprecation", "-unchecked", "-feature", "-encoding", "utf8"
   ),
   scalacOptions ++= {
-    if (isDotty.value) Nil else Seq("-Xlint", "-Xsource:2.13")
+    // if (isDotty.value) Nil else 
+    Seq("-Xlint", "-Xsource:2.13")
   },
   scalacOptions in (Compile, compile) ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
-    val dot    = isDotty.value
+    // val dot    = isDotty.value
     // note: https://github.com/lampepfl/dotty/issues/8634 
-    if (!dot && jdkGt8) Seq("-release", "8") else Nil
+    if (/* !dot && */ jdkGt8) Seq("-release", "8") else Nil
   }, // JDK >8 breaks API; skip scala-doc
   scalacOptions      ++= {
-    val dot    = isDotty.value
+    val dot = scalaVersion.value.startsWith("3.") // isDotty.value
     if (dot || (loggingEnabled && isSnapshot.value)) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
-  sources in (Compile, doc) := {
-    if (isDotty.value) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
-  },
+  // sources in (Compile, doc) := {
+  //   if (isDotty.value) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
+  // },
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false,
   concurrentRestrictions in Global ++= Seq(
