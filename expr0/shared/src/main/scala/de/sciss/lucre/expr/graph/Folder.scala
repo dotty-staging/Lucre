@@ -302,7 +302,9 @@ object Folder extends ProductReader[Ex[Folder]] {
     extends IActionImpl[T] {
 
     def executeAction()(implicit tx: T): Unit = {
-      in.value.peer[T].foreach { f =>
+      val inV     = in.value
+      val fObjOpt = inV.peer[T]
+      fObjOpt.foreach { f =>
         val v   = elem.value
         val obj = source.toObj[T](v)
         EditFolder.append(f, obj)
@@ -390,8 +392,11 @@ object Folder extends ProductReader[Ex[Folder]] {
 
     type Repr[T <: Txn[T]] = IAction[T]
 
-    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
-      new AppendExpanded(in.expand[T], elem.expand[T])
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val inEx    = in  .expand[T]
+      val elemEx  = elem.expand[T]
+      new AppendExpanded(inEx, elemEx)
+    }
 
     def adjuncts: List[Adjunct] = source :: Nil
   }

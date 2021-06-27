@@ -5,6 +5,11 @@ import de.sciss.lucre
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+/*
+
+    testOnly de.sciss.lucre.expr.Issue53
+
+ */
 class Issue53 extends AnyFlatSpec with Matchers {
   LucreExpr.init()
 

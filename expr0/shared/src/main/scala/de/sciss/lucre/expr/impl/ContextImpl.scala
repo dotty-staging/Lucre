@@ -54,7 +54,11 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
   def nested[A](it: It.Expanded[T, _])(body: => A)(implicit tx: T): (A, Disposable[T]) = {
     val tOld    = terminals()
     val n       = new Nested(it.ref, level = tOld.size)
-    terminals() = tOld :+ n // n :: tOld
+    // place it here additionally; it will already be in the source map of the current nesting level,
+    // but it will be found first in the deeper level, as we search from inner to outer
+//    n.sourceMap += (it.ref -> it)
+//    terminals() = n :: tOld
+    terminals() = tOld :+ n
     val res     = body
     terminals() = tOld
     markers.transform(_ - n.level)
@@ -78,6 +82,7 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
 
   final def visit[U <: Disposable[T]](ref: AnyRef, init: => U)(implicit tx: T): U = {
     val t = terminals()
+    // check if we refer to the iterator variable (Nested.ref is the ref of the corresponding It)
     if (t.nonEmpty) t.find(_.ref == ref) match {
       case Some(n)  => markers.transform(_ + n.level)
       case None     =>
@@ -89,10 +94,13 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
         @tailrec
         def loop(rem: List[Nested]): U =
           rem match {
-            case head :: tail =>
-              head.sourceMap.get(ref) match {
-                case Some(res)  => res.asInstanceOf[U]
-                case None       => loop(tail)
+            case n :: tail =>
+              n.sourceMap.get(ref) match {
+                case Some(res) =>
+                  markers.transform(_ + n.level)
+                  res.asInstanceOf[U]
+                case None =>
+                  loop(tail)
               }
 
             case Nil =>
@@ -105,6 +113,8 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
               } else {
                 val m         = newMarkers.max
                 val term      = terminals()   // help dotty
+                // -- note: now reverse sorted
+//                val n         = term.find(_.level == m).get
                 val n         = term(m)
                 n.sourceMap  += (ref -> exp)
                 markers()     = oldMarkers union newMarkers

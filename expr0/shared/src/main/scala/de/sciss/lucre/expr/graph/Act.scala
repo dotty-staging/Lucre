@@ -54,8 +54,10 @@ object Act extends ProductReader[Act] {
 
     override def productPrefix = "Act" // serialization
 
-    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
-      new ExpandedSeq(xs.map(_.expand[T]))
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val xsEx = xs.map(_.expand[T])
+      new ExpandedSeq(xsEx)
+    }
   }
 
   object Link extends ProductReader[Link] {

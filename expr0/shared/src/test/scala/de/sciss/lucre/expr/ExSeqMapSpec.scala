@@ -41,7 +41,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         val selfH = tx.newHandle(self)
         implicit val ctx: Context[T] = Context(Some(selfH))
         self.attr.put("in", DoubleVector.newConst(Vector(0.0, 3.0, 6.0)))
-        g.expand.initControl()
+        g.expand[T].initControl()
         self.attr.put("in", DoubleVector.newConst(Vector(-3.0, 0.0)))
       }
     }
@@ -91,7 +91,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         val vr2 = DoubleObj   .newVar[T](0.0)
         self.attr.put("in1", vr1)
         self.attr.put("in2", vr2)
-        g.expand.initControl()
+        g.expand[T].initControl()
         vr1() = Vector(1.0, 2.0, 3.0)
 //        de.sciss.lucre.event.showLog = true
         vr2() = 10.0
@@ -148,7 +148,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
         implicit val ctx: Context[T] = Context(Some(selfH))
         val vr = IntVector.newVar[T](Vector(3, 5, 8))
         self.attr.put("in", vr)
-        g.expand.initControl()
+        g.expand[T].initControl()
         vr() = Vector(13, 21)
         vr() = Vector(13, 20) // ensures that we don't cache first value only
         vr() = Vector()
