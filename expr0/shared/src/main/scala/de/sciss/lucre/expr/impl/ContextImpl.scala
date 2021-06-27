@@ -56,9 +56,9 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
     val n       = new Nested(it.ref, level = tOld.size)
     // place it here additionally; it will already be in the source map of the current nesting level,
     // but it will be found first in the deeper level, as we search from inner to outer
-//    n.sourceMap += (it.ref -> it)
-//    terminals() = n :: tOld
-    terminals() = tOld :+ n
+    n.sourceMap += (it.ref -> it)
+    terminals() = n :: tOld
+//    terminals() = tOld :+ n
     val res     = body
     terminals() = tOld
     markers.transform(_ - n.level)
@@ -114,8 +114,8 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
                 val m         = newMarkers.max
                 val term      = terminals()   // help dotty
                 // -- note: now reverse sorted
-//                val n         = term.find(_.level == m).get
-                val n         = term(m)
+                val n         = term.find(_.level == m).get
+//                val n         = term(m)
                 n.sourceMap  += (ref -> exp)
                 markers()     = oldMarkers union newMarkers
               }
