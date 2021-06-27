@@ -17,22 +17,37 @@ import de.sciss.lucre.expr.graph.{Attr, Ex}
 
 object Model {
   implicit final class Ops[A](private val m: Model[A]) extends AnyVal {
-    def <--> (attr: Attr.WithDefault[A]): Unit = {
-      this <--- attr
-      this ---> attr
+    @deprecated("Use <-> instead", since = "4.4.5")
+    def <--> (attr: Attr.WithDefault[A]): Unit = <->(attr)
+
+    def <-> (attr: Attr.WithDefault[A]): Unit = {
+      this <-- attr
+      this --> attr
     }
 
-    def ---> (attr: Attr.Like[A]): Unit = {
-      m.apply() ---> attr
+    @deprecated("Use --> instead", since = "4.4.5")
+    def ---> (attr: Attr.Like[A]): Unit = --> (attr)
+
+    def --> (attr: Attr.Like[A]): Unit = {
+      m.apply() --> attr
     }
 
-    def ---> (that: Model[A]): Unit =
-      that <--- m
+    @deprecated("Use --> instead", since = "4.4.5")
+    def ---> (that: Model[A]): Unit = --> (that)
 
-    def <--- (value: Ex[A]): Unit =
+    def --> (that: Model[A]): Unit =
+      that <-- m
+
+    @deprecated("Use <-- instead", since = "4.4.5")
+    def <--- (value: Ex[A]): Unit = <-- (value)
+
+    def <-- (value: Ex[A]): Unit =
       m.update(value)
 
-    def <--- (that: Model[A]): Unit =
+    @deprecated("Use <-- instead", since = "4.4.5")
+    def <--- (that: Model[A]): Unit = <-- (that)
+
+    def <-- (that: Model[A]): Unit =
       m.update(that())
   }
 }

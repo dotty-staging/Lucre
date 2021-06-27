@@ -103,10 +103,13 @@ class BiGroupSpec extends ConfluentEventSpec {
 
         // println(g.debugPrint)
 
-        (-1L +: manual).sliding(2, 1).foreach { case Vec(pred, succ) =>
-          // println(s"Querying ${pred+1} - expecting $succ")
-          val query = g.eventAfter(pred)
-          assert(query === Some(succ))
+        (-1L +: manual).sliding(2, 1).foreach {
+          case Vec(pred, succ) =>
+            // println(s"Querying ${pred+1} - expecting $succ")
+            val query = g.eventAfter(pred)
+            assert(query === Some(succ))
+
+          case _ => assert(false)
         }
       }
     }

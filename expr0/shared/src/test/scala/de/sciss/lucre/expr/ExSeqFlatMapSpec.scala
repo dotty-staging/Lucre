@@ -18,7 +18,7 @@ class ExSeqFlatMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutp
       val names0 = children.flatMap { obj =>
         obj.attr[String]("name") // .getOrElse("?")
       }
-      LoadBang() ---> PrintLn(names0.mkString(" "))
+      LoadBang() --> PrintLn(names0.mkString(" "))
     }
 
     implicit val system: S = InMemory()

@@ -24,10 +24,10 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
       val b   = LoadBang()
       val c   = out /*in*/.changed
       val t   = b | c
-      t ---> PrintLn(Const("out = ") ++ out.mkString(", "))
-      //    t ---> PrintLn(Const("out[0] = ") ++ out.applyOption(0).toStr)
-      //    t ---> PrintLn(Const("out[1] = ") ++ out.applyOption(1).toStr)
-      //    t ---> PrintLn(Const("out[2] = ") ++ out.applyOption(2).toStr)
+      t --> PrintLn(Const("out = ") ++ out.mkString(", "))
+      //    t --> PrintLn(Const("out[0] = ") ++ out.applyOption(0).toStr)
+      //    t --> PrintLn(Const("out[1] = ") ++ out.applyOption(1).toStr)
+      //    t --> PrintLn(Const("out[2] = ") ++ out.applyOption(2).toStr)
     }
 
     implicit val system: S = InMemory()
@@ -71,10 +71,10 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
       val b   = LoadBang()
       val c   = out.changed
       val t   = b | c
-      t ---> PrintLn(Const("out = ") ++ out.mkString(", "))
-      //    t ---> PrintLn(Const("out[0] = ") ++ out.applyOption(0).toStr)
-      //    t ---> PrintLn(Const("out[1] = ") ++ out.applyOption(1).toStr)
-      //    t ---> PrintLn(Const("out[2] = ") ++ out.applyOption(2).toStr)
+      t --> PrintLn(Const("out = ") ++ out.mkString(", "))
+      //    t --> PrintLn(Const("out[0] = ") ++ out.applyOption(0).toStr)
+      //    t --> PrintLn(Const("out[1] = ") ++ out.applyOption(1).toStr)
+      //    t --> PrintLn(Const("out[2] = ") ++ out.applyOption(2).toStr)
     }
 
     implicit val system: S = InMemory()
@@ -133,7 +133,7 @@ class ExSeqMapSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
       val b   = LoadBang()
       val c   = out.changed
       val t   = b | c
-      t ---> PrintLn(out.mkString("out = [", ", ", "]"))
+      t --> PrintLn(out.mkString("out = [", ", ", "]"))
     }
 
     implicit val system: S = InMemory()

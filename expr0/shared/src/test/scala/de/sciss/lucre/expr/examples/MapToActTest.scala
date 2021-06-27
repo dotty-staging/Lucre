@@ -33,7 +33,7 @@ object MapToActTest extends App {
     }
     val act = actOpt // .orNop
 
-    opt.changed ---> act
+    opt.changed --> act
   }
 
   implicit val system: S = InMemory()

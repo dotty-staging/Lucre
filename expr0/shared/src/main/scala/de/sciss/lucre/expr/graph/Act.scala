@@ -40,7 +40,7 @@ object Act extends ProductReader[Act] {
   def link(f: Act => Act): Act = {
     val in  = Trig()
     val out = f(in)
-    in ---> out
+    in --> out
     in
   }
 

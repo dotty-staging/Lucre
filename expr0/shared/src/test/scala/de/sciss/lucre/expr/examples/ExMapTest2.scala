@@ -21,7 +21,7 @@ object ExMapTest2 extends App {
   val g = Graph {
     val fAttr = "foo".attr[Int]
     val m = fAttr.map(_ * 2)
-    m.changed ---> PrintLn(m.toStr)
+    m.changed --> PrintLn(m.toStr)
   }
 
   implicit val system: S = InMemory()

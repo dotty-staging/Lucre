@@ -47,18 +47,17 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
   private[this] val terminals = TxnLocal(List.empty[Nested])
   private[this] val markers   = TxnLocal(Set .empty[Int   ])
 
-  private final class Nested(val ref: AnyRef, val level: Int) {
+  private final class Nested(/*val ref: AnyRef,*/ val level: Int) {
     var sourceMap: SourceMap = Map.empty
   }
 
   def nested[A](it: It.Expanded[T, _])(body: => A)(implicit tx: T): (A, Disposable[T]) = {
     val tOld    = terminals()
-    val n       = new Nested(it.ref, level = tOld.size)
+    val n       = new Nested(/*it.ref,*/ level = tOld.size)
     // place it here additionally; it will already be in the source map of the current nesting level,
     // but it will be found first in the deeper level, as we search from inner to outer
     n.sourceMap += (it.ref -> it)
     terminals() = n :: tOld
-//    terminals() = tOld :+ n
     val res     = body
     terminals() = tOld
     markers.transform(_ - n.level)
@@ -81,49 +80,42 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
   }
 
   final def visit[U <: Disposable[T]](ref: AnyRef, init: => U)(implicit tx: T): U = {
-    val t = terminals()
-    // check if we refer to the iterator variable (Nested.ref is the ref of the corresponding It)
-    if (t.nonEmpty) t.find(_.ref == ref) match {
-      case Some(n)  => markers.transform(_ + n.level)
-      case None     =>
-    }
+    @tailrec
+    def loop(rem: List[Nested]): U =
+      rem match {
+        case n :: tail =>
+          n.sourceMap.get(ref) match {
+            case Some(res) =>
+              markers.transform(_ + n.level)
+              res.asInstanceOf[U]
+            case None =>
+              loop(tail)
+          }
 
-    globalMap().get(ref) match {
-      case Some(res) => res.asInstanceOf[U]  // not so pretty...
-      case None =>
-        @tailrec
-        def loop(rem: List[Nested]): U =
-          rem match {
-            case n :: tail =>
-              n.sourceMap.get(ref) match {
-                case Some(res) =>
-                  markers.transform(_ + n.level)
-                  res.asInstanceOf[U]
-                case None =>
-                  loop(tail)
-              }
-
-            case Nil =>
+        case Nil =>
+          globalMap().get(ref) match {
+            case Some(res) => res.asInstanceOf[U] // not so pretty...
+            case None =>
               val oldMarkers  = markers.swap(Set.empty)
               val exp         = init
               val newMarkers  = markers()
               if (newMarkers.isEmpty) {
                 globalMap.transform(_ + (ref -> exp))
-                markers()     = oldMarkers
+                markers() = oldMarkers
               } else {
-                val m         = newMarkers.max
-                val term      = terminals()   // help dotty
+                val m = newMarkers.max
+                val term = terminals() // help dotty
                 // -- note: now reverse sorted
-                val n         = term.find(_.level == m).get
-//                val n         = term(m)
-                n.sourceMap  += (ref -> exp)
-                markers()     = oldMarkers union newMarkers
+                val n = term.find(_.level == m).get
+                n.sourceMap += (ref -> exp)
+                markers() = oldMarkers union newMarkers
               }
               exp
           }
+      }
 
-        loop(t)
-    }
+    val t = terminals()
+    loop(t)
   }
 
   def selfOption(implicit tx: T): Option[Obj[T]] = selfH.map(_.apply())

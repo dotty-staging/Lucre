@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.4.5-SNAPSHOT"
+lazy val projectVersion   = "4.4.5"
 lazy val mimaVersion      = "4.4.0"
 
 lazy val deps = new {
@@ -28,12 +28,13 @@ lazy val deps = new {
     val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
+    val locales       = "1.2.0"   // java.util.Locale for Scala.js (tests)
     val scalaTest     = "3.2.9"
   }
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq("3.0.0", "2.13.5", "2.12.13"),
+  crossScalaVersions  := Seq("3.0.0", "2.13.6", "2.12.13"),
 )
 
 // sonatype plugin requires that these are in global
@@ -44,8 +45,8 @@ lazy val commonSettings = Seq(
 //  version             := projectVersion,
 //  organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
-  homepage            := Some(url(s"https://git.iem.at/sciss/$baseName")),
-  scalaVersion        := "2.13.5",
+  homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
+  scalaVersion        := "2.13.6",
   scalacOptions      ++= Seq(
     "-deprecation", "-unchecked", "-feature", "-encoding", "utf8"
   ),
@@ -53,7 +54,7 @@ lazy val commonSettings = Seq(
     // if (isDotty.value) Nil else 
     Seq("-Xlint", "-Xsource:2.13")
   },
-  scalacOptions in (Compile, compile) ++= {
+  Compile / compile / scalacOptions ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
     // val dot    = isDotty.value
     // note: https://github.com/lampepfl/dotty/issues/8634 
@@ -63,12 +64,9 @@ lazy val commonSettings = Seq(
     val dot = scalaVersion.value.startsWith("3.") // isDotty.value
     if (dot || (loggingEnabled && isSnapshot.value)) Nil else Seq("-Xelide-below", "INFO")     // elide debug logging!
   },
-  // sources in (Compile, doc) := {
-  //   if (isDotty.value) Nil else (sources in (Compile, doc)).value // dottydoc is pretty much broken
-  // },
-  testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
-  parallelExecution in Test := false,
-  concurrentRestrictions in Global ++= Seq(
+  Test / testOptions += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
+  Test / parallelExecution := false,
+  Global / concurrentRestrictions ++= Seq(
     Tags.limitAll(2), Tags.limit(Tags.Test, 1) // with cross-builds we otherwise get OutOfMemoryError
   ),
   libraryDependencies += {
@@ -99,9 +97,9 @@ lazy val root = project.withId(baseNameL).in(file("."))
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
-    publishArtifact in (Compile, packageBin) := false, // there are no binaries
-    publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
-    publishArtifact in (Compile, packageSrc) := false, // there are no sources
+    Compile / packageBin / publishArtifact := false, // there are no binaries
+    Compile / packageDoc / publishArtifact := false, // there are no javadocs
+    Compile / packageSrc / publishArtifact := false, // there are no sources
     mimaFailOnNoPrevious := false
   )
 
@@ -198,6 +196,9 @@ lazy val expr1 = crossProject(JVMPlatform, JSPlatform).in(file("expr1"))
     name := s"$baseName-expr1",
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr1" % mimaVersion)
   )
+  .jsSettings(
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % deps.test.locales % Test
+  )
 
 lazy val expr = crossProject(JVMPlatform, JSPlatform).in(file("expr"))
   .dependsOn(expr0, expr1)
@@ -237,9 +238,9 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform).in(file("tests"))
   .jvmSettings(commonJvmSettings)
   .settings(
     name := s"$baseName-tests",
-    publishArtifact in (Compile, packageBin) := false, // there are no binaries
-    publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
-    publishArtifact in (Compile, packageSrc) := false, // there are no sources
+    Compile / packageBin / publishArtifact := false, // there are no binaries
+    Compile / packageDoc / publishArtifact := false, // there are no javadocs
+    Compile / packageSrc / publishArtifact := false, // there are no sources
   )
 
 // XXX TODO. we could use `.jvmConfigure(_.dependsOn(bdb))` for `tests` instead
@@ -250,9 +251,9 @@ lazy val testsJVM = project.in(file("testsJVM"))
   .settings(commonJvmSettings)
   .settings(
     name := s"$baseName-testsJVM",
-    publishArtifact in (Compile, packageBin) := false, // there are no binaries
-    publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
-    publishArtifact in (Compile, packageSrc) := false, // there are no sources
+    Compile / packageBin / publishArtifact := false, // there are no binaries
+    Compile / packageDoc / publishArtifact := false, // there are no javadocs
+    Compile / packageSrc / publishArtifact := false, // there are no sources
   )
 
 lazy val loggingEnabled = true  // only effective for snapshot versions
@@ -261,7 +262,7 @@ lazy val loggingEnabled = true  // only effective for snapshot versions
 
 lazy val publishSettings = Seq(
   publishMavenStyle := true,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := { _ => false },
   developers := List(
     Developer(
@@ -272,8 +273,8 @@ lazy val publishSettings = Seq(
     )
   ),
   scmInfo := {
-    val h = "git.iem.at"
-    val a = s"sciss/$baseName"
+    val h = "github.com"
+    val a = s"Sciss/$baseName"
     Some(ScmInfo(url(s"https://$h/$a"), s"scm:git@$h:$a.git"))
   },
 )

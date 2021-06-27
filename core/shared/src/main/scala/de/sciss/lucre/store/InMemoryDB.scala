@@ -19,7 +19,6 @@ import de.sciss.serial.{ByteArrayStream, DataInput, DataOutput}
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.concurrent.stm.TMap
-import scala.language.implicitConversions
 import scala.util.hashing.MurmurHash3
 
 object InMemoryDB {

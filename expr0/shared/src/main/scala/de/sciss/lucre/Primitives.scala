@@ -261,6 +261,7 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     case xs: Vec[Any] =>
       val ok = xs.forall {
         case _: Int => true
+        case _      => false
       }
       if (ok) Some(xs.asInstanceOf[Vec[Int]]) else None
 
@@ -296,7 +297,8 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   def tryParse(in: Any): Option[Vec[Double]] = in match {
     case xs: Vec[Any] =>
       val ok = xs.forall {
-        case _: Double => true  // don't bother looking for `Float` now
+        case _: Double  => true  // don't bother looking for `Float` now
+        case _          => false
       }
       if (ok) Some(xs.asInstanceOf[Vec[Double]]) else None
 

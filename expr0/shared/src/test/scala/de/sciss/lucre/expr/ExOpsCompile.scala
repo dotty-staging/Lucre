@@ -19,6 +19,6 @@ trait ExOpsCompile {
       a ++ b
     }
 
-    tr ---> y // .orNop
+    tr --> y // .orNop
   }
 }

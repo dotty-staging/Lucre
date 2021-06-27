@@ -17,7 +17,7 @@ class ExSerializationSpec extends AnyFlatSpec with Matchers {
       import graph._
       val sq: Ex[Seq[Obj]] = Seq(Folder(), Obj.empty)
       val sel = sq.select[Int]
-      LoadBang() ---> PrintLn(sel.mkString(", "))
+      LoadBang() --> PrintLn(sel.mkString(", "))
     }
 
     val out = DataOutput()

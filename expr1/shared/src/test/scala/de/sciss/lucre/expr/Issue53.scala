@@ -32,7 +32,7 @@ class Issue53 extends AnyFlatSpec with Matchers {
 
       val lb = LoadBang()
 
-      lb ---> actCreate
+      lb --> actCreate
     }
 
     type S = InMemory

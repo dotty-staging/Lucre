@@ -27,7 +27,10 @@ final class TrigOps(private val t: Trig) extends AnyVal {
   //    filter(!ex)
   //  }
 
-  def ---> (act: Act): act.type = {
+  @deprecated("Use --> instead", since = "4.4.5")
+  def ---> (act: Act): act.type = -->(act)
+
+  def --> (act: Act): act.type = {
     Act.Link(t, act)
     act
   }

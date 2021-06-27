@@ -202,6 +202,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           val checkApp = cursor.step { implicit tx =>
             holders.sliding(2, 1).forall {
               case Seq(prev, next) => prev.num.compare(next.num) == prev.entry.compare(next.entry)
+              case _ => false
             }
           }
           assert(checkApp)
@@ -232,6 +233,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
           val checkPrep = cursor.step { implicit tx =>
             holders.sliding(2, 1).forall {
               case Seq(prev, next) => next.num.compare(prev.num) == prev.entry.compare(next.entry)
+              case _ => false
             }
           }
           assert(checkPrep)

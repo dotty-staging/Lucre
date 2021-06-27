@@ -18,9 +18,9 @@ class ExIfThenSpec extends AnyFlatSpec with Matchers with CaptureConsoleOutput {
       val resEx   = If (cond) Then         "hello-S"  Else         "world-S"
       val resAct  = If (cond) Then PrintLn("hello-A") Else PrintLn("world-A")
 
-      LoadBang() ---> PrintLn("cond: " ++ cond.toStr)
-      LoadBang() ---> PrintLn(resEx)
-      LoadBang() ---> resAct
+      LoadBang() --> PrintLn("cond: " ++ cond.toStr)
+      LoadBang() --> PrintLn(resEx)
+      LoadBang() --> resAct
     }
 
     implicit val system: S = InMemory()

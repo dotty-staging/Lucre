@@ -17,7 +17,7 @@ object LoadBangTest extends App {
   val g = Graph {
     import graph._
 
-    LoadBang() ---> PrintLn("Henlo")
+    LoadBang() --> PrintLn("Henlo")
   }
 
   implicit val system: S = InMemory()
