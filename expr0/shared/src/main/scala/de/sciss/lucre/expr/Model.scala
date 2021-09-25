@@ -13,46 +13,48 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{Attr, Ex}
+import de.sciss.lucre.expr.graph.Ex
 
 object Model {
+  implicit def modelArrow[A]: Arrow[A, Model] = new ModelArrow[A]
+
+  private class ModelArrow[A] extends Arrow[A, Model] {
+    override def patchTo(source: Ex.Source[A], sink: Model[A]): Unit =
+      sink.update(source())
+
+    override def patchFrom(source: Model[A], sink: Ex.Sink[A]): Unit =
+      sink.update(source())
+  }
+
   implicit final class Ops[A](private val m: Model[A]) extends AnyVal {
     @deprecated("Use <-> instead", since = "4.4.5")
-    def <--> (attr: Attr.WithDefault[A]): Unit = <->(attr)
+    def <--> [F[_]](that: F[A])(implicit left: Arrow.Left[A, F], right: Arrow.Right[A, F]): Unit = <-> [F](that)
 
-    def <-> (attr: Attr.WithDefault[A]): Unit = {
-      this <-- attr
-      this --> attr
+    def <-> [F[_]](that: F[A])(implicit left: Arrow.Left[A, F], right: Arrow.Right[A, F]): Unit = {
+      left  .patchFrom(that, m)
+      right .patchTo(m, that)
     }
 
     @deprecated("Use --> instead", since = "4.4.5")
-    def ---> (attr: Attr.Like[A]): Unit = --> (attr)
+    def ---> [F[_]](that: F[A])(implicit arrow: Arrow.Right[A, F]): Unit = --> [F](that)
 
-    def --> (attr: Attr.Like[A]): Unit = {
-      m.apply() --> attr
-    }
-
-    @deprecated("Use --> instead", since = "4.4.5")
-    def ---> (that: Model[A]): Unit = --> (that)
-
-    def --> (that: Model[A]): Unit =
-      that <-- m
+    def --> [F[_]](that: F[A])(implicit arrow: Arrow.Right[A, F]): Unit =
+      arrow.patchTo(m, that)
 
     @deprecated("Use <-- instead", since = "4.4.5")
-    def <--- (value: Ex[A]): Unit = <-- (value)
+    def <--- [F[_]](that: F[A])(implicit arrow: Arrow.Left[A, F]): Unit =  <-- [F](that)
 
-    def <-- (value: Ex[A]): Unit =
-      m.update(value)
-
-    @deprecated("Use <-- instead", since = "4.4.5")
-    def <--- (that: Model[A]): Unit = <-- (that)
-
-    def <-- (that: Model[A]): Unit =
-      m.update(that())
+    def <-- [F[_]](that: F[A])(implicit arrow: Arrow.Left[A, F]): Unit =
+      arrow.patchFrom(that, m)
   }
 }
-trait Model[A] {
-  def apply(): Ex[A]
-
-  def update(value: Ex[A]): Unit
-}
+/** A model behaves like a `Ref[Ex[A]]`, that is it can give an expression,
+  * and it can be "set" to an expression, which means its internal state is synchronized to another expression.
+  * For example, a slider widget may contain a `Model[Int]` where the expression represents the current slider value,
+  * and updating the expression synchronizes the slider to an external expression.
+  *
+  * Syntactic alternatives are available through the implicit `Ops`, so that one can write
+  * `model <-- ex` instead of `model.update(ex)` or `model <-> attr` instead of
+  * `model.update(attr); attr.update(model())`.
+  */
+trait Model[A] extends Ex.Sink[A] with Ex.Source[A]

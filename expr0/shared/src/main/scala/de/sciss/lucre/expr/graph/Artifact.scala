@@ -155,7 +155,7 @@ final case class Artifact(key: String, default: Ex[URI] = new URI(null, null, nu
     new Attr.WithDefault.Expanded[T, URI](key, attrView, defaultEx, tx)
   }
 
-  def update(in: Ex[URI]): Control = Attr.Update (in, key)
+  def update(in: Ex[URI]): Unit /*Control*/ = Attr.Update (in, key)
   def set   (in: Ex[URI]): Act     = Attr.Set    (in, key)
 
   implicit private def bridge: Obj.Bridge[URI] = Artifact.Bridge

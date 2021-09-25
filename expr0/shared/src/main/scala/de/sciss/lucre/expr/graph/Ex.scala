@@ -562,6 +562,14 @@ object Ex /*extends ExPlatform*/ {
     def eq  (a: _URI, b: _URI): Boolean = URINameOrdering.compare(a, b) === 0
     def neq (a: _URI, b: _URI): Boolean = URINameOrdering.compare(a, b) !== 0
   }
+
+  trait Sink[-A] {
+    def update(value: Ex[A]): Unit
+  }
+
+  trait Source[+A] {
+    def apply(): Ex[A]
+  }
 }
 trait Ex[+A] extends Lazy {
   type Repr[T <: Txn[T]] <: IExpr[T, A]

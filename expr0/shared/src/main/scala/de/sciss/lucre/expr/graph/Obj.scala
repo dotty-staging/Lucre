@@ -381,7 +381,7 @@ object Obj {
       new AttrExpanded(obj.expand[T], key, tx)
     }
 
-    def update(in: Ex[A]): Control  = Obj.Attr.Update (obj, key, in)
+    def update(in: Ex[A]): Unit /*Control*/  = Obj.Attr.Update (obj, key, in)
     def set   (in: Ex[A]): Act      = Obj.Attr.Set    (obj, key, in)
 
     def adjuncts: List[Adjunct] = bridge :: Nil

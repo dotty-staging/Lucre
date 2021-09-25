@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
 import de.sciss.lucre.expr.impl.CellViewImpl.CatVarImpl
-import de.sciss.lucre.expr.{CellView, Context, IAction, IControl}
+import de.sciss.lucre.expr.{Arrow, CellView, Context, IAction, IControl, Model}
 import de.sciss.lucre.impl.IChangeGeneratorEvent
 import de.sciss.lucre.{Adjunct, Disposable, Form, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn, Obj => LObj}
 import de.sciss.model.Change
@@ -25,8 +25,16 @@ import scala.annotation.tailrec
 import scala.concurrent.stm.Ref
 
 object Attr extends ProductReader[Attr[_]] {
-  trait Like[A] { self =>
-    def update(in: Ex[A]): Control
+  object Like {
+    implicit def arrowRight[A]: Arrow.Right[A, Like] = new LikeArrowRight[A]
+
+    private final class LikeArrowRight[A] extends Arrow.Right[A, Like] {
+      override def patchTo(source: Ex.Source[A], sink: Like[A]): Unit =
+        sink.update(source())
+    }
+  }
+  trait Like[A] extends Ex.Sink[A] { self =>
+//    def update(in: Ex[A]): Control
     def set   (in: Ex[A]): Act
   }
 
@@ -231,7 +239,7 @@ object Attr extends ProductReader[Attr[_]] {
 
       override def productPrefix: String = s"Attr$$WithDefault" // serialization
 
-      def update(in: Ex[A]): Control  = Attr.Update(in, key)
+      def update(in: Ex[A]): Unit /*Control*/  = Attr.Update(in, key)
       def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
 
       protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
@@ -388,7 +396,7 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
 
   type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
 
-  def update(in: Ex[A]): Control  = Attr.Update(in, key)
+  def update(in: Ex[A]): Unit /*Control*/  = Attr.Update(in, key)
   def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
 
   protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {

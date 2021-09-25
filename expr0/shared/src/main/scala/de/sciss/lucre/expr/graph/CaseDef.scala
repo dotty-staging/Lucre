@@ -84,10 +84,6 @@ object Var extends ProductReader[Var[_]] {
   def apply[A]()(implicit from: FromAny[A], default: HasDefault[A]): Var[A] =
     Impl(Const(default.defaultValue))
 
-//  implicit final class Ops[A](private val x: Var[A]) extends AnyVal {
-//    def set(in: Ex[A]): Act = Set(x, in)
-//  }
-
   object Set extends ProductReader[Set[_]] {
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
       require (arity == 2 && adj == 0)
@@ -272,7 +268,7 @@ object Var extends ProductReader[Var[_]] {
   private final case class Impl[A](init: Ex[A])(implicit val fromAny: FromAny[A]) extends Var[A] {
     override def productPrefix: String = "Var"  // serialization
 
-    def update(in: Ex[A]): Control = Update(this, in)
+    def update(in: Ex[A]): Unit /* Control*/ = Update(this, in)
 
     def set(in: Ex[A]): Act = Set(this, in)
 

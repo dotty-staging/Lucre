@@ -143,12 +143,9 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   def wrap[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Wrap[A, A1, A2](), x, lo, hi)
 
   @deprecated("Use --> instead", since = "4.4.5")
-  def ---> (attr: Attr.Like[A]): Unit = -->(attr)
+  def ---> (that: Ex.Sink[A]): Unit = -->(that)
 
-  def --> (attr: Attr.Like[A]): Unit = attr.update(x)
-
-  //  def <--- (attr: ExAttrLike[A]): Unit = ...
-  //  def <--> (attr: ExAttrLike[A]): Unit = ...
+  def --> (that: Ex.Sink[A]): Unit = that.update(x)
 
   def linLin[A1, A2](inLo: Ex[A], inHi: Ex[A], outLo: Ex[A1], outHi: Ex[A1])
                     (implicit w: Widen2[A, A1, A2], num: NumFrac[A2]): Ex[A2] = {
