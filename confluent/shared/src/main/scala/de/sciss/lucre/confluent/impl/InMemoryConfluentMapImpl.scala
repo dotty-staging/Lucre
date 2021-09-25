@@ -70,22 +70,22 @@ final class InMemoryConfluentMapImpl[T <: Txn[T], K] extends InMemoryConfluentMa
   def get[A](key: K, tx: T)(implicit path: tx.Acc): Option[A] = {
     if (path.isEmpty) return None
     store.get(key)(tx.peer).flatMap { entries =>
-      val (maxIndex, maxTerm) = path.splitIndex
-      getWithPrefixLen[A, A](maxIndex, maxTerm, entries)((_, _, value) => value)
+      val (maxIndex, _ /*maxTerm*/) = path.splitIndex
+      getWithPrefixLen[A, A](maxIndex, /*maxTerm,*/ entries)((_, _, value) => value)
     }
   }
 
   def getWithSuffix[A](key: K, tx: T)(implicit path: tx.Acc): Option[(Access[T], A)] = {
     if (path.isEmpty) return None
     store.get(key)(tx.peer).flatMap { entries =>
-      val (maxIndex, maxTerm) = path.splitIndex
-      getWithPrefixLen[A, (Access[T], A)](maxIndex, maxTerm, entries)((preLen, writeTerm, value) =>
+      val (maxIndex, _ /*maxTerm*/) = path.splitIndex
+      getWithPrefixLen[A, (Access[T], A)](maxIndex, /*maxTerm,*/ entries)((preLen, writeTerm, value) =>
         (writeTerm +: path.drop(preLen), value)
       )
     }
   }
 
-  private def getWithPrefixLen[A, B](maxIndex: Access[T], maxTerm: Long, entries: Entries)
+  private def getWithPrefixLen[A, B](maxIndex: Access[T], /*maxTerm: Long,*/ entries: Entries)
                                     (fun: (Int, Long, A) => B): Option[B] = {
 
     val preLen  = Hashing.maxPrefixLength(maxIndex, entries.contains)
@@ -99,8 +99,8 @@ final class InMemoryConfluentMapImpl[T <: Txn[T], K] extends InMemoryConfluentMa
     val preSum = index.sum
     entries.get(preSum).flatMap {
       case EntryPre(hash) => // partial hash
-        val (fullIndex, fullTerm) = maxIndex.splitAtSum(hash)
-        getWithPrefixLen(fullIndex, fullTerm, entries)(fun)
+        val (fullIndex, _ /*fullTerm*/) = maxIndex.splitAtSum(hash)
+        getWithPrefixLen(fullIndex, /*fullTerm,*/ entries)(fun)
 
       case EntryFull(term2, value) => Some(fun(preLen, term2, value.asInstanceOf[A]))
     }

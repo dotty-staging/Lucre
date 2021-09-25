@@ -330,7 +330,7 @@ object DurableImpl {
 
     def apply()(implicit tx: T): A = peer.get(tx.peer)
 
-    def setInit(v: A)(implicit tx: T): Unit = this() = v
+//    def setInit(v: A)(implicit tx: T): Unit = this() = v
 
     def update(v: A)(implicit tx: T): Unit = {
       peer.set(v)(tx.peer)
@@ -403,7 +403,7 @@ object DurableImpl {
 
     def apply()(implicit tx: T): Int = peer.get(tx.peer)
 
-    def setInit(v: Int)(implicit tx: T): Unit = this() = v
+//    def setInit(v: Int)(implicit tx: T): Unit = this() = v
 
     def update(v: Int)(implicit tx: T): Unit = {
       peer.set(v)(tx.peer)
@@ -453,7 +453,7 @@ object DurableImpl {
 
     def apply()(implicit tx: T): Long = peer.get(tx.peer)
 
-    def setInit(v: Long)(implicit tx: T): Unit = this() = v
+//    def setInit(v: Long)(implicit tx: T): Unit = this() = v
 
     def update(v: Long)(implicit tx: T): Unit = {
       peer.set(v)(tx.peer)

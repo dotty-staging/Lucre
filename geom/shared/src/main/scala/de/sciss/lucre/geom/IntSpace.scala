@@ -183,7 +183,7 @@ object IntSpace {
     type Point          = IntPointN
     type HyperCubeLike  = IntHyperCubeNLike
     type HyperCube      = IntHyperCubeN
-    val maxPoint        = IntPointN(Vector.fill(dim)(Int.MaxValue))
+    val maxPoint: Point = IntPointN(Vector.fill(dim)(Int.MaxValue))
 
     def lexicalOrder       : Ordering[PointLike]            = NDim.lexicalOrder
     def pointFormat    : ConstFormat[Point]      = NDim.pointFormat

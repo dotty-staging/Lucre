@@ -207,7 +207,7 @@ private[confluent] object PathImpl {
     def indexTerm: Long = apply(size - 2)
     def indexSum : Long = sum - (last >>> 32)
 
-    def :-|(suffix: Long): Access[T] = wrap(tree.init :+ suffix)
+//    def :-|(suffix: Long): Access[T] = wrap(tree.init :+ suffix)
 
     def drop(n: Int): Access[T] = {
       val right = tree.dropWhile(_._1 <= n)
@@ -240,15 +240,15 @@ private[confluent] object PathImpl {
     def size: Int         = tree.measure._1
     def sum: Long         = tree.measure._2
 
-    def sumUntil_OLD(n: Int): Long = {
-      val res = tree.takeWhile(_._1 <= n).measure._2
-//      val test = sumUntil_X(n)
-//      if (res != test) {
-//        println(s"$this.sumUntil($n) == $res and not $test")
-//      }
-////      assert(res == sumUntil_X(n))
-      res
-    }
+//    def sumUntil_OLD(n: Int): Long = {
+//      val res = tree.takeWhile(_._1 <= n).measure._2
+////      val test = sumUntil_X(n)
+////      if (res != test) {
+////        println(s"$this.sumUntil($n) == $res and not $test")
+////      }
+//////      assert(res == sumUntil_X(n))
+//      res
+//    }
 
     def sumUntil(n: Int): Long = if (tree.isEmpty) 0L else tree.find1(_._1 > n)._1._2
 

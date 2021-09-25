@@ -84,6 +84,6 @@ object IntPoint2D {
   implicit def format: ConstFormat[IntPoint2D] = IntSpace.TwoDim.pointFormat
 }
 final case class IntPoint2D(x: Int, y: Int) extends IntPoint2DLike {
-  def +(p: IntPoint2D) = IntPoint2D(x + p.x, y + p.y)
-  def -(p: IntPoint2D) = IntPoint2D(x - p.x, y - p.y)
+  def +(p: IntPoint2D) = new IntPoint2D(x + p.x, y + p.y)
+  def -(p: IntPoint2D) = new IntPoint2D(x - p.x, y - p.y)
 }

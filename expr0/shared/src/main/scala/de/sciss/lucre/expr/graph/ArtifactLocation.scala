@@ -29,7 +29,7 @@ object ArtifactLocation extends ProductReader[ArtifactLocation] {
 
   def init(): Unit = _init
 
-  private final object Bridge extends Obj.Bridge[URI] with Adjunct.Factory {
+  private object Bridge extends Obj.Bridge[URI] with Adjunct.Factory {
     final val id = 2003
 
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this

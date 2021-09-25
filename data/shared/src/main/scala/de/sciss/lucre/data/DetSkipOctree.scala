@@ -1582,7 +1582,7 @@ object DetSkipOctree {
 
       def find(): LeafOrEmpty = {
         val pri = MPriorityQueue.empty[VisitedNode[M]](this)
-        @tailrec def step(p0: Branch, pMinDist: M, bestLeaf: LeafOrEmpty, bestDist: M, rMax: M): LeafOrEmpty = {
+        @tailrec def step(p0: Branch, /*pMinDist: M,*/ bestLeaf: LeafOrEmpty, bestDist: M, rMax: M): LeafOrEmpty = {
           val res = findNNTailOLD(p0, /* pMinDist, */ pri, bestLeaf, bestDist, rMax)
           if (metric.isMeasureZero(res.bestDist)) {
             res.bestLeaf   // found a point exactly at the query position, so stop right away
@@ -1599,7 +1599,7 @@ object DetSkipOctree {
 
               if (metric.isMeasureGreater(vis.minDist, res.rMax)) res.bestLeaf else {
                 val lb = vis.n
-                step(lb, vis.minDist, res.bestLeaf, res.bestDist, res.rMax)
+                step(lb, /*vis.minDist,*/ res.bestLeaf, res.bestDist, res.rMax)
               }
             }
           }
@@ -1607,8 +1607,8 @@ object DetSkipOctree {
 
         val mMax      = metric.maxValue
         val p         = headTree // lastTree
-        val pMinDist  = metric.minDistance(point, octree.hyperCube)  // XXX could have metric.zero
-        step(p, pMinDist, Empty, mMax, mMax)
+        // val pMinDist  = metric.minDistance(point, octree.hyperCube)  // XXX could have metric.zero
+        step(p, /*pMinDist,*/ Empty, mMax, mMax)
       }
 
       def compare(a: VisitedNode[M], b: VisitedNode[M]): Int = {

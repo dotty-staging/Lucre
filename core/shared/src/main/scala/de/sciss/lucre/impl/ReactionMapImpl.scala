@@ -64,6 +64,6 @@ object ReactionMapImpl {
         .asInstanceOf[List[Observer[T, A]]]
 
     def hasEventReactions[A](event: Event[T, A])(implicit tx: T): Boolean =
-      eventMap.get(event.node.id).exists(_.get(event.slot).isDefined)
+      eventMap.get(event.node.id).exists(_.contains(event.slot))
   }
 }

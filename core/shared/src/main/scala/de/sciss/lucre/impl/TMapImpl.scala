@@ -129,12 +129,13 @@ object TMapImpl {
         }
       }
 
-    final def size(implicit tx: T): Int = {
-      // XXX TODO: a bit ugly...
-      var res = 0
-      peer.valuesIterator.foreach(res += _.size)
-      res
-    }
+//    final def size(implicit tx: T): Int = {
+//      // XXX TODO: a bit ugly...
+//      var res = 0
+//      peer.valuesIterator.foreach(res += _.size)
+//      res
+//    }
+
     final def nonEmpty(implicit tx: T): Boolean  = peer.nonEmpty
     final def isEmpty (implicit tx: T): Boolean  = peer.isEmpty
 

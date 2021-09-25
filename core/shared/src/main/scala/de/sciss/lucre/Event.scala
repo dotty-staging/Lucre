@@ -140,8 +140,8 @@ object Event {
 
       private[lucre] def remove(slot: Int, sel: Event[T, Any])(implicit tx: T): Boolean = {
         logEvent.debug(s"$this.remove($slot, $sel)")
-        val tup = (slot, sel)
-        val xs = childrenVar() // .getOrElse(NoChildren)
+        val tup = (slot.toByte, sel)
+        val xs: Vec[(Byte, Event[T, Any])] = childrenVar() // .getOrElse(NoChildren)
         logEvent.debug(s"$this - old children = $xs")
         val i = xs.indexOf(tup)
         if (i >= 0) {

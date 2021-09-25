@@ -112,7 +112,7 @@ object PlainImpl {
   private final class SysImpl extends Plain {
     type S = Plain
 
-    val s: S = this
+//    val s: S = this
 
     override def toString = "Plain"
 
@@ -122,7 +122,7 @@ object PlainImpl {
 
     def inMemory: I = this
 
-    def inMemoryBridge: (Tx => Tx) = tx => tx
+    def inMemoryBridge: Tx => Tx = tx => tx
 
     implicit def inMemoryCursor: Cursor[S] = this
 

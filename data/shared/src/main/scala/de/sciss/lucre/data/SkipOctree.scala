@@ -35,11 +35,11 @@ object SkipOctree {
     DetSkipOctree.read[T, P, H, A](in)
 
   implicit def format[T <: Exec[T], P,
-    H <: HyperCube[P, H], A](implicit view: (A) => P, space: Space[P, H],
+    H <: HyperCube[P, H], A](implicit view: A => P, space: Space[P, H],
                               keyFormat: TFormat[T, A]): TFormat[T, SkipOctree[T, P, H, A]] =
     new Fmt[T, P, H, A]
 
-  private final class Fmt[T <: Exec[T], P, H <: HyperCube[P, H], A](implicit view: (A) => P, space: Space[P, H],
+  private final class Fmt[T <: Exec[T], P, H <: HyperCube[P, H], A](implicit view: A => P, space: Space[P, H],
                                                                          keyFormat: TFormat[T, A])
     extends WritableFormat[T, SkipOctree[T, P, H, A]] {
 

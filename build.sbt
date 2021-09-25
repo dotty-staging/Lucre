@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.4.5"
+lazy val projectVersion   = "4.4.6-SNAPSHOT"
 lazy val mimaVersion      = "4.4.0"
 
 lazy val deps = new {
@@ -18,7 +18,7 @@ lazy val deps = new {
   }
   val expr = new {
     def equal: String = core.equal
-    val asyncFile     = "0.1.3"
+    val asyncFile     = "0.1.4"
     val span          = "2.0.2"
   }
   val confluent = new {
@@ -28,18 +28,19 @@ lazy val deps = new {
     val sleepy7       = "7.5.11"  // Apache // Java 8+ required
   }
   val test = new {
-    val locales       = "1.2.0"   // java.util.Locale for Scala.js (tests)
-    val scalaTest     = "3.2.9"
+    val locales       = "1.2.1"   // java.util.Locale for Scala.js (tests)
+    val scalaTest     = "3.2.10"
   }
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq("3.0.0", "2.13.6", "2.12.13"),
+  crossScalaVersions  := Seq("3.0.2", "2.13.6", "2.12.15"),
 )
 
 // sonatype plugin requires that these are in global
-ThisBuild / version      := projectVersion
-ThisBuild / organization := "de.sciss"
+ThisBuild / version       := projectVersion
+ThisBuild / organization  := "de.sciss"
+ThisBuild / versionScheme := Some("pvp")
 
 lazy val commonSettings = Seq(
 //  version             := projectVersion,
@@ -48,7 +49,7 @@ lazy val commonSettings = Seq(
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
   scalaVersion        := "2.13.6",
   scalacOptions      ++= Seq(
-    "-deprecation", "-unchecked", "-feature", "-encoding", "utf8"
+    "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Ywarn-unused:params,-implicits"
   ),
   scalacOptions ++= {
     // if (isDotty.value) Nil else 

@@ -341,7 +341,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  private final object CanMapOptionToAct extends MapSupport
+  private object CanMapOptionToAct extends MapSupport
     with CanMap[Option, Act, Act.Option] {
 
     final val id = 1003
@@ -354,7 +354,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  private final object CanMapSeqToAct extends MapSupport
+  private object CanMapSeqToAct extends MapSupport
     with CanMap[Seq, Act, Act] {
 
     final val id = 1009
@@ -406,7 +406,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  private final object CanFlatMapOptionToAct extends MapSupport
+  private object CanFlatMapOptionToAct extends MapSupport
     with CanFlatMap[Option, Act, Act.Option] {
 
     final val id = 1011
@@ -419,7 +419,7 @@ object Ex /*extends ExPlatform*/ {
     }
   }
 
-  private final object CanFlatMapSeqToAct extends MapSupport
+  private object CanFlatMapSeqToAct extends MapSupport
     with CanFlatMap[Seq, Act, Act] {
 
     final val id = 1013

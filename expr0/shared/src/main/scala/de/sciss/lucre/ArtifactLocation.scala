@@ -33,7 +33,7 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
 
 //  implicit def valueFormat: ConstFormat[Value] = TFormat.File
 
-  implicit final object valueFormat extends ConstFormat[Value] {
+  implicit object valueFormat extends ConstFormat[Value] {
     private final val SER_VERSION = 2
 
     def write(v: Value, out: DataOutput): Unit = {
@@ -83,7 +83,7 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
 
   protected def mkVar[T <: Txn[T]](targets: Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
                                   (implicit tx: T): Var[T] = {
-    val res = new _Var[T](tx, targets, vr)
+    val res = new _Var[T](/*tx,*/ targets, vr)
     if (connect) res.connect()
     res
   }
@@ -91,7 +91,7 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
   private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](val tx: T, val targets: Targets[T], val ref: lucre.Var[T, E[T]])
+  private[this] final class _Var[T <: Txn[T]](/*val tx: T,*/ val targets: Targets[T], val ref: lucre.Var[T, E[T]])
     extends VarImpl[T] with Repr[T]
 }
 /** An artifact location is a directory on an external storage. */

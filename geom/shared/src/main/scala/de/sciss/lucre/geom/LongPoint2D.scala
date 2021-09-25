@@ -72,6 +72,6 @@ object LongPoint2D {
   implicit def format: ConstFormat[LongPoint2D] = LongSpace.TwoDim.pointFormat
 }
 final case class LongPoint2D(x: Long, y: Long) extends LongPoint2DLike {
-  def +(p: LongPoint2D) = LongPoint2D(x + p.x, y + p.y)
-  def -(p: LongPoint2D) = LongPoint2D(x - p.x, y - p.y)
+  def +(p: LongPoint2D) = new LongPoint2D(x + p.x, y + p.y)
+  def -(p: LongPoint2D) = new LongPoint2D(x - p.x, y - p.y)
 }

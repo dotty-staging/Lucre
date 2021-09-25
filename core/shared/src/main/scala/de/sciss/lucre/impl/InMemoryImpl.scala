@@ -69,7 +69,7 @@ object InMemoryImpl {
 
   private def opNotSupported(name: String): Nothing = sys.error(s"Operation not supported: $name")
 
-  private final class IdImpl[T <: InMemoryLike.Txn[T]](tx: T)(val id: Int) extends InMemoryLike.Id[T] {
+  private final class IdImpl[T <: InMemoryLike.Txn[T]](/*tx: T*/)(val id: Int) extends InMemoryLike.Id[T] {
     def write(out: DataOutput): Unit = ()
 
     override def toString         = s"<$id>"
@@ -125,7 +125,7 @@ object InMemoryImpl {
 
     def inMemory: InMemory.Txn = this
 
-    def inMemoryBridge: (InMemory.Txn => InMemory.Txn) = tx => tx
+    def inMemoryBridge: InMemory.Txn => InMemory.Txn = tx => tx
 
     override def toString = s"InMemory.Txn@${hashCode.toHexString}"
   }
@@ -135,7 +135,7 @@ object InMemoryImpl {
 
     implicit def inMemoryCursor: Cursor[I] = system
 
-    final def newId(): Id = new IdImpl[T](this)(system.newIdValue()(this))
+    final def newId(): Id = new IdImpl[T](/*this*/)(system.newIdValue()(this))
 
     final def newHandle[A](value: A)(implicit format: TFormat[T, A]): Source[T, A] =
       new EphemeralSource(value)

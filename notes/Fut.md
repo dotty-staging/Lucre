@@ -41,3 +41,40 @@ ranAll.done --> PrintLn("All done")
 
 ```
 What to do with the existing `Act with Ex[_]`? Like `TimeStamp` / `TimeStamp.Update`.
+
+----
+
+## notes 25-Sep-2021
+
+Leave "synchronous" actions like `TimeStamp.update` as they are. Leave `Fut[Unit]` candidates as `Act`, for 
+instance `Delay`. Or allow both?
+
+```scala
+val d = Delay(10.0)
+for(_ <- d) yield PrintLn("Hello")
+```
+
+Actually it's the `with Trig` that we're looking at here. A `Trig` behaves like `Fut[Unit]` I guess?
+
+```scala
+for {
+  _ <- LoadBang()
+  _ <- Delay(10.0)
+} PrintLn("Hello")
+```
+
+This would translate to
+
+```scala
+(LoadBang(): Fut[Unit]).flatMap((_: Ex[Unit]) => (Delay(10.0): Fut[Unit])).foreach((_: Ex[Unit]) => PrintLn("Hello"))
+```
+
+Does that make sense?
+
+Let's say, we can still calculate some form of default expression synchronously, like the default time stamp,
+the empty OSC message etc. Then the point of `Fut` would be to determine a trigger when a new result is in, even if
+the expression doesn't change, i.e. we should not rely on `.changed` as the trigger.
+
+Whenever it is not feasible to provide a default value, we also walk away from `Trig with Ex[A]` and use `Fut[A]`
+instead. Then there could always be a `toTrig` that converts `Fut[A]` to plain `Trig`, a bit like 
+`concurrent.Future.mapTo[Unit]`.

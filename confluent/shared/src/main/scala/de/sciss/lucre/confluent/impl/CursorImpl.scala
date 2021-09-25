@@ -140,7 +140,7 @@ object CursorImpl {
       logCursor.debug(s"${data.id} flush path = $newPath")
     }
 
-    def position  (implicit tx: T ): Access[T]  = positionD(system.durableTx(tx))
+//    def position  (implicit tx: T ): Access[T]  = positionD(system.durableTx(tx))
     def positionD (implicit tx: D1): Access[T]  = data.path()
 
     def dispose()(implicit tx: D1): Unit = {

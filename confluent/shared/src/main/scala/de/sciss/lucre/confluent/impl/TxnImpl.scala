@@ -106,11 +106,11 @@ trait TxnMixin[Tx <: Txn[Tx], D1 <: DurableLike .Txn[D1], I1 <: InMemoryLike.Txn
     if (!markBeforeCommitFlag) {
       markBeforeCommitFlag = true
       log.debug("....... txn dirty .......")
-      ScalaTxn.beforeCommit(handleBeforeCommit)(peer)
+      ScalaTxn.beforeCommit(_ => handleBeforeCommit())(peer)
     }
 
   // first execute before commit handlers, then flush
-  private def handleBeforeCommit(itx: InTxn): Unit = {
+  private def handleBeforeCommit(/*itx: InTxn*/): Unit = {
     while (beforeCommitFuns.nonEmpty) {
       val (fun, q) = beforeCommitFuns.dequeue
       beforeCommitFuns = q
@@ -315,8 +315,8 @@ trait RootTxnMixin[Tx <: Txn[Tx], D1 <: DurableLike.Txn[D1], I1 <: InMemoryLike.
 private[impl] sealed trait TxnImpl extends Confluent.Txn /*Txn[Confluent.Txn]*/ {
   final lazy val inMemory: InMemory.Txn = system.inMemory.wrap(peer)
 
-  def inMemoryBridge: (Confluent.Txn => InMemory.Txn) = _.inMemory
-  def durableBridge : (Confluent.Txn => Durable .Txn) = _.durable
+  def inMemoryBridge: Confluent.Txn => InMemory.Txn = _.inMemory
+  def durableBridge : Confluent.Txn => Durable .Txn = _.durable
 
 //  implicit def inMemoryCursor: lucre.Cursor[InMemory.Txn] = system.inMemory
 }
