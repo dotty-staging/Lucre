@@ -18,7 +18,7 @@ import de.sciss.lucre.expr.graph.{Attr, Obj}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.{IExpr, Txn}
 
-final class ExpandedAttrSet[T <: Txn[T], A](attrView: CellView.Var[T, Option[A]], value: IExpr[T, A], tx0: T)
+final class ExpandedAttrSet[T <: Txn[T], A](attrView: CellView.Var[T, Option[A]], value: IExpr[T, A] /*, tx0: T*/)
   extends IActionImpl[T] {
 
   def executeAction()(implicit tx: T): Unit = {
@@ -27,7 +27,7 @@ final class ExpandedAttrSet[T <: Txn[T], A](attrView: CellView.Var[T, Option[A]]
   }
 }
 
-final class ExpandedAttrSetIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, A], tx0: T)
+final class ExpandedAttrSetIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, A] /*, tx0: T*/)
                                              (implicit bridge: Obj.Bridge[A])
   extends IActionImpl[T] {
 

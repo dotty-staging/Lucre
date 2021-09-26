@@ -49,6 +49,11 @@ object Context {
                         (implicit workspace: Workspace[T], cursor: Cursor[T],
                          undoManager: UndoManager[T]): Context[T] =
     new ContextImpl[T](selfH, attr)
+
+  /** Helper class for "upcasting". Used in SoundProcesses `Runner`, for example. */
+  class WithTxn[T <: Txn[T]]()(implicit val ctx: Context[T], val tx: T) {
+    def cast[U <: Txn[U]]: WithTxn[U] = this.asInstanceOf[WithTxn[U]]
+  }
 }
 trait Context[T <: Txn[T]] extends Disposable[T] {
   implicit def targets    : ITargets    [T]

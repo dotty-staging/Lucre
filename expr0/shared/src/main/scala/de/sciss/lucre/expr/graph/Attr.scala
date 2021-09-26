@@ -14,9 +14,9 @@
 package de.sciss.lucre.expr.graph
 
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
-import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, StmObjAttrMapCellView, StmObjCtxCellView}
+import de.sciss.lucre.expr.graph.impl.{ExpandedAttrSet, ExpandedAttrUpdate, ExpandedAttrUpdateOption, StmObjAttrMapCellView, StmObjCtxCellView}
 import de.sciss.lucre.expr.impl.CellViewImpl.CatVarImpl
-import de.sciss.lucre.expr.{Arrow, CellView, Context, IAction, IControl, Model}
+import de.sciss.lucre.expr.{Arrow, CellView, Context, IAction, IControl}
 import de.sciss.lucre.impl.IChangeGeneratorEvent
 import de.sciss.lucre.{Adjunct, Disposable, Form, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn, Obj => LObj}
 import de.sciss.model.Change
@@ -26,15 +26,22 @@ import scala.concurrent.stm.Ref
 
 object Attr extends ProductReader[Attr[_]] {
   object Like {
-    implicit def arrowRight[A]: Arrow.Right[A, Like] = new LikeArrowRight[A]
+    implicit def arrowRight   [A]: Arrow.Right[A, Like[A]]          = new LikeArrowRight[A]
+    implicit def arrowRightOpt[A]: Arrow.Right[Option[A], Like[A]]  = new LikeArrowRightOpt[A]
 
-    private final class LikeArrowRight[A] extends Arrow.Right[A, Like] {
+    private final class LikeArrowRight[A] extends Arrow.Right[A, Like[A]] {
       override def patchTo(source: Ex.Source[A], sink: Like[A]): Unit =
         sink.update(source())
+    }
+
+    private final class LikeArrowRightOpt[A] extends Arrow.Right[Option[A], Like[A]] {
+      override def patchTo(source: Ex.Source[Option[A]], sink: Like[A]): Unit =
+        sink.updateOption(source())
     }
   }
   trait Like[A] extends Ex.Sink[A] { self =>
 //    def update(in: Ex[A]): Control
+    def updateOption(in: Ex[Option[A]]): Unit
     def set   (in: Ex[A]): Act
   }
 
@@ -239,8 +246,9 @@ object Attr extends ProductReader[Attr[_]] {
 
       override def productPrefix: String = s"Attr$$WithDefault" // serialization
 
-      def update(in: Ex[A]): Unit /*Control*/  = Attr.Update(in, key)
-      def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
+      def update      (in: Ex[A])         : Unit  = Attr.Update       (in, key)
+      def updateOption(in: Ex[Option[A]]) : Unit  = Attr.UpdateOption (in, key)
+      def set         (in: Ex[A])         : Act   = Attr.Set          (in, key)
 
       protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
         val defaultEx: Repr[T] = default.expand[T]
@@ -360,6 +368,31 @@ object Attr extends ProductReader[Attr[_]] {
     override def adjuncts: scala.List[Adjunct] = bridge :: Nil
   }
 
+  object UpdateOption extends ProductReader[UpdateOption[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): UpdateOption[_] = {
+      require (arity == 2 && adj == 1)
+      val _source = in.readEx[Option[Any]]()
+      val _key    = in.readString()
+      val _bridge: Obj.Bridge[Any] = in.readAdjunct()
+      new UpdateOption(_source, _key)(_bridge)
+    }
+  }
+  final case class UpdateOption[A](source: Ex[Option[A]], key: String)(implicit bridge: Obj.Bridge[A])
+    extends Control with ProductWithAdjuncts {
+
+    override def productPrefix: String = s"Attr$$UpdateOption"  // serialization
+
+    type Repr[T <: Txn[T]] = IControl[T]
+
+    protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+      val attrView  = resolveNestedVar(key)
+      val peer      = new ExpandedAttrUpdateOption[T, A](source.expand[T], attrView, tx)
+      IControl.wrap(peer)
+    }
+
+    override def adjuncts: scala.List[Adjunct] = bridge :: Nil
+  }
+
   object Set extends ProductReader[Set[_]] {
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
       require (arity == 2 && adj == 1)
@@ -378,7 +411,7 @@ object Attr extends ProductReader[Attr[_]] {
 
     protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       val attrView = resolveNestedVar(key)
-      new ExpandedAttrSet[T, A](attrView, source.expand[T], tx)
+      new ExpandedAttrSet[T, A](attrView, source.expand[T] /*, tx*/)
     }
 
     override def adjuncts: scala.List[Adjunct] = bridge :: Nil
@@ -396,8 +429,9 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
 
   type Repr[T <: Txn[T]] = IExpr[T, Option[A]]
 
-  def update(in: Ex[A]): Unit /*Control*/  = Attr.Update(in, key)
-  def set   (in: Ex[A]): Act      = Attr.Set   (in, key)
+  def update      (in: Ex[A])         : Unit  = Attr.Update       (in, key)
+  def updateOption(in: Ex[Option[A]]) : Unit  = Attr.UpdateOption (in, key)
+  def set         (in: Ex[A])         : Act   = Attr.Set          (in, key)
 
   protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets

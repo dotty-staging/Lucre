@@ -129,8 +129,9 @@ final case class ArtifactLocation(key: String, default: Ex[URI] = new URI(null, 
     new Attr.WithDefault.Expanded[T, URI](key, attrView, defaultEx, tx)
   }
 
-  def update(in: Ex[URI]): Unit /*Control*/ = Attr.Update (in, key)
-  def set   (in: Ex[URI]): Act     = Attr.Set    (in, key)
+  def update      (in: Ex[URI])         : Unit  = Attr.Update       (in, key)
+  def updateOption(in: Ex[Option[URI]]) : Unit  = Attr.UpdateOption (in, key)
+  def set         (in: Ex[URI])         : Act   = Attr.Set          (in, key)
 
   implicit private def bridge: Obj.Bridge[URI] = ArtifactLocation.Bridge
 

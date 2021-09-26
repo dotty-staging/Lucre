@@ -174,7 +174,7 @@ object Ex /*extends ExPlatform*/ {
       val inEx = in.expand[T]
       val itEx = it.expand[T]
       import ctx.targets
-      new ExpandedMapOptionAct[T, A](inEx, itEx, fun, tx)
+      new ExpandedMapOptionAct[T, A](inEx, itEx, fun /*, tx*/)
     }
   }
 
@@ -196,7 +196,7 @@ object Ex /*extends ExPlatform*/ {
       val inEx = in.expand[T]
       val itEx = it.expand[T]
       import ctx.targets
-      new ExpandedMapSeqAct[T, A](inEx, itEx, fun, tx)
+      new ExpandedMapSeqAct[T, A](inEx, itEx, fun /*, tx*/)
     }
   }
 

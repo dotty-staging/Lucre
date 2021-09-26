@@ -17,7 +17,7 @@ import de.sciss.lucre.Adjunct.{FromAny, HasDefault, NumInt}
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.impl.IActionImpl
-import de.sciss.lucre.expr.{Context, IAction, IControl, graph}
+import de.sciss.lucre.expr.{Arrow, Context, IAction, IControl, graph}
 import de.sciss.lucre.impl.IChangeGeneratorEvent
 import de.sciss.lucre.{Adjunct, Disposable, IChangeEvent, IExpr, IPull, ITargets, ProductWithAdjuncts, Txn}
 import de.sciss.model.Change
@@ -83,6 +83,13 @@ object Var extends ProductReader[Var[_]] {
 
   def apply[A]()(implicit from: FromAny[A], default: HasDefault[A]): Var[A] =
     Impl(Const(default.defaultValue))
+
+  implicit def arrowRight[A]: Arrow.Right[A, Var[A]] = new LikeArrowRight[A]
+
+  private final class LikeArrowRight[A] extends Arrow.Right[A, Var[A]] {
+    override def patchTo(source: Ex.Source[A], sink: Var[A]): Unit =
+      sink.update(source())
+  }
 
   object Set extends ProductReader[Set[_]] {
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
@@ -285,8 +292,10 @@ object Var extends ProductReader[Var[_]] {
     Var(_init)(_fromAny)
   }
 }
-trait Var[A] extends Ex[A] with CaseDef[A] with Attr.Like[A] with ProductWithAdjuncts { self =>
+trait Var[A] extends Ex[A] with CaseDef[A] with Ex.Sink[A] /*Attr.Like[A]*/ with ProductWithAdjuncts { self =>
   type Repr[T <: Txn[T]] = Var.Expanded[T, A]
+
+  def set   (in: Ex[A]): Act
 
   def transform(f: Ex[A] => Ex[A]): Act = set(f(self))
   

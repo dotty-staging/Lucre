@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.Adjunct.HasDefault
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
-import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ExpandedAttrUpdateOptionIn, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl}
@@ -337,6 +337,31 @@ object Obj {
       override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
 
+    object UpdateOption extends ProductReader[UpdateOption[_]] {
+      override def read(in: RefMapIn, key: String, arity: Int, adj: Int): UpdateOption[_] = {
+        require (arity == 3 && adj == 1)
+        val _obj    = in.readEx[Obj]()
+        val _key    = in.readString()
+        val _value  = in.readEx[Option[Any]]()
+        val _bridge: Bridge[Any] = in.readAdjunct()
+        new UpdateOption(_obj, _key, _value)(_bridge)
+      }
+    }
+    final case class UpdateOption[A](obj: Ex[Obj], key: String, value: Ex[Option[A]])(implicit bridge: Obj.Bridge[A])
+      extends Control with ProductWithAdjuncts {
+
+      override def productPrefix: String = s"Obj$$Attr$$UpdateOption"  // serialization
+
+      type Repr[T <: Txn[T]] = IControl[T]
+
+      protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
+        val peer = new ExpandedAttrUpdateOptionIn[T, A](obj.expand[T], key, value.expand[T], tx)
+        IControl.wrap(peer)
+      }
+
+      override def adjuncts: scala.List[Adjunct] = bridge :: Nil
+    }
+
     object Set extends ProductReader[Set[_]] {
       override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Set[_] = {
         require (arity == 3 && adj == 1)
@@ -355,7 +380,7 @@ object Obj {
       type Repr[T <: Txn[T]] = IAction[T]
 
       protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
-        new ExpandedAttrSetIn[T, A](obj.expand[T], key, value.expand[T], tx)
+        new ExpandedAttrSetIn[T, A](obj.expand[T], key, value.expand[T] /*, tx*/)
 
       override def adjuncts: scala.List[Adjunct] = bridge :: Nil
     }
@@ -381,8 +406,9 @@ object Obj {
       new AttrExpanded(obj.expand[T], key, tx)
     }
 
-    def update(in: Ex[A]): Unit /*Control*/  = Obj.Attr.Update (obj, key, in)
-    def set   (in: Ex[A]): Act      = Obj.Attr.Set    (obj, key, in)
+    def update      (in: Ex[A])         : Unit = Obj.Attr.Update       (obj, key, in)
+    def updateOption(in: Ex[Option[A]]) : Unit = Obj.Attr.UpdateOption (obj, key, in)
+    def set         (in: Ex[A])         : Act  = Obj.Attr.Set          (obj, key, in)
 
     def adjuncts: List[Adjunct] = bridge :: Nil
   }

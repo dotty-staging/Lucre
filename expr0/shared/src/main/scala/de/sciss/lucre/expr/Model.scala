@@ -16,9 +16,9 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.expr.graph.Ex
 
 object Model {
-  implicit def modelArrow[A]: Arrow[A, Model] = new ModelArrow[A]
+  implicit def modelArrow[A]: Arrow[A, Model[A]] = new ModelArrow[A]
 
-  private class ModelArrow[A] extends Arrow[A, Model] {
+  private class ModelArrow[A] extends Arrow[A, Model[A]] {
     override def patchTo(source: Ex.Source[A], sink: Model[A]): Unit =
       sink.update(source())
 
@@ -28,23 +28,23 @@ object Model {
 
   implicit final class Ops[A](private val m: Model[A]) extends AnyVal {
     @deprecated("Use <-> instead", since = "4.4.5")
-    def <--> [F[_]](that: F[A])(implicit left: Arrow.Left[A, F], right: Arrow.Right[A, F]): Unit = <-> [F](that)
+    def <--> [F](that: F)(implicit left: Arrow.Left[A, F], right: Arrow.Right[A, F]): Unit = <-> [F](that)
 
-    def <-> [F[_]](that: F[A])(implicit left: Arrow.Left[A, F], right: Arrow.Right[A, F]): Unit = {
+    def <-> [F](that: F)(implicit left: Arrow.Left[A, F], right: Arrow.Right[A, F]): Unit = {
       left  .patchFrom(that, m)
       right .patchTo(m, that)
     }
 
     @deprecated("Use --> instead", since = "4.4.5")
-    def ---> [F[_]](that: F[A])(implicit arrow: Arrow.Right[A, F]): Unit = --> [F](that)
+    def ---> [F](that: F)(implicit arrow: Arrow.Right[A, F]): Unit = --> [F](that)
 
-    def --> [F[_]](that: F[A])(implicit arrow: Arrow.Right[A, F]): Unit =
+    def --> [F](that: F)(implicit arrow: Arrow.Right[A, F]): Unit =
       arrow.patchTo(m, that)
 
     @deprecated("Use <-- instead", since = "4.4.5")
-    def <--- [F[_]](that: F[A])(implicit arrow: Arrow.Left[A, F]): Unit =  <-- [F](that)
+    def <--- [F](that: F)(implicit arrow: Arrow.Left[A, F]): Unit =  <-- [F](that)
 
-    def <-- [F[_]](that: F[A])(implicit arrow: Arrow.Left[A, F]): Unit =
+    def <-- [F](that: F)(implicit arrow: Arrow.Left[A, F]): Unit =
       arrow.patchFrom(that, m)
   }
 }

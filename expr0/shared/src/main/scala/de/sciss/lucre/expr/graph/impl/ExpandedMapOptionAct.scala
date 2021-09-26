@@ -18,7 +18,7 @@ import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.expr.{Context, IAction}
 import de.sciss.lucre.{IExpr, ITargets, Txn}
 
-final class ExpandedMapOptionAct[T <: Txn[T], A](in: IExpr[T, Option[A]], it: It.Expanded[T, A], fun: Act, tx0: T)
+final class ExpandedMapOptionAct[T <: Txn[T], A](in: IExpr[T, Option[A]], it: It.Expanded[T, A], fun: Act /*, tx0: T*/)
                                                 (implicit protected val targets: ITargets[T], ctx: Context[T])
   extends IAction.Option[T] with IActionImpl[T] {
 

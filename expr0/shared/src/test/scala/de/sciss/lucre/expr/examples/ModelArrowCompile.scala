@@ -6,6 +6,7 @@ import de.sciss.lucre.expr.graph.{Attr, Ex, Var}
 trait ModelArrowCompile[A] {
   def m: Model[A]
   def n: Model[A]
+  def mo: Model[Option[A]]
 
   def a: Attr[A]
 
@@ -27,4 +28,8 @@ trait ModelArrowCompile[A] {
   m --> n
   m <-- n
   x --> m
+
+  mo <-> a
+  mo --> ad
+  mo <-- (Some(ad): Ex[Option[A]])  // hmmm...
 }

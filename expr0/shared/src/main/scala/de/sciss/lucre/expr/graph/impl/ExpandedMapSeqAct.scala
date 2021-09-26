@@ -19,7 +19,7 @@ import de.sciss.lucre.expr.{Context, IAction}
 import de.sciss.lucre.{IExpr, ITargets, Txn}
 
 final class ExpandedMapSeqAct[T <: Txn[T], A](in: IExpr[T, Seq[A]], it: It.Expanded[T, A],
-                                              fun: Act, tx0: T)
+                                              fun: Act /*, tx0: T*/)
                                              (implicit protected val targets: ITargets[T], ctx: Context[T])
   extends IAction[T] with IActionImpl[T] {
 

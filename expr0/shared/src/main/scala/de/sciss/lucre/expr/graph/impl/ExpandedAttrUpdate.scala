@@ -29,12 +29,41 @@ final class ExpandedAttrUpdate[T <: Txn[T], A](source: IExpr[T, A], attrView: Ce
     obs.dispose()
 }
 
+final class ExpandedAttrUpdateOption[T <: Txn[T], A](source: IExpr[T, Option[A]], attrView: CellView.Var[T, Option[A]], tx0: T)
+  extends Disposable[T] {
+
+  private[this] val obs = source.changed.react { implicit tx => upd =>
+    val v = upd.now
+    attrView.update(v)
+  } (tx0)
+
+  def dispose()(implicit tx: T): Unit =
+    obs.dispose()
+}
+
 final class ExpandedAttrUpdateIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, A], tx0: T)
                                                 (implicit bridge: Obj.Bridge[A])
   extends Disposable[T] {
 
   private[this] val obs = value.changed.react { implicit tx => upd =>
     val v       = Some(upd.now)
+    val obj     = in.value
+    val viewOpt = Attr.resolveNestedIn[T, A](obj.peer, key)
+    viewOpt.foreach { attrView =>
+      attrView.update(v)
+    }
+  } (tx0)
+
+  def dispose()(implicit tx: T): Unit =
+    obs.dispose()
+}
+
+final class ExpandedAttrUpdateOptionIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, Option[A]], tx0: T)
+                                                (implicit bridge: Obj.Bridge[A])
+  extends Disposable[T] {
+
+  private[this] val obs = value.changed.react { implicit tx => upd =>
+    val v       = upd.now
     val obj     = in.value
     val viewOpt = Attr.resolveNestedIn[T, A](obj.peer, key)
     viewOpt.foreach { attrView =>
