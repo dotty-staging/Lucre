@@ -571,6 +571,6 @@ object Ex /*extends ExPlatform*/ {
     def apply(): Ex[A]
   }
 }
-trait Ex[+A] extends Lazy {
+trait Ex[+A] extends Flow {
   type Repr[T <: Txn[T]] <: IExpr[T, A]
 }

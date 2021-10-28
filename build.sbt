@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.5.0"
+lazy val projectVersion   = "4.5.1-SNAPSHOT"
 lazy val mimaVersion      = "4.5.0"
 
 lazy val deps = new {
@@ -112,6 +112,7 @@ lazy val base = crossProject(JVMPlatform, JSPlatform).in(file("base"))
     libraryDependencies ++= Seq(
       "de.sciss" %%% "serial" % deps.base.serial,
     ),
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-base" % mimaVersion)
   )
 
 lazy val geom = crossProject(JVMPlatform, JSPlatform).in(file("geom"))
@@ -207,7 +208,7 @@ lazy val expr = crossProject(JVMPlatform, JSPlatform).in(file("expr"))
   .jvmSettings(commonJvmSettings)
   .settings(
     name := s"$baseName-expr",
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
+    mimaPreviousArtifacts := Set.empty // Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
 
 lazy val confluent = crossProject(JVMPlatform, JSPlatform).in(file("confluent"))
@@ -242,6 +243,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform).in(file("tests"))
     Compile / packageBin / publishArtifact := false, // there are no binaries
     Compile / packageDoc / publishArtifact := false, // there are no javadocs
     Compile / packageSrc / publishArtifact := false, // there are no sources
+    mimaPreviousArtifacts := Set.empty,
   )
 
 // XXX TODO. we could use `.jvmConfigure(_.dependsOn(bdb))` for `tests` instead
@@ -255,6 +257,7 @@ lazy val testsJVM = project.in(file("testsJVM"))
     Compile / packageBin / publishArtifact := false, // there are no binaries
     Compile / packageDoc / publishArtifact := false, // there are no javadocs
     Compile / packageSrc / publishArtifact := false, // there are no sources
+    mimaPreviousArtifacts := Set.empty,
   )
 
 lazy val loggingEnabled = true  // only effective for snapshot versions

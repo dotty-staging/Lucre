@@ -13,6 +13,6 @@
 
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.{Disposable, Exec, IPublisher}
+import de.sciss.lucre.{Disposable, Exec, Form, IPublisher}
 
-trait ITrigger[T <: Exec[T]] extends IPublisher[T, Unit] with Disposable[T]
+trait ITrigger[T <: Exec[T]] extends Form[T] with IPublisher[T, Unit] with Disposable[T]

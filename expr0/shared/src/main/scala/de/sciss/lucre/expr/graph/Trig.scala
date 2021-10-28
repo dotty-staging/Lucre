@@ -76,6 +76,6 @@ object Trig extends ProductReader[Trig] {
   * is not enforced is that implementation may already mixin lazy traits such as
   * `Control` (and by extension, `Widget`).
   */
-trait Trig extends Lazy {
+trait Trig extends Flow {
   type Repr[T <: Txn[T]] <: ITrigger[T]
 }

@@ -26,3 +26,8 @@ trait Lazy extends Product {
 
   protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T]
 }
+
+/** An element that participates in data-flow, such as an expression `Ex`, an action `Act`, or a trigger `Trig`. */
+trait Flow extends Lazy {
+  type Repr[T <: Txn[T]] <: Form[T] with Disposable[T]
+}

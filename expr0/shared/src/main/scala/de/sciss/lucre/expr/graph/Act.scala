@@ -148,6 +148,6 @@ object Act extends ProductReader[Act] {
     Act(_xs: _*)
   }
 }
-trait Act extends Lazy {
+trait Act extends Flow {
   type Repr[T <: Txn[T]] <: IAction[T]
 }

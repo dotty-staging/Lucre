@@ -749,8 +749,18 @@ final class StringLiteralExOps(private val x: String) extends AnyVal {
 }
 
 final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {
-  def _1: Ex[A] = UnOp(UnOp.Tuple2_1[A, B](), x)
-  def _2: Ex[B] = UnOp(UnOp.Tuple2_2[A, B](), x)
+  def _1: Ex[A] = x match {
+    case ExTuple2(a, _) => a
+    case _              => UnOp(UnOp.Tuple2_1[A, B](), x)
+  }
 
-  def swap: Ex[(B, A)] = UnOp(UnOp.Tuple2Swap[A, B](), x)
+  def _2: Ex[B] = x match {
+    case ExTuple2(_, b) => b
+    case _              => UnOp(UnOp.Tuple2_2[A, B](), x)
+  }
+
+  def swap: Ex[(B, A)] = x match {
+    case ExTuple2(a, b) => ExTuple2(b, a)
+    case _              => UnOp(UnOp.Tuple2Swap[A, B](), x)
+  }
 }
