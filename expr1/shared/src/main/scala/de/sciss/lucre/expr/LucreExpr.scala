@@ -82,6 +82,7 @@ object LucreExpr {
         Edit, Edit.Apply, Edit.Named,
         Ex.MapExOption, Ex.MapExSeq, Ex.MapActOption, Ex.MapSeqAct, Ex.FlatMapExOption, Ex.FlatMapExSeq,
         Ex.FlatMapExSeqOption,
+        ExOption.Select,
         ExSeq,
         ExSeq.Count, ExSeq.DropWhile, ExSeq.Exists, ExSeq.Filter, ExSeq.FilterNot, ExSeq.Forall, ExSeq.Find,
         ExSeq.FindLast, ExSeq.IndexWhere, ExSeq.Select, ExSeq.SelectFirst, ExSeq.TakeWhile,

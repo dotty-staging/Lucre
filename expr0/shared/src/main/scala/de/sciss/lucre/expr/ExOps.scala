@@ -517,6 +517,9 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 
   def flatMap[B, To](f: Ex[A] => B)(implicit fm: Ex.CanFlatMap[Option, B, To]): To =
     fm.flatMap(x, f)
+
+  def select[B](implicit bridge: Obj.Bridge[B], ev: Ex[Option[A]] =:= Ex[Option[Obj]]): Ex[Option[B]] =
+    ExOption.Select(ev(x))
 }
 
 final class IntLiteralExOps(private val x: Int) extends AnyVal {

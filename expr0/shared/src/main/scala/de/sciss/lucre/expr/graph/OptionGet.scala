@@ -44,6 +44,7 @@ object OptionGet extends ProductReader[OptionGet[_]] {
     new OptionGet(_in)
   }
 }
+@deprecated("Use UnaryOp.OptionGet instead", since = "4.5.1")
 case class OptionGet[A](in: Ex[Option[A]]) extends Ex[A] {
   type Repr[T <: Txn[T]] = IExpr[T, A]
 

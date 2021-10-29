@@ -1,5 +1,6 @@
 package de.sciss.lucre.expr
 
+import de.sciss.lucre.Txn
 import de.sciss.lucre.expr.graph.{Act, Ex, Trig}
 
 trait ExTuplesCompile {
@@ -33,7 +34,9 @@ trait ExTuplesCompile {
 
   def trigger: Act
 
-  trait Bang extends Act with Trig
+  trait Bang extends Act with Trig {
+    type Repr[T <: Txn[T]] <: IAction[T] with ITrigger[T]
+  }
 
   def bang: Bang
 
