@@ -748,6 +748,34 @@ object BinaryOp extends ProductReader[BinaryOp[_, _, _ , _]] {
     override def adjuncts: Adjuncts = widen :: num :: Nil
   }
 
+  object RangeExclusive extends ProductReader[RangeExclusive] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): RangeExclusive = {
+      require(arity == 0 && adj == 0)
+      new RangeExclusive()
+    }
+  }
+  final case class RangeExclusive()
+    extends NamedOp[Int, Int, Seq[Int]] {
+
+    def apply(a: Int, b: Int): Seq[Int] = Range(a, b)
+
+    def name = "RangeExclusive"
+  }
+
+  object RangeInclusive extends ProductReader[RangeInclusive] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): RangeInclusive = {
+      require(arity == 0 && adj == 0)
+      new RangeInclusive()
+    }
+  }
+  final case class RangeInclusive()
+    extends NamedOp[Int, Int, Seq[Int]] {
+
+    def apply(a: Int, b: Int): Seq[Int] = Range.inclusive(a, b)
+
+    def name = "RangeInclusive"
+  }
+
   // ---- Option ----
 
   object OptionContains extends ProductReader[OptionContains[_]] {

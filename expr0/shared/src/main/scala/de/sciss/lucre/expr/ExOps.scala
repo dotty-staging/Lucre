@@ -576,6 +576,9 @@ final class IntLiteralExOps(private val x: Int) extends AnyVal {
   def fold2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Fold2 [A, A1, A2](), x, that)
   def wrap2 [A1, A2](that: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = BinOp(BinOp.Wrap2 [A, A1, A2](), x, that)
 
+  def until(that: Ex[A]): Ex[Seq[A]] = BinOp(BinOp.RangeExclusive(), x, that)
+  def to   (that: Ex[A]): Ex[Seq[A]] = BinOp(BinOp.RangeInclusive(), x, that)
+
   // ternary
 
   def clip[A1, A2](lo: Ex[A1], hi: Ex[A1])(implicit w: Widen2[A, A1, A2], num: Num[A2]): Ex[A2] = TernOp(TernOp.Clip[A, A1, A2](), x, lo, hi)
@@ -766,4 +769,14 @@ final class ExTuple2Ops[A, B](private val x: Ex[(A, B)]) extends AnyVal {
     case ExTuple2(a, b) => ExTuple2(b, a)
     case _              => UnOp(UnOp.Tuple2Swap[A, B](), x)
   }
+}
+
+final class SeqCompanionExOps(private val x: Seq.type) extends AnyVal {
+  /** Currently implemented as a shorthand for `0 until n.map(_ => elem)` */
+  def fill[A](n: Ex[Int])(elem: => Ex[A]): Ex[Seq[A]] =
+    (new IntLiteralExOps(0) until n).map(_ => elem)
+
+  /** Currently implemented as a shorthand for `0 until n.map(elem)` */
+  def tabulate[A](n: Ex[Int])(elem: Ex[Int] => Ex[A]): Ex[Seq[A]] =
+    (new IntLiteralExOps(0) until n).map(elem)
 }

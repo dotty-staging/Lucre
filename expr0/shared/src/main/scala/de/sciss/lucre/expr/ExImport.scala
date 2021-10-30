@@ -23,10 +23,11 @@ import scala.language.implicitConversions
 
 object ExImport extends ExImport
 trait ExImport {
-  implicit def stringLiteralExOps (x: String): StringLiteralExOps = new StringLiteralExOps(x)
-  implicit def intLiteralExOps    (x: Int   ): IntLiteralExOps    = new IntLiteralExOps   (x)
-  implicit def longLiteralExOps   (x: Long  ): LongLiteralExOps   = new LongLiteralExOps  (x)
-  implicit def doubleLiteralExOps (x: Double): DoubleLiteralExOps = new DoubleLiteralExOps(x)
+  implicit def stringLiteralExOps (x: String  ): StringLiteralExOps = new StringLiteralExOps(x)
+  implicit def intLiteralExOps    (x: Int     ): IntLiteralExOps    = new IntLiteralExOps   (x)
+  implicit def longLiteralExOps   (x: Long    ): LongLiteralExOps   = new LongLiteralExOps  (x)
+  implicit def doubleLiteralExOps (x: Double  ): DoubleLiteralExOps = new DoubleLiteralExOps(x)
+  implicit def seqCompanionExOps  (x: Seq.type): SeqCompanionExOps  = new SeqCompanionExOps (x)
 
   def any2stringadd             : Any = () // disable this from scala.Predef
   def augmentString (x: String) : Any = () // disable this from scala.Predef

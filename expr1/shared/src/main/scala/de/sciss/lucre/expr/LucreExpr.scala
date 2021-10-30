@@ -66,6 +66,7 @@ object LucreExpr {
         BinOp.Gcd, BinOp.RoundTo, BinOp.RoundUpTo, BinOp.Trunc, BinOp.Atan2, BinOp.Hypot, BinOp.Hypotx, BinOp.Pow,
         BinOp.LeftShift, BinOp.RightShift, BinOp.UnsignedRightShift, BinOp.Difsqr, BinOp.Sumsqr, BinOp.Sqrsum,
         BinOp.Sqrdif, BinOp.Absdif, BinOp.Clip2, BinOp.Excess, BinOp.Fold2, BinOp.Wrap2,
+        BinOp.RangeExclusive, BinOp.RangeInclusive,
         BinOp.OptionContains, BinOp.OptionGetOrElse, BinOp.OptionOrElse,
         BinOp.SeqAppended, BinOp.SeqApply, BinOp.SeqApplyOption, BinOp.SeqConcat, BinOp.SeqContains, BinOp.SeqDiff,
         BinOp.SeqDrop, BinOp.SeqDropRight, BinOp.SeqEndsWith, BinOp.SeqGrouped, BinOp.SeqIndexOf,
