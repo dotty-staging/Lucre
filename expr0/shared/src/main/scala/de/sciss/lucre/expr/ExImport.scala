@@ -35,6 +35,7 @@ trait ExImport {
 
   type Span     = _Span
   type SpanLike = _SpanLike
+  type URI      = _URI
 
   implicit def spanLikeTop: FromAny[SpanLike] with HasDefault[SpanLike]                       = Ex.spanLikeTop
   implicit def spanTop    : FromAny[Span    ] with HasDefault[Span    ]                       = Ex.spanTop

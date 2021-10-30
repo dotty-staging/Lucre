@@ -19,6 +19,7 @@ import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.{ExpandedFlatMapOption, ExpandedFlatMapSeq, ExpandedFlatMapSeqOption, ExpandedMapOption, ExpandedMapOptionAct, ExpandedMapSeq, ExpandedMapSeqAct}
 import de.sciss.lucre.expr.{Context, ExBooleanOps, ExOps, ExOptionOps, ExSeq, ExSeqOps, ExSpanOps, ExStringOps, ExTuple2, ExTuple2Ops, Graph, IAction}
 import de.sciss.lucre.{Adjunct, IExpr, Txn}
+import de.sciss.lucre.{Artifact => _Artifact}
 import de.sciss.serial.DataInput
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -548,7 +549,7 @@ object Ex /*extends ExPlatform*/ {
 
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
-    def defaultValue: _URI = new _URI("") // by convention
+    def defaultValue: _URI = _Artifact.Value.empty // by convention
 
     def fromAny(in: Any): Option[_URI] = in match {
       case v: _URI     => Some(v)

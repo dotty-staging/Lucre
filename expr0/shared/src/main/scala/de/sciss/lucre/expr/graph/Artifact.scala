@@ -32,6 +32,8 @@ object Artifact extends ProductReader[Artifact] {
 
   def init(): Unit = _init
 
+  def Empty(): Ex[URI] = Const(_Artifact.Value.empty)
+
   private object Bridge extends Obj.Bridge[URI] with Adjunct.Factory {
     final val id = 2000
 
