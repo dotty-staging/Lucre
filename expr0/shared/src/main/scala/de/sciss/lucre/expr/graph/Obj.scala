@@ -16,13 +16,12 @@ package de.sciss.lucre.expr.graph
 import de.sciss.lucre.Adjunct.HasDefault
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
-import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ExpandedAttrUpdateOptionIn, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
+import de.sciss.lucre.expr.graph.impl.{AbstractCtxCellView, ExpandedAttrSetIn, ExpandedAttrUpdateIn, ExpandedAttrUpdateOptionIn, ExpandedObjAttr, MappedIExpr, ObjCellViewVarImpl, ObjImplBase}
 import de.sciss.lucre.expr.graph.{Attr => _Attr}
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl, ITriggerConsumer}
 import de.sciss.lucre.expr.{CellView, Context, IAction, IControl}
 import de.sciss.lucre.impl.IChangeGeneratorEvent
-import de.sciss.lucre.{Adjunct, BooleanObj, Caching, Disposable, DoubleObj, DoubleVector, IChangeEvent, IExpr, IPull, IPush, ITargets, IntObj, IntVector, LongObj, ProductWithAdjuncts, SpanLikeObj, SpanObj, StringObj, Sys, Txn, Obj => LObj, Source => LSource}
-import de.sciss.model.Change
+import de.sciss.lucre.{Adjunct, BooleanObj, Caching, DoubleObj, DoubleVector, IChangeEvent, IExpr, IPush, ITargets, IntObj, IntVector, LongObj, ProductWithAdjuncts, SpanLikeObj, SpanObj, StringObj, Sys, Txn, Obj => LObj, Source => LSource}
 import de.sciss.serial.{DataInput, TFormat}
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
@@ -258,59 +257,6 @@ object Obj {
   }
   trait CanMake[A] extends Source[A]
 
-  private final class AttrExpanded[T <: Txn[T], A](obj: IExpr[T, Obj], key: String, tx0: T)
-                                                  (implicit protected val targets: ITargets[T], bridge: Bridge[A])
-    extends IExpr[T, Option[A]] with IChangeGeneratorEvent[T, Option[A]] {
-
-    override def toString: String = s"graph.Obj.AttrExpanded($obj, $key)@${hashCode().toHexString}"
-
-    private[this] val viewRef   = Ref(Option.empty[CellView.Var[T, Option[A]]])
-    private[this] val valueRef  = Ref.make[Option[A]]()
-    private[this] val obsRef    = Ref.make[Disposable[T]]()
-    private[this] val objObs    = obj.changed.react { implicit tx => upd =>
-      setObj(upd.now, init = false)
-    } (tx0)
-
-    private def setNewValue(now: Option[A])(implicit tx: T): Unit = {
-      val before = valueRef.swap(now)
-      if (before != now) {
-        fire(Change(before, now))
-      }
-    }
-
-    private def setObj(newObj: Obj, init: Boolean)(implicit tx: T): Unit = {
-      // println(s"newObj = $newObj, bridge = $bridge, key = $key")
-      val newView = newObj.peer[T].map(p => bridge.cellView(p, key))
-      viewRef()   = newView
-      val obsNew = newView.fold[Disposable[T]](Disposable.empty)(_.react { implicit tx => now =>
-        setNewValue(now)
-      })
-      val now: Option[A] = newView.flatMap(_.apply())
-      if (init) {
-        obsRef  () = obsNew
-        valueRef() = now
-      } else {
-        obsRef.swap(obsNew).dispose()
-        setNewValue(now)
-      }
-    }
-
-    // ---- init ----
-    setObj(obj.value(tx0), init = true)(tx0)
-
-    def value(implicit tx: T): Option[A] = viewRef().flatMap(_.apply())
-
-    private[lucre] def pullChange(pull: IPull[T])(implicit tx: T, phase: IPull.Phase): Option[A] =
-      pull.resolveExpr(this)
-
-    def changed: IChangeEvent[T, Option[A]] = this
-
-    def dispose()(implicit tx: T): Unit = {
-      objObs  .dispose()
-      obsRef().dispose()
-    }
-  }
-
   object Attr extends ProductReader[Attr[_]] {
     object Update extends ProductReader[Update[_]] {
       override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Update[_] = {
@@ -403,7 +349,7 @@ object Obj {
 
     protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets
-      new AttrExpanded(obj.expand[T], key, tx)
+      new ExpandedObjAttr(obj.expand[T], key, tx)
     }
 
     def update      (in: Ex[A])         : Unit = Obj.Attr.Update       (obj, key, in)

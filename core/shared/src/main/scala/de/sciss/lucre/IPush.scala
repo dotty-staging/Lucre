@@ -174,7 +174,7 @@ object IPush {
       resolveChange
 
     // Caches pulled values.
-    // Noe that we do not check `nonCachedTerms`, implying that
+    // Note that we do not check `nonCachedTerms`, implying that
     // `It.Expanded` forbids the use of `pullUpdate` (it throws
     // an exception), and therefore there cannot be a case that
     // circumvents `applyChange` usage.
