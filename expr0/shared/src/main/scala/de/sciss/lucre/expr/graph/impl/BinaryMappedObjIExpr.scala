@@ -40,6 +40,7 @@ abstract class BinaryMappedObjIExpr[T <: Txn[T], P[~ <: Txn[~]] <: LObj[~],
   private[this]   val obs = Ref[Disposable[T]](Disposable.empty)
   protected final val ref = Ref.make[A]()
 
+  // ---- init ----
   in.changed.--->(this)(tx0)
   b .changed.--->(this)(tx0)
   setObj(in.value(tx0), b.value(tx0), isInit = true)(tx0)
