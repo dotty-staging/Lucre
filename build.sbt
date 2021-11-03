@@ -1,6 +1,6 @@
 lazy val baseName         = "Lucre"
 lazy val baseNameL        = baseName.toLowerCase
-lazy val projectVersion   = "4.5.1-SNAPSHOT"
+lazy val projectVersion   = "4.5.1"
 lazy val mimaVersion      = "4.5.0"
 
 lazy val deps = new {
@@ -18,7 +18,7 @@ lazy val deps = new {
   }
   val expr = new {
     def equal: String = core.equal
-    val asyncFile     = "0.2.0"
+    val asyncFile     = "0.2.1"
     val span          = "2.0.2"
   }
   val confluent = new {
@@ -34,7 +34,7 @@ lazy val deps = new {
 }
 
 lazy val commonJvmSettings = Seq(
-  crossScalaVersions  := Seq("3.0.2", "2.13.6", "2.12.15"),
+  crossScalaVersions  := Seq("3.1.0", "2.13.7", "2.12.15"),
 )
 
 // sonatype plugin requires that these are in global
@@ -47,7 +47,7 @@ lazy val commonSettings = Seq(
 //  organization        := "de.sciss",
   description         := "Extension of Scala-STM, adding optional durability layer, and providing API for confluent and reactive event layers",
   homepage            := Some(url(s"https://github.com/Sciss/$baseName")),
-  scalaVersion        := "2.13.6",
+  scalaVersion        := "2.13.7",
   scalacOptions      ++= Seq(
     "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Ywarn-unused:params,-implicits"
   ),
