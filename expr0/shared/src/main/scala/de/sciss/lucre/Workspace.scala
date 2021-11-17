@@ -23,13 +23,13 @@ object Workspace {
 
     //    private val dummyVal = new DummyImpl[NoSys]
 
-    private final case class DummyImpl[T <: Txn[T]](system: Sys, cursor: Cursor[T])
+    private final class DummyImpl[T <: Txn[T]](val system: Sys, val cursor: Cursor[T])
       extends Workspace[T] {
 
       type S = Sys
 
-      def addDependent(dep: Disposable[T])(implicit tx: TxnLike): Unit = ()
-      def removeDependent(dep: Disposable[T])(implicit tx: TxnLike): Unit = ()
+      def addDependent    (dep: Disposable[T])(implicit tx: TxnLike): Unit = ()
+      def removeDependent (dep: Disposable[T])(implicit tx: TxnLike): Unit = ()
 
       def dependents(implicit tx: TxnLike): Iterable[Disposable[T]] = Nil
 
@@ -40,6 +40,8 @@ object Workspace {
       def close(): Unit = ()
 
       def dispose()(implicit tx: T): Unit = ()
+
+      override def toString: String = s"Workspace.Implicits.dummy($system)@${hashCode().toHexString}"
 
       def root(implicit tx: T): Folder[T] =
         throw new UnsupportedOperationException("No root folder on a dummy workspace handle")
