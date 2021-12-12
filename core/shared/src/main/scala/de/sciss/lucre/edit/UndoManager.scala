@@ -15,6 +15,7 @@ package de.sciss.lucre
 package edit
 
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.edit.UndoManager.Update
 import de.sciss.lucre.edit.impl.UndoManagerImpl
 
 import scala.concurrent.stm.TxnLocal
@@ -113,4 +114,14 @@ trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoMana
     * when the code proceeds to call undo manager agnostic implementations.
     */
   def ack(): Unit = ()
+
+  def reactNow(fun: T => Update[T] => Unit)(implicit tx: T): Disposable[T] = {
+    val state = Update(this,
+      undoName = if (canUndo) Some(undoName) else None,
+      redoName = if (canRedo) Some(redoName) else None
+    )
+    val obs   = react(fun)
+    fun(tx)(state)
+    obs
+  }
 }
