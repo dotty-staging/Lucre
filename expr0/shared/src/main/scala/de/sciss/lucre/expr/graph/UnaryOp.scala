@@ -663,6 +663,8 @@ object UnaryOp extends ProductReader[UnaryOp[_, _]] {
       new OptionToList()
     }
   }
+
+  // XXX TODO why did we decide to have this specific type?
   final case class OptionToList[A]() extends NamedOp[Option[A], scala.List[A]] {
     def apply(a: Option[A]): scala.List[A] = a.toList
 

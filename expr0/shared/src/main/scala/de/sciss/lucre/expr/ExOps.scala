@@ -510,7 +510,9 @@ final class ExOptionOps[A](private val x: Ex[Option[A]]) extends AnyVal {
 
   def contains[B >: A](elem: Ex[B]): Ex[Boolean] = BinOp(BinOp.OptionContains[B](), x, elem)
 
-  def toList: Ex[scala.List[A]] = UnOp(UnOp.OptionToList[A](), x)
+  @deprecated("Use toSeq instead.", since = "4.5.3")
+  def toList: Ex[scala.List[A]] = UnOp(UnOp.OptionToList[A](), x) // XXX TODO why did we decide to have this specific type?
+  def toSeq : Ex[Seq[A]]        = toList
 
   def map[B, To](f: Ex[A] => B)(implicit m: Ex.CanMap[Option, B, To]): To =
     m.map(x, f)
