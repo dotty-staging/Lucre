@@ -75,7 +75,7 @@ object UndoManagerImpl {
     def capture[A](name: String)(block: => A)(implicit tx: T): A = {
       val c0        = new Compound[T](name, Nil, significant = false)
       val before    = capturing.swap(Some(c0))
-      val res       = block
+      val res       = use(block)  // make sure we are found for agnostic code
       val Some(now) = capturing.swap(before): @unchecked
       if (now.nonEmpty) addEdit(now)
       res

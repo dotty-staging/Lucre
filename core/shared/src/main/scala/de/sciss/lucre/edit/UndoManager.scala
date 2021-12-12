@@ -72,8 +72,8 @@ trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoMana
     * one edit is added. If exactly one edit is added, it will be directly
     * added without a wrapping compound.
     *
-    * '''Note:''' it does not set the temporary global manager,
-    * to do so, `UndoManager.using` must be called additionally!
+    * '''Note:''' this wraps the call in `UndoManager.using`, so this manager
+    * is found by agnostic code.
     */
   def capture[A](name: String)(block: => A)(implicit tx: T): A
 

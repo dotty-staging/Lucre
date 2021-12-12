@@ -60,10 +60,8 @@ object Edit extends ProductReader[Ex[Edit]] {
     def executeAction()(implicit tx: T): Unit = {
       val undo  = e.value.peer[T]
       val nameV = name.value
-      UndoManager.using(undo) {
-        undo.capture(nameV) {
-          xs.foreach(_.executeAction())
-        }
+      undo.capture(nameV) {
+        xs.foreach(_.executeAction())
       }
     }
   }
