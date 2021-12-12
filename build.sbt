@@ -20,6 +20,7 @@ lazy val deps = new {
     def equal: String = core.equal
     val asyncFile     = "0.2.1"
     val span          = "2.0.2"
+    val scalaCollectionCompat = "2.6.0"
   }
   val confluent = new {
     val finger        = "1.5.5"
@@ -187,6 +188,11 @@ lazy val expr0 = crossProject(JVMPlatform, JSPlatform).in(file("expr0"))
       "de.sciss" %%% "equal"     % deps.expr.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
       "de.sciss" %%% "span"      % deps.expr.span,
     ),
+    libraryDependencies ++= {
+      if (scalaVersion.value.startsWith("2.12."))
+        ("org.scala-lang.modules" %% "scala-collection-compat" % deps.expr.scalaCollectionCompat) :: Nil
+      else Nil
+    },
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr0" % mimaVersion)
   )
 
