@@ -3,6 +3,8 @@ package de.sciss.lucre.expr
 import de.sciss.lucre.expr.graph.{CaseDef, Quote, Var}
 import de.sciss.lucre.expr.ExImport._
 
+import scala.annotation.unused
+
 // ensure this compiles
 trait AdjunctsCompile {
   def test(): Unit = {
@@ -63,5 +65,5 @@ trait AdjunctsCompile {
     use(doubleSeqAttr2)
   }
 
-  def use(x: Any): Unit = ()
+  def use(@unused x: Any): Unit = ()
 }

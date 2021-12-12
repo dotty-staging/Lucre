@@ -29,7 +29,7 @@ private[confluent] object PathImpl {
 
     def apply(c: Long): (Int, Long) = (1, c >>> 32)
 
-    def |+|(a: (Int, Long), b: (Int, Long)): (Int, Long) =
+    override def |+|(a: (Int, Long), b: (Int, Long)): (Int, Long) =
       (a._1 + b._1, a._2 + b._2)
 
     override def |+|(a: (Int, Long), b: (Int, Long), c: (Int, Long)): (Int, Long) =

@@ -39,6 +39,7 @@ object StringExtensions  {
       import BinaryOp._
       val op: Op = opId /* : @switch */ match {
         case Append.id => Append
+        case _ => sys.error(s"Unknown extension $opId")
       }
       val _1 = StringObj.read(in)
       val _2 = StringObj.read(in)

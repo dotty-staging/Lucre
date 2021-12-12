@@ -94,7 +94,8 @@ object BerkeleyDB {
 
   def factory(dir: File, createIfNecessary: Boolean = true,
               logLevel: LogLevel = LogOff): DataStore.Factory = {
-    val config = Config()
+    val config          = Config()
+    config.logLevel     = logLevel
     config.allowCreate  = createIfNecessary
     factory(dir, config.build)
   }

@@ -18,7 +18,7 @@ import de.sciss.lucre
 import de.sciss.lucre.Event.Targets
 import de.sciss.serial.{DataInput, DataOutput, TFormat, WritableFormat}
 
-import scala.annotation.switch
+import scala.annotation.{switch, unused}
 import scala.language.implicitConversions
 
 trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
@@ -104,7 +104,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
    * By default this throws an exception. Sub-classes may use a cookie greater
    * than `3` for other constant types.
    */
-  protected def readCookie[T <: Txn[T]](in: DataInput, cookie: Byte)(implicit tx: T): E[T] =  // sub-class may need tx
+  protected def readCookie[T <: Txn[T]](@unused in: DataInput, cookie: Byte)(implicit tx: T): E[T] =  // sub-class may need tx
     sys.error(s"Unexpected cookie $cookie")
 
   implicit final def format[T <: Txn[T]]: TFormat[T, E[T]] /* EventLikeFormat[S, Repr[T]] */ =

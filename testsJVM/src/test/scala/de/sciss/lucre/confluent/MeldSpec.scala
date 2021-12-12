@@ -104,7 +104,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
     val path1 = cursor.step { implicit tx => tx.inputAccess }
 
     val h = forkCursor.stepFrom(path1) { implicit tx =>
-      val Some(w0) = access()
+      val Some(w0) = access(): @unchecked
       w0.value() = 5678
       tx.newHandleM(w0)
     }
@@ -130,7 +130,7 @@ class MeldSpec extends ConfluentSpec with TestHasLinkedList {
 
     val (h1, ia) = cursor.step { implicit tx =>
       // println(s"iterate - inputAccess ${tx.inputAccess}")
-      val Some(w0) = access()
+      val Some(w0) = access(): @unchecked
       (tx.newHandle(w0), tx.inputAccess)
     }
 

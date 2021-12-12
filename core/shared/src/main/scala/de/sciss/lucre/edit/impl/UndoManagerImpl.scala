@@ -196,9 +196,8 @@ object UndoManagerImpl {
 
     def redoName(implicit tx: T): String = _redoName().get
 
-    def clear()(implicit tx: T): Unit = {
+    def clear()(implicit tx: T): Unit =
       if (clearNoFire()) fire(Update(impl, undoName = None, redoName = None))
-    }
 
     private def clearNoFire()(implicit tx: T): Boolean = {
       val hadUndo = toUndo.swap(Nil).nonEmpty

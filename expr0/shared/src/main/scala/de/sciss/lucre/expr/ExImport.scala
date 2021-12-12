@@ -14,11 +14,11 @@
 package de.sciss.lucre.expr
 
 import java.net.{URI => _URI}
-
 import de.sciss.lucre.Adjunct.{FromAny, HasDefault, ScalarOrd}
 import de.sciss.lucre.expr.graph.Ex
 import de.sciss.span.{Span => _Span, SpanLike => _SpanLike}
 
+import scala.annotation.unused
 import scala.language.implicitConversions
 
 object ExImport extends ExImport
@@ -29,9 +29,9 @@ trait ExImport {
   implicit def doubleLiteralExOps (x: Double  ): DoubleLiteralExOps = new DoubleLiteralExOps(x)
   implicit def seqCompanionExOps  (x: Seq.type): SeqCompanionExOps  = new SeqCompanionExOps (x)
 
-  def any2stringadd             : Any = () // disable this from scala.Predef
-  def augmentString (x: String) : Any = () // disable this from scala.Predef
-  def wrapString    (x: String) : Any = () // disable this from scala.Predef
+  def any2stringadd                     : Any = () // disable this from scala.Predef
+  def augmentString (@unused x: String) : Any = () // disable this from scala.Predef
+  def wrapString    (@unused x: String) : Any = () // disable this from scala.Predef
 
   type Span     = _Span
   type SpanLike = _SpanLike

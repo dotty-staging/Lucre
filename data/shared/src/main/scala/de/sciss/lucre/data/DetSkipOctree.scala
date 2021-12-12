@@ -2071,7 +2071,10 @@ object DetSkipOctree {
 
       // Take skip list as reference. Find if octree levels do not match skip list levels,
       // or whether points in the skip list are not found in the octree.
-      skipList.iterator.foreach { leaf =>
+      val leafIt = skipList.iterator
+      while (leafIt.hasNext) {
+        val leaf = leafIt.next()
+
         val pv = pointView(leaf.value, tx)
 
         @tailrec def findLeaf(b: Branch = lastTree,

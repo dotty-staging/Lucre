@@ -45,6 +45,8 @@ class BiPinSpec extends ConfluentEventSpec {
         case BiPin.Removed(time, BiPin.Entry(k, v)) => Removed(time, (k, v))
         case BiPin.Moved  (time, BiPin.Entry(k, v)) => Moved  (time, (k, v))
       })
+
+    case _ => throw new IllegalArgumentException(in.toString)
   }
 
   // type Entry[T <: Txn[T], A] = (LongObj[T], A)
@@ -73,7 +75,7 @@ class BiPinSpec extends ConfluentEventSpec {
     }
 
     system.step { implicit tx =>
-      val Seq(tup1, tup2, tup3, tup4, tup5, tup6) = tuples.map(_.apply())
+      val Seq(tup1, tup2, tup3, tup4, tup5, tup6) = tuples.map(_.apply()): @unchecked
 
       val bip = bipH()
       bip.add(tup1._1, tup1._2)
@@ -135,7 +137,7 @@ class BiPinSpec extends ConfluentEventSpec {
     type TUP = (LE, IE)
 
     system.step { implicit tx =>
-      val Seq(tup1: TUP, tup2: TUP, tup3: TUP, tup4: TUP, tup5: TUP, tup6: TUP) = tuples.map(_.apply())
+      val Seq(tup1: TUP, tup2: TUP, tup3: TUP, tup4: TUP, tup5: TUP, tup6: TUP) = tuples.map(_.apply()): @unchecked
       val bip = bipH()
 
       bip.remove(tup5._1, tup5._2) // should not be noticable
@@ -251,7 +253,7 @@ class BiPinSpec extends ConfluentEventSpec {
       val time = timeH()
       val expr = exprH()
 
-      val IntObj.Var(exprVar) = expr._2 // value
+      val IntObj.Var(exprVar) = expr._2: @unchecked // value
 
       exprVar() = 5
       obs.map(mapUpdate)
@@ -261,7 +263,7 @@ class BiPinSpec extends ConfluentEventSpec {
 //      )
       obs.clear()
 
-      val LongObj.Var(timeVar) = time._1 // key
+      val LongObj.Var(timeVar) = time._1: @unchecked // key
       timeVar() = 15000L
       //         println( "DEBUG " + bip.debugList() )
       //         println( "DEBUG " + bip.valueAt( 10000L ))

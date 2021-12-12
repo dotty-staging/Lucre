@@ -189,14 +189,14 @@ class BiGroupSpec extends ConfluentEventSpec {
         val it  = g.rangeSearch(start = start, stop = stop)
         val res = it.flatMap(_._2.map(_.value.value)).toList
         val exp = putSpans.flatMap { case (span, name) =>
-          val startOk = start match {
+          val startOk = (start: @unchecked) match {
             case Span.All       => true
             case Span.Void      => false
             case Span.From (x)  => span.compareStart(x) >= 0
             case Span.Until(x)  => span.compareStart(x) <  0
             case Span(x, y)     => span.compareStart(x) >= 0 && span.compareStart(y) < 0
           }
-          val stopOk = stop match {
+          val stopOk = (stop: @unchecked) match {
             case Span.All       => true
             case Span.Void      => false
             case Span.From (x)  => span.compareStop(x) >= 0

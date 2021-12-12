@@ -64,6 +64,7 @@ object SpanExtensions  {
       val op /* : Op[_, _, _, _] */ = opId /* : @switch */ match {
         case Apply.id => Apply
         case Shift.id => Shift
+        case _ => sys.error(s"Unknown extension $opId")
       }
       op.read[T](in, targets)
     }

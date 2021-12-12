@@ -29,7 +29,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 object BiGroupImpl {
   import BiGroup.{Entry, Leaf, MaxCoordinate, MaxSide, MaxSquare, MinCoordinate, Modifiable}
 
-  def spanToPoint(span: SpanLike): LongPoint2D = span match {
+  def spanToPoint(span: SpanLike): LongPoint2D = (span: @unchecked) match {
     case Span(start, stop)  => LongPoint2D(start,     stop     )
     case Span.From(start)   => LongPoint2D(start,     MaxCoordinate)
     case Span.Until(stop)   => LongPoint2D(MinCoordinate, stop     )
@@ -37,7 +37,7 @@ object BiGroupImpl {
     case Span.Void          => LongPoint2D(MaxCoordinate, MinCoordinate) // ?? what to do with this case ?? forbid?
   }
 
-  def searchSpanToPoint(span: SpanLike): LongPoint2D = span match {
+  def searchSpanToPoint(span: SpanLike): LongPoint2D = (span: @unchecked) match {
     case Span(start, stop)  => LongPoint2D(start,     stop         )
     case Span.From(start)   => LongPoint2D(start,     MaxCoordinate + 1)
     case Span.Until(stop)   => LongPoint2D(MinCoordinate, stop         )
@@ -57,7 +57,7 @@ object BiGroupImpl {
 
   final def intersectSpan[T <: Txn[T], A](tree: Tree[T, A])(span: SpanLike)(implicit tx: T): Iterator[A] = {
     // horizontally: until query_stop; vertically: from query_start
-    span match {
+    (span: @unchecked) match {
       case Span(start, stop) =>
         val shape = LongRectangle(MinCoordinate, start + 1, stop - MinCoordinate, MaxCoordinate - start)
         tree.rangeQuery(shape)
@@ -155,6 +155,8 @@ object BiGroupImpl {
             t.verifyConsistency(reportOnly)
           case _ => sys.error("Not a deterministic octree implementation")
         }
+
+      case _ => sys.error("Unknown implementation")
     }
 
   def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, BiGroup[T, A]] = anyFmt.asInstanceOf[Fmt[T, A]]

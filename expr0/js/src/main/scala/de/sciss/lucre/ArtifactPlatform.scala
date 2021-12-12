@@ -14,8 +14,9 @@
 package de.sciss.lucre
 
 import java.net.URI
+import scala.annotation.unused
 
 trait ArtifactPlatform {
-  private[sciss] def fileToURI(path: String): URI =
+  private[sciss] def fileToURI(@unused path: String): URI =
     throw new UnsupportedOperationException
 }

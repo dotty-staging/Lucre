@@ -78,7 +78,7 @@ trait NewExActMapBlueprint {
     def zip[B](that: Ex[Seq[B]]): Ex[Seq[(A, B)]]
   }
 
-  abstract class ExTupleOps[A, B](x: Ex[(A, B)]) {
+  abstract class ExTupleOps[A, B](/*x: Ex[(A, B)]*/) {
     def _1 : Ex[A]
     def _2 : Ex[B]
   }

@@ -74,7 +74,7 @@ object Attr extends ProductReader[Attr[_]] {
     val isNested = key.contains(":")
 
     if (isNested) {
-      val head :: firstSub :: tail = key.split(":").toList
+      val head :: firstSub :: tail = key.split(":").toList: @unchecked
 
       @tailrec
       def loop(parent: CellView[T, Option[LObj[T]]], sub: String, rem: List[String]): CellView[T, Option[A]] =
@@ -174,7 +174,7 @@ object Attr extends ProductReader[Attr[_]] {
     val isNested = key.contains(":")
 
     if (isNested) {
-      val head :: firstSub :: tail = key.split(":").toList
+      val head :: firstSub :: tail = key.split(":").toList: @unchecked
 
       @tailrec
       def loop(parent: CellView[T, Option[LObj[T]]], sub: String, rem: List[String]): (CellView[T, Option[LObj[T]]], String) =

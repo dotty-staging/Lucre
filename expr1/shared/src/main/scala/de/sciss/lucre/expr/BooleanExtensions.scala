@@ -42,6 +42,7 @@ object BooleanExtensions  {
                                   (implicit tx: T): _Ex[T] = {
       val op: UnaryOp[Boolean, BooleanObj] = opId /* : @switch */ match {
         case Not.id => Not
+        case _ => sys.error(s"Unknown extension $opId")
       }
       val _1 = BooleanObj.read(in)
       new Tuple1[T, Boolean, BooleanObj](targets, op, _1)

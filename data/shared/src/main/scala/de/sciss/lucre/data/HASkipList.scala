@@ -1001,7 +1001,7 @@ object HASkipList {
               l = null
               nextValue = null.asInstanceOf[C] // maxKey
             } else {
-              val (b, i, r) :: tail = stack
+              val (b, i, r) :: tail = stack: @unchecked
               stack = tail
               if (i < b.size) {
                 pushDown(b, i, r)

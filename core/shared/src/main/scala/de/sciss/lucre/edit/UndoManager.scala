@@ -50,13 +50,6 @@ object UndoManager {
   def find[T <: Txn[T]](implicit tx: T): Option[UndoManager[T]] =
     Option(current().asInstanceOf[UndoManager[T]])
 
-// this doesn't make sense:
-//  def fold[T <: Txn[T], A](doFun: => A)(undoFun: UndoManager[T] => A)(implicit tx: T): A =
-//    find[T].fold[A](suspend[T, A](doFun))(undoFun)
-//
-//  def fold[T <: Txn[T], A](block: => A)(implicit tx: T): A =
-//    find[T].fold[A](suspend[T, A](block))(_ => block)
-
   final case class Update[T <: Txn[T]](m: UndoManager[T], undoName: Option[String], redoName: Option[String]) {
     def canUndo: Boolean = undoName.isDefined
     def canRedo: Boolean = redoName.isDefined

@@ -110,8 +110,8 @@ object ThesisFiatKaplanExample extends App {
 
   cursor.step { implicit tx =>
     val list      = access()
-    val Some(w0)  = list.head()
-    val Some(w1)  = w0.next()
+    val Some(w0)  = list.head(): @unchecked
+    val Some(w1)  = w0  .next(): @unchecked
     w0.next()     = None
     list.head()   = Some(w1)
     w1.next()     = Some(w0)
