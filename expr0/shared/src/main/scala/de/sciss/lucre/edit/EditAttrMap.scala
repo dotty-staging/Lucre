@@ -43,7 +43,7 @@ object EditAttrMap {
       removeUndo(map, key)
     }
 
-  private def removeDo[T <: Txn[T]](map: AttrMap[T], key: String)(implicit tx: T): Unit =
+  def removeDo[T <: Txn[T]](map: AttrMap[T], key: String)(implicit tx: T): Unit =
     map.remove(key)
 
   def removeUndo[T <: Txn[T]](map: AttrMap[T], key: String)(implicit tx: T,

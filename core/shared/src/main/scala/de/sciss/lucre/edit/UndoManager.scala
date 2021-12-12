@@ -25,6 +25,9 @@ object UndoManager {
   def apply[T <: Txn[T]](): UndoManager[T] =
     UndoManagerImpl()
 
+  /** Runs a block of code under the given undo manager.
+    * The counter part would be `suspend`.
+    */
   def using[T <: Txn[T], A](m: UndoManager[T])(body: => A)(implicit tx: T): A = {
     val before = current.swap(m)
     try {
@@ -34,8 +37,25 @@ object UndoManager {
     }
   }
 
+  /** Runs a block of code ensuring that no undo manager is present.
+    * The counter part would be `using`.
+    *
+    * The can be used if a method guarantees bypassing undo management,
+    * but its implement relies on undo manager agnostic calls.
+    */
+  def suspend[T <: Txn[T], A](body: => A)(implicit tx: T): A =
+    using[T, A](null)(body)
+
+  /** Finds the currently (temporarily) set undo manager. */
   def find[T <: Txn[T]](implicit tx: T): Option[UndoManager[T]] =
     Option(current().asInstanceOf[UndoManager[T]])
+
+// this doesn't make sense:
+//  def fold[T <: Txn[T], A](doFun: => A)(undoFun: UndoManager[T] => A)(implicit tx: T): A =
+//    find[T].fold[A](suspend[T, A](doFun))(undoFun)
+//
+//  def fold[T <: Txn[T], A](block: => A)(implicit tx: T): A =
+//    find[T].fold[A](suspend[T, A](block))(_ => block)
 
   final case class Update[T <: Txn[T]](m: UndoManager[T], undoName: Option[String], redoName: Option[String]) {
     def canUndo: Boolean = undoName.isDefined
@@ -49,25 +69,28 @@ object UndoManager {
 }
 trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoManager.Update[T]] {
   /** Add another edit to the history.
-   * Unless merging is blocked, it tries to merge this edit
-   * with the most recent edit. Afterwards,
-   * the internal merge-block flag is cleared.
-   */
+    * Unless merging is blocked, it tries to merge this edit
+    * with the most recent edit. Afterwards,
+    * the internal merge-block flag is cleared.
+    */
   def addEdit(edit: UndoableEdit[T])(implicit tx: T): Unit
 
   /** Creates a compound capture if during the execution of `block` more than
-   * one edit is added. If exactly one edit is added, it will be directly
-   * added without a wrapping compound.
-   *
-   * '''Note:''' it does not set the temporary global manager,
-   * to do so, `UndoManager.using` must be called additionally!
-   */
+    * one edit is added. If exactly one edit is added, it will be directly
+    * added without a wrapping compound.
+    *
+    * '''Note:''' it does not set the temporary global manager,
+    * to do so, `UndoManager.using` must be called additionally!
+    */
   def capture[A](name: String)(block: => A)(implicit tx: T): A
 
+  def use[A](block: => A)(implicit tx: T): A =
+    UndoManager.using(this)(block)
+
   /** Disallow the merging of the next edit to be added.
-   * This can be used to avoid merging edits if the editor
-   * component was temporarily unfocused, for example.
-   */
+    * This can be used to avoid merging edits if the editor
+    * component was temporarily unfocused, for example.
+    */
   def blockMerge()(implicit tx: T): Unit
 
   /** Whether there are undoable edits and thus `undo` and ` undoName` may be called. */
@@ -90,4 +113,11 @@ trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoMana
 
   /** Clears the history, removing all edits. Afterwards, `canUndo` and `canRedo` will return `false`. */
   def clear()(implicit tx: T): Unit
+
+  /** A no-op that can be used to acknowledge the presence of the undo manager.
+    *
+    * This is useful to avoid warnings about an unused undo manager argument,
+    * when the code proceeds to call undo manager agnostic implementations.
+    */
+  def ack(): Unit = ()
 }

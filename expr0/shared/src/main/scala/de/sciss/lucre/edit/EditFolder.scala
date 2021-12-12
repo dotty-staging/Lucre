@@ -50,6 +50,20 @@ object EditFolder {
     undo.addEdit(edit)
   }
 
+  def insert[T <: Txn[T]](parent: Folder[T], index: Int, child: Obj[T])
+                         (implicit tx: T): Unit =
+    UndoManager.find[T].fold(
+      insertDo  (parent, index, child)
+    ) { implicit undo =>
+      insertUndo(parent, index, child)
+    }
+
+  def insertUndo[T <: Txn[T]](parent: Folder[T], index: Int, child: Obj[T])
+                             (implicit tx: T, undo: UndoManager[T]): Unit = {
+    val edit = new Insert(parent, index, child, tx)
+    undo.addEdit(edit)
+  }
+
   def removeHead[T <: Txn[T]](parent: Folder[T])(implicit tx: T): Obj[T] =
     UndoManager.find[T].fold(
       removeHeadDo  (parent)
@@ -177,6 +191,32 @@ object EditFolder {
     def name: String = "Prepend to Folder"
   }
 
+  // ---- private: insert ----
+
+  private def insertDo[T <: Txn[T]](parent: Folder[T], index: Int, child: Obj[T])(implicit tx: T): Unit =
+    parent.insert(index, child)
+
+  private final class Insert[T <: Txn[T]](parent0: Folder[T], index: Int, child0: Obj[T], tx0: T)
+    extends BasicUndoableEdit[T] {
+
+    private[this] val parentH = tx0.newHandle(parent0)
+    private[this] val childH  = tx0.newHandle(child0 )
+
+    insertDo(parent0, index, child0)(tx0)
+
+    protected def undoImpl()(implicit tx: T): Unit = {
+      val p   = parentH()
+      val c   = childH ()
+      val old = p.removeAt(index)
+      if (old !== c) throw new CannotUndoException(s"$name: last element is not $c")
+    }
+
+    protected def redoImpl()(implicit tx: T): Unit =
+      insertDo(parentH(), index, childH())
+
+    def name: String = "Insert in Folder"
+  }
+
   // ---- private: removeHead ----
 
   private def removeHeadDo[T <: Txn[T]](parent: Folder[T])(implicit tx: T): Obj[T] =
@@ -237,7 +277,7 @@ object EditFolder {
 
   // ---- private: removeAt ----
 
-  private def removeAtDo[T <: Txn[T]](parent: Folder[T], index: Int)(implicit tx: T): Obj[T] =
+  def removeAtDo[T <: Txn[T]](parent: Folder[T], index: Int)(implicit tx: T): Obj[T] =
     parent.removeAt(index)
 
   private final class RemoveAt[T <: Txn[T]](parent0: Folder[T], index: Int, tx0: T)

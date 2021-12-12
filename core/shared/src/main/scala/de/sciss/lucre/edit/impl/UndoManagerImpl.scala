@@ -76,7 +76,7 @@ object UndoManagerImpl {
       val c0        = new Compound[T](name, Nil, significant = false)
       val before    = capturing.swap(Some(c0))
       val res       = block
-      val Some(now) = capturing.swap(before)
+      val Some(now) = capturing.swap(before): @unchecked
       if (now.nonEmpty) addEdit(now)
       res
     }
