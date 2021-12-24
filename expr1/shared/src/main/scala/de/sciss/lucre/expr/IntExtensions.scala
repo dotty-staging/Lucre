@@ -14,14 +14,27 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
-import de.sciss.lucre.impl.{ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1}
-import de.sciss.lucre.{BooleanObj, Copy, Elem, Expr, IntObj, Obj, Txn}
-import de.sciss.serial.DataInput
+import de.sciss.lucre.edit.UndoManager
+import de.sciss.lucre.expr.Context.Attr
+import de.sciss.lucre.expr.graph.Ex
+import de.sciss.lucre.expr.impl.ContextMixin
+import de.sciss.lucre.impl.{ExprNodeImpl, ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1, GeneratorEvent}
+import de.sciss.lucre.{BooleanObj, Copy, Cursor, Disposable, Elem, Event, Expr, IExpr, IntObj, Obj, Pull, Source, Txn, Workspace}
+import de.sciss.model.Change
+import de.sciss.serial.{DataInput, DataOutput}
 
 import scala.annotation.switch
 
 object IntExtensions {
+  def TEST[T <: Txn[T]](implicit tx: T): IntObj[T] = {
+    import ExImport._
+    val ex: Ex[Int] = "in".attr(0) * 2
+    val tgt = Targets[T]()
+    new IntEx[T](ex, tgt, tx)
+  }
+
   private[this] lazy val _init: Unit = {
+    IntObj.registerExtension(IntEx)
     IntObj.registerExtension(IntTuple1s)
     IntObj.registerExtension(IntTuple2s)
   }
@@ -29,6 +42,90 @@ object IntExtensions {
   def init(): Unit = _init
 
   type _Ex[T <: Txn[T]] = IntObj[T]
+
+  private[this] final val INT_EX_SER_VERSION = 0x01
+
+  // XXX TODO is this viable?
+  private[this] final class HeadlessContext[T <: Txn[T]](_selfH: Source[T, Obj[T]])
+    extends ContextMixin[T] {
+
+    override protected def selfH: Option[Source[T, Obj[T]]] = Some(_selfH)
+
+    private def unsupported(what: String): Nothing =
+      throw new UnsupportedOperationException(s"$what of a headless context")
+
+    override implicit def cursor      : Cursor      [T] = unsupported("cursor"      )
+    override implicit def workspace   : Workspace   [T] = unsupported("workspace"   )
+    override implicit def undoManager : UndoManager [T] = unsupported("undo-manager")
+
+    override def attr: Attr[T] = Context.emptyAttr
+  }
+
+  private[this] object IntEx extends ExprTypeExtension1[IntObj] {
+
+    override def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
+                                           (implicit tx: T): IntObj[T] = {
+      val cookie = in.readShort()
+      require(cookie == INT_EX_SER_VERSION, s"Unexpected cookie $cookie")
+      val ref   = new ExElem.RefMapIn(in)
+      val ex    = ref.readEx[Int]()
+      new IntEx[T](ex, targets, tx)
+    }
+
+    override def name: String = "Ex[Int]"
+
+    override final val opLo = -1
+    override final val opHi = -1
+  }
+  private final class IntEx[T <: Txn[T]](ex: Ex[Int], protected val targets: Targets[T], tx0: T)
+    extends IntObj[T] with ExprNodeImpl[T, Int] {
+
+    type A = Int
+
+    private[this] val ctx : Context[T]    = new HeadlessContext[T](tx0.newHandle[IntObj[T]](this))
+    private[this] val peer: IExpr[T, Int] = ex.expand[T](ctx, tx0)
+    private[this] val obs : Disposable[T] = peer.changed.react { implicit tx => upd =>
+      changed.fire(upd)
+    } (tx0)
+
+    override def value(implicit tx: T): Int = peer.value
+
+    override def tpe: Obj.Type = IntObj
+
+    object changed extends Changed with GeneratorEvent[T, Change[A]] {
+      private[lucre] def pullUpdate(pull: Pull[T])(implicit tx: T): Option[Change[A]] =
+        Some(pull.resolve[Change[A]])
+    }
+
+//    final def connect()(implicit tx: T): this.type = {
+//      peer.changed ---> changed
+//      this
+//    }
+//
+//    private[this] def disconnect()(implicit tx: T): Unit = {
+//      peer.changed -/-> changed
+//    }
+
+    override protected def writeData(out: DataOutput): Unit = {
+      out.writeShort(INT_EX_SER_VERSION)
+      val ref = new ExElem.RefMapOut(out)
+      ref.writeElem(ex)
+    }
+
+    override protected def disposeData()(implicit tx: T): Unit = {
+//      disconnect()
+      obs .dispose()
+      peer.dispose()
+      ctx .dispose()
+    }
+
+    /** Makes a deep copy of an element, possibly translating it to a different system `Out`. */
+    override private[lucre] def copy[Out <: Txn[Out]]()(implicit txIn: T, txOut: Out,
+                                                        context: Copy[T, Out]): IntEx[Out] = {
+      val newTgt = Event.Targets[Out]()
+      new IntEx[Out](ex, newTgt, txOut)
+    }
+  }
 
   private[this] object IntTuple1s extends ExprTypeExtension1[IntObj] {
     // final val arity = 1
