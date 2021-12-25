@@ -28,7 +28,12 @@ import scala.annotation.switch
 object IntExtensions {
   def TEST[T <: Txn[T]](implicit tx: T): IntObj[T] = {
     import ExImport._
+    import de.sciss.lucre.expr.graph._
     val ex: Ex[Int] = "in".attr(0) * 2
+//    val vr = Var(0)
+//    val tr = Trig()
+//    ex.changed --> Act(vr.inc, tr)
+//    val res: Ex[Int] = vr.latch(tr)
     val tgt = Targets[T]()
     new IntEx[T](ex, tgt, tx)
   }
@@ -43,7 +48,7 @@ object IntExtensions {
 
   type _Ex[T <: Txn[T]] = IntObj[T]
 
-  private[this] final val INT_EX_SER_VERSION = 0x01
+  private[this] final val INT_EX_SER_VERSION = 0x4945
 
   // XXX TODO is this viable?
   private[this] final class HeadlessContext[T <: Txn[T]](_selfH: Source[T, Obj[T]])
@@ -80,11 +85,14 @@ object IntExtensions {
   private final class IntEx[T <: Txn[T]](ex: Ex[Int], protected val targets: Targets[T], tx0: T)
     extends IntObj[T] with ExprNodeImpl[T, Int] {
 
+    override def toString = s"Expr$id @${hashCode.toHexString}"
+
     type A = Int
 
     private[this] val ctx : Context[T]    = new HeadlessContext[T](tx0.newHandle[IntObj[T]](this))
     private[this] val peer: IExpr[T, Int] = ex.expand[T](ctx, tx0)
     private[this] val obs : Disposable[T] = peer.changed.react { implicit tx => upd =>
+      println(s"$this fire($upd)")
       changed.fire(upd)
     } (tx0)
 
@@ -107,6 +115,8 @@ object IntExtensions {
 //    }
 
     override protected def writeData(out: DataOutput): Unit = {
+      out.writeByte(1)  // 'node not var'
+      out.writeInt(-1)  // opId
       out.writeShort(INT_EX_SER_VERSION)
       val ref = new ExElem.RefMapOut(out)
       ref.writeElem(ex)
@@ -121,7 +131,7 @@ object IntExtensions {
 
     /** Makes a deep copy of an element, possibly translating it to a different system `Out`. */
     override private[lucre] def copy[Out <: Txn[Out]]()(implicit txIn: T, txOut: Out,
-                                                        context: Copy[T, Out]): IntEx[Out] = {
+                                                        context: Copy[T, Out]): IntObj[Out] = {
       val newTgt = Event.Targets[Out]()
       new IntEx[Out](ex, newTgt, txOut)
     }
