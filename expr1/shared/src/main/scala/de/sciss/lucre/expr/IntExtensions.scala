@@ -15,8 +15,7 @@ package de.sciss.lucre.expr
 
 import de.sciss.lucre.Event.Targets
 import de.sciss.lucre.edit.UndoManager
-import de.sciss.lucre.expr.Context.Attr
-import de.sciss.lucre.expr.graph.Ex
+import de.sciss.lucre.expr.graph.{Attr, Ex}
 import de.sciss.lucre.expr.impl.ContextMixin
 import de.sciss.lucre.impl.{ExprNodeImpl, ExprTuple1, ExprTuple1Op, ExprTuple2, ExprTuple2Op, ExprTypeExtension1, GeneratorEvent}
 import de.sciss.lucre.{BooleanObj, Copy, Cursor, Disposable, Elem, Event, Expr, IExpr, IntObj, Obj, Pull, Source, Txn, Workspace}
@@ -63,7 +62,7 @@ object IntExtensions {
     override implicit def workspace   : Workspace   [T] = unsupported("workspace"   )
     override implicit def undoManager : UndoManager [T] = unsupported("undo-manager")
 
-    override def attr: Attr[T] = Context.emptyAttr
+    override def attr: Context.Attr[T] = Context.emptyAttr
   }
 
   private[this] object IntEx extends ExprTypeExtension1[IntObj] {
@@ -118,7 +117,16 @@ object IntExtensions {
       out.writeByte(1)  // 'node not var'
       out.writeInt(-1)  // opId
       out.writeShort(INT_EX_SER_VERSION)
-      val ref = new ExElem.RefMapOut(out)
+      val ref = new ExElem.RefMapOut(out) {
+        override protected def writeIdentifiedProduct(p: Product): Unit = {
+          p match {
+            case Attr.WithDefault(key, _) => println(s"EVENT KEY (d): $key")
+            case Attr(key)                => println(s"EVENT KEY    : $key")
+            case _ =>
+          }
+          super.writeIdentifiedProduct(p)
+        }
+      }
       ref.writeElem(ex)
     }
 

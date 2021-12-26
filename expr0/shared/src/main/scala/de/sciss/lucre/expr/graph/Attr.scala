@@ -231,6 +231,9 @@ object Attr extends ProductReader[Attr[_]] {
     def apply[A](key: String, default: Ex[A])(implicit bridge: Obj.Bridge[A]): WithDefault[A] =
       Impl(key, default)
 
+    def unapply[A](attr: WithDefault[A]): Option[(String, Ex[A])] =
+      Some((attr.key, attr.default))
+
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): WithDefault[_] = {
       require (arity == 2 && adj == 1)
       val _key      = in.readString()
@@ -308,6 +311,8 @@ object Attr extends ProductReader[Attr[_]] {
   // N.B. we use a trait here not a case class, because
   // we reuse the interface elsewhere (SP -> Artifact)
   trait WithDefault[A] extends Ex[A] with Like[A] { self =>
+    def key: String   // XXX TODO ugh, not binary compatible; we take the risk as we know the three implementations
+
     def default: Ex[A]
 
     def transform(f: Ex[A] => Ex[A]): Act = set(f(self))
