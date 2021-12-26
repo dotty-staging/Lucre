@@ -51,7 +51,7 @@ object UndoManager {
   def find[T <: Txn[T]](implicit tx: T): Option[UndoManager[T]] =
     Option(current().asInstanceOf[UndoManager[T]])
 
-  final case class Update[T <: Txn[T]](m: UndoManager[T], undoName: Option[String], redoName: Option[String]) {
+  final case class Update[T <: Exec /*Txn*/[T]](m: UndoManager[T], undoName: Option[String], redoName: Option[String]) {
     def canUndo: Boolean = undoName.isDefined
     def canRedo: Boolean = redoName.isDefined
   }
@@ -61,7 +61,7 @@ object UndoManager {
   final class CannotUndoException(message: String) extends RuntimeException(message)
   final class CannotRedoException(message: String) extends RuntimeException(message)
 }
-trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoManager.Update[T]] {
+trait UndoManager[T <: Exec /*Txn*/[T]] extends Disposable[T] with Observable[T, UndoManager.Update[T]] {
   /** Add another edit to the history.
     * Unless merging is blocked, it tries to merge this edit
     * with the most recent edit. Afterwards,
@@ -78,8 +78,10 @@ trait UndoManager[T <: Txn[T]] extends Disposable[T] with Observable[T, UndoMana
     */
   def capture[A](name: String)(block: => A)(implicit tx: T): A
 
-  def use[A](block: => A)(implicit tx: T): A =
-    UndoManager.using(this)(block)
+//  def use[A](block: => A)(implicit tx: T): A =
+//    UndoManager.using(this)(block)
+
+  def use[A](block: => A)(implicit tx: T): A
 
   /** Disallow the merging of the next edit to be added.
     * This can be used to avoid merging edits if the editor

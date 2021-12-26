@@ -31,7 +31,7 @@ object MapObjLike {
     def value: V = now
   }
 }
-trait MapObjLike[T <: Txn[T], K, V] extends Disposable[T] {
+trait MapObjLike[T <: Exec /*Txn*/[T], K, V] extends Disposable[T] {
 
 //  type V = Repr[T]
 

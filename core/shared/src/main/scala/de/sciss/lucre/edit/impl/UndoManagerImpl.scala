@@ -35,6 +35,8 @@ object UndoManagerImpl {
 
     def blockMerge()(implicit tx: T): Unit = ()
 
+    override def use[A](block: => A)(implicit tx: T): A = UndoManager.using(this)(block)
+
     private def cannotUndo(): Nothing =  throw new CannotUndoException("Dummy undo manager")
     private def cannotRedo(): Nothing =  throw new CannotRedoException("Dummy undo manager")
 
@@ -80,6 +82,8 @@ object UndoManagerImpl {
       if (now.nonEmpty) addEdit(now)
       res
     }
+
+    override def use[A](block: => A)(implicit tx: T): A = UndoManager.using(this)(block)
 
     def addEdit(edit: UndoableEdit[T])(implicit tx: T): Unit =
       capturing() match {
