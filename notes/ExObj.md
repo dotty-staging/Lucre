@@ -54,3 +54,34 @@ sure we traverse the entire tree: Serialization. We just need to add a custom `R
 expressions.
 
 Actually, `Attr.WithDefault` already uses a constant key.
+
+----
+
+## An example: predicate on size of a folder
+
+Things like the following should work: an object carrying an `Ex[Boolean]` that indicates whether a folder is
+empty or not. The program would probably be `In(Folder()).nonEmpty` or `"in".attr(Folder()).nonEmpty`.
+
+A difficulty is introduced into the very reduced `Event` model by the fact that we cannot "directly" watch for
+changes of the attribute with key `"in"`; instead, there must be one default event listening for any attribute map
+change; this way `Added`, `Removed`, `Replaced` can be detected and filtered. But it cannot be detected whether an
+existing attribute changes, e.g. a `Folder` stored in the `"in"` attribute. The ex obj would have to add another
+event connection when that folder exists; consequently, remove it when the folder disappears from the attribute
+entry. Is it safe to call `--->` and `-/->` during an event dispatch? Since would happen in `pullUpdate`, all
+event reactions have been collected by now, so it _should_ be safe. But it introduces the need to cache the observed
+values; at least store a boolean that indicates "watching / not-watching" (as we can always find the event via
+`upd.before.changed`)? Even more complicated will be a support of indirect keys, such as `"main:sub"`. In the first
+implementation, we could forbid those keys and/or print a warning that they are not properly tracked.
+
+## An example: mapping over a collection
+
+An object carrying an `Ex[Long]` that indicates the maximum length of a list of audio cues.
+The program could be `In(Folder()).children.collect[AudioCue].map(_.spec.numFrames).maxOption.getOrElse(0L)`.
+Now even tracing the `changed` of the `"in"` attribute's value would not suffice; it would only detect additions and
+removals of the folder, but not changes to an `AudioCue.Obj.Var` contained in it.
+Essentially, such as scenario can only work if we go the route of persisting the entire expanded `IExpr` tree.
+There are currently around 60 implementations of `IExpr` in Lucre alone, more in SP.
+
+The implementation of the Pattern library's `Stream` might be a way to go this direction. To explore it, one would
+probably create a branch with the `Ex` basics, plus unary and binary operations, plus attributes handling, and see
+if this works or not.
