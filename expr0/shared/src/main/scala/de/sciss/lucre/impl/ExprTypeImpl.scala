@@ -32,20 +32,22 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
 
   private[this] var extensions = mkExtArray(0) // new Array[Ext](0)
 
-  final protected def addExtension(extensions: Array[ExprTypeExtension1[Repr]], ext: ExprTypeExtension1[Repr]): Array[ExprTypeExtension1[Repr]] = {
+  final protected def addExtension(extensions: Array[ExprTypeExtension1[Repr]],
+                                   ext: ExprTypeExtension1[Repr]): Array[ExprTypeExtension1[Repr]] = {
     val opLo = ext.opLo
     val opHi = ext.opHi
     require (opLo <= opHi, s"Lo ($opLo) must be less than or equal hi ($opHi)")
     val idx0  = extensions.indexWhere(_.opLo > opHi)
-    val idx   = if (idx0 < 0) extensions.length else idx0
+    val len   = extensions.length
+    val idx   = if (idx0 < 0) len else idx0
     if (idx > 0) {
       val pred = extensions(idx - 1)
       require(pred.opHi < opLo, s"Extension overlap for $pred versus $ext")
     }
-    val len   = extensions.length
     val extensions1 = mkExtArray(len + 1) // new Array[Ext](len + 1)
-    System.arraycopy(extensions, 0, extensions1, 0, len)
-    extensions1(len) = ext
+    if (idx > 0) System.arraycopy(extensions, 0, extensions1, 0, idx)
+    extensions1(idx) = ext
+    if (idx < len) System.arraycopy(extensions, idx, extensions1, idx + 1, len - idx)
     extensions1
   }
 
