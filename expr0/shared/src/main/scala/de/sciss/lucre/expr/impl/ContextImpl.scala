@@ -15,11 +15,14 @@ package de.sciss.lucre
 package expr
 package impl
 
+import de.sciss.lucre.Log.{event => logEvent}
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.graph.{Control, It}
 
 import scala.annotation.tailrec
+import scala.collection.immutable.{IndexedSeq => Vec}
+import scala.collection.mutable
 import scala.concurrent.stm.{Ref, TMap, TxnLocal}
 
 trait ContextMixin[T <: Txn[T]] extends Context[T] {
@@ -136,4 +139,37 @@ final class ContextImpl[T <: Txn[T]](protected val selfH: Option[Source[T, Obj[T
 
   override def reactTo[A](event: EventLike[T, A])(fun: T => A => Unit)(implicit tx: T): Disposable[T] =
     event.react(fun)
+}
+
+final class HeadlessContextImpl[T <: Txn[T]](_selfH: Source[T, Obj[T]])
+  extends Context.Headless[T] with ContextMixin[T] {
+
+  //    override def connect: Boolean = false
+
+  private[this] val _eventsSet = mutable.Set.empty[Event[T, Any]]
+  private[this] var _eventsVec = Vector     .empty[Event[T, Any]]
+
+  def events: Vec[Event[T, Any]] = _eventsVec
+
+  override def reactTo[A](event: EventLike[T, A])(fun: T => A => Unit)(implicit tx: T): Disposable[T] = {
+    event match {
+      case e: Event[T, A] =>
+        val isNew = _eventsSet.add(e)
+        logEvent.debug(s"ExObj register $e")
+        if (isNew) _eventsVec :+= e
+      case _ => ()
+    }
+    Disposable.empty
+  }
+
+  override protected def selfH: Option[Source[T, Obj[T]]] = Some(_selfH)
+
+  private def unsupported(what: String): Nothing =
+    throw new UnsupportedOperationException(s"$what of a headless context")
+
+  override implicit def cursor      : Cursor      [T] = unsupported("cursor"      )
+  override implicit def workspace   : Workspace   [T] = unsupported("workspace"   )
+  override implicit def undoManager : UndoManager [T] = unsupported("undo-manager")
+
+  override def attr: Context.Attr[T] = Context.emptyAttr
 }

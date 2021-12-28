@@ -14,12 +14,15 @@
 package de.sciss.lucre
 
 import java.net.URI
-
 import de.sciss.lucre
 import de.sciss.lucre.Artifact.Value
+import de.sciss.lucre.{Var => LVar}
 import de.sciss.lucre.Event.Targets
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.impl.ExprTypeImpl
 import de.sciss.serial.{ConstFormat, DataInput, DataOutput}
+
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
   import lucre.{ArtifactLocation => Repr}
@@ -78,12 +81,23 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
-    val res = new _Var[T](/*tx,*/ targets, vr)
+  override protected def mkVar[T <: Txn[T]](targets: Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
+    val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets : Targets[T],
+                                                program : Ex[A],
+                                                sources : LVar[T, Vec[Event[T, Any]]],
+                                                value   : LVar[T, A],
+                                                connect : Boolean)
+                                               (implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -91,8 +105,15 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
   private[this] final class _Const[T <: Txn[T]](val id: Ident[T], val constValue: A)
     extends ConstImpl[T] with Repr[T]
 
-  private[this] final class _Var[T <: Txn[T]](/*val tx: T,*/ val targets: Targets[T], val ref: lucre.Var[T, E[T]])
+  private[this] final class _Var[T <: Txn[T]](val targets: Targets[T], val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 /** An artifact location is a directory on an external storage. */
 trait ArtifactLocation[T <: Txn[T]] extends Expr[T, Value] {

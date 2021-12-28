@@ -13,9 +13,11 @@
 
 package de.sciss.lucre
 
-import de.sciss.span.{Span, SpanLike}
 import de.sciss.lucre
+import de.sciss.lucre.expr.graph.Ex
+import de.sciss.lucre.{Var => LVar}
 import de.sciss.serial.{ConstFormat, TFormat}
+import de.sciss.span.{Span, SpanLike}
 
 import scala.collection.immutable.{IndexedSeq => Vec}
 
@@ -42,12 +44,20 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     case _      => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -56,8 +66,15 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
@@ -74,12 +91,20 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     case _        => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -88,8 +113,15 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
@@ -107,12 +139,20 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -121,8 +161,15 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
@@ -138,12 +185,20 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -152,8 +207,15 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object StringObj extends impl.ExprTypeImpl[String, StringObj] {
@@ -169,12 +231,20 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     case _          => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -183,8 +253,15 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
@@ -200,12 +277,20 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     case _            => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -214,8 +299,15 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
@@ -231,12 +323,20 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     case _        => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -245,8 +345,15 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
@@ -268,12 +375,20 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     case _ => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -282,8 +397,15 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }
 
 object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
@@ -305,12 +427,20 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
     case _ => None
   }
 
-  protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
+  override protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T] =
     new _Const[T](id, value)
 
-  protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: lucre.Var[T, E[T]], connect: Boolean)
-                                  (implicit tx: T): Var[T] = {
+  override protected def mkVar[T <: Txn[T]](targets: Event.Targets[T], vr: LVar[T, E[T]], connect: Boolean)
+                                           (implicit tx: T): Var[T] = {
     val res = new _Var[T](targets, vr)
+    if (connect) res.connect()
+    res
+  }
+
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+                                                sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
+                                                connect: Boolean)(implicit tx: T): Program[T] = {
+    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -319,6 +449,13 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
     extends ConstImpl[T] with Repr[T]
 
   private[this] final class _Var[T <: Txn[T]](val targets: Event.Targets[T],
-                                              val ref: lucre.Var[T, E[T]])
+                                              val ref: LVar[T, E[T]])
     extends VarImpl[T] with Repr[T]
+
+  private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
+                                                  val program   : Ex[A],
+                                                  val sourcesRef: LVar[T, Vec[Event[T, Any]]],
+                                                  val valueRef  : LVar[T, A]
+                                                 )
+    extends ProgramImpl[T] with Repr[T]
 }

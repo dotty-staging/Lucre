@@ -16,7 +16,9 @@ package expr
 
 import de.sciss.lucre.edit.UndoManager
 import de.sciss.lucre.expr.graph.{Control, It}
-import de.sciss.lucre.expr.impl.ContextImpl
+import de.sciss.lucre.expr.impl.{ContextImpl, HeadlessContextImpl}
+
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 object Context {
   type Attr[T <: Txn[T]] = MapObjLike[T, String, Form[T]]
@@ -53,6 +55,15 @@ object Context {
   /** Helper class for "upcasting". Used in SoundProcesses `Runner`, for example. */
   class WithTxn[T <: Txn[T]]()(implicit val ctx: Context[T], val tx: T) {
     def cast[U <: Txn[U]]: WithTxn[U] = this.asInstanceOf[WithTxn[U]]
+  }
+
+  def headless[T <: Txn[T]](self: Obj[T])(implicit tx: T): Headless[T] = {
+    val selfH = tx.newHandle(self)
+    new HeadlessContextImpl[T](selfH)
+  }
+
+  trait Headless[T <: Txn[T]] extends Context[T] {
+    def events: Vec[Event[T, Any]]
   }
 }
 trait Context[T <: Txn[T]] extends Disposable[T] {

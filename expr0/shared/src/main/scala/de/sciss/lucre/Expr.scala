@@ -14,6 +14,7 @@
 package de.sciss.lucre
 
 import de.sciss.lucre
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.expr.impl.{ExObjBridgeImpl, ExSeqObjBridgeImpl}
 import de.sciss.model.Change
 import de.sciss.serial.{ConstFormat, DataInput, TFormat}
@@ -42,7 +43,22 @@ object Expr /*extends expr.Ops*/ {
     protected def constValue: A
   }
 
-  def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
+  object Program {
+    def unapply[T <: Txn[T], A](expr: Expr[T, A]): Option[Ex[A]] =
+      if (expr   .isInstanceOf[Program[_, _]]) {
+        Some(expr.asInstanceOf[Program[T, A]].program)
+      } else None
+  }
+
+  /** A program expression is backed by a code tree with an `Ex` as its leaf.
+    * Program inputs are accessed through the object's attribute map.
+    */
+  trait Program[T <: Txn[T], +A] extends Expr[T, A] {
+    protected def program: Ex[A]
+  }
+
+  def isConst   (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const   [_, _]]
+  def isProgram (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Program [_, _]]
 
   object Type {
     private lazy val _init: Unit = {
@@ -80,8 +96,9 @@ object Expr /*extends expr.Ops*/ {
     type E[T <: Txn[T]] = Repr[T] // yeah, well, we're waiting for Dotty
     // N.B.: this causes trouble:
     //     type Var  [T <: Txn[T]] = Repr[T] with _Expr.Var  [S, A, _Ex]
-    type Var  [T <: Txn[T]] = Repr[T] with lucre.Var[T, Repr[T]]
-    type Const[T <: Txn[T]] = Repr[T] with Expr.Const[T, A]
+    type Var    [T <: Txn[T]] = Repr[T] with lucre.Var    [T, Repr[T]]
+    type Const  [T <: Txn[T]] = Repr[T] with Expr.Const   [T, A]
+    type Program[T <: Txn[T]] = Repr[T] with Expr.Program [T, A]
 
     // ---- abstract ----
 
