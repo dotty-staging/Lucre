@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.expr.CellView
+import de.sciss.lucre.expr.{CellView, Context}
 import de.sciss.lucre.expr.graph.{Attr, Obj}
 import de.sciss.lucre.expr.impl.IActionImpl
 import de.sciss.lucre.{IExpr, Txn}
@@ -28,7 +28,7 @@ final class ExpandedAttrSet[T <: Txn[T], A](attrView: CellView.Var[T, Option[A]]
 }
 
 final class ExpandedAttrSetIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, A] /*, tx0: T*/)
-                                             (implicit bridge: Obj.Bridge[A])
+                                             (implicit bridge: Obj.Bridge[A], context: Context[T])
   extends IActionImpl[T] {
 
   def executeAction()(implicit tx: T): Unit = {

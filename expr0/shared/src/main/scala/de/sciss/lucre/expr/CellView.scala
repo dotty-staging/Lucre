@@ -36,7 +36,8 @@ object CellView {
 
   /** Additionally uses undo manager when present. */
   def attrUndoOpt[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]](map: Obj.AttrMap[T], key: String)
-                                                               (implicit tx: T, tpe: Expr.Type[A, E]): CellView.Var[T, Option[A]] =
+                                                               (implicit tx: T, tpe: Expr.Type[A, E],
+                                                                context: Context[T]): CellView.Var[T, Option[A]] =
     Impl.attrUndoOpt[T, A, E](map, key)
 
   def name[T <: Txn[T]](obj: Obj[T])(implicit tx: T): CellView[T, String] = {

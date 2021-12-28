@@ -19,7 +19,7 @@ import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.expr.{CellView, Context}
-import de.sciss.lucre.{Adjunct, Disposable, IExpr, ProductWithAdjuncts, Source, Txn, ArtifactLocation => _ArtifactLocation, Obj => LObj}
+import de.sciss.lucre.{Adjunct, Disposable, IExpr, MapObjLike, ProductWithAdjuncts, Source, Txn, ArtifactLocation => _ArtifactLocation, Obj => LObj}
 import de.sciss.serial.DataInput
 
 import java.net.URI
@@ -34,7 +34,8 @@ object ArtifactLocation extends ProductReader[ArtifactLocation] {
 
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
-    def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[URI]] =
+    override def cellView[T <: Txn[T]](obj: LObj[T], key: String)
+                                      (implicit tx: T, context: Context[T]): CellView.Var[T, Option[URI]] =
       new ObjCellViewImpl(tx.newHandle(obj.attr), key = key)
 
     def contextCellView[T <: Txn[T]](key: String)(implicit tx: T, context: Context[T]): CellView[T, Option[URI]] =
@@ -60,6 +61,7 @@ object ArtifactLocation extends ProductReader[ArtifactLocation] {
   }
 
   private final class ObjCellViewImpl[T <: Txn[T]](attrH: Source[T, AttrMap[T]], key: String)
+                                                  (implicit context: Context[T])
     extends CellView.Var[T, Option[URI]] {
 
     private def attr(implicit tx: T): AttrMap[T] = attrH()
@@ -107,7 +109,11 @@ object ArtifactLocation extends ProductReader[ArtifactLocation] {
     }
 
     def react(fun: T => Option[URI] => Unit)(implicit tx: T): Disposable[T] =
-      new AttrMapExprObs[T, URI](map = attr, key = key, fun = fun, tx0 = tx)(_ArtifactLocation)
+      new AttrMapExprObs[T, URI](map = attr, key = key, fun = fun, tx0 = tx)(_ArtifactLocation) {
+        override protected def observeMap[B](map: AttrMap[T])(fun: T => MapObjLike.Update[String, LObj[T]] => Unit)
+                                            (implicit tx: T): Disposable[T] =
+          context.reactTo(map.changed)(fun)
+      }
   }
 
   override def read(in: RefMapIn, key: String, arity: Int, adj: Int): ArtifactLocation = {

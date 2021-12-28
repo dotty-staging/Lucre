@@ -86,7 +86,7 @@ object Folder extends ProductReader[Ex[Folder]] {
     override def toString: String = s"Folder($in)"
   }
 
-  private final class CellViewImpl[T <: Txn[T]](h: Source[T, LObj[T]], key: String)
+  private final class CellViewImpl[T <: Txn[T]](h: Source[T, LObj[T]], key: String)(implicit context: Context[T])
     extends ObjCellViewVarImpl[T, LFolder, Folder](h, key) {
 
     protected def lower(peer: LFolder[T])(implicit tx: T): Folder =
@@ -105,7 +105,8 @@ object Folder extends ProductReader[Ex[Folder]] {
 
     def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
-    def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[Folder]] =
+    override def cellView[T <: Txn[T]](obj: LObj[T], key: String)
+                                      (implicit tx: T, context: Context[T]): CellView.Var[T, Option[Folder]] =
       new CellViewImpl(tx.newHandle(obj), key)
 
     def contextCellView[T <: Txn[T]](key: String)(implicit tx: T, context: Context[T]): CellView[T, Option[Folder]] =
@@ -131,7 +132,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   }
 
   private abstract class ExpandedImpl[T <: Txn[T], A](in: IExpr[T, Folder], init: A, tx0: T)
-                                                     (implicit protected val targets: ITargets[T])
+                                                     (implicit protected val targets: ITargets[T], context: Context[T])
     extends IExpr[T, A] with IChangeGeneratorEvent[T, A] with Caching {
 
     private[this] val obs   = Ref[Disposable[T]](Disposable.empty)
@@ -143,7 +144,7 @@ object Folder extends ProductReader[Ex[Folder]] {
       obs.swap(Disposable.empty).dispose()
       // XXX TODO --- should we also fire when size has been non-zero and v.peer is empty?
       v.peer[T].foreach { f =>
-        val newObs = f.changed.react { implicit tx => upd =>
+        val newObs = context.reactTo(f.changed) { implicit tx => upd =>
           val now     = mapValue(upd.list)
           val before  = ref.swap(now)
           if (before != now) fire(Change(before, now))
@@ -189,7 +190,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   }
 
   private final class SizeExpanded[T <: Txn[T]](in: IExpr[T, Folder], tx0: T)
-                                               (implicit targets: ITargets[T])
+                                               (implicit targets: ITargets[T], context: Context[T])
     extends ExpandedImpl[T, Int](in, 0, tx0) {
 
     protected def mapValue(f: ListObj[T, LObj[T]])(implicit tx: T): Int = f.size
@@ -214,7 +215,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   }
 
   private final class IsEmptyExpanded[T <: Txn[T]](in: IExpr[T, Folder], tx0: T)
-                                                  (implicit targets: ITargets[T])
+                                                  (implicit targets: ITargets[T], context: Context[T])
     extends ExpandedImpl[T, Boolean](in, true, tx0) {
 
     protected def mapValue(f: ListObj[T, LObj[T]])(implicit tx: T): Boolean = f.isEmpty
@@ -239,7 +240,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   }
 
   private final class NonEmptyExpanded[T <: Txn[T]](in: IExpr[T, Folder], tx0: T)
-                                                   (implicit targets: ITargets[T])
+                                                   (implicit targets: ITargets[T], context: Context[T])
     extends ExpandedImpl[T, Boolean](in, false, tx0) {
 
     protected def mapValue(f: ListObj[T, LObj[T]])(implicit tx: T): Boolean = f.nonEmpty
@@ -264,7 +265,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   }
 
   private final class ChildrenExpanded[T <: Txn[T]](in: IExpr[T, Folder], tx0: T)
-                                                   (implicit targets: ITargets[T])
+                                                   (implicit targets: ITargets[T], context: Context[T])
     extends ExpandedImpl[T, Seq[Obj]](in, Nil, tx0) {
 
     override def toString: String = s"$in.children"

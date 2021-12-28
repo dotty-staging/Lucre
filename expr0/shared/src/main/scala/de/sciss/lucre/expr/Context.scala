@@ -63,6 +63,12 @@ trait Context[T <: Txn[T]] extends Disposable[T] {
 
   def attr/*(implicit tx: T)*/: Context.Attr[T]
 
+  /** Installs a reaction to an event. Depending on the type of context, this will simply
+    * call `event.changed.react` with the given `fun` (when the context is for an `Act` or `Control` or `Widget`),
+    * or in will register the event as used (when the context is for an ex-obj).
+    */
+  def reactTo[A](event: EventLike[T, A])(fun: T => A => Unit)(implicit tx: T): Disposable[T]
+
   /** Prepares graph expansion by copying control properties over
    * for subsequent look-up through `getProperty`.
    */

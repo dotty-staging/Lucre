@@ -16,8 +16,8 @@ package de.sciss.lucre.expr.impl
 import de.sciss.lucre.Obj.AttrMap
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.edit.{EditAttrMap, EditExprVar}
-import de.sciss.lucre.expr.CellView
-import de.sciss.lucre.{Disposable, Form, MapObj, MapObjLike, Obj, Source, Txn, Expr => _Expr, ExprLike => _ExprLike, Var => LVar}
+import de.sciss.lucre.expr.{CellView, Context}
+import de.sciss.lucre.{Disposable, EventLike, Form, MapObj, MapObjLike, Obj, Source, Txn, Expr => _Expr, ExprLike => _ExprLike, Var => LVar}
 import de.sciss.model.Change
 import de.sciss.serial.TFormat
 
@@ -59,7 +59,8 @@ object CellViewImpl {
   /** Additionally uses undo manager when present. */
   def attrUndoOpt[T <: Txn[T], A, E[~ <: Txn[~]] <: _Expr[~, A]](map: Obj.AttrMap[T], key: String)
                                                                 (implicit tx: T,
-                                                                 tpe: _Expr.Type[A, E]): CellView.Var[T, Option[A]] =
+                                                                 tpe: _Expr.Type[A, E],
+                                                                 context: Context[T]): CellView.Var[T, Option[A]] =
     new UndoAttrImpl[T, A, E](tx.newHandle(map), key)
 
   def exprLike[T <: Txn[T], A, _Ex[~ <: Txn[~]] <: _Expr[~, A]](x: _Ex[T])
@@ -279,18 +280,25 @@ object CellViewImpl {
   private[lucre] trait AttrBasic[T <: Txn[T], A, E[~ <: Txn[~]] <: _Expr[~, A]]
     extends CellView[T, Option[A]] {
 
+    // ---- abstract ----
+
     protected def h: Source[T, Obj.AttrMap[T]]
     protected val key: String
 
-    // implicit protected def companion: Elem.Companion[E]
+    protected def reactTo[B](event: EventLike[T, B])(fun: T => B => Unit)(implicit tx: T): Disposable[T]
+
     implicit protected val tpe: _Expr.Type[A, E]
 
-    //    implicit protected def classTag: ClassTag[E[T]]
+    // ---- impl ----
 
     final type Repr = Option[E[T]] // Expr[T, A]]
 
     def react(fun: T => Option[A] => Unit)(implicit tx: T): Disposable[T] =
-      new AttrMapExprObs[T, A](map = h(), key = key, fun = fun, tx0 = tx)
+      new AttrMapExprObs(map = h(), key = key, fun = fun, tx0 = tx) {
+        override protected def observeMap[B](map: Obj.AttrMap[T])(fun: T => MapObjLike.Update[String, Obj[T]] => Unit)
+                                            (implicit tx: T): Disposable[T] =
+          reactTo(map.changed)(fun)
+      }
 
     def repr(implicit tx: T): Repr = {
       val opt = h().get(key)
@@ -310,9 +318,9 @@ object CellViewImpl {
     def apply()(implicit tx: T): Option[A] = repr.map(_.value)
   }
 
-  final class AttrMapExprObs[T <: Txn[T], A](map: Obj.AttrMap[T], key: String, fun: T => Option[A] => Unit,
+  abstract class AttrMapExprObs[T <: Txn[T], A](map: Obj.AttrMap[T], key: String, fun: T => Option[A] => Unit,
                                              tx0: T)(implicit tpe: Obj.Type)
-    extends MapObjLikeExprObs[T, A, Obj](map, key, fun, tx0) {
+    extends MapObjLikeExprObs[T, A, Obj, Obj.AttrMap[T]](map, key, fun, tx0) {
 
     protected def compareTpe(value: Obj[T]): Boolean =
       value.tpe == tpe
@@ -321,12 +329,20 @@ object CellViewImpl {
   // XXX TODO --- lot's of overlap with CellViewImpl
   /** N.B.: `tpe` must denote objects that extend `Expr`, otherwise we get class-cast exceptions. */
   abstract class MapObjLikeExprObs[T <: Txn[T], A, 
-    Repr[~ <: Txn[~]] <: Form[~]](map: MapObjLike[T, String, Repr[T]], key: String, fun: T => Option[A] => Unit, tx0: T)
+    Repr[~ <: Txn[~]] <: Form[~], M <: MapObjLike[T, String, Repr[T]]](map0: M, key: String,
+                                                                       fun: T => Option[A] => Unit, tx0: T)
     extends Disposable[T] {
 
-    private[this] val valObs = Ref(null: Disposable[T])
+    // ---- abstract ----
 
     protected def compareTpe(in: Repr[T]): Boolean
+
+    protected def observeMap[B](map: M)(fun: T => MapObjLike.Update[String, Repr[T]] => Unit)
+                               (implicit tx: T): Disposable[T]
+
+    // ---- impl ----
+
+    private[this] val valObs = Ref(null: Disposable[T])
 
     private[this] def obsAdded(value: Repr[T])(implicit tx: T): Unit = {
       val valueT = value.asInstanceOf[_Expr[T, A]]
@@ -341,7 +357,7 @@ object CellViewImpl {
     private[this] def obsRemoved()(implicit tx: T): Unit =
       if (valueRemoved()) fun(tx)(None)
 
-    private[this] val mapObs = map.changed.react { implicit tx => u =>
+    private[this] val mapObs = observeMap(map0) { implicit tx => u =>
       u.changes.foreach {
         case Obj.AttrAdded   (`key`, value) if compareTpe(value) => obsAdded  (value)
         case Obj.AttrRemoved (`key`, value) if compareTpe(value) => obsRemoved()
@@ -352,7 +368,7 @@ object CellViewImpl {
       }
     } (tx0)
 
-    map.get(key)(tx0).foreach { value =>
+    map0.get(key)(tx0).foreach { value =>
       if (compareTpe(value)) valueAdded(value.asInstanceOf[_ExprLike[T, A]])(tx0)
     }
 
@@ -437,6 +453,9 @@ object CellViewImpl {
     E[~ <: Txn[~]] <: _Expr[~, A]](h: Source[T, Obj.AttrMap[T]], key: String)(implicit tpe: _Expr.Type[A, E])
     extends AttrImpl[T, A, E](h, key) {
 
+    override protected def reactTo[B](event: EventLike[T, B])(fun: T => B => Unit)(implicit tx: T): Disposable[T] =
+      event.react(fun)
+
     protected def putImpl(map: AttrMap[T], value: E[T])(implicit tx: T): Unit =
       map.put(key, value)
 
@@ -448,9 +467,14 @@ object CellViewImpl {
   }
 
   // adding optional undo support (when present)
-  private final class UndoAttrImpl[T <: Txn[T], A, E[~ <: Txn[~]] <: _Expr[~, A]](
-                                                                                   h: Source[T, Obj.AttrMap[T]], key: String)(implicit tpe: _Expr.Type[A, E])
+  private final class UndoAttrImpl[T <: Txn[T], A, E[~ <: Txn[~]] <: _Expr[~, A]](h: Source[T, Obj.AttrMap[T]],
+                                                                                  key: String)
+                                                                                 (implicit tpe: _Expr.Type[A, E],
+                                                                                  context: Context[T])
     extends AttrImpl[T, A, E](h, key) {
+
+    override protected def reactTo[B](event: EventLike[T, B])(fun: T => B => Unit)(implicit tx: T): Disposable[T] =
+      context.reactTo(event)(fun)
 
     protected def putImpl(map: AttrMap[T], value: E[T])(implicit tx: T): Unit =
       EditAttrMap.put(map, key, value)

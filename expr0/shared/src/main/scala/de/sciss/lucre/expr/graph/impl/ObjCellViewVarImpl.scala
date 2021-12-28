@@ -16,7 +16,7 @@ package de.sciss.lucre.expr.graph.impl
 import de.sciss.lucre.Obj.AttrMap
 import de.sciss.lucre.Txn.peer
 import de.sciss.lucre.edit.EditAttrMap
-import de.sciss.lucre.expr.CellView
+import de.sciss.lucre.expr.{CellView, Context}
 import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.{Disposable, Source, Txn, Obj => LObj}
 
@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
 
 abstract class ObjCellViewVarImpl[T <: Txn[T], Dur[~ <: Txn[~]] <: LObj[~],
   In <: Obj { type Peer[~ <: Txn[~]] <: Dur[~] }](
-    h: Source[T, LObj[T]], key: String)(implicit ct: ClassTag[Dur[T]])
+    h: Source[T, LObj[T]], key: String)(implicit ct: ClassTag[Dur[T]], context: Context[T])
   extends CellView.Var[T, Option[In]] {
 
   // ---- abstract ----
@@ -40,10 +40,10 @@ abstract class ObjCellViewVarImpl[T <: Txn[T], Dur[~ <: Txn[~]] <: LObj[~],
     h().attr.$[Dur](key)
 
   protected def putImpl(map: AttrMap[T], value: Dur[T])(implicit tx: T): Unit =
-    EditAttrMap.put(map, key, value)
+    EditAttrMap.put[T](map, key, value)
 
   protected def removeImpl(map: AttrMap[T])(implicit tx: T): Unit =
-    EditAttrMap.remove(map, key)
+    EditAttrMap.remove[T](map, key)
 
   final def repr_=(value: Repr)(implicit tx: T): Unit = {
     val a = h().attr
@@ -116,7 +116,7 @@ abstract class ObjCellViewVarImpl[T <: Txn[T], Dur[~ <: Txn[~]] <: LObj[~],
 
     init()(tx0)
 
-    private[this] val attrObs = attr.changed.react { implicit tx => upd =>
+    private[this] val attrObs = context.reactTo(attr.changed) { implicit tx => upd =>
       upd.changes.foreach {
         case LObj.AttrAdded    (`key`    , d)  => setObjAndFire(ct.unapply(d))
         case LObj.AttrRemoved  (`key`    , _)  => setObjAndFire(None)

@@ -13,7 +13,7 @@
 
 package de.sciss.lucre.expr.graph.impl
 
-import de.sciss.lucre.expr.CellView
+import de.sciss.lucre.expr.{CellView, Context}
 import de.sciss.lucre.expr.graph.{Attr, Obj}
 import de.sciss.lucre.{Disposable, IExpr, Txn}
 
@@ -42,7 +42,7 @@ final class ExpandedAttrUpdateOption[T <: Txn[T], A](source: IExpr[T, Option[A]]
 }
 
 final class ExpandedAttrUpdateIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, A], tx0: T)
-                                                (implicit bridge: Obj.Bridge[A])
+                                                (implicit bridge: Obj.Bridge[A], context: Context[T])
   extends Disposable[T] {
 
   private[this] val obs = value.changed.react { implicit tx => upd =>
@@ -59,7 +59,7 @@ final class ExpandedAttrUpdateIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String,
 }
 
 final class ExpandedAttrUpdateOptionIn[T <: Txn[T], A](in: IExpr[T, Obj], key: String, value: IExpr[T, Option[A]], tx0: T)
-                                                (implicit bridge: Obj.Bridge[A])
+                                                (implicit bridge: Obj.Bridge[A], context: Context[T])
   extends Disposable[T] {
 
   private[this] val obs = value.changed.react { implicit tx => upd =>

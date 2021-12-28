@@ -175,7 +175,8 @@ object Obj {
 
       def readIdentifiedAdjunct(in: DataInput): Adjunct = this
 
-      def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[Obj]] =
+      override def cellView[T <: Txn[T]](obj: LObj[T], key: String)
+                                        (implicit tx: T, context: Context[T]): CellView.Var[T, Option[Obj]] =
         new ObjCellViewVarImpl[T, LObj, Obj](tx.newHandle(obj), key) {
           protected def lower(peer: LObj[T])(implicit tx: T): Obj =
             wrap(peer)
@@ -204,7 +205,8 @@ object Obj {
     /** Creates a bidirectional view between `LObj` and the expression side representation type `A`.
       * If possible, implementations should look at `UndoManager.find` when updating values.
       */
-    def cellView[T <: Txn[T]](obj: LObj[T], key: String)(implicit tx: T): CellView.Var[T, Option[A]]
+    def cellView[T <: Txn[T]](obj: LObj[T], key: String)
+                             (implicit tx: T, context: Context[T]): CellView.Var[T, Option[A]]
 
     /** Creates a unidirectional view between a context's attribute or self object and the expression side
       * representation type `A`.

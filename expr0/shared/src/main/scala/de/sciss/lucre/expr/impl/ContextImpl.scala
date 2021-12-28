@@ -132,4 +132,8 @@ final class ContextImpl[T <: Txn[T]](protected val selfH: Option[Source[T, Obj[T
                                      val attr: Context.Attr[T])
                                     (implicit val workspace: Workspace[T], val cursor: Cursor[T],
                                      val undoManager: UndoManager[T])
-  extends ContextMixin[T]
+  extends ContextMixin[T] {
+
+  override def reactTo[A](event: EventLike[T, A])(fun: T => A => Unit)(implicit tx: T): Disposable[T] =
+    event.react(fun)
+}

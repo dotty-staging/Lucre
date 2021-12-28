@@ -14,6 +14,7 @@
 package de.sciss.lucre.expr.graph.impl
 
 import de.sciss.lucre.Txn.peer
+import de.sciss.lucre.expr.Context
 import de.sciss.lucre.expr.graph.Obj
 import de.sciss.lucre.expr.graph.Obj.Bridge
 import de.sciss.lucre.impl.IChangeGeneratorEvent
@@ -23,7 +24,8 @@ import de.sciss.model.Change
 import scala.concurrent.stm.Ref
 
 final class ExpandedObjAttr[T <: Txn[T], A](obj: IExpr[T, Obj], key: String, tx0: T)
-                                                (implicit protected val targets: ITargets[T], bridge: Bridge[A])
+                                                (implicit protected val targets: ITargets[T], bridge: Bridge[A],
+                                                 context: Context[T])
   extends IExpr[T, Option[A]] with IChangeGeneratorEvent[T, Option[A]] with Caching {
 
   private[this] val valueRef  = Ref.make[Option[A]]()
