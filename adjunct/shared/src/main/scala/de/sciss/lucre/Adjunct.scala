@@ -284,6 +284,11 @@ object Adjunct {
     def shiftLeft         (a: A, b: A): A
     def shiftRight        (a: A, b: A): A
     def unsignedShiftRight(a: A, b: A): A
+
+    def isPowerOfTwo  (a: A): Boolean
+    def nextPowerOfTwo(a: A): A
+    def isEven        (a: A): Boolean
+    def isOdd         (a: A): Boolean
   }
 
   type ScalarNumInt[A] = NumInt[A] with Scalar[A]
@@ -461,6 +466,11 @@ object Adjunct {
     def shiftRight        (a: In, b: In): In = binOp(a, b)(peer.shiftRight)
     def unsignedShiftRight(a: In, b: In): In = binOp(a, b)(peer.unsignedShiftRight)
 
+    def isPowerOfTwo  (a: In): Boolean  = unOp(a)(peer.isPowerOfTwo   )
+    def nextPowerOfTwo(a: In): In       = unOp(a)(peer.nextPowerOfTwo )
+    def isEven        (a: In): Boolean  = unOp(a)(peer.isEven         )
+    def isOdd         (a: In): Boolean  = unOp(a)(peer.isOdd          )
+
     def div (a: In, b: In): In = binOp(a, b)(peer.div)
 
     def fromAny(in: Any): Option[Seq[scala.Int]] = in match {
@@ -488,60 +498,65 @@ object Adjunct {
       with  FromAny         [Int]
       with  HasDefault      [Int] {
 
-    final val id = 0
+    override final val id = 0
 
-    def zero   : Int = 0
-    def one    : Int = 1
+    override def zero   : Int = 0
+    override def one    : Int = 1
 
-    def toInt     (a: Int): Int     = a
-    def toDouble  (a: Int): Double  = a.toDouble
-    def toLong    (a: Int): Long    = a.toLong
+    override def toInt     (a: Int): Int     = a
+    override def toDouble  (a: Int): Double  = a.toDouble
+    override def toLong    (a: Int): Long    = a.toLong
 
-    def plus      (a: Int, b: Int): Int = a + b
-    def minus     (a: Int, b: Int): Int = a - b
-    def times     (a: Int, b: Int): Int = a * b
-    def rem       (a: Int, b: Int): Int = a % b
-    def mod       (a: Int, b: Int): Int = ri.mod(a, b)
-    def min       (a: Int, b: Int): Int = ri.min(a, b)
-    def max       (a: Int, b: Int): Int = ri.max(a, b)
+    override def plus      (a: Int, b: Int): Int = a + b
+    override def minus     (a: Int, b: Int): Int = a - b
+    override def times     (a: Int, b: Int): Int = a * b
+    override def rem       (a: Int, b: Int): Int = a % b
+    override def mod       (a: Int, b: Int): Int = ri.mod(a, b)
+    override def min       (a: Int, b: Int): Int = ri.min(a, b)
+    override def max       (a: Int, b: Int): Int = ri.max(a, b)
 
-    def and(a: Int, b: Int): Int = a & b
-    def or(a: Int, b: Int): Int = a | b
-    def xor(a: Int, b: Int): Int = a ^ b
-    def lcm       (a: Int, b: Int): Int = ri.lcm(a, b)
-    def gcd       (a: Int, b: Int): Int = ri.gcd(a, b)
+    override def and(a: Int, b: Int): Int = a & b
+    override def or(a: Int, b: Int): Int = a | b
+    override def xor(a: Int, b: Int): Int = a ^ b
+    override def lcm       (a: Int, b: Int): Int = ri.lcm(a, b)
+    override def gcd       (a: Int, b: Int): Int = ri.gcd(a, b)
 
-    def div       (a: Int, b: Int): Int = a / b
+    override def div       (a: Int, b: Int): Int = a / b
 
-    def roundTo   (a: Int, b: Int): Int = ri2.roundTo  (a, b)
-    def roundUpTo (a: Int, b: Int): Int = ri2.roundUpTo(a, b)
-    def trunc     (a: Int, b: Int): Int = ri2.trunc    (a, b)
+    override def roundTo   (a: Int, b: Int): Int = ri2.roundTo  (a, b)
+    override def roundUpTo (a: Int, b: Int): Int = ri2.roundUpTo(a, b)
+    override def trunc     (a: Int, b: Int): Int = ri2.trunc    (a, b)
 
-    def shiftLeft         (a: Int, b: Int): Int = a << b
-    def shiftRight        (a: Int, b: Int): Int = a >> b
-    def unsignedShiftRight(a: Int, b: Int): Int = a >>> b
+    override def shiftLeft         (a: Int, b: Int): Int = a << b
+    override def shiftRight        (a: Int, b: Int): Int = a >> b
+    override def unsignedShiftRight(a: Int, b: Int): Int = a >>> b
 
-    def difSqr    (a: Int, b: Int): Int = ri2.difSqr(a, b).toInt
-    def sumSqr    (a: Int, b: Int): Int = ri2.sumSqr(a, b).toInt
-    def sqrSum    (a: Int, b: Int): Int = ri2.sqrSum(a, b).toInt
-    def sqrDif    (a: Int, b: Int): Int = ri2.sqrDif(a, b).toInt
-    def absDif    (a: Int, b: Int): Int = ri2.absDif(a, b)
+    override def isPowerOfTwo   (a: Int): Boolean = ri.isPowerOfTwo   (a)
+    override def nextPowerOfTwo (a: Int): Int     = ri.nextPowerOfTwo (a)
+    override def isEven         (a: Int): Boolean = ri.isEven         (a)
+    override def isOdd          (a: Int): Boolean = ri.isOdd          (a)
 
-    def clip2     (a: Int, b: Int): Int = ri.clip2  (a, b)
-    def excess    (a: Int, b: Int): Int = ri.excess (a, b)
-    def fold2     (a: Int, b: Int): Int = ri.fold2  (a, b)
-    def wrap2     (a: Int, b: Int): Int = ri.wrap2  (a, b)
+    override def difSqr    (a: Int, b: Int): Int = ri2.difSqr(a, b).toInt
+    override def sumSqr    (a: Int, b: Int): Int = ri2.sumSqr(a, b).toInt
+    override def sqrSum    (a: Int, b: Int): Int = ri2.sqrSum(a, b).toInt
+    override def sqrDif    (a: Int, b: Int): Int = ri2.sqrDif(a, b).toInt
+    override def absDif    (a: Int, b: Int): Int = ri2.absDif(a, b)
 
-    def negate    (a: Int): Int     = -a
-    def abs       (a: Int): Int     = ri.abs(a)
-    def signum    (a: Int): Int     = ri.signum(a)
+    override def clip2     (a: Int, b: Int): Int = ri.clip2  (a, b)
+    override def excess    (a: Int, b: Int): Int = ri.excess (a, b)
+    override def fold2     (a: Int, b: Int): Int = ri.fold2  (a, b)
+    override def wrap2     (a: Int, b: Int): Int = ri.wrap2  (a, b)
 
-    def not(a: Int): Int = ~a
+    override def negate    (a: Int): Int     = -a
+    override def abs       (a: Int): Int     = ri.abs(a)
+    override def signum    (a: Int): Int     = ri.signum(a)
 
-    def squared   (a: Int): Int = ri.squared(a).toInt
-    def cubed     (a: Int): Int = ri2.cubed (a).toInt
+    override def not(a: Int): Int = ~a
 
-    def rand[Tx](a: Int)(implicit r: Random[Tx], tx: Tx): Int = {
+    override def squared   (a: Int): Int = ri.squared(a).toInt
+    override def cubed     (a: Int): Int = ri2.cubed (a).toInt
+
+    override def rand[Tx](a: Int)(implicit r: Random[Tx], tx: Tx): Int = {
       val res = if (a >= 0) r.nextInt(a) // may throw exception
       else r.nextInt(-a) + a
 
@@ -550,34 +565,34 @@ object Adjunct {
       res
     }
 
-    def rand2[Tx](a: Int)(implicit r: Random[Tx], tx: Tx): Int = {
+    override def rand2[Tx](a: Int)(implicit r: Random[Tx], tx: Tx): Int = {
       val a1 = math.abs(a)
       r.nextInt(2 * a1 + 1) - a1
     }
 
-    def rangeRand[Tx](a: Int, b: Int)(implicit r: Random[Tx], tx: Tx): Int =
+    override def rangeRand[Tx](a: Int, b: Int)(implicit r: Random[Tx], tx: Tx): Int =
       if (a < b) r.nextInt(b - a + 1) + a
       else       r.nextInt(a - b + 1) + b
 
-    def lt  (a: Int, b: Int): Boolean = a <  b
-    def lteq(a: Int, b: Int): Boolean = a <= b
-    def gt  (a: Int, b: Int): Boolean = a >  b
-    def gteq(a: Int, b: Int): Boolean = a >= b
+    override def lt  (a: Int, b: Int): Boolean = a <  b
+    override def lteq(a: Int, b: Int): Boolean = a <= b
+    override def gt  (a: Int, b: Int): Boolean = a >  b
+    override def gteq(a: Int, b: Int): Boolean = a >= b
 
-    def fold(a: Int, lo: Int, hi: Int): Int = ri.fold(a, lo, hi)
-    def clip(a: Int, lo: Int, hi: Int): Int = ri.clip(a, lo, hi)
-    def wrap(a: Int, lo: Int, hi: Int): Int = ri.wrap(a, lo, hi)
+    override def fold(a: Int, lo: Int, hi: Int): Int = ri.fold(a, lo, hi)
+    override def clip(a: Int, lo: Int, hi: Int): Int = ri.clip(a, lo, hi)
+    override def wrap(a: Int, lo: Int, hi: Int): Int = ri.wrap(a, lo, hi)
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Option[Int] = in match {
+    override def fromAny(in: Any): Option[Int] = in match {
       case i: Int => Some(i)  // Success(i)
       case _      => None     // FromAny.Unsupported
     }
 
     // ---- HasDefault ----
 
-    def defaultValue: Int = 0
+    override def defaultValue: Int = 0
   }
 
   object LongSeqTop
@@ -586,26 +601,31 @@ object Adjunct {
       with  SeqLikeToNum[Long]
       with  FromAny     [Seq[Long]] {
 
-    final val id = 7
+    override final val id = 7
 
-    protected val peer: LongTop.type = LongTop
+    override protected val peer: LongTop.type = LongTop
 
-    def not(a: In): In = unOp(a)(peer.not)
+    override def not(a: In): In = unOp(a)(peer.not)
 
-    def and (a: In, b: In): In = binOp(a, b)(peer.and)
-    def or  (a: In, b: In): In = binOp(a, b)(peer.or)
-    def xor (a: In, b: In): In = binOp(a, b)(peer.xor)
+    override def and (a: In, b: In): In = binOp(a, b)(peer.and)
+    override def or  (a: In, b: In): In = binOp(a, b)(peer.or)
+    override def xor (a: In, b: In): In = binOp(a, b)(peer.xor)
 
-    def lcm (a: In, b: In): In = binOp(a, b)(peer.lcm)
-    def gcd (a: In, b: In): In = binOp(a, b)(peer.gcd)
+    override def lcm (a: In, b: In): In = binOp(a, b)(peer.lcm)
+    override def gcd (a: In, b: In): In = binOp(a, b)(peer.gcd)
 
-    def shiftLeft         (a: In, b: In): In = binOp(a, b)(peer.shiftLeft)
-    def shiftRight        (a: In, b: In): In = binOp(a, b)(peer.shiftRight)
-    def unsignedShiftRight(a: In, b: In): In = binOp(a, b)(peer.unsignedShiftRight)
+    override def shiftLeft         (a: In, b: In): In = binOp(a, b)(peer.shiftLeft)
+    override def shiftRight        (a: In, b: In): In = binOp(a, b)(peer.shiftRight)
+    override def unsignedShiftRight(a: In, b: In): In = binOp(a, b)(peer.unsignedShiftRight)
 
-    def div (a: In, b: In): In = binOp(a, b)(peer.div)
+    override def isPowerOfTwo      (a: In): Boolean = unOp(a)(peer.isPowerOfTwo   )
+    override def nextPowerOfTwo    (a: In): In      = unOp(a)(peer.nextPowerOfTwo )
+    override def isEven            (a: In): Boolean = unOp(a)(peer.isEven         )
+    override def isOdd             (a: In): Boolean = unOp(a)(peer.isOdd          )
 
-    def fromAny(in: Any): Option[Seq[scala.Long]] = in match {
+    override def div (a: In, b: In): In = binOp(a, b)(peer.div)
+
+    override def fromAny(in: Any): Option[Seq[scala.Long]] = in match {
       case sq: Seq[_] =>
         val b   = Seq.newBuilder[scala.Long]
         val it  = sq.iterator
@@ -632,77 +652,82 @@ object Adjunct {
       with  FromAny         [Long]
       with  HasDefault      [Long] {
 
-    final val id = 6
+    override final val id = 6
 
-    def zero   : Long = 0L
-    def one    : Long = 1L
+    override def zero   : Long = 0L
+    override def one    : Long = 1L
 
-    def toInt     (a: Long): Int    = a.toInt
-    def toDouble  (a: Long): Double = a.toDouble
-    def toLong    (a: Long): Long   = a
+    override def toInt     (a: Long): Int    = a.toInt
+    override def toDouble  (a: Long): Double = a.toDouble
+    override def toLong    (a: Long): Long   = a
 
-    def plus      (a: Long, b: Long): Long = a + b
-    def minus     (a: Long, b: Long): Long = a - b
-    def times     (a: Long, b: Long): Long = a * b
-    def rem       (a: Long, b: Long): Long = a % b
-    def mod       (a: Long, b: Long): Long = rl.mod(a, b)
-    def min       (a: Long, b: Long): Long = rl.min(a, b)
-    def max       (a: Long, b: Long): Long = rl.max(a, b)
+    override def plus      (a: Long, b: Long): Long = a + b
+    override def minus     (a: Long, b: Long): Long = a - b
+    override def times     (a: Long, b: Long): Long = a * b
+    override def rem       (a: Long, b: Long): Long = a % b
+    override def mod       (a: Long, b: Long): Long = rl.mod(a, b)
+    override def min       (a: Long, b: Long): Long = rl.min(a, b)
+    override def max       (a: Long, b: Long): Long = rl.max(a, b)
 
-    def and(a: Long, b: Long): Long = a & b
-    def or(a: Long, b: Long): Long = a | b
-    def xor(a: Long, b: Long): Long = a ^ b
-    def lcm       (a: Long, b: Long): Long = rl.lcm(a, b)
-    def gcd       (a: Long, b: Long): Long = rl.gcd(a, b)
+    override def and(a: Long, b: Long): Long = a & b
+    override def or(a: Long, b: Long): Long = a | b
+    override def xor(a: Long, b: Long): Long = a ^ b
+    override def lcm       (a: Long, b: Long): Long = rl.lcm(a, b)
+    override def gcd       (a: Long, b: Long): Long = rl.gcd(a, b)
 
-    def div       (a: Long, b: Long): Long = a / b
+    override def div       (a: Long, b: Long): Long = a / b
 
-    def roundTo   (a: Long, b: Long): Long = rl2.roundTo  (a, b)
-    def roundUpTo (a: Long, b: Long): Long = rl2.roundUpTo(a, b)
-    def trunc     (a: Long, b: Long): Long = rl2.trunc    (a, b)
+    override def roundTo   (a: Long, b: Long): Long = rl2.roundTo  (a, b)
+    override def roundUpTo (a: Long, b: Long): Long = rl2.roundUpTo(a, b)
+    override def trunc     (a: Long, b: Long): Long = rl2.trunc    (a, b)
 
-    def shiftLeft         (a: Long, b: Long): Long = a << b
-    def shiftRight        (a: Long, b: Long): Long = a >> b
-    def unsignedShiftRight(a: Long, b: Long): Long = a >>> b
+    override def shiftLeft         (a: Long, b: Long): Long = a << b
+    override def shiftRight        (a: Long, b: Long): Long = a >> b
+    override def unsignedShiftRight(a: Long, b: Long): Long = a >>> b
 
-    def difSqr    (a: Long, b: Long): Long = rl2.difSqr(a, b)
-    def sumSqr    (a: Long, b: Long): Long = rl2.sumSqr(a, b)
-    def sqrSum    (a: Long, b: Long): Long = rl2.sqrSum(a, b)
-    def sqrDif    (a: Long, b: Long): Long = rl2.sqrDif(a, b)
-    def absDif    (a: Long, b: Long): Long = rl2.absDif(a, b)
+    override def isPowerOfTwo   (a: Long): Boolean = rl.isPowerOfTwo   (a)
+    override def nextPowerOfTwo (a: Long): Long    = rl.nextPowerOfTwo (a)
+    override def isEven         (a: Long): Boolean = rl.isEven         (a)
+    override def isOdd          (a: Long): Boolean = rl.isOdd          (a)
 
-    def clip2     (a: Long, b: Long): Long = rl.clip2  (a, b)
-    def excess    (a: Long, b: Long): Long = rl.excess (a, b)
-    def fold2     (a: Long, b: Long): Long = rl.fold2  (a, b)
-    def wrap2     (a: Long, b: Long): Long = rl.wrap2  (a, b)
+    override def difSqr    (a: Long, b: Long): Long = rl2.difSqr(a, b)
+    override def sumSqr    (a: Long, b: Long): Long = rl2.sumSqr(a, b)
+    override def sqrSum    (a: Long, b: Long): Long = rl2.sqrSum(a, b)
+    override def sqrDif    (a: Long, b: Long): Long = rl2.sqrDif(a, b)
+    override def absDif    (a: Long, b: Long): Long = rl2.absDif(a, b)
 
-    def negate    (a: Long): Long     = -a
-    def abs       (a: Long): Long     = rl.abs(a)
-    def signum    (a: Long): Long     = rl.signum(a)
+    override def clip2     (a: Long, b: Long): Long = rl.clip2  (a, b)
+    override def excess    (a: Long, b: Long): Long = rl.excess (a, b)
+    override def fold2     (a: Long, b: Long): Long = rl.fold2  (a, b)
+    override def wrap2     (a: Long, b: Long): Long = rl.wrap2  (a, b)
 
-    def not(a: Long): Long = ~a
+    override def negate    (a: Long): Long     = -a
+    override def abs       (a: Long): Long     = rl.abs(a)
+    override def signum    (a: Long): Long     = rl.signum(a)
 
-    def squared   (a: Long): Long = rl.squared(a)
-    def cubed     (a: Long): Long = rl2.cubed (a)
+    override def not(a: Long): Long = ~a
 
-    def rand[Tx](a: Long)(implicit r: Random[Tx], tx: Tx): Long = ???
+    override def squared   (a: Long): Long = rl.squared(a)
+    override def cubed     (a: Long): Long = rl2.cubed (a)
 
-    def rand2[Tx](a: Long)(implicit r: Random[Tx], tx: Tx): Long = ???
+    override def rand[Tx](a: Long)(implicit r: Random[Tx], tx: Tx): Long = ???
 
-    def rangeRand[Tx](a: Long, b: Long)(implicit r: Random[Tx], tx: Tx): Long = ???
+    override def rand2[Tx](a: Long)(implicit r: Random[Tx], tx: Tx): Long = ???
 
-    def lt  (a: Long, b: Long): Boolean = a <  b
-    def lteq(a: Long, b: Long): Boolean = a <= b
-    def gt  (a: Long, b: Long): Boolean = a >  b
-    def gteq(a: Long, b: Long): Boolean = a >= b
+    override def rangeRand[Tx](a: Long, b: Long)(implicit r: Random[Tx], tx: Tx): Long = ???
 
-    def fold (a: Long, lo: Long, hi: Long): Long = rl.fold(a, lo, hi)
-    def clip (a: Long, lo: Long, hi: Long): Long = rl.clip(a, lo, hi)
-    def wrap (a: Long, lo: Long, hi: Long): Long = rl.wrap(a, lo, hi)
+    override def lt  (a: Long, b: Long): Boolean = a <  b
+    override def lteq(a: Long, b: Long): Boolean = a <= b
+    override def gt  (a: Long, b: Long): Boolean = a >  b
+    override def gteq(a: Long, b: Long): Boolean = a >= b
+
+    override def fold (a: Long, lo: Long, hi: Long): Long = rl.fold(a, lo, hi)
+    override def clip (a: Long, lo: Long, hi: Long): Long = rl.clip(a, lo, hi)
+    override def wrap (a: Long, lo: Long, hi: Long): Long = rl.wrap(a, lo, hi)
 
     // ---- FromAny ----
 
-    def fromAny(in: Any): Option[Long] = in match {
+    override def fromAny(in: Any): Option[Long] = in match {
       case n: Long  => Some(n)        //  Success(n)
       case i: Int   => Some(i.toLong) // Success(i.toLong)
       case _        => None           //  FromAny.Unsupported
@@ -710,7 +735,7 @@ object Adjunct {
 
     // ---- HasDefault ----
 
-    def defaultValue: Long = 0L
+    override def defaultValue: Long = 0L
   }
 
   trait WidenSelfToDouble[A] extends WidenToDouble[A, A] {

@@ -605,6 +605,74 @@ object UnaryOp extends ProductReader[UnaryOp[_, _]] {
   // Ramp
   // Scurve
 
+  object IsPowerOfTwo extends ProductReader[IsPowerOfTwo[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IsPowerOfTwo[_, _] = {
+      require (arity == 0 && adj == 1)
+      val _num: NumInt[Any] { type Boolean = Any } = in.readAdjunct()
+      new IsPowerOfTwo[Any, Any]()(_num)
+    }
+  }
+  final case class IsPowerOfTwo[A, B]()(implicit num: NumInt[A] { type Boolean = B })
+    extends NamedOp[A, B] with ProductWithAdjuncts {
+    
+    def apply(a: A): B = num.isPowerOfTwo(a)
+
+    override def name = "IsPowerOfTwo"
+
+    override def adjuncts: Adjuncts = num :: Nil
+  }
+
+  object NextPowerOfTwo extends ProductReader[NextPowerOfTwo[_]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): NextPowerOfTwo[_] = {
+      require (arity == 0 && adj == 1)
+      val _num: NumInt[Any] = in.readAdjunct()
+      new NextPowerOfTwo[Any]()(_num)
+    }
+  }
+  final case class NextPowerOfTwo[A]()(implicit num: NumInt[A])
+    extends NamedOp[A, A] with ProductWithAdjuncts {
+
+    def apply(a: A): A = num.nextPowerOfTwo(a)
+
+    override def name = "NextPowerOfTwo"
+
+    override def adjuncts: Adjuncts = num :: Nil
+  }
+
+  object IsEven extends ProductReader[IsEven[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IsEven[_, _] = {
+      require (arity == 0 && adj == 1)
+      val _num: NumInt[Any] { type Boolean = Any } = in.readAdjunct()
+      new IsEven[Any, Any]()(_num)
+    }
+  }
+  final case class IsEven[A, B]()(implicit num: NumInt[A] { type Boolean = B })
+    extends NamedOp[A, B] with ProductWithAdjuncts {
+
+    def apply(a: A): B = num.isEven(a)
+
+    override def name = "IsEven"
+
+    override def adjuncts: Adjuncts = num :: Nil
+  }
+
+  object IsOdd extends ProductReader[IsOdd[_, _]] {
+    override def read(in: RefMapIn, key: String, arity: Int, adj: Int): IsOdd[_, _] = {
+      require (arity == 0 && adj == 1)
+      val _num: NumInt[Any] { type Boolean = Any } = in.readAdjunct()
+      new IsOdd[Any, Any]()(_num)
+    }
+  }
+  final case class IsOdd[A, B]()(implicit num: NumInt[A] { type Boolean = B })
+    extends NamedOp[A, B] with ProductWithAdjuncts {
+
+    def apply(a: A): B = num.isOdd(a)
+
+    override def name = "IsOdd"
+
+    override def adjuncts: Adjuncts = num :: Nil
+  }
+  
   // ---- general ----
 
   object ToStr extends ProductReader[ToStr[_]] {

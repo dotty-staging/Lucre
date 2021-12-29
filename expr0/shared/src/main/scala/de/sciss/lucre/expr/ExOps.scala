@@ -69,6 +69,11 @@ final class ExOps[A](private val x: Ex[A]) extends AnyVal {
   //  def rand2     (implicit num: Num[A]       ): Ex[A]           = UnOp(UnOp.Rand2 [A](), x)
   //  def coin      (implicit num: NumDouble[A] ): Ex[num.Boolean] = UnOp(UnOp.Coin  [A, num.Boolean]()(num), x)
 
+  def isPowerOfTwo  [B](implicit num: NumInt[A] { type Boolean = B }): Ex[B]  = UnOp(UnOp.IsPowerOfTwo  [A, B](), x)
+  def nextPowerOfTwo   (implicit num: NumInt[A])                     : Ex[A]  = UnOp(UnOp.NextPowerOfTwo[A](), x)
+  def isEven        [B](implicit num: NumInt[A] { type Boolean = B }): Ex[B]  = UnOp(UnOp.IsEven        [A, B](), x)
+  def isOdd         [B](implicit num: NumInt[A] { type Boolean = B }): Ex[B]  = UnOp(UnOp.IsOdd         [A, B](), x)
+
   def toStr: Ex[String] = UnOp(UnOp.ToStr[A](), x)
 
   // binary

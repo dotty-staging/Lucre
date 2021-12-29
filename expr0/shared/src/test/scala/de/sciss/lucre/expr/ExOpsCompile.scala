@@ -1,6 +1,6 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{Act, Ex}
+import de.sciss.lucre.expr.graph.{Act, Ex, PrintLn}
 
 trait ExOpsCompile {
   def run(): Unit = {
@@ -14,6 +14,14 @@ trait ExOpsCompile {
 
     val aSq: Ex[Seq[String]]  = fail()
     val bSq: Ex[Seq[String]]  = fail()
+
+    val z   : Ex[Int]       = fail()
+    val zSq : Ex[Seq[Int]]  = fail()
+
+    PrintLn(z   .isPowerOfTwo.toStr)
+    PrintLn(zSq .isPowerOfTwo.toStr)
+
+    tr.filter(z.isPowerOfTwo)
 
     (aSq zip bSq).map { case ExTuple2(a, b) =>
       a ++ b
