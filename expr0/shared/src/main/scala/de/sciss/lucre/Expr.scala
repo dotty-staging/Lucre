@@ -104,8 +104,9 @@ object Expr /*extends expr.Ops*/ {
 
     def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Repr[T]
 
-    implicit def format   [T <: Txn[T]]: TFormat[T, Repr[T]]
-    implicit def varFormat[T <: Txn[T]]: TFormat[T, Var [T]]
+    implicit def format       [T <: Txn[T]]: TFormat[T, Repr    [T]]
+    implicit def varFormat    [T <: Txn[T]]: TFormat[T, Var     [T]]
+    implicit def programFormat[T <: Txn[T]]: TFormat[T, Program [T]]
 
     implicit def valueFormat: ConstFormat[A]
 

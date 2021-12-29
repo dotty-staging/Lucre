@@ -116,26 +116,26 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
   protected def readCookie[T <: Txn[T]](@unused in: DataInput, cookie: Byte)(implicit tx: T): E[T] =  // sub-class may need tx
     sys.error(s"Unexpected cookie $cookie")
 
-  implicit final def format[T <: Txn[T]]: TFormat[T, E[T]] =
+  implicit override final def format[T <: Txn[T]]: TFormat[T, E[T]] =
     anyFmt.asInstanceOf[Fmt[T]]
 
-  implicit final def varFormat[T <: Txn[T]]: TFormat[T, Var[T]] =
+  implicit override final def varFormat[T <: Txn[T]]: TFormat[T, Var[T]] =
     anyVarFmt.asInstanceOf[VarFmt[T]]
 
-  implicit final def programFormat[T <: Txn[T]]: TFormat[T, Program[T]] =
+  implicit override final def programFormat[T <: Txn[T]]: TFormat[T, Program[T]] =
     anyProgramFmt.asInstanceOf[ProgramFmt[T]]
 
   // repeat `implicit` here because IntelliJ IDEA will not recognise it otherwise (SCL-9076)
-  implicit final def newConst[T <: Txn[T]](value: A)(implicit tx: T): Const[T] =
+  implicit override final def newConst[T <: Txn[T]](value: A)(implicit tx: T): Const[T] =
     mkConst[T](tx.newId(), value)
 
-  final def newVar[T <: Txn[T]](init: E[T])(implicit tx: T): Var[T] = {
+  final override def newVar[T <: Txn[T]](init: E[T])(implicit tx: T): Var[T] = {
     val targets = Event.Targets[T]()
     val ref     = targets.id.newVar[E[T]](init)
     mkVar[T](targets, ref, connect = true)
   }
 
-  final def newProgram[T <: Txn[T]](program: Ex[A])(implicit tx: T): Program[T] = {
+  final override def newProgram[T <: Txn[T]](program: Ex[A])(implicit tx: T): Program[T] = {
     val targets     = Event.Targets[T]()
     val id          = targets.id
     implicit val fmt: TFormat[T, Ex[A]] = ExElem.format
