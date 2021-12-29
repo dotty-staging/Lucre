@@ -425,6 +425,9 @@ object Adjunct {
     * or "empty" for containers etc. It is used to avoid having to
     * initialize objects with explicit default values, but care must
     * be taken to take those conventional defaults into account.
+    *
+    * Note that the class in no covariant in `A`, as this causes selectivity
+    * problems with, for example, `Span` and `SpanLike`.
     */
   trait HasDefault[A] extends Adjunct {
     def defaultValue: A

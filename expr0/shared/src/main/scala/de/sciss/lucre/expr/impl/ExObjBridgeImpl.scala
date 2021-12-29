@@ -68,16 +68,20 @@ abstract class AbstractExObjBridgeImpl[A, B <: A, _Ex[~ <: Txn[~]] <: _Expr[~, B
   }
 }
 
-final class ExObjBridgeImpl[A, _Ex[~ <: Txn[~]] <: _Expr[~, A]](tpe: _Expr.Type[A, _Ex])
+abstract class BasicExObjBridgeImpl[A, _Ex[~ <: Txn[~]] <: _Expr[~, A]](tpe: _Expr.Type[A, _Ex])
   extends AbstractExObjBridgeImpl[A, A, _Ex](tpe) {
-
-  def id: Int = _Expr.Type.ObjBridge.id
 
   protected def encode(in: A): A = in
 
   override def cellView[T <: Txn[T]](obj: LObj[T], key: String)
                                     (implicit tx: T, context: Context[T]): CellView.Var[T, Option[A]] =
     CellView.attrUndoOpt[T, A, _Ex](map = obj.attr, key = key)(tx, tpe, context)
+}
+
+final class ExObjBridgeImpl[A, _Ex[~ <: Txn[~]] <: _Expr[~, A]](tpe: _Expr.Type[A, _Ex])
+  extends BasicExObjBridgeImpl[A, _Ex](tpe) {
+
+  def id: Int = _Expr.Type.ObjBridge.id
 }
 
 final class ExSeqObjBridgeImpl[A, _Ex[~ <: Txn[~]] <: _Expr[~, Vec[A]]](tpe: _Expr.Type[Vec[A], _Ex])
