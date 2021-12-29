@@ -54,10 +54,10 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -70,7 +70,7 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -101,10 +101,10 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -117,7 +117,7 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -149,10 +149,10 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -165,7 +165,7 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -195,10 +195,10 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -211,7 +211,7 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -241,10 +241,10 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -257,7 +257,7 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -287,10 +287,10 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -303,7 +303,7 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -333,10 +333,10 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -349,7 +349,7 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -385,10 +385,10 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -401,7 +401,7 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )
@@ -437,10 +437,10 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
     res
   }
 
-  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: Ex[A],
+  override protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T], program: LVar[T, Ex[A]],
                                                 sources: LVar[T, Vec[Event[T, Any]]], value: LVar[T, A],
                                                 connect: Boolean)(implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -453,7 +453,7 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Event.Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )

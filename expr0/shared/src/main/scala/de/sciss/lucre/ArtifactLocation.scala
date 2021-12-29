@@ -92,12 +92,12 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
   }
 
   override protected def mkProgram[T <: Txn[T]](targets : Targets[T],
-                                                program : Ex[A],
+                                                program : LVar[T, Ex[A]],
                                                 sources : LVar[T, Vec[Event[T, Any]]],
                                                 value   : LVar[T, A],
                                                 connect : Boolean)
                                                (implicit tx: T): Program[T] = {
-    val res = new _Program[T](targets, program = program, sourcesRef = sources, valueRef = value)
+    val res = new _Program[T](targets, programRef = program, sourcesRef = sources, valueRef = value)
     if (connect) res.connect()
     res
   }
@@ -109,7 +109,7 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
     extends VarImpl[T] with Repr[T]
 
   private[this] final class _Program[T <: Txn[T]](val targets   : Targets[T],
-                                                  val program   : Ex[A],
+                                                  val programRef: LVar[T, Ex[A]],
                                                   val sourcesRef: LVar[T, Vec[Event[T, Any]]],
                                                   val valueRef  : LVar[T, A]
                                                  )

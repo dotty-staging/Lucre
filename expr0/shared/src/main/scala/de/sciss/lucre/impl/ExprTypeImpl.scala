@@ -116,11 +116,14 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
   protected def readCookie[T <: Txn[T]](@unused in: DataInput, cookie: Byte)(implicit tx: T): E[T] =  // sub-class may need tx
     sys.error(s"Unexpected cookie $cookie")
 
-  implicit final def format[T <: Txn[T]]: TFormat[T, E[T]] /* EventLikeFormat[S, Repr[T]] */ =
+  implicit final def format[T <: Txn[T]]: TFormat[T, E[T]] =
     anyFmt.asInstanceOf[Fmt[T]]
 
-  implicit final def varFormat[T <: Txn[T]]: TFormat[T, Var[T]] /* Format[T, S#Acc, ReprVar[T]] */ =
+  implicit final def varFormat[T <: Txn[T]]: TFormat[T, Var[T]] =
     anyVarFmt.asInstanceOf[VarFmt[T]]
+
+  implicit final def programFormat[T <: Txn[T]]: TFormat[T, Program[T]] =
+    anyProgramFmt.asInstanceOf[ProgramFmt[T]]
 
   // repeat `implicit` here because IntelliJ IDEA will not recognise it otherwise (SCL-9076)
   implicit final def newConst[T <: Txn[T]](value: A)(implicit tx: T): Const[T] =
@@ -133,11 +136,13 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
   }
 
   final def newProgram[T <: Txn[T]](program: Ex[A])(implicit tx: T): Program[T] = {
-    val targets = Event.Targets[T]()
-    val id      = targets.id
-    val sources = id.newVar(Vec.empty[Event[T, Any]])
-    val value   = id.newVar[A](null.asInstanceOf[A])
-    mkProgram[T](targets, program = program, sources = sources, value = value, connect = true)
+    val targets     = Event.Targets[T]()
+    val id          = targets.id
+    implicit val fmt: TFormat[T, Ex[A]] = ExElem.format
+    val programRef  = id.newVar(program)
+    val sources     = id.newVar(Vec.empty[Event[T, Any]])
+    val value       = id.newVar[A](null.asInstanceOf[A])
+    mkProgram[T](targets, program = programRef, sources = sources, value = value, connect = true)
   }
 
   protected def mkConst[T <: Txn[T]](id: Ident[T], value: A)(implicit tx: T): Const[T]
@@ -146,7 +151,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
                                   (implicit tx: T): Var[T]
 
   protected def mkProgram[T <: Txn[T]](targets: Event.Targets[T],
-                                       program: Ex[A],
+                                       program: LVar[T, Ex[A]],
                                        sources: LVar[T, Vec[Event[T, Any]]],
                                        value  : LVar[T, A],
                                        connect: Boolean)
@@ -179,6 +184,15 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     readIdentifiedVar(in, targets)
   }
 
+  override final def readProgram[T <: Txn[T]](in: DataInput)(implicit tx: T): Program[T] = {
+    val tpe = in.readInt()
+    if (tpe != typeId) sys.error(s"Type mismatch, expected $typeId but found $tpe")
+    val targets = Event.Targets.read[T](in)
+    val cookie = in.readByte()
+    if (cookie != 2) sys.error(s"Unexpected cookie $cookie")
+    readIdentifiedProgram(in, targets)
+  }
+
   @inline
   private[this] def readIdentifiedVar[T <: Txn[T]](in: DataInput, targets: Event.Targets[T])
                                                   (implicit tx: T): Var[T] = {
@@ -196,11 +210,11 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     if (cookie != PROGRAM_SER_VERSION) {
       sys.error(s"Unexpected cookie ${cookie.toHexString} instead of ${PROGRAM_SER_VERSION.toHexString}")
     }
-    val ref     = new ExElem.RefMapIn(in)
-    val ex      = ref.readEx[A]()
+    implicit val fmt: TFormat[T, Ex[A]] = ExElem.format
+    val program = id.readVar[Ex[A]](in)
     val sources = id.readVar[Vec[Event[T, Any]]](in)
     val value   = id.readVar[A](in)
-    mkProgram[T](targets, program = ex, sources = sources, value = value, connect = false)
+    mkProgram[T](targets, program = program, sources = sources, value = value, connect = false)
   }
 
   // ---- private ----
@@ -231,11 +245,38 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
 
     protected def sourcesRef: LVar[T, Vec[Event[T, Any]]]
     protected def valueRef  : LVar[T, A]
+    protected def programRef: LVar[T, Ex[A]]
 
     // ---- impl ----
 
+//    override def program: Ref[T, Ex[A]] = programRef
+
+    override object program extends Ref[T, Ex[A]] {
+      override def swap(value: Ex[A])(implicit tx: T): Ex[A] = {
+        val res = apply()
+        if (value != res) {
+          programRef()  = value
+          val valueNew  = valueImpl  // updates events
+          val valueOld  = valueRef()
+          val ch        = Change(valueOld, valueNew)
+          if (ch.isSignificant) {
+            valueRef() = valueNew
+            changed.fire(ch)
+          }
+        }
+        res
+      }
+
+      override def apply()(implicit tx: T): Ex[A] = programRef()
+
+      override def update(value: Ex[A])(implicit tx: T): Unit = {
+        swap(value)
+        ()
+      }
+    }
+
     final def connect()(implicit tx: T): this.type = {
-      valueImpl
+      valueRef() = valueImpl
       this
     }
 
@@ -249,7 +290,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     private def valueImpl(implicit tx: T): A = {
       val hc = Context.headless[T](this)
       implicit val ctx: Context[T] = hc
-      val peer      = program.expand[T]
+      val peer      = programRef().expand[T]
       val res       = peer.value
       val eventsOld = sourcesRef()
       val eventsNew = hc.events
@@ -269,23 +310,27 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
 
     object changed extends Changed with GeneratorEvent[T, Change[A]] with Caching {
       private[lucre] def pullUpdate(pull: Pull[T])(implicit tx: T): Option[Change[A]] = {
-        val valueOld  = valueRef()
-        val valueNew  = value  // updates cache
-        logEvent.debug(s"ExObj pullUpdate; $valueOld -> $valueNew")
-        val ch        = Change(valueOld, valueNew)
-        ch.toOption
+        if (pull.isOrigin(this)) Some(pull.resolve[Change[A]])
+        else {
+          val valueOld  = valueRef()
+          val valueNew  = value  // updates cache
+          logEvent.debug(s"ExObj pullUpdate; $valueOld -> $valueNew")
+          val ch        = Change(valueOld, valueNew)
+          ch.toOption
+        }
       }
     }
 
-    private def writeEx(out: DataOutput): Unit = {
-      val ref = new ExElem.RefMapOut(out)
-      ref.writeElem(program)
-    }
+//    private def writeEx(out: DataOutput): Unit = {
+//      val ref = new ExElem.RefMapOut(out)
+//      ref.writeElem(program)
+//    }
 
     override protected def writeData(out: DataOutput): Unit = {
       out.writeByte(2)  // 'program'
       out.writeShort(PROGRAM_SER_VERSION)
-      writeEx(out)
+//      writeEx(out)
+      programRef.write(out)
       sourcesRef.write(out)
       valueRef  .write(out)
     }
@@ -296,14 +341,19 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     /** Makes a deep copy of an element, possibly translating it to a different system `Out`. */
     override private[lucre] def copy[Out <: Txn[Out]]()(implicit txIn: T, txOut: Out,
                                                         context: Copy[T, Out]): Elem[Out] =
-      newProgram[Out](program)
+      newProgram[Out](program())
   }
 
-  private[this] val anyFmt    = new Fmt   [AnyTxn]
-  private[this] val anyVarFmt = new VarFmt[AnyTxn]
+  private[this] val anyFmt        = new Fmt       [AnyTxn]
+  private[this] val anyVarFmt     = new VarFmt    [AnyTxn]
+  private[this] val anyProgramFmt = new ProgramFmt[AnyTxn]
 
   private[this] final class VarFmt[T <: Txn[T]] extends WritableFormat[T, Var[T]] {
     override def readT(in: DataInput)(implicit tx: T): Var[T] = readVar[T](in)
+  }
+
+  private[this] final class ProgramFmt[T <: Txn[T]] extends WritableFormat[T, Program[T]] {
+    override def readT(in: DataInput)(implicit tx: T): Program[T] = readProgram[T](in)
   }
 
   private[this] final class Fmt[T <: Txn[T]] extends WritableFormat[T, E[T]] {

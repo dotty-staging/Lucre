@@ -44,7 +44,7 @@ object Expr /*extends expr.Ops*/ {
   }
 
   object Program {
-    def unapply[T <: Txn[T], A](expr: Expr[T, A]): Option[Ex[A]] =
+    def unapply[T <: Txn[T], A](expr: Expr[T, A]): Option[Ref[T, Ex[A]]] =
       if (expr   .isInstanceOf[Program[_, _]]) {
         Some(expr.asInstanceOf[Program[T, A]].program)
       } else None
@@ -53,8 +53,8 @@ object Expr /*extends expr.Ops*/ {
   /** A program expression is backed by a code tree with an `Ex` as its leaf.
     * Program inputs are accessed through the object's attribute map.
     */
-  trait Program[T <: Txn[T], +A] extends Expr[T, A] {
-    protected def program: Ex[A]
+  trait Program[T <: Txn[T], A] extends Expr[T, A] {
+    def program: Ref[T, Ex[A]]
   }
 
   def isConst   (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const   [_, _]]
@@ -121,11 +121,23 @@ object Expr /*extends expr.Ops*/ {
       }
     }
 
-    implicit def newConst [T <: Txn[T]](value: A     )(implicit tx: T): Const[T]
-    def newVar            [T <: Txn[T]](init: Repr[T])(implicit tx: T): Var  [T]
+    object Program {
+      def unapply[T <: Txn[T]](expr: E[T]): Option[Program[T]] = {
+        // !!! this wrongly reports `true` for `Const`, probably due
+        // to some erasure that scalac doesn't warn about
+        // if (expr.isInstanceOf[Var[_]]) Some(expr.asInstanceOf[Var[T]]) else None
 
-    def readConst[T <: Txn[T]](in: DataInput)(implicit tx: T): Const[T]
-    def readVar  [T <: Txn[T]](in: DataInput)(implicit tx: T): Var  [T]
+        if (expr.isInstanceOf[Expr.Program[T, _]]) Some(expr.asInstanceOf[Program[T]]) else None
+      }
+    }
+
+    implicit def newConst [T <: Txn[T]](value : A      )(implicit tx: T): Const   [T]
+    def newVar            [T <: Txn[T]](init  : Repr[T])(implicit tx: T): Var     [T]
+    def newProgram        [T <: Txn[T]](ex    : Ex  [A])(implicit tx: T): Program [T]
+
+    def readConst   [T <: Txn[T]](in: DataInput)(implicit tx: T): Const   [T]
+    def readVar     [T <: Txn[T]](in: DataInput)(implicit tx: T): Var     [T]
+    def readProgram [T <: Txn[T]](in: DataInput)(implicit tx: T): Program [T]
 
     def tryParse(value: scala.Any): Option[A]
   }

@@ -1,8 +1,8 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.expr.graph.{Ex, Folder}
+import de.sciss.lucre.expr.graph.Ex
 import de.sciss.lucre.store.BerkeleyDB
-import de.sciss.lucre.{BooleanObj, Durable, IntObj, Folder => LFolder}
+import de.sciss.lucre.{Durable, IntObj}
 
 object IntExObjTest {
   type S = Durable
@@ -23,17 +23,17 @@ object IntExObjTest {
     val store = BerkeleyDB.tmp()
     implicit val system: S = Durable(store)
 
-    val (inH, outH) = system.step { implicit tx =>
+    val (inH, programH, outH) = system.step { implicit tx =>
       import ExImport._
             val ex: Ex[Int] = "in".attr(0) * 2
 //      val ex: Ex[Int] = "in".attr(Folder()).size
             val input     = IntObj.newVar[T](0)
 //      val input     = LFolder[T]()
-      val transform = IntObj.newProgram[T](ex)
+      val program = IntObj.newProgram[T](ex)
       println("--- put 'in'")
-      transform.attr.put("in", input)
-      val output    = IntObj.newVar[T](transform)
-      (tx.newHandle(input), tx.newHandle(output))
+      program.attr.put("in", input)
+      val output    = IntObj.newVar[T](program)
+      (tx.newHandle(input), tx.newHandle(program), tx.newHandle(output))
     }
 
     system.step { implicit tx =>
@@ -51,12 +51,27 @@ object IntExObjTest {
 //      in.addLast(BooleanObj.newConst(false))
     }
 
-    val v = system.step { implicit tx =>
+    val v1 = system.step { implicit tx =>
       val out = outH()
       println("--- call 'value'")
       out.value
     }
-    println(s"OUTPUT now $v")
+    println(s"OUTPUT now $v1")
+
+    system.step { implicit tx =>
+      val program = programH()
+      println("--- swap program")
+      import graph._
+      val ex: Ex[Int] = In(0) >> 1
+      program.program() = ex
+    }
+
+    val v2 = system.step { implicit tx =>
+      val out = outH()
+      println("--- call 'value'")
+      out.value
+    }
+    println(s"OUTPUT now $v2")
 
     system.close()
   }
