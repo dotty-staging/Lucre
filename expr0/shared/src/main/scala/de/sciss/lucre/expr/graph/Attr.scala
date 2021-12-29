@@ -444,3 +444,12 @@ final case class Attr[A](key: String)(implicit val bridge: Obj.Bridge[A])
 
   override def adjuncts: scala.List[Adjunct] = bridge :: Nil
 }
+
+object In {
+  /** A convenient shortcut for `"in".attr[A]` */
+  def apply[A](implicit bridge: Obj.Bridge[A]): Attr[A] = Attr[A]("in")
+
+  /** A convenient shortcut for `"in".attr[A](default)` */
+  def apply[A](default: Ex[A])(implicit bridge: Obj.Bridge[A]): Attr.WithDefault[A] =
+    Attr.WithDefault[A]("in", default)
+}
