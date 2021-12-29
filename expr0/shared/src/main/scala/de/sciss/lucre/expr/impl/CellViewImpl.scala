@@ -298,6 +298,10 @@ object CellViewImpl {
         override protected def observeMap[B](map: Obj.AttrMap[T])(fun: T => MapObjLike.Update[String, Obj[T]] => Unit)
                                             (implicit tx: T): Disposable[T] =
           reactTo(map.changed)(fun)
+
+        override protected def observeExpr(expr: _Expr[T, A])(fun: T => Change[A] => Unit)
+                                          (implicit tx: T): Disposable[T] =
+          reactTo(expr.changed)(fun)
       }
 
     def repr(implicit tx: T): Repr = {
@@ -320,7 +324,7 @@ object CellViewImpl {
 
   abstract class AttrMapExprObs[T <: Txn[T], A](map: Obj.AttrMap[T], key: String, fun: T => Option[A] => Unit,
                                              tx0: T)(implicit tpe: Obj.Type)
-    extends MapObjLikeExprObs[T, A, Obj, Obj.AttrMap[T]](map, key, fun, tx0) {
+    extends MapObjLikeExprObsX[T, A, Obj, ({type E[~ <: Txn[~]] = _Expr[~, A]})#E, Obj.AttrMap[T]](map, key, fun, tx0) {
 
     protected def compareTpe(value: Obj[T]): Boolean =
       value.tpe == tpe
@@ -328,8 +332,8 @@ object CellViewImpl {
 
   // XXX TODO --- lot's of overlap with CellViewImpl
   /** N.B.: `tpe` must denote objects that extend `Expr`, otherwise we get class-cast exceptions. */
-  abstract class MapObjLikeExprObs[T <: Txn[T], A, 
-    Repr[~ <: Txn[~]] <: Form[~], M <: MapObjLike[T, String, Repr[T]]](map0: M, key: String,
+  abstract class MapObjLikeExprObsX[T <: Txn[T], A,
+    Repr[~ <: Txn[~]] <: Form[~], E[~ <: Txn[~]] <: _ExprLike[~, A], M <: MapObjLike[T, String, Repr[T]]](map0: M, key: String,
                                                                        fun: T => Option[A] => Unit, tx0: T)
     extends Disposable[T] {
 
@@ -340,12 +344,14 @@ object CellViewImpl {
     protected def observeMap[B](map: M)(fun: T => MapObjLike.Update[String, Repr[T]] => Unit)
                                (implicit tx: T): Disposable[T]
 
+    protected def observeExpr(expr: E[T])(fun: T => Change[A] => Unit)(implicit tx: T): Disposable[T]
+
     // ---- impl ----
 
     private[this] val valObs = Ref(null: Disposable[T])
 
     private[this] def obsAdded(value: Repr[T])(implicit tx: T): Unit = {
-      val valueT = value.asInstanceOf[_Expr[T, A]]
+      val valueT = value.asInstanceOf[E[T]]
       valueAdded(valueT)
       // XXX TODO -- if we moved this into `valueAdded`, the contract
       // could be that initially the view is updated
@@ -359,7 +365,7 @@ object CellViewImpl {
 
     private[this] val mapObs = observeMap(map0) { implicit tx => u =>
       u.changes.foreach {
-        case Obj.AttrAdded   (`key`, value) if compareTpe(value) => obsAdded  (value)
+        case Obj.AttrAdded   (`key`, value) if compareTpe(value) => obsAdded(value)
         case Obj.AttrRemoved (`key`, value) if compareTpe(value) => obsRemoved()
         case Obj.AttrReplaced(`key`, before, now) =>
           if      (compareTpe(now    )) obsAdded(now)
@@ -369,11 +375,11 @@ object CellViewImpl {
     } (tx0)
 
     map0.get(key)(tx0).foreach { value =>
-      if (compareTpe(value)) valueAdded(value.asInstanceOf[_ExprLike[T, A]])(tx0)
+      if (compareTpe(value)) valueAdded(value.asInstanceOf[E[T]])(tx0)
     }
 
-    private[this] def valueAdded(value: _ExprLike[T, A])(implicit tx: T): Unit = {
-      val res = value.changed.react { implicit tx => {
+    private[this] def valueAdded(value: E[T])(implicit tx: T): Unit = {
+      val res = observeExpr(value) { implicit tx => {
         case Change(_, now) =>
           fun(tx)(Some(now))
         //            val opt = mapUpdate(ch)

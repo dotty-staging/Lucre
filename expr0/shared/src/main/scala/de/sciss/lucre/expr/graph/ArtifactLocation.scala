@@ -19,7 +19,8 @@ import de.sciss.lucre.expr.ExElem.{ProductReader, RefMapIn}
 import de.sciss.lucre.expr.graph.impl.AbstractCtxCellView
 import de.sciss.lucre.expr.impl.CellViewImpl.AttrMapExprObs
 import de.sciss.lucre.expr.{CellView, Context}
-import de.sciss.lucre.{Adjunct, Disposable, IExpr, MapObjLike, ProductWithAdjuncts, Source, Txn, ArtifactLocation => _ArtifactLocation, Obj => LObj}
+import de.sciss.lucre.{Adjunct, Disposable, Expr, IExpr, MapObjLike, ProductWithAdjuncts, Source, Txn, ArtifactLocation => _ArtifactLocation, Obj => LObj}
+import de.sciss.model.Change
 import de.sciss.serial.DataInput
 
 import java.net.URI
@@ -113,6 +114,10 @@ object ArtifactLocation extends ProductReader[ArtifactLocation] {
         override protected def observeMap[B](map: AttrMap[T])(fun: T => MapObjLike.Update[String, LObj[T]] => Unit)
                                             (implicit tx: T): Disposable[T] =
           context.reactTo(map.changed)(fun)
+
+        override protected def observeExpr(expr: Expr[T, URI])(fun: T => Change[URI] => Unit)
+                                          (implicit tx: T): Disposable[T] =
+          context.reactTo(expr.changed)(fun)
       }
   }
 

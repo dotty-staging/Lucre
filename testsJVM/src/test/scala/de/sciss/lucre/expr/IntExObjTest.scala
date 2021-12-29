@@ -25,10 +25,10 @@ object IntExObjTest {
 
     val (inH, outH) = system.step { implicit tx =>
       import ExImport._
-      //      val ex: Ex[Int] = "in".attr(0) * 2
-      val ex: Ex[Int] = "in".attr(Folder()).size
-      //      val input     = IntObj.newVar[T](0)
-      val input     = LFolder[T]()
+            val ex: Ex[Int] = "in".attr(0) * 2
+//      val ex: Ex[Int] = "in".attr(Folder()).size
+            val input     = IntObj.newVar[T](0)
+//      val input     = LFolder[T]()
       val transform = IntObj.newProgram[T](ex)
       println("--- put 'in'")
       transform.attr.put("in", input)
@@ -47,8 +47,8 @@ object IntExObjTest {
     system.step { implicit tx =>
       val in = inH()
       println("--- update 'in'")
-      //      in() = 1000
-      in.addLast(BooleanObj.newConst(false))
+      in() = 1000
+//      in.addLast(BooleanObj.newConst(false))
     }
 
     val v = system.step { implicit tx =>
