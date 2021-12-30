@@ -23,7 +23,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.language.implicitConversions
 
 object Expr /*extends expr.Ops*/ {
-  // XXX TODO -- we need to rethink this type
+  // XXX TODO -- we need to rethink this type; the problem is the Repr type of the contents
   //  trait Var[T <: Txn[T], A, E[~ <: Txn[~]] <: Expr[~, A]] extends Expr[S, A] with stm.Var[T, E[T]]
   //  trait Var[T <: Txn[T], A] extends Expr[T, A] with lucre.Var[Expr[T, A]]
 
@@ -57,8 +57,9 @@ object Expr /*extends expr.Ops*/ {
     def program: Ref[T, Ex[A]]
   }
 
-  def isConst   (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const   [_, _]]
-  def isProgram (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Program [_, _]]
+  def isConst   (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const     [_, _]]
+  def isVar     (expr: Expr[_, _]): Boolean = expr.isInstanceOf[lucre.Var [_, _]]
+  def isProgram (expr: Expr[_, _]): Boolean = expr.isInstanceOf[Program   [_, _]]
 
   object Type {
     private lazy val _init: Unit = {
