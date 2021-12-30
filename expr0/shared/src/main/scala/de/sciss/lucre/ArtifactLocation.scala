@@ -36,6 +36,8 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
 
 //  implicit def valueFormat: ConstFormat[Value] = TFormat.File
 
+  final val valueName = "URI"
+
   implicit object valueFormat extends ConstFormat[Value] {
     private final val SER_VERSION = 2
 

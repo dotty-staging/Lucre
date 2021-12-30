@@ -39,6 +39,8 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
 
   override def toString = "IntObj"
 
+  final val valueName = "Int"
+
   def tryParse(value: Any): Option[Int] = value match {
     case x: Int => Some(x)
     case _      => None
@@ -82,6 +84,8 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
 
   final val typeId = 3
   final val valueFormat = TFormat.Long
+
+  final val valueName = "Long"
 
   override def toString = "LongObj"
 
@@ -129,6 +133,8 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
 
   final val typeId = 5
   final val valueFormat = TFormat.Double
+
+  final val valueName = "Double"
 
   override def toString = "DoubleObj"
 
@@ -178,6 +184,8 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
   final val typeId = 6
   final val valueFormat = TFormat.Boolean
 
+  final val valueName = "Boolean"
+
   override def toString = "BooleanObj"
 
   def tryParse(in: Any): Option[Boolean] = in match {
@@ -223,6 +231,8 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
 
   final val typeId = 8
   final val valueFormat = TFormat.String
+
+  final val valueName = "String"
 
   override def toString = "StringObj"
 
@@ -270,6 +280,8 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
   final val typeId = 9
   final val valueFormat = SpanLike.format
 
+  final val valueName = "SpanLike"
+
   override def toString = "SpanLikeObj"
 
   def tryParse(in: Any): Option[SpanLike] = in match {
@@ -316,6 +328,8 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
   final val typeId = 10
   final val valueFormat = Span.format
 
+  final val valueName = "Span"
+
   override def toString = "SpanObj"
 
   def tryParse(in: Any): Option[Span] = in match {
@@ -361,6 +375,8 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
 
   final val typeId = 0x2002 //  0x2000 | IntObj.typeId
   final val valueFormat: ConstFormat[Vec[Int]] = ConstFormat.vec
+
+  final val valueName = "Seq[Int]"
 
   override def toString = "IntVector"
 
@@ -413,6 +429,8 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
 
   final val typeId = 0x2005 //  0x2000 | DoubleObj.typeId
   final val valueFormat: ConstFormat[Vec[Double]] = ConstFormat.vec
+
+  final val valueName = "Seq[Double]"
 
   override def toString = "DoubleVector"
 
