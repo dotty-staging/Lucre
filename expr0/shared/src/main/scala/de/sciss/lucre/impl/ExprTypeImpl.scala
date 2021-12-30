@@ -141,7 +141,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     implicit val fmt: TFormat[T, Ex[A]] = ExElem.format
     val programRef  = id.newVar(program)
     val sources     = id.newVar(Vec.empty[Event[T, Any]])
-    val value       = id.newVar[A](null.asInstanceOf[A])
+    val value       = id.newVar[A](defaultValue)
     mkProgram[T](targets, program = programRef, sources = sources, value = value, connect = true)
   }
 
@@ -249,8 +249,6 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
 
     // ---- impl ----
 
-//    override def program: Ref[T, Ex[A]] = programRef
-
     override object program extends Ref[T, Ex[A]] {
       override def swap(value: Ex[A])(implicit tx: T): Ex[A] = {
         val res = apply()
@@ -321,15 +319,9 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
       }
     }
 
-//    private def writeEx(out: DataOutput): Unit = {
-//      val ref = new ExElem.RefMapOut(out)
-//      ref.writeElem(program)
-//    }
-
     override protected def writeData(out: DataOutput): Unit = {
       out.writeByte(2)  // 'program'
       out.writeShort(PROGRAM_SER_VERSION)
-//      writeEx(out)
       programRef.write(out)
       sourcesRef.write(out)
       valueRef  .write(out)

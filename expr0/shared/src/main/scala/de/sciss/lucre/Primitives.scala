@@ -41,6 +41,8 @@ object IntObj extends impl.ExprTypeImpl[Int, IntObj] {
 
   final val valueName = "Int"
 
+  override def defaultValue: A = 0
+
   def tryParse(value: Any): Option[Int] = value match {
     case x: Int => Some(x)
     case _      => None
@@ -86,6 +88,8 @@ object LongObj extends impl.ExprTypeImpl[Long, LongObj] {
   final val valueFormat = TFormat.Long
 
   final val valueName = "Long"
+
+  override def defaultValue: A = 0L
 
   override def toString = "LongObj"
 
@@ -135,6 +139,8 @@ object DoubleObj extends impl.ExprTypeImpl[Double, DoubleObj] {
   final val valueFormat = TFormat.Double
 
   final val valueName = "Double"
+
+  override def defaultValue: A = 0.0
 
   override def toString = "DoubleObj"
 
@@ -186,6 +192,8 @@ object BooleanObj extends impl.ExprTypeImpl[Boolean, BooleanObj] {
 
   final val valueName = "Boolean"
 
+  override def defaultValue: A = false
+
   override def toString = "BooleanObj"
 
   def tryParse(in: Any): Option[Boolean] = in match {
@@ -233,6 +241,8 @@ object StringObj extends impl.ExprTypeImpl[String, StringObj] {
   final val valueFormat = TFormat.String
 
   final val valueName = "String"
+
+  override def defaultValue: A = ""
 
   override def toString = "StringObj"
 
@@ -282,6 +292,8 @@ object SpanLikeObj extends impl.ExprTypeImpl[SpanLike, SpanLikeObj] {
 
   final val valueName = "SpanLike"
 
+  override def defaultValue: A = Span.Void
+
   override def toString = "SpanLikeObj"
 
   def tryParse(in: Any): Option[SpanLike] = in match {
@@ -330,6 +342,8 @@ object SpanObj extends impl.ExprTypeImpl[Span, SpanObj] {
 
   final val valueName = "Span"
 
+  override def defaultValue: A = Span(0L, 0L)
+
   override def toString = "SpanObj"
 
   def tryParse(in: Any): Option[Span] = in match {
@@ -377,6 +391,8 @@ object IntVector extends impl.ExprTypeImpl[Vec[Int], IntVector] {
   final val valueFormat: ConstFormat[Vec[Int]] = ConstFormat.vec
 
   final val valueName = "Seq[Int]"
+
+  override def defaultValue: A = Vector.empty
 
   override def toString = "IntVector"
 
@@ -431,6 +447,8 @@ object DoubleVector extends impl.ExprTypeImpl[Vec[Double], DoubleVector] {
   final val valueFormat: ConstFormat[Vec[Double]] = ConstFormat.vec
 
   final val valueName = "Seq[Double]"
+
+  override def defaultValue: A = Vector.empty
 
   override def toString = "DoubleVector"
 

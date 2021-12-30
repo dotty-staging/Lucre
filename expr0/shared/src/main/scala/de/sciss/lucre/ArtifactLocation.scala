@@ -29,14 +29,9 @@ object ArtifactLocation extends ExprTypeImpl[Value, ArtifactLocation] {
 
   final val typeId = 0x10003
 
-//  def tmp[T <: Txn[T]]()(implicit tx: T): Const[T] = {
-//    val dir   = File.createTemp("artifacts", "tmp", directory = true)
-//    newConst(dir)
-//  }
-
-//  implicit def valueFormat: ConstFormat[Value] = TFormat.File
-
   final val valueName = "URI"
+
+  override def defaultValue: A = Value.empty
 
   implicit object valueFormat extends ConstFormat[Value] {
     private final val SER_VERSION = 2

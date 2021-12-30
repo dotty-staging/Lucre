@@ -105,7 +105,14 @@ object Expr /*extends expr.Ops*/ {
 
     def read[T <: Txn[T]](in: DataInput)(implicit tx: T): Repr[T]
 
+    /** A human readable string representing the expression's element type. */
     def valueName: String
+
+    /** A value that can be used to initialize objects, as a temporary value, etc.
+      * If the `valueFormat` supports `null`, it may also be `null`.
+      * It should not be used for any semantic purposes.
+      */
+    def defaultValue: A
 
     implicit def format       [T <: Txn[T]]: TFormat[T, Repr    [T]]
     implicit def varFormat    [T <: Txn[T]]: TFormat[T, Var     [T]]
