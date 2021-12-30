@@ -9,7 +9,7 @@ Lucre is an STM based persistent and reactive system for the Scala programming l
 of the computer music framework [SoundProcesses](https://github.com/Sciss/SoundProcesses) and its
 interface front-end [Mellite](https://github.com/Sciss/Mellite).
 
-Lucre is (C)opyright 2009&ndash;2021 by Hanns Holger Rutz. All rights reserved. 
+Lucre is (C)opyright 2009&ndash;2022 by Hanns Holger Rutz. All rights reserved. 
 All modules are released under 
 the [GNU Affero General Public License](https://github.com/Sciss/Lucre/raw/main/LICENSE) v3+.
 The software comes with absolutely no warranties. To contact the author, send an e-mail to `contact at sciss.de`.

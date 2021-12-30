@@ -2,7 +2,7 @@
  *  Cache.scala
  *  (Lucre 4)
  *
- *  Copyright (c) 2009-2021 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2009-2022 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Affero General Public License v3+
  *
