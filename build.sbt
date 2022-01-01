@@ -87,8 +87,6 @@ lazy val root = project.withId(baseNameL).in(file("."))
     geom      .jvm, geom      .js,
     data      .jvm, data      .js,
     core      .jvm, core      .js,
-    expr0     .jvm, expr0     .js,
-    expr1     .jvm, expr1     .js,
     expr      .jvm, expr      .js,
     confluent .jvm, confluent .js,
     tests     .jvm, tests     .js,
@@ -174,15 +172,12 @@ lazy val core = crossProject(JVMPlatform, JSPlatform).in(file("core"))
     mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-core" % mimaVersion)
   )
 
-// Dotty has currently cycle problems compiling F-bounded types.
-// A work-around is to split the sources.
-
-lazy val expr0 = crossProject(JVMPlatform, JSPlatform).in(file("expr0"))
+lazy val expr = crossProject(JVMPlatform, JSPlatform).in(file("expr"))
   .dependsOn(core, adjunct)
   .settings(commonSettings)
   .jvmSettings(commonJvmSettings)
   .settings(
-    name := s"$baseName-expr0",
+    name := s"$baseName-expr",
     libraryDependencies ++= Seq(
       "de.sciss" %%% "asyncfile" % deps.expr.asyncFile,
       "de.sciss" %%% "equal"     % deps.expr.equal, // % Provided, -- no longer provided thanks to macros gone in Dotty
@@ -193,28 +188,10 @@ lazy val expr0 = crossProject(JVMPlatform, JSPlatform).in(file("expr0"))
         ("org.scala-lang.modules" %% "scala-collection-compat" % deps.expr.scalaCollectionCompat) :: Nil
       else Nil
     },
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr0" % mimaVersion)
-  )
-
-lazy val expr1 = crossProject(JVMPlatform, JSPlatform).in(file("expr1"))
-  .dependsOn(expr0)
-  .settings(commonSettings)
-  .jvmSettings(commonJvmSettings)
-  .settings(
-    name := s"$baseName-expr1",
-    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr1" % mimaVersion)
+    mimaPreviousArtifacts := Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
   .jsSettings(
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-locales" % deps.test.locales % Test
-  )
-
-lazy val expr = crossProject(JVMPlatform, JSPlatform).in(file("expr"))
-  .dependsOn(expr0, expr1)
-  .settings(commonSettings)
-  .jvmSettings(commonJvmSettings)
-  .settings(
-    name := s"$baseName-expr",
-    mimaPreviousArtifacts := Set.empty // Set("de.sciss" %% s"$baseNameL-expr" % mimaVersion)
   )
 
 lazy val confluent = crossProject(JVMPlatform, JSPlatform).in(file("confluent"))

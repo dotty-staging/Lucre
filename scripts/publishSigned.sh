@@ -7,5 +7,5 @@ then
    exit 1
 fi
 
-sbt "; + adjunctJS/publishSigned ; + adjunctJVM/publishSigned ; + baseJS/publishSigned ; + baseJVM/publishSigned ; + confluentJS/publishSigned ; + confluentJVM/publishSigned ; + coreJS/publishSigned ; + coreJVM/publishSigned ; + dataJS/publishSigned ; + dataJVM/publishSigned ; + expr0JS/publishSigned ; + expr0JVM/publishSigned ; + expr1JS/publishSigned ; + expr1JVM/publishSigned ; + exprJS/publishSigned ; + exprJVM/publishSigned ; + geomJS/publishSigned ; + geomJVM/publishSigned ; + lucre-bdb/publishSigned ; sonatypeBundleRelease"
+sbt "; + adjunctJS/publishSigned ; + adjunctJVM/publishSigned ; + baseJS/publishSigned ; + baseJVM/publishSigned ; + confluentJS/publishSigned ; + confluentJVM/publishSigned ; + coreJS/publishSigned ; + coreJVM/publishSigned ; + dataJS/publishSigned ; + dataJVM/publishSigned ; + exprJS/publishSigned ; + exprJVM/publishSigned ; + geomJS/publishSigned ; + geomJVM/publishSigned ; + lucre-bdb/publishSigned ; sonatypeBundleRelease"
 
