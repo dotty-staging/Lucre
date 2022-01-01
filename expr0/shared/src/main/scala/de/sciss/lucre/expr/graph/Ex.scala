@@ -45,7 +45,7 @@ object Ex /*extends ExPlatform*/ {
   object Value {
     implicit object anyVal      extends Value[AnyVal    ]
     implicit object string      extends Value[String    ]
-    implicit object spanLike    extends Value[_SpanLike ]
+//    implicit object spanLike    extends Value[_SpanLike ]
 //    implicit object act       extends Value[Act       ]
     implicit object fileIsValue extends Value[_URI      ]
 

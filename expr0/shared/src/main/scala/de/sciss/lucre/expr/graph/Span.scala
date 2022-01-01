@@ -49,7 +49,7 @@ object Span extends ProductReader[Ex[_Span]] {
     }
   }
   final case class Void() extends Ex[_SpanLike] {
-    override def productPrefix: String = s"Span$$All" // serialization
+    override def productPrefix: String = s"Span$$Void" // serialization
 
     type Repr[T <: Txn[T]] = IExpr[T, _SpanLike]
 
