@@ -54,7 +54,7 @@ lazy val commonSettings = Seq(
   ),
   scalacOptions ++= {
     // if (isDotty.value) Nil else 
-    Seq("-Xlint", "-Xsource:2.13")
+    Seq("-Xsource:2.13")
   },
   Compile / compile / scalacOptions ++= {
     val jdkGt8 = scala.util.Properties.isJavaAtLeast("9")
