@@ -155,7 +155,7 @@ trait TxnMixin[Tx <: Txn[Tx], D1 <: DurableLike .Txn[D1], I1 <: InMemoryLike.Txn
     val mBase     = id.base | 0x80000000  // XXX TODO --- a bit cheesy to throw away one bit entirely
     val mapOpt    = fullCache.getCacheTxn[Obj.AttrMap[T]](mBase, this)(id.path, Obj.attrMapFormat)
     mapOpt.getOrElse {
-      val map = MapObj.Modifiable[T, String, Obj]()(MapObj.Key.String, this)
+      val map = MapObj.Modifiable[T, String, Obj]()(using MapObj.Key.String, this)
       fullCache.putCacheTxn[Obj.AttrMap[T]](mBase, map, this)(id.path, Obj.attrMapFormat)
       markDirty()
       map
