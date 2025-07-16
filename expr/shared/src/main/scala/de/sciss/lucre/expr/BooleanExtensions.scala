@@ -68,19 +68,18 @@ object BooleanExtensions  {
 
     def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
                                   (implicit tx: T): _Ex[T] = {
-      val op: BinaryOp[_, _] = (opId: @switch) match {
-        case And   .id => And
-        case Or    .id => Or
-        case Xor   .id => Xor
+      (opId: @switch) match {
+        case And   .id => And.read(in, targets)
+        case Or    .id => Or.read(in, targets)
+        case Xor   .id => Xor.read(in, targets)
 
-        case IntEq .id => IntEq
-        case IntNeq.id => IntNeq
-        case IntLt .id => IntLt
-        case IntGt .id => IntGt
-        case IntLeq.id => IntLeq
-        case IntGeq.id => IntGeq
+        case IntEq .id => IntEq.read(in, targets)
+        case IntNeq.id => IntNeq.read(in, targets)
+        case IntLt .id => IntLt.read(in, targets)
+        case IntGt .id => IntGt.read(in, targets)
+        case IntLeq.id => IntLeq.read(in, targets)
+        case IntGeq.id => IntGeq.read(in, targets)
       }
-      op.read(in, targets)
     }
   }
 

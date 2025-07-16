@@ -39,18 +39,17 @@ object IntExtensions {
 
     def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
                                   (implicit tx: T): _Ex[T] = {
-      val op /* : UnaryOp[_, _] */ = (opId: @switch) match {
+      (opId: @switch) match {
         // ---- Int => Int ----
-        case Neg    .id => Neg
-        case BitNot .id => BitNot
-        case Abs    .id => Abs
-        case Signum .id => Signum
-        case Squared.id => Squared
-        case Cubed  .id => Cubed
+        case Neg    .id => Neg.read(in, targets)
+        case BitNot .id => BitNot.read(in, targets)
+        case Abs    .id => Abs.read(in, targets)
+        case Signum .id => Signum.read(in, targets)
+        case Squared.id => Squared.read(in, targets)
+        case Cubed  .id => Cubed.read(in, targets)
         // ---- Boolean => Int ----
-        case BooleanToInt.id => BooleanToInt
+        case BooleanToInt.id => BooleanToInt.read(in, targets)
       }
-      op.read(in, targets)
     }
   }
 
