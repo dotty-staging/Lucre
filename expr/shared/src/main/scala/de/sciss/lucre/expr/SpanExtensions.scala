@@ -61,12 +61,11 @@ object SpanExtensions  {
     def readExtension[T <: Txn[T]](opId: Int, in: DataInput, targets: Targets[T])
                                   (implicit tx: T): _Ex[T] = {
       import BinaryOp._
-      val op /* : Op[_, _, _, _] */ = opId /* : @switch */ match {
-        case Apply.id => Apply
-        case Shift.id => Shift
+      opId /* : @switch */ match {
+        case Apply.id => Apply.read[T](in, targets)
+        case Shift.id => Shift.read[T](in, targets)
         case _ => sys.error(s"Unknown extension $opId")
       }
-      op.read[T](in, targets)
     }
   }
 
