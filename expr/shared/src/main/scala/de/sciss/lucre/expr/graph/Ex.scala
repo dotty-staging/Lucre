@@ -49,10 +49,10 @@ object Ex /*extends ExPlatform*/ {
 //    implicit object act       extends Value[Act       ]
     implicit object fileIsValue extends Value[_URI      ]
 
-    implicit def tuple2 [A: Value, B: Value]: Value[(A, B)] = null
+    implicit def tuple2 [A: Value, B: Value]: Value[(A, B)] = null.asInstanceOf[Value[(A, B)]]
 
-    implicit def option [A: Value]: Value[Option[A]] = null
-    implicit def seq    [A: Value]: Value[Seq   [A]] = null
+    implicit def option [A: Value]: Value[Option[A]] = null.asInstanceOf[Value[Option[A]]]
+    implicit def seq    [A: Value]: Value[Seq   [A]] = null.asInstanceOf[Value[Seq   [A]]]
   }
   trait Value[-A]
 

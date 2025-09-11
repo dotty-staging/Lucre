@@ -152,7 +152,7 @@ class TotalOrderSuite extends AnyFeatureSpec with GivenWhenThen {
             var prev = to.head
             var next = prev
             while (prev != null) {
-              next = next.next.orNull
+              next = next.next.orNull.asInstanceOf[to.E]
               if (prev != to.root) prev.removeAndDispose()
               prev = next
             }

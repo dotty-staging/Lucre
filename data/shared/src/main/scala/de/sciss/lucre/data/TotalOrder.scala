@@ -59,7 +59,7 @@ object TotalOrder {
       private[Set] def updateNext (e: EOpt)   (implicit t: T): Unit
       private[Set] def updateTag  (value: Int)(implicit t: T): Unit
 
-      def orNull: E
+      def orNull: E | Null
       def isDefined: Boolean
       def isEmpty: Boolean
     }
@@ -68,7 +68,7 @@ object TotalOrder {
       private[Set] def updatePrev(e: EOpt)(implicit t: T): Unit = ()
       private[Set] def updateNext(e: EOpt)(implicit t: T): Unit = ()
 
-      def orNull: E = null
+      def orNull: E | Null = null
 
       private[Set] def updateTag(value: Int)(implicit t: T): Unit =
         sys.error("Internal error - shouldn't be here")
@@ -103,8 +103,8 @@ object TotalOrder {
       def prev(implicit tx: T): EOpt = prevRef()
       def next(implicit tx: T): EOpt = nextRef()
 
-      private[Set] def prevOrNull(implicit tx: T): E = prevRef().orNull
-      private[Set] def nextOrNull(implicit tx: T): E = nextRef().orNull
+      private[Set] def prevOrNull(implicit tx: T): E | Null = prevRef().orNull
+      private[Set] def nextOrNull(implicit tx: T): E | Null = nextRef().orNull
 
       def orNull: E = this
 
@@ -142,11 +142,11 @@ object TotalOrder {
       def validate(msg: => String)(implicit tx: T): Unit = {
         val recTag = tag
         if (prev.isDefined) {
-          val prevTag = prev.orNull.tag
+          val prevTag = prev.orNull.nn.tag
           assert(prevTag < recTag, s"prev $prevTag >= rec $recTag - $msg")
         }
         if (next.isDefined) {
-          val nextTag = next.orNull.tag
+          val nextTag = next.orNull.nn.tag
           assert(recTag < nextTag, s"rec $recTag >= next $nextTag - $msg")
         }
       }
@@ -194,9 +194,10 @@ object TotalOrder {
 
   sealed trait Set[T <: Exec[T]] extends TotalOrder[T] {
     me =>
-    
-    final type           E    = Set.Entry[T]
-    protected final type EOpt = Set.EntryOption[T] /* with MutableOption[ S ] */
+
+    final type           ENull  = Set.Entry[T] | Null
+    final type           E      = Set.Entry[T]
+    protected final type EOpt   = Set.EntryOption[T] /* with MutableOption[ S ] */
 
     protected def sizeVal: Var[T, Int]
 
@@ -310,7 +311,7 @@ object TotalOrder {
 
     final def tagList(from: E)(implicit tx: T): List[Int] = {
       val b = List.newBuilder[Int]
-      var entry = from
+      var entry: ENull = from
       while (entry ne null) {
         b += entry.tag
         entry = entry.nextOrNull
@@ -381,8 +382,8 @@ object TotalOrder {
           next = first
           var cnt = 0
           while (cnt < num) {
-            next.updateTag(base)
-            next  = next.nextOrNull
+            next.nn.updateTag(base)
+            next  = next.nn.nextOrNull
             base += inc
             cnt  += 1
           }
@@ -534,7 +535,7 @@ object TotalOrder {
   }
 
   private[TotalOrder] sealed trait KeyOption[T <: Exec[T], A] extends Writable {
-    def orNull: Map.Entry[T, A]
+    def orNull: Map.Entry[T, A] | Null
 
     def isDefined: Boolean
     def isEmpty  : Boolean
@@ -550,7 +551,7 @@ object TotalOrder {
 
     def get: A = throw new NoSuchElementException("EmptyKey.get")
 
-    def orNull: Map.Entry[T, A] = null
+    def orNull: Map.Entry[T, A] | Null = null
 
     def write(out: DataOutput): Unit = out.writeByte(0)
 
@@ -692,8 +693,9 @@ object TotalOrder {
 
     override def toString = s"Map$id"
 
-    final type           E    = Map.Entry[T, A]
-    protected final type KOpt = KeyOption[T, A]
+    final type           ENull = Map.Entry[T, A] | Null
+    final type           E     = Map.Entry[T, A]
+    protected final type KOpt  = KeyOption[T, A]
 
     private[TotalOrder] final val emptyKey: KOpt = new EmptyKey[T, A]
     final implicit val EntryFormat: TFormat[T, E] = new MapEntryFormat[T, A](this)
@@ -746,7 +748,7 @@ object TotalOrder {
       placeBetween(prevO.orNull, prevO, nextE, new DefinedKey[T, A](map, next), key)
     }
 
-    private[TotalOrder] def placeBetween(prevE: E, prevO: KOpt, nextE: E, nextO: KOpt, key: A)
+    private[TotalOrder] def placeBetween(prevE: ENull, prevO: KOpt, nextE: ENull, nextO: KOpt, key: A)
                                         (implicit tx: T): Unit = {
       val prevTag = if (prevE ne null) prevE.tag else 0 // could use Int.MinValue+1, but that collides with Octree max space
       val nextTag = if (nextE ne null) nextE.tag else Int.MaxValue
@@ -781,8 +783,8 @@ object TotalOrder {
     private[TotalOrder] def remove(e: E)(implicit tx: T): Unit = {
       val p = e.prev
       val n = e.next
-      if (p.isDefined) p.orNull.updateNext(n)
-      if (n.isDefined) n.orNull.updatePrev(p)
+      if (p.isDefined) p.orNull.nn.updateNext(n)
+      if (n.isDefined) n.orNull.nn.updatePrev(p)
       // sizeVal.transform(_ - 1)
       sizeVal() = sizeVal() - 1
     }
@@ -792,7 +794,7 @@ object TotalOrder {
     final def head(implicit tx: T): E = {
       @tailrec def step(e: E): E = {
         val prevO = e.prev
-        if (prevO.isEmpty) e else step(prevO.orNull)
+        if (prevO.isEmpty) e else step(prevO.orNull.nn)
       }
       step(root)
     }
@@ -804,7 +806,7 @@ object TotalOrder {
         val nextO = e.next
         if (nextO.isEmpty) b.result()
         else {
-          step(nextO.orNull)
+          step(nextO.orNull.nn)
         }
       }
       step(from)

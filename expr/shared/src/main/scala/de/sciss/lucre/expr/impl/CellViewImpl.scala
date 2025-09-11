@@ -90,7 +90,7 @@ object CellViewImpl {
     U](map: MapObj[T, K, _Ex], key: K, fun: T => Option[A] => Unit, tx0: T)
     extends Disposable[T] {
 
-    private val valObs = Ref(null: Disposable[T])
+    private val valObs = Ref(null: Disposable[T] | Null)
 
     private val mapObs = map.changed.react { implicit tx => u =>
       u.changes.foreach {
@@ -123,7 +123,7 @@ object CellViewImpl {
     private def valueRemoved()(implicit tx: T): Boolean = {
       val v   = valObs.swap(null)
       val res = v != null
-      if (res) v.dispose()
+      if (res) v.nn.dispose()
       res
     }
 
@@ -348,7 +348,7 @@ object CellViewImpl {
 
     // ---- impl ----
 
-    private[this] val valObs = Ref(null: Disposable[T])
+    private[this] val valObs = Ref(null: Disposable[T] | Null)
 
     private[this] def obsAdded(value: Repr[T])(implicit tx: T): Unit = {
       val valueT = value.asInstanceOf[E[T]]
@@ -393,7 +393,7 @@ object CellViewImpl {
     private[this] def valueRemoved()(implicit tx: T): Boolean = {
       val v   = valObs.swap(null)(tx.peer)
       val res = v != null
-      if (res) v.dispose()
+      if (res) v.nn.dispose()
       res
     }
 

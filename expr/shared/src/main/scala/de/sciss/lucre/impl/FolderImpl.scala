@@ -22,8 +22,8 @@ object FolderImpl {
     new Impl1[T] {
       protected val targets: Targets[T]   = Targets[T]()
       protected val sizeRef: Var[T, Int]  = id.newIntVar(0)
-      protected val headRef: Var[T, C]    = id.newVar[C](null)(tx, CellFmt)
-      protected val lastRef: Var[T, C]    = id.newVar[C](null)(tx, CellFmt)
+      protected val headRef: Var[T, C]    = id.newVar[C](null.asInstanceOf[C])(tx, CellFmt)
+      protected val lastRef: Var[T, C]    = id.newVar[C](null.asInstanceOf[C])(tx, CellFmt)
     }
 
   def format[T <: Txn[T]]: TFormat[T, Folder[T]] = anyFmt.cast

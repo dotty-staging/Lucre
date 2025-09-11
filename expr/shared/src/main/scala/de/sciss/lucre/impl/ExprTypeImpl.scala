@@ -57,7 +57,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
     extensions1
   }
 
-  final protected def findExt(extensions: Array[ExprTypeExtension1[Repr]], op: Int): ExprTypeExtension1[Repr] = {
+  final protected def findExt(extensions: Array[ExprTypeExtension1[Repr]], op: Int): ExprTypeExtension1[Repr] | Null = {
     var index = 0
     var low   = 0
     var high  = extensions.length - 1
@@ -78,7 +78,7 @@ trait ExprTypeImpl[A1, Repr[~ <: Txn[~]] <: Expr[~, A1]]
 
   final def registerExtension(ext: ExprTypeExtension1[Repr]): Unit = extensions = addExtension(extensions, ext)
 
-  final protected def findExt(op: Int): ExprTypeExtension1[Repr] = findExt(extensions, op)
+  final protected def findExt(op: Int): ExprTypeExtension1[Repr] | Null = findExt(extensions, op)
 
   final protected def readExtension[T <: Txn[T]](op: Int, in: DataInput, targets: Targets[T])
                                                 (implicit tx: T): Repr[T] = {

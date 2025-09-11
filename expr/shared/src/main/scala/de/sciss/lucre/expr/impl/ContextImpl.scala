@@ -124,7 +124,7 @@ trait ContextMixin[T <: Txn[T]] extends Context[T] {
   def selfOption(implicit tx: T): Option[Obj[T]] = selfH.map(_.apply())
 
   def getProperty[A](c: Control, key: String)(implicit tx: T): Option[A] = {
-    val m0: Map[String, Any] = properties.get(c.token).orNull
+    val m0: Map[String, Any] | Null = properties.get(c.token).orNull
     if (m0 == null) None else {
       m0.get(key).asInstanceOf[Option[A]]
     }

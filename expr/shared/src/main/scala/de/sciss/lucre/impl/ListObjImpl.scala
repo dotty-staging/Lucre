@@ -26,8 +26,8 @@ object ListObjImpl {
     new Impl1[T, E] {
       protected override val targets: Targets[T]   = Targets[T]()
       protected override val sizeRef: Var[T, Int]  = id.newIntVar(0)
-      protected override val headRef: Var[T, C]    = id.newVar[C](null)(tx, CellFmt)
-      protected override val lastRef: Var[T, C]    = id.newVar[C](null)(tx, CellFmt)
+      protected override val headRef: Var[T, C]    = id.newVar[C](null.asInstanceOf[C])(tx, CellFmt)
+      protected override val lastRef: Var[T, C]    = id.newVar[C](null.asInstanceOf[C])(tx, CellFmt)
     }
 
   def format[T <: Txn[T], A <: Elem[T]]: TFormat[T, ListObj[T, A]] =
@@ -62,18 +62,18 @@ object ListObjImpl {
     }
 
   final class Cell[T <: Txn[T], A](val elem: A,
-                                   val pred: Var[T, Cell[T, A]],
-                                   val succ: Var[T, Cell[T, A]])
+                                   val pred: Var[T, Cell[T, A] | Null],
+                                   val succ: Var[T, Cell[T, A] | Null])
 
-  private final class Iter[T <: Txn[T], A](private var cell: Cell[T, A])(implicit tx: T) extends Iterator[A] {
+  private final class Iter[T <: Txn[T], A](private var cell: Cell[T, A] | Null)(implicit tx: T) extends Iterator[A] {
     override def toString: String = if (cell == null) "empty iterator" else "non-empty iterator"
 
     def hasNext: Boolean = cell != null
 
     def next(): A = {
       if (cell == null) throw new NoSuchElementException("next on empty iterator")
-      val res = cell.elem
-      cell    = cell.succ()
+      val res = cell.nn.elem
+      cell    = cell.nn.succ()
       res
     }
   }
@@ -95,7 +95,7 @@ object ListObjImpl {
     type A = E[T]
     protected type ListAux[~ <: Txn[~]] = ListObj[~, E[~]]
 
-    final protected type C = Cell[T, A]
+    final protected type C = Cell[T, A] | Null
 
     protected def headRef: Var[T, C]
     protected def lastRef: Var[T, C]
@@ -234,12 +234,12 @@ object ListObjImpl {
       if (rec == null) throw new IndexOutOfBoundsException(index.toString)
       var idx = 0
       while (idx < index) {
-        rec = rec.succ()
+        rec = rec.nn.succ()
         if (rec == null) throw new IndexOutOfBoundsException(index.toString)
         idx += 1
       }
 
-      val e = rec.elem
+      val e = rec.nn.elem
       removeCell(rec)
       fireRemoved(idx, e)
       e
@@ -247,8 +247,8 @@ object ListObjImpl {
 
     // unlinks a cell and disposes it. does not fire. decrements sizeRef
     private[this] def removeCell(cell: C)(implicit tx: T): Unit = {
-      val pred = cell.pred()
-      val succ = cell.succ()
+      val pred = cell.nn.pred()
+      val succ = cell.nn.succ()
       if (pred != null) {
         pred.succ() = succ
       } else {
@@ -306,8 +306,8 @@ object ListObjImpl {
     // deregisters element event. disposes cell contents, but does not unlink, nor fire.
     private[this] def disposeCell(cell: C)(implicit tx: T): Unit = {
       // unregisterAent(cell.elem)
-      cell.pred.dispose()
-      cell.succ.dispose()
+      cell.nn.pred.dispose()
+      cell.nn.succ.dispose()
     }
 
     final protected def disposeData()(implicit tx: T): Unit = {

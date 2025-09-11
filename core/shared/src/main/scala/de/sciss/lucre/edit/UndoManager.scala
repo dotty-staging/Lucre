@@ -29,7 +29,7 @@ object UndoManager {
   /** Runs a block of code under the given undo manager.
     * The counter part would be `suspend`.
     */
-  def using[T <: Txn[T], A](m: UndoManager[T])(body: => A)(implicit tx: T): A = {
+  def using[T <: Txn[T], A](m: UndoManager[T] | Null)(body: => A)(implicit tx: T): A = {
     val before = current.swap(m)
     try {
       body
@@ -56,7 +56,7 @@ object UndoManager {
     def canRedo: Boolean = redoName.isDefined
   }
 
-  private val current = TxnLocal[UndoManager[_]]()
+  private val current = TxnLocal[UndoManager[_] | Null]()
 
   final class CannotUndoException(message: String) extends RuntimeException(message)
   final class CannotRedoException(message: String) extends RuntimeException(message)

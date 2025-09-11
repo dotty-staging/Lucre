@@ -313,7 +313,7 @@ object HASkipList {
       //      val c = topN
       //      if (c ne null) {
       //        step(c)
-      downNode() = null
+      downNode() = null.asInstanceOf[Node[T, A, E]]
       //      }
     }
 
@@ -335,19 +335,19 @@ object HASkipList {
       if (n eq null) 0
       else {
         var h = 1
-        while (n.isBranch) {
-          n = n.asBranch.down(0)
+        while (n.nn.isBranch) {
+          n = n.nn.asBranch.down(0)
           h += 1
         }
         h
       }
     }
 
-    final def top(implicit tx: T): Option[Node[T, A, E]] = Option(topN)
+    final def top(implicit tx: T): Option[Node[T, A, E] | Null] = Option(topN)
 
-    @inline protected final def topN(implicit tx: T): Node[T, A, E] = downNode()
+    @inline protected final def topN(implicit tx: T): Node[T, A, E] | Null = downNode()
 
-    final def debugPrint()(implicit tx: T): String = topN.printNode(isRight = true).mkString("\n")
+    final def debugPrint()(implicit tx: T): String = topN.nn.printNode(isRight = true).mkString("\n")
 
     final def toIndexedSeq(implicit tx: T): Vec [E]  = fillBuilder(Vector.newBuilder)
     final def toList      (implicit tx: T): List[E]  = fillBuilder(List  .newBuilder)
@@ -433,7 +433,7 @@ object HASkipList {
       }
 
       @tailrec
-      def step(n: Node[T, A, E], _bckNode: Node[T, A, E], _bckIdx: Int, isRight: Boolean): Option[E] = {
+      def step(n: Node[T, A, E], _bckNode: Node[T, A, E] | Null, _bckIdx: Int, isRight: Boolean): Option[E] = {
 
         val idx = if (isRight) indexInNodeR(key, n) else indexInNodeL(key, n)
 
@@ -697,11 +697,11 @@ object HASkipList {
       if (found) {
         val idxP = -(idx + 1)
         val lNew = l.removeColumn(idxP)(this)
-        pDown()  = if (lNew.size > 1) lNew else null
+        pDown()  = if (lNew.size > 1) lNew else null.asInstanceOf[Node[T, A, E]]
         Some(l.entry(idxP))
       } else {
         if (lDirty) {
-          pDown() = if (l.size > 1) l else null
+          pDown() = if (l.size > 1) l else null.asInstanceOf[Node[T, A, E]]
         }
         None
       }
@@ -716,7 +716,7 @@ object HASkipList {
       val c         = b.down(idxP)
       val cSz       = c.size
 
-      var bNew      = null: Branch[T, A, E]
+      var bNew      = null: Branch[T, A, E] | Null
       var bDownIdx  = idxP
       var cNew      = c
 
@@ -945,7 +945,7 @@ object HASkipList {
 
     override def readT(in: DataInput)(implicit tx: T): Node[T, A, E] = {
       (in.readByte(): @switch) match {
-        case 0 => null // .asInstanceOf[ Branch[ S, A ]]
+        case 0 => null.asInstanceOf[Branch[T, A, E]]
         case 1 => Branch.read(in, isRight = false, id = id)(tx, this)
         case 2 => readLeaf   (in, isRight = false)
         case 5 => Branch.read(in, isRight = true , id = id)(tx, this)
@@ -960,11 +960,11 @@ object HASkipList {
     }
 
     protected sealed abstract class IteratorImpl[C](implicit tx: T) extends Iterator[C] {
-      private[this] var l: Leaf[T, A, E]  = _
-      private[this] var nextValue: C      = _
-      private[this] var isRight           = true
-      private[this] var idx               = 0
-      private[this] var stack             = List.empty[(Branch[T, A, E], Int, Boolean)]
+      private[this] var l: Leaf[T, A, E] | Null  = _
+      private[this] var nextValue: C             = _
+      private[this] var isRight                  = true
+      private[this] var idx                      = 0
+      private[this] var stack                    = List.empty[(Branch[T, A, E], Int, Boolean)]
 
       override def toString = s"$impl.iterator"
 
@@ -995,7 +995,7 @@ object HASkipList {
         if (!hasNext) throw new java.util.NoSuchElementException("next on empty iterator")
         val res = nextValue
         idx += 1
-        if (idx == (if (isRight) l.size - 1 else l.size) /* || ordering.equiv( l.key( idx ), maxKey ) */ ) {
+        if (idx == (if (isRight) l.nn.size - 1 else l.nn.size) /* || ordering.equiv( l.key( idx ), maxKey ) */ ) {
           @tailrec def popUp(): Unit =
             if (stack.isEmpty) {
               l = null
@@ -1013,7 +1013,7 @@ object HASkipList {
           popUp()
 
         } else {
-          nextValue = getValue(l, idx) // l.key( idx )
+          nextValue = getValue(l.nn, idx) // l.key( idx )
         }
         res
       }
@@ -1409,7 +1409,7 @@ object HASkipList {
 
       val implId = tx.newId()
       new SetImpl[T, A](implId, minGap, keyObserver, list => {
-        implId.newVar[Node[T, A]](null)(tx, list)
+        implId.newVar[Node[T, A]](null.asInstanceOf[Node[T, A]])(tx, list)
       })
     }
 
@@ -1479,7 +1479,7 @@ object HASkipList {
 
       val implId = tx.newId()
       new MapImpl[T, A, B](implId, minGap, keyObserver, list => {
-        implId.newVar[Node[T, A, B]](null)(tx, list)
+        implId.newVar[Node[T, A, B]](null.asInstanceOf[Node[T, A, B]])(tx, list)
       })
     }
 
@@ -1507,7 +1507,7 @@ object HASkipList {
     extends SkipList.Map[T, A, B] with HASkipList[T, A, (A, B)]
 }
 trait HASkipList[T <: Exec[T], A, E] extends SkipList[T, A, E] {
-  def top(implicit tx: T): Option[HASkipList.Node[T, A, E]]
+  def top(implicit tx: T): Option[HASkipList.Node[T, A, E] | Null]
 
   /** Finds the right-most key which
    * is greater than or equal to the query key.

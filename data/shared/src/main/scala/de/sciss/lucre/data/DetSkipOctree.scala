@@ -2045,10 +2045,14 @@ object DetSkipOctree {
             }
           }
         }
-        h = h.prevOption.orNull
+        val h2 = h.prevOption.orNull
         level -= 1
         
-        h != null
+        if (h2 != null) {
+          h = h2
+        }
+
+        h2 != null
       }) ()
 
       errors

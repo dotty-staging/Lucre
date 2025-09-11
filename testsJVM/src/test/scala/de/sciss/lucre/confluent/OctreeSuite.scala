@@ -163,10 +163,14 @@ class OctreeSuite extends AnyFeatureSpec with GivenWhenThen {
       cursor.step { implicit tx => checkChildren( h, 0 )}
       val pointsOnlyInNext    = nextPoints.diff(currPoints)
       assert( pointsOnlyInNext.isEmpty, "Points in next which aren't in current (" + pointsOnlyInNext.take( 10 ) + "); in level n-" + prevs )
-      h = h.prevOption.orNull
+      val h2 = h.prevOption.orNull
       prevs += 1
 
-      h != null
+      if (h2 != null) {
+        h = h2
+      }
+
+      h2 != null
     }) ()
   }
 
