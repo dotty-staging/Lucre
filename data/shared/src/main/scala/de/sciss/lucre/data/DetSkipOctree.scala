@@ -1581,7 +1581,7 @@ object DetSkipOctree {
       }
 
       def find(): LeafOrEmpty = {
-        val pri = MPriorityQueue.empty[VisitedNode[M]](this)
+        val pri = MPriorityQueue.empty[VisitedNode[M]](using this)
         @tailrec def step(p0: Branch, /*pMinDist: M,*/ bestLeaf: LeafOrEmpty, bestDist: M, rMax: M): LeafOrEmpty = {
           val res = findNNTailOLD(p0, /* pMinDist, */ pri, bestLeaf, bestDist, rMax)
           if (metric.isMeasureZero(res.bestDist)) {
