@@ -52,6 +52,8 @@ sealed trait CacheMapImpl[T <: Txn[T], K, Store]
 
   import CacheMapImpl._
 
+  import scala.language.unsafeNulls
+
   private val cache = TxnLocal(Map.empty[K, Map[Long, Entry[T, K, Store]]])
 
   // ---- implementation ----

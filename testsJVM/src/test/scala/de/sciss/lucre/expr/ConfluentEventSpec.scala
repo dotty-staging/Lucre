@@ -33,6 +33,7 @@ trait ConfluentEventSpec extends FixtureAnyFlatSpec with Matchers {
   }
 
   final class Observation /* [S <: stm.Sys[S]] */ {
+    import scala.language.unsafeNulls
     private val seqRef = TxnLocal(init = Vec.empty[Any])
 
     def map(fun: Any => Any)(implicit tx: T): Unit =

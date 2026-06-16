@@ -26,6 +26,8 @@ import scala.collection.mutable
 import scala.concurrent.stm.{Ref, TMap, TxnLocal}
 
 trait ContextMixin[T <: Txn[T]] extends Context[T] {
+  import scala.language.unsafeNulls
+
   // ---- abstract ----
 
   protected def selfH: Option[Source[T, Obj[T]]]

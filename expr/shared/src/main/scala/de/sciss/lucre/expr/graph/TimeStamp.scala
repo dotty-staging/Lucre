@@ -24,6 +24,8 @@ import java.util.Locale
 import scala.concurrent.stm.{Ref, TxnLocal}
 
 object TimeStamp extends ProductReader[TimeStamp] {
+  import scala.language.unsafeNulls
+
   object Update extends ProductReader[Update] {
     override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Update = {
       require (arity == 1 && adj == 0)

@@ -21,6 +21,8 @@ import scala.concurrent.stm.TxnLocal
 private[impl] final class InMemoryIdMapImpl[T <: Txn[T], A](val store: InMemoryConfluentMap[T, Int])
   extends IdentMap[T, A] with InMemoryCacheMapImpl[T, Int] {
 
+  import scala.language.unsafeNulls
+
   private val markDirtyFlag = TxnLocal(false)
 
   private def markDirty()(implicit tx: T): Unit =

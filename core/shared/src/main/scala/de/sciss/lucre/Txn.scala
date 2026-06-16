@@ -36,6 +36,8 @@ trait TxnLike {
 }
 
 object Txn {
+  import scala.language.unsafeNulls
+
   trait Resource extends Closeable with ExternalDecider
 
   /** Implicitly extracts a Scala STM transaction from a `TxnLike` instance. */

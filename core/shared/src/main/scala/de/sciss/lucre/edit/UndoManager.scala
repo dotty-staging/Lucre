@@ -21,6 +21,8 @@ import de.sciss.lucre.edit.impl.UndoManagerImpl
 import scala.concurrent.stm.TxnLocal
 
 object UndoManager {
+  import scala.language.unsafeNulls
+  
   def dummy[T <: Txn[T]]: UndoManager[T] = UndoManagerImpl.dummy
 
   def apply[T <: Txn[T]](): UndoManager[T] =

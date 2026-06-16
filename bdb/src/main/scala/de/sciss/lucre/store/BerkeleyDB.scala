@@ -259,6 +259,8 @@ object BerkeleyDB {
   private[this] final class TxEnv(val env: Environment, val txnCfg: TransactionConfig)
     extends Txn.Resource { self =>
 
+    import scala.language.unsafeNulls
+
     override def toString: String = {
       import scala.collection.JavaConverters._
       s"BerkeleyDB Transaction (${env.getDatabaseNames.asScala.mkString(", ")}) @${self.hashCode().toHexString}"
