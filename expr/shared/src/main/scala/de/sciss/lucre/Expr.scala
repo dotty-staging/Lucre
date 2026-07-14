@@ -97,9 +97,9 @@ object Expr /*extends expr.Ops*/ {
     type E[T <: Txn[T]] = Repr[T] // yeah, well, we're waiting for Dotty
     // N.B.: this causes trouble:
     //     type Var  [T <: Txn[T]] = Repr[T] with _Expr.Var  [S, A, _Ex]
-    type Var    [T <: Txn[T]] = Repr[T] with lucre.Var    [T, Repr[T]]
-    type Const  [T <: Txn[T]] = Repr[T] with Expr.Const   [T, A]
-    type Program[T <: Txn[T]] = Repr[T] with Expr.Program [T, A]
+    type Var    [T <: Txn[T]] = Repr[T] & lucre.Var    [T, Repr[T]]
+    type Const  [T <: Txn[T]] = Repr[T] & Expr.Const   [T, A]
+    type Program[T <: Txn[T]] = Repr[T] & Expr.Program [T, A]
 
     // ---- abstract ----
 

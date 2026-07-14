@@ -200,7 +200,7 @@ object CellViewImpl {
     extends ExprLike[T, A, _Ex]
 
   private final class ExprVar[T <: Txn[T], A, _Ex[~ <: Txn[~]] <: _Expr[~, A]](
-                                                                                protected val h: Source[T, _Ex[T] with LVar[T, _Ex[T]]])
+                                                                                protected val h: Source[T, _Ex[T] & LVar[T, _Ex[T]]])
                                                                               (implicit tpe: _Expr.Type[A, _Ex])
     extends ExprLike[T, A, _Ex] with CellView.VarR[T, A] {
 

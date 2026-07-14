@@ -19,7 +19,7 @@ object IntDistanceMeasure2D {
   import TwoDim._
   import DistanceMeasure.Ops
 
-  private type M = DistanceMeasure[Long, IntPoint2DLike, IntSquare] with Ops[Long, IntPoint2DLike, IntSquare]
+  private type M = DistanceMeasure[Long, IntPoint2DLike, IntSquare] & Ops[Long, IntPoint2DLike, IntSquare]
 
   /**
    * A measure that uses the euclidean squared distance

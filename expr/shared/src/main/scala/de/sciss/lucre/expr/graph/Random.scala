@@ -92,7 +92,7 @@ object Random extends ProductReader[Random] {
 
     override def productPrefix: String = s"Random$$Coin"  // serialization
 
-    type Repr[T <: Txn[T]] = IExpr[T, B] with IAction[T]
+    type Repr[T <: Txn[T]] = IExpr[T, B] & IAction[T]
 
     /** Convenient method that returns the `Coin` itself. This can be used
       * for additional clarity when writing `Bang() ---> coin.update` instead of `Bang() ---> coin`.
@@ -160,7 +160,7 @@ object Random extends ProductReader[Random] {
 
     override def productPrefix: String = s"Random$$Until"  // serialization
 
-    type Repr[T <: Txn[T]] = IExpr[T, A] with IAction[T]
+    type Repr[T <: Txn[T]] = IExpr[T, A] & IAction[T]
 
     /** Convenient method that returns the `Until` itself. This can be used
       * for additional clarity when writing `Bang() ---> x.update` instead of `Bang() ---> x`.
@@ -235,7 +235,7 @@ object Random extends ProductReader[Random] {
 
     override def productPrefix: String = s"Random$$Range" // serialization
 
-    type Repr[T <: Txn[T]] = IExpr[T, A] with IAction[T]
+    type Repr[T <: Txn[T]] = IExpr[T, A] & IAction[T]
 
     /** Convenient method that returns the `Range` itself. This can be used
       * for additional clarity when writing `Bang() ---> x.update` instead of `Bang() ---> x`.
@@ -270,7 +270,7 @@ object Random extends ProductReader[Random] {
   private final case class Impl(seed: Ex[Long]) extends Random {
     override def productPrefix: String = "Random"   // serialization
 
-    type Repr[T <: Txn[T]] = IControl[T] with LRandom[T]
+    type Repr[T <: Txn[T]] = IControl[T] & LRandom[T]
 
     override protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] =
       new Expanded[T](seed.expand[T])
@@ -290,7 +290,7 @@ object Random extends ProductReader[Random] {
   * }}}
   */
 trait Random extends Control {
-  type Repr[T <: Txn[T]] <: IControl[T] with LRandom[T]
+  type Repr[T <: Txn[T]] <: IControl[T] & LRandom[T]
 
   def until[A](hi: Ex[A])(implicit num: Num[A]): Random.Until[A] =
     Random.Until(hi, this)

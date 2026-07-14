@@ -28,7 +28,7 @@ object Trig extends ProductReader[Trig] {
 
   /** Creates a "standalone" trigger that can be activated as an action.
     */
-  def apply(): Act with Trig = Impl()
+  def apply(): Act & Trig = Impl()
 
   private final class Expanded[T <: Txn[T]](implicit protected val targets: ITargets[T])
     extends ITrigger[T] with IAction[T] with IGeneratorEvent[T, Unit] {
@@ -55,7 +55,7 @@ object Trig extends ProductReader[Trig] {
   private final case class Impl() extends Act with Trig {
     override def productPrefix: String = "Trig" // serialization
 
-    type Repr[T <: Txn[T]] = IAction[T] with ITrigger[T]
+    type Repr[T <: Txn[T]] = IAction[T] & ITrigger[T]
 
     protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
       import ctx.targets

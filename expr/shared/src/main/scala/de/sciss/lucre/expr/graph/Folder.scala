@@ -33,7 +33,7 @@ object Folder extends ProductReader[Ex[Folder]] {
 
   def init(): Unit = _init
 
-  def apply(): Ex[Folder] with Obj.Make = Apply()
+  def apply(): Ex[Folder] & Obj.Make = Apply()
 
   override def read(in: RefMapIn, key: String, arity: Int, adj: Int): Ex[Folder] = {
     require (arity == 0 && adj == 0)
@@ -62,7 +62,7 @@ object Folder extends ProductReader[Ex[Folder]] {
   private final case class Apply() extends Ex[Folder] with Act with Obj.Make {
     override def productPrefix: String = "Folder" // serialization
 
-    type Repr[T <: Txn[T]] = IExpr[T, Folder] with IAction[T]
+    type Repr[T <: Txn[T]] = IExpr[T, Folder] & IAction[T]
 
     def make: Act = this
 

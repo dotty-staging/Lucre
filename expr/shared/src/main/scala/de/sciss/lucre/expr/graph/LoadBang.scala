@@ -40,7 +40,7 @@ object LoadBang extends ProductReader[LoadBang] {
   }
 }
 final case class LoadBang() extends Control with Trig {
-  type Repr[T <: Exec[T]] = IControl[T] with ITrigger[T]
+  type Repr[T <: Exec[T]] = IControl[T] & ITrigger[T]
 
   protected def mkRepr[T <: Txn[T]](implicit ctx: Context[T], tx: T): Repr[T] = {
     import ctx.targets

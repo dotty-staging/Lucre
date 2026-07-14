@@ -435,9 +435,9 @@ object Ex /*extends ExPlatform*/ {
 
   // ---- further adjuncts ----
 
-  def spanLikeTop : FromAny[_SpanLike ] with HasDefault[_SpanLike] = SpanLikeTop
-  def spanTop     : FromAny[_Span     ] with HasDefault[_Span    ] = SpanTop
-  def fileTop     : FromAny[_URI] with HasDefault[_URI] with ScalarOrd[_URI] = FileTop
+  def spanLikeTop : FromAny[_SpanLike ] & HasDefault[_SpanLike] = SpanLikeTop
+  def spanTop     : FromAny[_Span     ] & HasDefault[_Span    ] = SpanTop
+  def fileTop     : FromAny[_URI] & HasDefault[_URI] & ScalarOrd[_URI] = FileTop
 
   private object SpanLikeTop extends FromAny[_SpanLike] with HasDefault[_SpanLike] with Adjunct.Factory {
     final val id = 1007

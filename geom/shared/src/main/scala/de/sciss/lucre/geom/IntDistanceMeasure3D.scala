@@ -21,8 +21,8 @@ object IntDistanceMeasure3D {
   import DistanceMeasure.Ops
 
   type Sqr  = BigInt
-  type ML   = DistanceMeasure[Long, IntPoint3DLike, IntCube] with Ops[Long, IntPoint3DLike, IntCube]
-  type MS   = DistanceMeasure[Sqr , IntPoint3DLike, IntCube] with Ops[Sqr , IntPoint3DLike, IntCube]
+  type ML   = DistanceMeasure[Long, IntPoint3DLike, IntCube] & Ops[Long, IntPoint3DLike, IntCube]
+  type MS   = DistanceMeasure[Sqr , IntPoint3DLike, IntCube] & Ops[Sqr , IntPoint3DLike, IntCube]
 
   private val MaxDistance: Sqr = {
     val n = BigInt(Long.MaxValue)

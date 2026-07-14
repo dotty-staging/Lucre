@@ -106,7 +106,7 @@ object InMemoryDB {
         map.put(key, value)
       }
 
-    private def mkArr(out: DataOutput with ByteArrayStream, fun: DataOutput => Unit): Array[Byte] = {
+    private def mkArr(out: DataOutput & ByteArrayStream, fun: DataOutput => Unit): Array[Byte] = {
       out.reset()
       fun(out)
       val size  = out.size
@@ -115,7 +115,7 @@ object InMemoryDB {
       arr
     }
 
-    private def mkKey(out: DataOutput with ByteArrayStream, keyFun: DataOutput => Unit): Key = {
+    private def mkKey(out: DataOutput & ByteArrayStream, keyFun: DataOutput => Unit): Key = {
       val keyArr = mkArr(out, keyFun)
       new Key(keyArr)
     }

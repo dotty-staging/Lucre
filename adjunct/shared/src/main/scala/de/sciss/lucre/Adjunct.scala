@@ -176,7 +176,7 @@ object Adjunct {
     def gteq(a: A, b: A): Boolean
   }
 
-  type ScalarOrd[A] = Ord[A] with Scalar[A]
+  type ScalarOrd[A] = Ord[A] & Scalar[A]
 
   //  trait NumLowPriority {
   //    implicit def intTSeqop   : NumInt   [Seq[Int   ]] = IntSeqTop
@@ -242,7 +242,7 @@ object Adjunct {
     def wrap(a: A, lo: A, hi: A): A
   }
 
-  type ScalarNum[A] = Num[A] with Scalar[A]
+  type ScalarNum[A] = Num[A] & Scalar[A]
 
   trait NumFrac[A] extends NumDiv[A] {
     def floor (a: A): A
@@ -252,7 +252,7 @@ object Adjunct {
     def reciprocal(a: A): A
   }
 
-  type ScalarNumFrac[A] = NumFrac[A] with Scalar[A]
+  type ScalarNumFrac[A] = NumFrac[A] & Scalar[A]
 
   trait NumLogic[A] extends Eq[A] {
     def and (a: A, b: A): A
@@ -264,7 +264,7 @@ object Adjunct {
     def negate(a: A): A
   }
 
-  type ScalarNumBool[A] = NumBool[A] with Scalar[A]
+  type ScalarNumBool[A] = NumBool[A] & Scalar[A]
 
   // abstracts integer and decimal division
   trait NumDiv[A] extends Num[A] {
@@ -291,7 +291,7 @@ object Adjunct {
     def isOdd         (a: A): Boolean
   }
 
-  type ScalarNumInt[A] = NumInt[A] with Scalar[A]
+  type ScalarNumInt[A] = NumInt[A] & Scalar[A]
 
   //  trait NumDoubleLowPriority {
   //    implicit def doubleSeqTop: NumDouble[Seq[Double]] = DoubleSeqTop
@@ -347,7 +347,7 @@ object Adjunct {
     def coin[Tx](a: A)(implicit r: Random[Tx], tx: Tx): Boolean
   }
 
-  type ScalarNumDouble[A] = NumDouble[A] with Scalar[A]
+  type ScalarNumDouble[A] = NumDouble[A] & Scalar[A]
 
   trait ToNumLowPriority {
     implicit def intSeqTop    : IntSeqTop   .type = IntSeqTop
@@ -433,7 +433,7 @@ object Adjunct {
     def defaultValue: A
   }
 
-  type ScalarToNum[A] = ToNum[A] with Scalar[A]
+  type ScalarToNum[A] = ToNum[A] & Scalar[A]
 
   trait Scalar[A] {
     final type In       = A
@@ -444,7 +444,7 @@ object Adjunct {
     final type Long     = scala.Long
   }
 
-  type ScalarEq[A] = Eq[A] with Scalar[A]
+  type ScalarEq[A] = Eq[A] & Scalar[A]
 
   object IntSeqTop
     extends NumInt      [Seq[Int]]

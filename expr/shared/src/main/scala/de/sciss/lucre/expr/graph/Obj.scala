@@ -128,7 +128,7 @@ object Obj {
     private final case class Impl[A](ex: Ex[A])(implicit cm: CanMake[A]) 
       extends Make with Act with ProductWithAdjuncts {
       
-      type Repr[T <: Txn[T]] = IExpr[T, Obj] with IAction[T]
+      type Repr[T <: Txn[T]] = IExpr[T, Obj] & IAction[T]
 
       override def productPrefix: String = s"Obj$$Make" // serialization
 
@@ -382,7 +382,7 @@ object Obj {
     private final case class Impl(obj: Ex[Obj])
       extends Copy with Act {
 
-      type Repr[T <: Txn[T]] = IExpr[T, Obj] with IAction[T]
+      type Repr[T <: Txn[T]] = IExpr[T, Obj] & IAction[T]
 
       def make: Act = this
 

@@ -35,7 +35,7 @@ trait ExTuplesCompile {
   def trigger: Act
 
   trait Bang extends Act with Trig {
-    type Repr[T <: Txn[T]] <: IAction[T] with ITrigger[T]
+    type Repr[T <: Txn[T]] <: IAction[T] & ITrigger[T]
   }
 
   def bang: Bang
